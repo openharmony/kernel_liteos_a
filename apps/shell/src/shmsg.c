@@ -595,10 +595,6 @@ void *ShellEntry(void *argv)
     }
 
     while (1) {
-        /* is console ready for shell ? */
-        if (ret != SH_OK)
-            break;
-
         n = read(0, &ch, 1);
         if (n == 1) {
             ShellCmdLineParse(ch, (OutputFunc)printf, shellCB);
