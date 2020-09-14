@@ -216,12 +216,6 @@ static int lwip_bind_wrap(int s, const struct sockaddr *name, socklen_t namelen)
             LWIP_ERROR("permission deny: NET_BIND_SERVICE\n", IsCapPermit(CAP_NET_BIND_SERVICE),
                        set_errno(EPERM); return -1);
         }
-        if (ip_addr_isany(&ipaddr)) {
-            LWIP_ERROR("permission deny: NET_RAW\n", IsCapPermit(CAP_NET_RAW),
-                       set_errno(EPERM); return -1);
-            LWIP_ERROR("permission deny: NET_ADMIN\n", IsCapPermit(CAP_NET_ADMIN),
-                       set_errno(EPERM); return -1);
-        }
         if (ip_addr_ismulticast(&ipaddr) || ip_addr_isbroadcast_bysock(&ipaddr, s)) {
             LWIP_ERROR("permission deny: NET_BROADCAST\n", IsCapPermit(CAP_NET_BROADCAST),
                        set_errno(EPERM); return -1);
