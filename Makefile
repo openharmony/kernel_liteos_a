@@ -126,6 +126,7 @@ menuconfig:$(MENUCONFIG_PATH)/mconf
 
 genconfig:$(MENUCONFIG_PATH)/conf
 	$(HIDE)mkdir -p include/config include/generated
+	$< --olddefconfig $(KCONFIG_FILE_PATH)
 	$< --silentoldconfig $(KCONFIG_FILE_PATH)
 	-mv -f $(LITEOS_MENUCONFIG_H) $(LITEOS_PLATFORM_MENUCONFIG_H)
 ##### menuconfig end #######
