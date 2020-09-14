@@ -208,31 +208,31 @@ int netstat_netconn_sendq(struct netconn *conn);
 #define PRINT_BUF_LEN   1024
 #define MAX_MACADDR_STRING_LENGTH    18 /* including NULL */
 
-#define CONVERT_STRING_TO_HEX(_src, _dest)    \
-{                                           \
-  const char *_srcString = (char *)_src;    \
-  _dest = 0;                                  \
-  while (*_srcString) {                       \
-    _dest = (unsigned char)((_dest << 4) & 0xFF);            \
-    if ((*_srcString >= 48) && (*_srcString <= 57))    /* between 0 to 9 */  \
-      _dest |= (unsigned char)(*_srcString - 48);                     \
-    else if ((*_srcString >= 65 && *_srcString <= 70)) /* between A to F */  \
-      _dest |= (unsigned char)((*_srcString - 65) + 10);              \
-    else if ((*_srcString >= 97 && *_srcString <= 102)) /* between a to f */  \
-      _dest |= (unsigned char)((*_srcString - 97) + 10);              \
-    else break;                             \
-    ++_srcString;                           \
-  }                                         \
+#define CONVERT_STRING_TO_HEX(_src, _dest)                                                      \
+{                                                                                               \
+    const char *_srcString = (char *)_src;                                                      \
+    _dest = 0;                                                                                  \
+    while (*_srcString) {                                                                       \
+        _dest = (unsigned char)((_dest << 4) & 0xFF);                                           \
+        if ((*_srcString >= 48) && (*_srcString <= 57))    /* between 0 to 9 */                 \
+            _dest |= (unsigned char)(*_srcString - 48);                                         \
+        else if ((*_srcString >= 65 && *_srcString <= 70)) /* between A to F */                 \
+            _dest |= (unsigned char)((*_srcString - 65) + 10);                                  \
+        else if ((*_srcString >= 97 && *_srcString <= 102)) /* between a to f */                \
+            _dest |= (unsigned char)((*_srcString - 97) + 10);                                  \
+        else break;                                                                             \
+        ++_srcString;                                                                           \
+    }                                                                                           \
 }
 
-#define ERR_IFCONFIG_STRING_PUT(ret, str)     do                                             \
-{                                                                                            \
-  (ret) = snprintf_s(ifconfig_cmd->cb_print_buf + ifconfig_cmd->print_len,                 \
-                     PRINT_BUF_LEN - ifconfig_cmd->print_len,                             \
-                     ((PRINT_BUF_LEN - ifconfig_cmd->print_len) - 1), (str));             \
-  if (((ret) > 0) && ((unsigned int)(ret) < (PRINT_BUF_LEN - ifconfig_cmd->print_len)))   \
-    ifconfig_cmd->print_len += (unsigned int)(ret);                                       \
-} while(0)
+#define ERR_IFCONFIG_STRING_PUT(ret, str)                                                       \
+    do {                                                                                        \
+        (ret) = snprintf_s(ifconfig_cmd->cb_print_buf + ifconfig_cmd->print_len,                \
+                           PRINT_BUF_LEN - ifconfig_cmd->print_len,                             \
+                           ((PRINT_BUF_LEN - ifconfig_cmd->print_len) - 1), (str));             \
+        if (((ret) > 0) && ((unsigned int)(ret) < (PRINT_BUF_LEN - ifconfig_cmd->print_len)))   \
+            ifconfig_cmd->print_len += (unsigned int)(ret);                                     \
+    } while (0)                                                                                 \
 
 #define LWIP_MSECS_TO_SECS(time_in_msecs) (time_in_msecs / 1000)
 struct ifconfig_option {
@@ -1922,149 +1922,149 @@ SHELLCMD_ENTRY(ping_shellcmd, CMD_TYPE_EX, "ping", XARGS, (CmdCallBackFunc)osShe
 
 u32_t osShellPing(int argc, const char **argv)
 {
-  int sfd;
-  struct sockaddr_in to;
-  struct icmp_echo_hdr iecho;
-  struct pbuf *pbuf_resp = NULL;
-  struct icmp_echo_hdr *iecho_resp = NULL;
-  struct ip_hdr *iphdr_resp = NULL;
-  s16_t ip_hlen;
-  ip_addr_t dst_ipaddr;
-  fd_set fdReadSet;
-  struct timeval stTimeVal;
-  struct timespec start, end;
-  int ret;
-  s32_t i;
-  long rtt;
-  s32_t pingcount;
-  char buf[50];
+    int sfd;
+    struct sockaddr_in to;
+    struct icmp_echo_hdr iecho;
+    struct pbuf *pbuf_resp = NULL;
+    struct icmp_echo_hdr *iecho_resp = NULL;
+    struct ip_hdr *iphdr_resp = NULL;
+    s16_t ip_hlen;
+    ip_addr_t dst_ipaddr;
+    fd_set fdReadSet;
+    struct timeval stTimeVal;
+    struct timespec start, end;
+    int ret;
+    s32_t i;
+    long rtt;
+    s32_t pingcount;
+    char buf[50];
 
-  if (!tcpip_init_finish) {
-    PRINTK("ping: tcpip_init have not been called\n");
-    return LOS_NOK;
-  }
+    if (!tcpip_init_finish) {
+        PRINTK("ping: tcpip_init have not been called\n");
+        return LOS_NOK;
+    }
 
-  if ((argc < 1) || (argv == NULL)) {
-    PRINTK("ping : invalid arguments, ping command receives ip as command line argument \n");
-    return LOS_NOK;
-  }
+    if ((argc < 1) || (argv == NULL)) {
+        PRINTK("ping : invalid arguments, ping command receives ip as command line argument \n");
+        return LOS_NOK;
+    }
 
-  if (argc == 2) {
-    pingcount = atoi(argv[1]);
-    if (pingcount < 1)
-      pingcount = LWIP_SHELL_CMD_PING_RETRY_TIMES;
-  } else {
-    pingcount = LWIP_SHELL_CMD_PING_RETRY_TIMES;
-  }
-  PRINTK("ping %u packets start.\n", pingcount);
+    if (argc == 2) {
+        pingcount = atoi(argv[1]);
+        if (pingcount < 1)
+            pingcount = LWIP_SHELL_CMD_PING_RETRY_TIMES;
+    } else {
+        pingcount = LWIP_SHELL_CMD_PING_RETRY_TIMES;
+    }
+    PRINTK("ping %u packets start.\n", pingcount);
 
-  /* initialize dst IP address */
+    /* initialize dst IP address */
 #if LWIP_DNS
-  ip_2_ip4(&dst_ipaddr)->addr = get_hostip(argv[0]);
+    ip_2_ip4(&dst_ipaddr)->addr = get_hostip(argv[0]);
 #else /* LWIP_DNS */
-  ip_2_ip4(&dst_ipaddr)->addr = inet_addr(argv[0]);
+    ip_2_ip4(&dst_ipaddr)->addr = inet_addr(argv[0]);
 #endif /* LWIP_DNS */
 
-  to.sin_family = AF_INET;
-  to.sin_addr.s_addr = ip_2_ip4(&dst_ipaddr)->addr;
-  to.sin_port = 0;
+    to.sin_family = AF_INET;
+    to.sin_addr.s_addr = ip_2_ip4(&dst_ipaddr)->addr;
+    to.sin_port = 0;
 
-  if (to.sin_addr.s_addr == IPADDR_NONE || to.sin_addr.s_addr == IPADDR_ANY) {
-    PRINTK("ping : invalid ip address : %s\n", argv[0]);
-    return LOS_NOK;
-  }
-
-  sfd = lwip_socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
-  if (sfd == -1) {
-    PRINTK("ping : failed, socket creation failed\n");
-    return LOS_NOK;
-  }
-
-  pbuf_resp = pbuf_alloc(PBUF_RAW, IP_HLEN + sizeof(struct icmp_echo_hdr), PBUF_RAM);
-  if (pbuf_resp == NULL) {
-    PRINTK("ping : memory allocation failed\n");
-    goto FAILURE;
-  }
-
-  for (i = 0; i < pingcount; i++) {
-    (void)memset_s(&iecho, sizeof(iecho), 0, sizeof(iecho));
-    ICMPH_TYPE_SET(&iecho, (u8_t)ICMP_ECHO);
-    iecho.chksum = inet_chksum(&iecho, sizeof(struct icmp_echo_hdr));
-
-    ret = lwip_sendto(sfd, &iecho, sizeof(struct icmp_echo_hdr), 0, (struct sockaddr *)&to, (socklen_t)sizeof(to));
-    if (ret == -1) {
-      PRINTK("ping : sending ICMP echo msg failed\n");
-      goto FAILURE;
+    if (to.sin_addr.s_addr == IPADDR_NONE || to.sin_addr.s_addr == IPADDR_ANY) {
+        PRINTK("ping : invalid ip address : %s\n", argv[0]);
+        return LOS_NOK;
     }
 
-    /* capture the start time to calculate round trip time */
-    (void)clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-    /* Wait in select for ICMP response msg */
-    FD_ZERO(&fdReadSet);
-    FD_SET(sfd, &fdReadSet);
-    stTimeVal.tv_sec = LWIP_SHELL_CMD_PING_TIMEOUT / 1000;
-    stTimeVal.tv_usec = 0;
+    sfd = lwip_socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
+    if (sfd == -1) {
+        PRINTK("ping : failed, socket creation failed\n");
+        return LOS_NOK;
+    }
+
+    pbuf_resp = pbuf_alloc(PBUF_RAW, IP_HLEN + sizeof(struct icmp_echo_hdr), PBUF_RAM);
+    if (pbuf_resp == NULL) {
+        PRINTK("ping : memory allocation failed\n");
+        goto FAILURE;
+    }
+
+    for (i = 0; i < pingcount; i++) {
+        (void)memset_s(&iecho, sizeof(iecho), 0, sizeof(iecho));
+        ICMPH_TYPE_SET(&iecho, (u8_t)ICMP_ECHO);
+        iecho.chksum = inet_chksum(&iecho, sizeof(struct icmp_echo_hdr));
+
+        ret = lwip_sendto(sfd, &iecho, sizeof(struct icmp_echo_hdr), 0, (struct sockaddr *)&to, (socklen_t)sizeof(to));
+        if (ret == -1) {
+            PRINTK("ping : sending ICMP echo msg failed\n");
+            goto FAILURE;
+        }
+
+        /* capture the start time to calculate round trip time */
+        (void)clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+        /* Wait in select for ICMP response msg */
+        FD_ZERO(&fdReadSet);
+        FD_SET(sfd, &fdReadSet);
+        stTimeVal.tv_sec = LWIP_SHELL_CMD_PING_TIMEOUT / 1000;
+        stTimeVal.tv_usec = 0;
 
 DO_SELECT:
-    ret = select(sfd + 1, &fdReadSet, 0, 0, &stTimeVal);
-    if (ret < 0) {
-      PRINTK("ping : select failure\n");
-      goto FAILURE;
-    } else if (ret == 0) {
-      PRINTK("Request timed out.\n");
-      continue;
+        ret = select(sfd + 1, &fdReadSet, 0, 0, &stTimeVal);
+        if (ret < 0) {
+            PRINTK("ping : select failure\n");
+            goto FAILURE;
+        } else if (ret == 0) {
+            PRINTK("Request timed out.\n");
+            continue;
+        }
+
+        /* capture the end time to calculate round trip time */
+        (void)clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+        rtt = ((end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000);
+
+        ret = lwip_recv(sfd, pbuf_resp->payload, pbuf_resp->len, 0);
+        if (ret == -1) {
+            PRINTK("ping : receiving ICMP echo response msg failed\n");
+            goto FAILURE;
+        }
+
+        /* Accessing ip header and icmp header */
+        iphdr_resp = (struct ip_hdr *)(pbuf_resp->payload);
+        ip_hlen = (s16_t)(IPH_HL(iphdr_resp) * 4);
+        if (pbuf_header(pbuf_resp, (s16_t)(-ip_hlen))) {
+            /* this failure will never happen, but failure handle is written just to be in safe side */
+            PRINTK("ping : memory management failure\n");
+            goto FAILURE;
+        }
+        iecho_resp = (struct icmp_echo_hdr *)pbuf_resp->payload;
+
+        /* Reverting back pbuf to its original state */
+        if (pbuf_header(pbuf_resp, ip_hlen)) {
+            /* this failure will never happen, but failure handle is written just to be in safe side */
+            PRINTK("ping : memory management failure\n");
+            goto FAILURE;
+        }
+
+        if (iphdr_resp->src.addr == to.sin_addr.s_addr) {
+            if (ICMPH_TYPE(iecho_resp) == ICMP_ER) {
+                PRINTK("[%u]Reply from %s: time=%ims TTL=%u\n", i,
+                       inet_ntoa_r(to.sin_addr.s_addr, buf, sizeof(buf)), rtt, iphdr_resp->_ttl);
+            } else if (ICMPH_TYPE(iecho_resp) == ICMP_ECHO) {
+                /* If ping self, stack will receive a ICMP_ECHO request message flowing a ICMP_ER reply message,
+                    and we need reply only, do select again */
+                goto DO_SELECT;
+            }
+        }
     }
 
-    /* capture the end time to calculate round trip time */
-    (void)clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    rtt = ((end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000);
-
-    ret = lwip_recv(sfd, pbuf_resp->payload, pbuf_resp->len, 0);
-    if (ret == -1) {
-      PRINTK("ping : receiving ICMP echo response msg failed\n");
-      goto FAILURE;
-    }
-
-    /* Accessing ip header and icmp header */
-    iphdr_resp = (struct ip_hdr*)(pbuf_resp->payload);
-    ip_hlen = (s16_t)(IPH_HL(iphdr_resp) * 4);
-    if (pbuf_header(pbuf_resp, (s16_t)(-ip_hlen))) {
-      /* this failure will never happen, but failure handle is written just to be in safe side */
-      PRINTK("ping : memory management failure\n");
-      goto FAILURE;
-    }
-    iecho_resp = (struct icmp_echo_hdr *)pbuf_resp->payload;
-
-    /* Reverting back pbuf to its original state */
-    if (pbuf_header(pbuf_resp, ip_hlen)) {
-      /* this failure will never happen, but failure handle is written just to be in safe side */
-      PRINTK("ping : memory management failure\n");
-      goto FAILURE;
-    }
-
-    if (iphdr_resp->src.addr == to.sin_addr.s_addr) {
-      if (ICMPH_TYPE(iecho_resp) == ICMP_ER) {
-        PRINTK("[%u]Reply from %s: time=%ims TTL=%u\n", i,
-               inet_ntoa_r(to.sin_addr.s_addr, buf, sizeof(buf)), rtt, iphdr_resp->_ttl);
-      } else if (ICMPH_TYPE(iecho_resp) == ICMP_ECHO) {
-        /* If ping self, stack will receive a ICMP_ECHO request message flowing a ICMP_ER reply message,
-            and we need reply only, do select again */
-        goto DO_SELECT;
-      }
-    }
-  }
-
-  (void)lwip_close(sfd);
-  (void)pbuf_free(pbuf_resp);
-  return LOS_OK;
+    (void)lwip_close(sfd);
+    (void)pbuf_free(pbuf_resp);
+    return LOS_OK;
 
 FAILURE:
-  (void)lwip_close(sfd);
-  if (pbuf_resp != NULL) {
-    (void)pbuf_free(pbuf_resp);
-  }
+    (void)lwip_close(sfd);
+    if (pbuf_resp != NULL) {
+        (void)pbuf_free(pbuf_resp);
+    }
 
-  return LOS_NOK;
+    return LOS_NOK;
 }
 
 #ifdef LOSCFG_SHELL
@@ -2389,11 +2389,11 @@ LWIP_STATIC int create_ping6_socket(u8_t type, const void *param)
 }
 
 /*
-  Function to parse the command line args for ping6 shell utility
-  @return:
-    Success: ERR_OK
-    Failure: -1
-*/
+ * Function to parse the command line args for ping6 shell utility
+ * @return:
+ *   Success: ERR_OK
+ *   Failure: -1
+ */
 LWIP_STATIC int parse_args_ping6(int argc, const char **argv, ping6_args_t *ping6_params)
 {
     int pingcount;
@@ -2581,43 +2581,43 @@ SHELLCMD_ENTRY(ping6_shellcmd, CMD_TYPE_EX, "ping6", XARGS, (CmdCallBackFunc)osS
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif /* LWIP_IPV6 */
 
-#if  LWIP_SNTP
+#if LWIP_SNTP
 u32_t osShellNtpdate(int argc, const char **argv)
 {
-  int server_num = 0;
-  char *ret = NULL;
-  struct timeval get_time;
-  char buf[50];
+    int server_num = 0;
+    char *ret = NULL;
+    struct timeval get_time;
+    char buf[50];
 
-  (void)memset_s(&get_time, sizeof(struct timeval), 0, sizeof(struct timeval));
+    (void)memset_s(&get_time, sizeof(struct timeval), 0, sizeof(struct timeval));
 
-  if (!tcpip_init_finish) {
-    PRINTK("%s: tcpip_init have not been called\n", __FUNCTION__);
-    return LOS_NOK;
-  }
-
-  if (argc < 1 || argv == NULL) {
-    goto usage;
-  }
-
-  server_num = lwip_sntp_start(argc, (char **)argv, &get_time);
-  if (server_num >= 0 && server_num < argc) {
-    ret = ctime_r((time_t *)&get_time.tv_sec, buf);
-    if (ret != NULL) {
-      PRINTK("time server %s: %s\n", argv[server_num], ret);
-    } else {
-      PRINTK("ctime return null error\n");
+    if (!tcpip_init_finish) {
+        PRINTK("%s: tcpip_init have not been called\n", __FUNCTION__);
+        return LOS_NOK;
     }
-  } else {
-    PRINTK("no server suitable for synchronization found\n");
-  }
 
-  return LOS_OK;
+    if (argc < 1 || argv == NULL) {
+        goto usage;
+    }
+
+    server_num = lwip_sntp_start(argc, (char **)argv, &get_time);
+    if (server_num >= 0 && server_num < argc) {
+        ret = ctime_r((time_t *)&get_time.tv_sec, buf);
+        if (ret != NULL) {
+            PRINTK("time server %s: %s\n", argv[server_num], ret);
+        } else {
+            PRINTK("ctime return null error\n");
+        }
+    } else {
+        PRINTK("no server suitable for synchronization found\n");
+    }
+
+    return LOS_OK;
 
 usage:
-  PRINTK("\nUsage:\n");
-  PRINTK("ntpdate [SERVER_IP1] [SERVER_IP2] ...\n");
-  return LOS_NOK;
+    PRINTK("\nUsage:\n");
+    PRINTK("ntpdate [SERVER_IP1] [SERVER_IP2] ...\n");
+    return LOS_NOK;
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
@@ -3548,113 +3548,113 @@ SHELLCMD_ENTRY(dhclient_shellcmd, CMD_TYPE_EX, "dhclient", XARGS, (CmdCallBackFu
 #define MAX_SIZE 1024
 void tcp_access(int sockfd)
 {
-  size_t n, i;
-  ssize_t ret;
-  char msg[MAX_SIZE] = {0};
-  while (1) {
-    PRINTK("waiting for recv\n");
-    (void)memset_s(msg, MAX_SIZE, 0, MAX_SIZE);
-    ret = recv(sockfd, msg, MAX_SIZE - 1, 0);
-    if (ret < 0) {
-      PRINTK("recv failed, %d.\n", (u32_t)ret);
-      (void)closesocket(sockfd);
-      return;
-    } else if (ret == 0) {
-      (void)closesocket(sockfd);
-      PRINTK("client disconnect.\n");
-      return;
-    }
+    size_t n, i;
+    ssize_t ret;
+    char msg[MAX_SIZE] = {0};
+    while (1) {
+        PRINTK("waiting for recv\n");
+        (void)memset_s(msg, MAX_SIZE, 0, MAX_SIZE);
+        ret = recv(sockfd, msg, MAX_SIZE - 1, 0);
+        if (ret < 0) {
+            PRINTK("recv failed, %d.\n", (u32_t)ret);
+            (void)closesocket(sockfd);
+            return;
+        } else if (ret == 0) {
+            (void)closesocket(sockfd);
+            PRINTK("client disconnect.\n");
+            return;
+        }
 
-    n = strlen(msg);
-    for (i = 0; i < n; ++i) {
-      if (msg[i] >= 'a' && msg[i] <= 'z') {
-        msg[i] = (char)(msg[i] + ('A' - 'a'));
-      } else if (msg[i] >= 'A' && msg[i] <= 'Z') {
-        msg[i] = (char)(msg[i] + ('a' - 'A'));
-      }
-    }
+        n = strlen(msg);
+        for (i = 0; i < n; ++i) {
+            if (msg[i] >= 'a' && msg[i] <= 'z') {
+                msg[i] = (char)(msg[i] + ('A' - 'a'));
+            } else if (msg[i] >= 'A' && msg[i] <= 'Z') {
+                msg[i] = (char)(msg[i] + ('a' - 'A'));
+            }
+        }
 
-    if (send(sockfd, msg, n, 0) < 0) {
-      PRINTK("send failed!\r\n");
-      continue;
+        if (send(sockfd, msg, n, 0) < 0) {
+            PRINTK("send failed!\r\n");
+            continue;
+        }
     }
-  }
 }
 
 u32_t osTcpserver(int argc, const char **argv)
 {
-  uint16_t port;
-  int sockfd = -1;
-  int ret;
-  struct sockaddr_in seraddr;
-  struct sockaddr_in cliaddr;
-  u32_t cliaddr_size = (u32_t)sizeof(cliaddr);
-  int    reuse, iPortVal;
+    uint16_t port;
+    int sockfd = -1;
+    int ret;
+    struct sockaddr_in seraddr;
+    struct sockaddr_in cliaddr;
+    u32_t cliaddr_size = (u32_t)sizeof(cliaddr);
+    int reuse, iPortVal;
 
-  if (tcpip_init_finish == 0) {
-    PRINTK("tcpip_init have not been called\n");
-    return LOS_NOK;
-  }
-
-  if (argc < 1 || argv == NULL) {
-    PRINTK("\nUsage: tcpserver <port>\n");
-    return LOS_NOK;
-  }
-
-  iPortVal = atoi(argv[0]);
-  /* Port 0 not supported , negative values not supported , max port limit is 65535 */
-  if (iPortVal <= 0 || iPortVal > 65535) {
-    PRINTK("\nUsage: Invalid port\n");
-    return LOS_NOK;
-  }
-
-  port = (uint16_t)iPortVal;
-
-  /* removed the print of argv[1] as its accessing argv[1] without verifying argc and
-   * argv[1] not used anywhere else */
-  PRINTK("argv[0]:%s, argc:%d\r\n", argv[0], argc);
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0) {
-    PRINTK("\nUsage: create socket fail!\n");
-    return LOS_NOK;
-  }
-  reuse = 1;
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const char *) &reuse, sizeof(reuse)) != 0) {
-    (void)closesocket(sockfd);
-    PRINTK("set SO_REUSEADDR failed\n");
-    return LOS_NOK;
-  }
-
-  (void)memset_s(&seraddr, sizeof(seraddr), 0, sizeof(seraddr));
-  seraddr.sin_family = AF_INET;
-  seraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-  seraddr.sin_port = htons(port);
-
-  ret = bind(sockfd, (struct sockaddr*)&seraddr, sizeof(seraddr));
-  if (ret < 0) {
-    PRINTK("bind ip and port failed");
-    (void)closesocket(sockfd);
-    return LOS_NOK;
-  }
-
-  ret = listen(sockfd, 5);
-  if (ret < 0) {
-    (void)closesocket(sockfd);
-    PRINTK("listen failed\n");
-    return LOS_NOK;
-  }
-  while (1) {
-    PRINTK("waiting for accept\n");
-    (void)memset_s(&cliaddr, sizeof(struct sockaddr_in), 0, sizeof(struct sockaddr_in));
-    ret = (int)accept(sockfd, (struct sockaddr*)&cliaddr, &cliaddr_size);
-    if (ret < 0) {
-      (void)closesocket(sockfd);
-      PRINTK("Accept failed, %d\n", ret);
-      break ;
+    if (tcpip_init_finish == 0) {
+        PRINTK("tcpip_init have not been called\n");
+        return LOS_NOK;
     }
-    tcp_access(ret);
-  }
-  return LOS_NOK;            // Hits Only If Accept Fails
+
+    if (argc < 1 || argv == NULL) {
+        PRINTK("\nUsage: tcpserver <port>\n");
+        return LOS_NOK;
+    }
+
+    iPortVal = atoi(argv[0]);
+    /* Port 0 not supported , negative values not supported , max port limit is 65535 */
+    if (iPortVal <= 0 || iPortVal > 65535) {
+        PRINTK("\nUsage: Invalid port\n");
+        return LOS_NOK;
+    }
+
+    port = (uint16_t)iPortVal;
+
+    /* removed the print of argv[1] as its accessing argv[1] without verifying argc and
+     * argv[1] not used anywhere else */
+    PRINTK("argv[0]:%s, argc:%d\r\n", argv[0], argc);
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        PRINTK("\nUsage: create socket fail!\n");
+        return LOS_NOK;
+    }
+    reuse = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const char *)&reuse, sizeof(reuse)) != 0) {
+        (void)closesocket(sockfd);
+        PRINTK("set SO_REUSEADDR failed\n");
+        return LOS_NOK;
+    }
+
+    (void)memset_s(&seraddr, sizeof(seraddr), 0, sizeof(seraddr));
+    seraddr.sin_family = AF_INET;
+    seraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    seraddr.sin_port = htons(port);
+
+    ret = bind(sockfd, (struct sockaddr *)&seraddr, sizeof(seraddr));
+    if (ret < 0) {
+        PRINTK("bind ip and port failed");
+        (void)closesocket(sockfd);
+        return LOS_NOK;
+    }
+
+    ret = listen(sockfd, 5);
+    if (ret < 0) {
+        (void)closesocket(sockfd);
+        PRINTK("listen failed\n");
+        return LOS_NOK;
+    }
+    while (1) {
+        PRINTK("waiting for accept\n");
+        (void)memset_s(&cliaddr, sizeof(struct sockaddr_in), 0, sizeof(struct sockaddr_in));
+        ret = (int)accept(sockfd, (struct sockaddr *)&cliaddr, &cliaddr_size);
+        if (ret < 0) {
+            (void)closesocket(sockfd);
+            PRINTK("Accept failed, %d\n", ret);
+            break;
+        }
+        tcp_access(ret);
+    }
+    return LOS_NOK;            // Hits Only If Accept Fails
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
@@ -3665,71 +3665,71 @@ SHELLCMD_ENTRY(tcpserver_shellcmd, CMD_TYPE_EX, "tcpserver", XARGS, (CmdCallBack
 #ifdef LWIP_DEBUG_UDPSERVER
 void udpserver(int argc, const char **argv)
 {
-  int sockfd, fromlen;
-  int ret, iPortVal;
-  struct sockaddr_in seraddr;
-  struct sockaddr_in cliaddr;
-  size_t n, i;
+    int sockfd, fromlen;
+    int ret, iPortVal;
+    struct sockaddr_in seraddr;
+    struct sockaddr_in cliaddr;
+    size_t n, i;
 
-  char msg[MAX_SIZE] = {0};
-  uint16_t port;
+    char msg[MAX_SIZE] = {0};
+    uint16_t port;
 
-  if (argc < 1) {
-    PRINTK("\nUsage: udpserver <port>\n");
-    return;
-  }
+    if (argc < 1) {
+        PRINTK("\nUsage: udpserver <port>\n");
+        return;
+    }
 
-  iPortVal = atoi(argv[0]);
-  /* Port 0 not supported , negative values not supported , max port limit is 65535 */
-  if (iPortVal <= 0 || iPortVal > 65535) {
-    PRINTK("\nUsage: Invalid Port\n");
-    return ;
-  }
+    iPortVal = atoi(argv[0]);
+    /* Port 0 not supported , negative values not supported , max port limit is 65535 */
+    if (iPortVal <= 0 || iPortVal > 65535) {
+        PRINTK("\nUsage: Invalid Port\n");
+        return;
+    }
 
-  port = (uint16_t)iPortVal;
+    port = (uint16_t)iPortVal;
 
-  PRINTK("port:%d\r\n", port);
+    PRINTK("port:%d\r\n", port);
 
-  sockfd = lwip_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  if (sockfd == -1) {
-    PRINTK("\ncreate socket fail\n");
-    return;
-  }
+    sockfd = lwip_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sockfd == -1) {
+        PRINTK("\ncreate socket fail\n");
+        return;
+    }
 
-  (void)memset_s(&seraddr, sizeof(seraddr), 0, sizeof(seraddr));
-  (void)memset_s(&cliaddr, sizeof(cliaddr), 0, sizeof(cliaddr));
-  seraddr.sin_family = AF_INET;
-  seraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-  seraddr.sin_port = htons(port);
-  ret = lwip_bind(sockfd, (struct sockaddr*)&seraddr, sizeof(seraddr));
-  if (ret < 0) {
-    PRINTK("bind ip and port failed:%d\n", errno);
+    (void)memset_s(&seraddr, sizeof(seraddr), 0, sizeof(seraddr));
+    (void)memset_s(&cliaddr, sizeof(cliaddr), 0, sizeof(cliaddr));
+    seraddr.sin_family = AF_INET;
+    seraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    seraddr.sin_port = htons(port);
+    ret = lwip_bind(sockfd, (struct sockaddr *)&seraddr, sizeof(seraddr));
+    if (ret < 0) {
+        PRINTK("bind ip and port failed:%d\n", errno);
+        (void)closesocket(sockfd);
+        return;
+    }
+
+    while (1) {
+        ret = recvfrom(sockfd, msg, MAX_SIZE - 1, 0, (struct sockaddr *)&cliaddr, (socklen_t *)&fromlen);
+        if (ret >= 0) {
+            n = strlen(msg);
+            for (i = 0; i < n; ++i) {
+                if (msg[i] >= 'a' && msg[i] <= 'z') {
+                    msg[i] = (char)(msg[i] + 'A' - 'a');
+                } else if (msg[i] >= 'A' && msg[i] <= 'Z') {
+                    msg[i] = (char)(msg[i] + 'a' - 'A');
+                }
+            }
+            ret = sendto(sockfd, msg, n + 1, 0, (struct sockaddr *)&cliaddr, (socklen_t)fromlen);
+            if (ret <= 0 && errno == EPIPE) {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
     (void)closesocket(sockfd);
     return;
-  }
-
-  while(1) {
-    ret = recvfrom(sockfd, msg, MAX_SIZE - 1, 0, (struct sockaddr *)&cliaddr, (socklen_t *)&fromlen);
-    if (ret >= 0) {
-      n = strlen(msg);
-      for (i = 0; i < n; ++i) {
-        if (msg[i] >= 'a' && msg[i] <= 'z') {
-          msg[i] = (char)(msg[i] + 'A' - 'a');
-        } else if (msg[i] >= 'A' && msg[i] <= 'Z') {
-          msg[i] = (char)(msg[i] + 'a' - 'A');
-        }
-      }
-      ret = sendto(sockfd, msg, n + 1, 0, (struct sockaddr *)&cliaddr, (socklen_t)fromlen);
-      if (ret <= 0 && errno == EPIPE) {
-        break;
-      }
-    } else {
-      break;
-    }
-  }
-
-  (void)closesocket(sockfd);
-  return;
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
@@ -3741,115 +3741,115 @@ SHELLCMD_ENTRY(udpserver_shellcmd, CMD_TYPE_EX, "udpserver", XARGS, (CmdCallBack
 LWIP_STATIC
 u32_t netdebug_memp(int argc, const char **argv)
 {
-  u32_t ret = LOS_OK;
-  int type;
+    u32_t ret = LOS_OK;
+    int type;
 
-  if (argc == 2) {
-    if (!strcmp("-i", argv[1])) {
-      debug_memp_info();
-    } else if (!strcmp("-udp", argv[1])) {
-      debug_memp_type_info(MEMP_UDP_PCB);
-    } else if (!strcmp("-tcp", argv[1])) {
-      debug_memp_type_info(MEMP_TCP_PCB);
-    } else if (!strcmp("-raw", argv[1])) {
-      debug_memp_type_info(MEMP_RAW_PCB);
-    } else if (!strcmp("-conn", argv[1])) {
-      debug_memp_type_info(MEMP_NETCONN);
+    if (argc == 2) {
+        if (!strcmp("-i", argv[1])) {
+            debug_memp_info();
+        } else if (!strcmp("-udp", argv[1])) {
+            debug_memp_type_info(MEMP_UDP_PCB);
+        } else if (!strcmp("-tcp", argv[1])) {
+            debug_memp_type_info(MEMP_TCP_PCB);
+        } else if (!strcmp("-raw", argv[1])) {
+            debug_memp_type_info(MEMP_RAW_PCB);
+        } else if (!strcmp("-conn", argv[1])) {
+            debug_memp_type_info(MEMP_NETCONN);
+        } else {
+            ret = LOS_NOK;
+        }
+    } else if (argc == 3) {
+        if (!strcmp("-d", argv[1])) {
+            type = atoi(argv[2]);
+            if (type >= 0) {
+                debug_memp_detail(type);
+            } else {
+                PRINTK("Error: type < 0\n");
+                ret = LOS_NOK;
+            }
+        } else {
+            ret = LOS_NOK;
+        }
     } else {
-      ret = LOS_NOK;
-    }
-  } else if (argc == 3) {
-    if (!strcmp("-d", argv[1])) {
-      type = atoi(argv[2]);
-      if (type >= 0) {
-        debug_memp_detail(type);
-      } else {
-        PRINTK("Error: type < 0\n");
         ret = LOS_NOK;
-      }
-    } else {
-      ret = LOS_NOK;
     }
-  } else {
-    ret = LOS_NOK;
-  }
 
-  return ret;
+    return ret;
 }
 
 LWIP_STATIC
 u32_t netdebug_sock(int argc, const char **argv)
 {
-  int idx;
-  u32_t ret = LOS_NOK;
+    int idx;
+    u32_t ret = LOS_NOK;
 
-  if (argc == 2) {
-    if (!strcmp("-i", argv[1])) {
-      /* netdebug sock -i */
-      for (idx = 0; idx < (int)LWIP_CONFIG_NUM_SOCKETS; idx++) {
-        debug_socket_info(idx, 1, 0);
-      }
-      ret = LOS_OK;
+    if (argc == 2) {
+        if (!strcmp("-i", argv[1])) {
+            /* netdebug sock -i */
+            for (idx = 0; idx < (int)LWIP_CONFIG_NUM_SOCKETS; idx++) {
+                debug_socket_info(idx, 1, 0);
+            }
+            ret = LOS_OK;
+        }
+    } else if (argc == 3) {
+        if (!strcmp("-d", argv[1])) {
+            /* netdebug sock -d <idx> */
+            idx = atoi(argv[2]);
+            if (idx >= 0) {
+                debug_socket_info(idx, 1, 1);
+                ret = LOS_OK;
+            } else {
+                PRINTK("Error: idx < 0\n");
+            }
+        }
     }
-  } else if (argc == 3) {
-    if (!strcmp("-d", argv[1])) {
-      /* netdebug sock -d <idx> */
-      idx = atoi(argv[2]);
-      if (idx >= 0) {
-        debug_socket_info(idx, 1, 1);
-        ret = LOS_OK;
-      } else {
-        PRINTK("Error: idx < 0\n");
-      }
-    }
-  }
 
-  return ret;
+    return ret;
 }
 
 
 u32_t osShellNetDebug(int argc, const char **argv)
 {
-  u32_t ret = LOS_NOK;
+    u32_t ret = LOS_NOK;
 
-  if (argc < 1 || argv == NULL) {
-    goto usage;
-  }
+    if (argc < 1 || argv == NULL) {
+        goto usage;
+    }
 
-  if (!strcmp("memp", argv[0])) {
-    ret = netdebug_memp(argc, argv);
-    if (ret != LOS_OK) {
-      goto usage_memp;
+    if (!strcmp("memp", argv[0])) {
+        ret = netdebug_memp(argc, argv);
+        if (ret != LOS_OK) {
+            goto usage_memp;
+        }
+    } else if (!strcmp("sock", argv[0])) {
+        /* netdebug sock {-i | -d <idx>} */
+        ret = netdebug_sock(argc, argv);
+        if (ret != LOS_OK) {
+            goto usage_sock;
+        }
+    } else {
+        goto usage;
     }
-  } else if (!strcmp("sock", argv[0])) {
-    /* netdebug sock {-i | -d <idx>} */
-    ret = netdebug_sock(argc, argv);
-    if (ret != LOS_OK) {
-      goto usage_sock;
-    }
-  } else {
-    goto usage;
-  }
-  return ret;
+    return ret;
 
 usage:
-  /* Cmd help */
-  PRINTK("\nUsage:\n");
-  PRINTK("netdebug memp {-i | -d <type> | -udp | -tcp | -raw |-conn}\n");
-  PRINTK("netdebug sock {-i | -d <idx>}\n");
-  return LOS_NOK;
+    /* Cmd help */
+    PRINTK("\nUsage:\n");
+    PRINTK("netdebug memp {-i | -d <type> | -udp | -tcp | -raw |-conn}\n");
+    PRINTK("netdebug sock {-i | -d <idx>}\n");
+    return LOS_NOK;
 
 usage_memp:
-  /* netdebug memp help */
-  PRINTK("\nUsage:\n");
-  PRINTK("netdebug memp {-i | -d <type> | -udp | -tcp | -raw |-conn}\n");
-  return LOS_NOK;
+    /* netdebug memp help */
+    PRINTK("\nUsage:\n");
+    PRINTK("netdebug memp {-i | -d <type> | -udp | -tcp | -raw |-conn}\n");
+    return LOS_NOK;
 
 usage_sock:
-  /* netdebug sock help */
-  PRINTK("\nUsage:\n");
-  PRINTK("netdebug sock {-i | -d <idx>}\n");
-  return LOS_NOK;
+    /* netdebug sock help */
+    PRINTK("\nUsage:\n");
+    PRINTK("netdebug sock {-i | -d <idx>}\n");
+    return LOS_NOK;
 }
 #endif /* LWIP_DEBUG_INFO */
 
@@ -3991,7 +3991,7 @@ extern void cmd_reset(void);
 
 void osShellReboot(int argc, const char **argv)
 {
-  cmd_reset();
+    cmd_reset();
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
