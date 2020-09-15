@@ -543,11 +543,11 @@ STATIC UINT32 OsCreateIdleProcess(VOID)
         return ret;
     }
 
-    ret = LOS_Fork(CLONE_FILES, "KIdle", (TSK_ENTRY_FUNC)OsIdleTask, LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE);
-    if (ret < 0) {
+    INT32 processId = LOS_Fork(CLONE_FILES, "KIdle", (TSK_ENTRY_FUNC)OsIdleTask, LOSCFG_BASE_CORE_TSK_IDLE_STACK_SIZE);
+    if (processId < 0) {
         return LOS_NOK;
     }
-    g_kernelIdleProcess = (UINT32)ret;
+    g_kernelIdleProcess = (UINT32)processId;
 
     idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);
     *idleTaskID = idleProcess->threadGroupID;
