@@ -125,7 +125,7 @@ extern VOID OsLockDepCheckOut(SPIN_LOCK_S *lock);
  * @ingroup los_lockdep
  *
  * @par Description:
- * This API is used to clear lockdep record of curret task.
+ * This API is used to clear lockdep record of current task.
  * @attention
  * <ul>
  * <li>None.</li>
