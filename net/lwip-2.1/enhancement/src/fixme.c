@@ -29,36 +29,18 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "api_shell_fix.h"
-
-#include <time.h>
+#include "lwip/fixme.h"
 
 #include <lwip/sys.h>
 #include <lwip/snmp.h>
 #include <lwip/etharp.h>
 #include <lwip/netifapi.h>
-#include <lwip/sockets.h>
 #include <lwip/priv/api_msg.h>
-
-#include "securec.h"
 
 #define NETIFAPI_VAR_REF(name)      API_VAR_REF(name)
 #define NETIFAPI_VAR_DECLARE(name)  API_VAR_DECLARE(struct netifapi_msg, name)
 #define NETIFAPI_VAR_ALLOC(name)    API_VAR_ALLOC(struct netifapi_msg, MEMP_NETIFAPI_MSG, name, ERR_MEM)
 #define NETIFAPI_VAR_FREE(name)     API_VAR_FREE(MEMP_NETIFAPI_MSG, name)
-
-
-/**
- *
- *
- * #################   FOR API_SHELL ONLY   #################
- *
- *
- *
- */
-
-
-#if LWIP_ENABLE_LOS_SHELL_CMD
 
 #if LWIP_DHCP
 
@@ -66,9 +48,7 @@
 
 /*
  * Close DHCP and set static network.
- *
  * @param netif a pre-allocated netif structure
- *
  * @return ERR_OK, or ERR_VAL if failed.
  */
 err_t netif_dhcp_off(struct netif *netif)
@@ -85,32 +65,48 @@ err_t netif_dhcp_off(struct netif *netif)
     old_gateway = netif->gw;
 
     if (netif_dhcp_data(netif)) {
-        (void) dhcp_release(netif);
-        (void) dhcp_stop(netif);
-        (void) dhcp_cleanup(netif);
+        (void)dhcp_release(netif);
+        (void)dhcp_stop(netif);
+        (void)dhcp_cleanup(netif);
         LWIP_DEBUGF(NETIF_DEBUG, ("DHCP is close;set static IP\n"));
     }
 
     ip_addr_set_val(&netif->ip_addr, &old_ipaddr);
     ip_addr_set_val(&netif->netmask, &old_netmask);
     ip_addr_set_val(&netif->gw, &old_gateway);
-    (void) netif_set_up(netif);
+    (void)netif_set_up(netif);
 
     return ERR_OK;
+}
+
+err_t dhcp_is_bound(struct netif *netif)
+{
+    struct dhcp *dhcp = NULL;
+
+    LWIP_ERROR("netif != NULL", (netif != NULL), return ERR_ARG);
+
+    dhcp = netif_dhcp_data(netif);
+    LWIP_ERROR("netif->dhcp != NULL", (dhcp != NULL), return ERR_ARG);
+
+    if (dhcp->state == DHCP_STATE_BOUND) {
+        return ERR_OK;
+    } else {
+        return ERR_INPROGRESS;
+    }
 }
 
 #endif /* LWIP_DHCP */
 
 #if LWIP_DHCPS
 
-#include "dhcps.h"
+#include "lwip/dhcps.h"
 
-static err_t netifapi_do_dhcps_start (struct tcpip_api_call_data *m)
+static err_t netifapi_do_dhcps_start(struct tcpip_api_call_data *m)
 {
     /* cast through void* to silence alignment warnings.
      * We know it works because the structs have been instantiated as struct netifapi_msg */
     err_t ret;
-    struct netifapi_msg *msg = (struct netifapi_msg*)(void*)m;
+    struct netifapi_msg *msg = (struct netifapi_msg *)(void *)m;
     ret = dhcps_start(msg->netif, msg->msg.dhcp_start_params.start_ip, msg->msg.dhcp_start_params.ip_num);
     return ret;
 }
@@ -124,8 +120,8 @@ err_t netifapi_dhcps_start(struct netif *netif, char *start_ip, u16_t ip_num)
     NETIFAPI_VAR_ALLOC(msg);
 
     NETIFAPI_VAR_REF(msg).netif = netif;
-    NETIFAPI_VAR_REF(msg).msg.dhcp_start_params.start_ip = start_ip ;
-    NETIFAPI_VAR_REF(msg).msg.dhcp_start_params.ip_num = ip_num ;
+    NETIFAPI_VAR_REF(msg).msg.dhcp_start_params.start_ip = start_ip;
+    NETIFAPI_VAR_REF(msg).msg.dhcp_start_params.ip_num = ip_num;
 
     err = tcpip_api_call(netifapi_do_dhcps_start, &API_VAR_REF(msg).call);
 
@@ -216,19 +212,19 @@ static struct netif *netif_find_by_name(const char *name)
         return NULL;
     }
 
-    if (strcmp("lo", name) == 0) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("netif_find: found %c%c\n", name[0], name[1]));
-        return netif_find(name);
-    }
-
     NETIF_FOREACH(netif) {
+        if (strcmp("lo", name) == 0 && (netif->name[0] == 'l' && netif->name[1] == 'o')) {
+            LWIP_DEBUGF(NETIF_DEBUG, ("netif_find_by_name: found lo\n"));
+            return netif;
+        }
+
         if (strcmp(netif->full_name, name) == 0) {
-            LWIP_DEBUGF(NETIF_DEBUG, ("netif_find: found %c%c\n", name[0], name[1]));
+            LWIP_DEBUGF(NETIF_DEBUG, ("netif_find_by_name: found %s\n", name));
             return netif;
         }
     }
 
-    LWIP_DEBUGF(NETIF_DEBUG, ("netif_find: didn't find %c%c\n", name[0], name[1]));
+    LWIP_DEBUGF(NETIF_DEBUG, ("netif_find_by_name: didn't find %s\n", name));
     return NULL;
 }
 
@@ -294,7 +290,7 @@ err_t netif_set_mtu(struct netif *netif, u16_t netif_mtu)
 #endif /* LWIP_IPV6 && LWIP_ND6_ALLOW_RA_UPDATES */
 
     LWIP_DEBUGF(NETIF_DEBUG | LWIP_DBG_STATE, ("netif: MTU of interface %s is changed to %d\n",
-            netif_get_name(netif), netif->mtu));
+                netif_get_name(netif), netif->mtu));
     return ERR_OK;
 }
 
@@ -322,31 +318,35 @@ err_t netif_set_hwaddr(struct netif *netif, const unsigned char *hw_addr, int hw
 
     LWIP_DEBUGF(NETIF_DEBUG | LWIP_DBG_TRACE | LWIP_DBG_STATE,
                 ("netif: HW address of interface %s set to %02X:%02X:%02X:%02X:%02X:%02X\n",
-                        netif_get_name(netif),
-                        netif->hwaddr[0], netif->hwaddr[1], netif->hwaddr[2],
-                        netif->hwaddr[3], netif->hwaddr[4], netif->hwaddr[5]));
+                 netif_get_name(netif),
+                 netif->hwaddr[0], netif->hwaddr[1], netif->hwaddr[2],
+                 netif->hwaddr[3], netif->hwaddr[4], netif->hwaddr[5]));
 
     return ERR_OK;
 }
 
 err_t etharp_update_arp_entry(struct netif *netif, const ip4_addr_t *ipaddr, struct eth_addr *ethaddr, u8_t flags)
 {
+    // FIXME
     return 0;
 }
 
 err_t etharp_delete_arp_entry(struct netif *netif, ip4_addr_t *ipaddr)
 {
+    // FIXME
     return 0;
 }
 
 
 err_t lwip_dns_setserver(u8_t numdns, ip_addr_t *dnsserver)
 {
+    // FIXME
     return 0;
 }
 
 err_t lwip_dns_getserver(u8_t numdns, ip_addr_t *dnsserver)
 {
+    // FIXME
     return 0;
 }
 
@@ -354,57 +354,42 @@ err_t lwip_dns_getserver(u8_t numdns, ip_addr_t *dnsserver)
 struct raw_pcb *pkt_raw_pcbs;
 #endif
 
-struct raw_pcb *raw_pcbs;
+#if LWIP_RAW
+struct raw_pcb *raw_pcbs; /* already defined in raw.c, but is static */
+#endif
 
-
-/******************************************************************/
 #if LWIP_ENABLE_IP_CONFLICT_SIGNAL
 u32_t is_ip_conflict_signal = 0;
 sys_sem_t ip_conflict_detect;
 #endif
 
-
 u32_t is_dup_detect_initialized = 0;
 sys_sem_t dup_addr_detect;
 
+#if LWIP_SNTP
+
+#include <time.h>
+
 int lwip_sntp_start(int server_num, char **sntp_server, struct timeval *time)
 {
+    // FIXME
     return 0;
 }
 
-u32_t lwip_tftp_get_file_by_filename(u32_t ulHostAddr,
-                                     u16_t usTftpServPort,
-                                     u8_t ucTftpTransMode,
-                                     s8_t *szSrcFileName,
-                                     s8_t *szDestDirPath)
-{
-    return 0;
-}
-
-u32_t lwip_tftp_put_file_by_filename(u32_t ulHostAddr,
-                                     u16_t usTftpServPort,
-                                     u8_t cTftpTransMode,
-                                     s8_t *szSrcFileName,
-                                     s8_t *szDestDirPath)
-{
-    return 0;
-}
-
+#endif
 
 const char *const tcp_state_str[] = {
-        "CLOSED",
-        "LISTEN",
-        "SYN_SENT",
-        "SYN_RCVD",
-        "ESTABLISHED",
-        "FIN_WAIT_1",
-        "FIN_WAIT_2",
-        "CLOSE_WAIT",
-        "CLOSING",
-        "LAST_ACK",
-        "TIME_WAIT"
+    "CLOSED",
+    "LISTEN",
+    "SYN_SENT",
+    "SYN_RCVD",
+    "ESTABLISHED",
+    "FIN_WAIT_1",
+    "FIN_WAIT_2",
+    "CLOSE_WAIT",
+    "CLOSING",
+    "LAST_ACK",
+    "TIME_WAIT"
 };
 
 volatile int tcpip_init_finish = 1; // needed by api_shell.c
-
-#endif

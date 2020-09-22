@@ -32,6 +32,7 @@
 #ifndef _LWIP_PORTING_LWIPOPTS_H_
 #define _LWIP_PORTING_LWIPOPTS_H_
 
+#include "menuconfig.h"
 
 // lwIP debug options, comment the ones you don't want
 #if LWIP_DEBUG
@@ -215,6 +216,9 @@
 #define LWIP_CONFIG_NUM_SOCKETS         128
 #define IP_REASS_MAX_MEM_SIZE           (MEM_SIZE / 4)
 
+// Options for enhancement code, same for old lwipopts.h
+#define LWIP_NETIF_PROMISC              1
+#define LWIP_TFTP                       LOSCFG_NET_LWIP_SACK_TFTP
 #define LWIP_DHCPS                      1
 #define LWIP_ENABLE_NET_CAPABILITY      1
 

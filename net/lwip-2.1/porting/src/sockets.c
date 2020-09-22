@@ -31,15 +31,13 @@
 
 #include <lwip/sockets.h>
 #include <lwip/priv/tcpip_priv.h>
-#include <api_shell_fix.h>
+#include <lwip/fixme.h>
 
 #if LWIP_ENABLE_NET_CAPABILITY
 #include "capability_type.h"
 #include "capability_api.h"
 #define BIND_SERVICE_CAP_MIN_PORT 1024
 #endif
-
-#define netif_find netifapi_netif_find_by_name
 
 #define IOCTL_CMD_CASE_HANDLER() \
     {                                                          \
@@ -86,7 +84,8 @@ int lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
     return lwip_bind_wrap(s, name, namelen);
 }
 
-static ssize_t lwip_sendto_wrap(int s, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen);
+static ssize_t lwip_sendto_wrap(int s, const void *dataptr, size_t size, int flags,
+                                const struct sockaddr *to, socklen_t tolen);
 ssize_t lwip_sendto(int s, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen)
 {
     return lwip_sendto_wrap(s, dataptr, size, flags, to, tolen);
@@ -233,12 +232,12 @@ static int lwip_bind_wrap(int s, const struct sockaddr *name, socklen_t namelen)
 }
 
 static ssize_t lwip_sendto_wrap(int s, const void *dataptr, size_t size, int flags,
-               const struct sockaddr *to, socklen_t tolen)
+                                const struct sockaddr *to, socklen_t tolen)
 {
 #if LWIP_ENABLE_NET_CAPABILITY
     if (to &&
         ((to->sa_family == AF_INET && tolen >= sizeof(struct sockaddr_in)) ||
-        (to->sa_family == AF_INET6 && tolen >= sizeof(struct sockaddr_in6)))) {
+         (to->sa_family == AF_INET6 && tolen >= sizeof(struct sockaddr_in6)))) {
         ip_addr_t ipaddr;
         u16_t port;
 
@@ -372,7 +371,6 @@ int get_unused_socket_num(void)
 // Options for lwip ioctl
 #define LWIP_IOCTL_ROUTE                1
 #define LWIP_IOCTL_IF                   1
-#define LWIP_NETIF_PROMISC              1
 #define LWIP_NETIF_ETHTOOL              0
 #define LWIP_IOCTL_IPV6DPCTD            0
 #undef LWIP_IPV6_DUP_DETECT_ATTEMPTS
@@ -764,7 +762,7 @@ static u8_t lwip_ioctl_internal_SIOCSIFNETMASK(struct ifreq *ifr)
             loc_netif = loc_netif->next;
         }
 
-#if LWIP_DHCP // LWIP_DHCP
+#if LWIP_DHCP
         if ((netif_dhcp_data(netif) != NULL) &&
             (netif_dhcp_data(netif)->state != DHCP_STATE_OFF)) {
             (void)netif_dhcp_off(netif);

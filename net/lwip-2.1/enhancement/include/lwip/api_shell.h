@@ -29,8 +29,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LWIP_API_SHELL_H
-#define LWIP_API_SHELL_H
+#ifndef LWIP_HDR_API_SHELL_H
+#define LWIP_HDR_API_SHELL_H
 
 #include "arch/cc.h"
 #include "lwip/opt.h"
@@ -58,6 +58,4 @@ void netstat_internal(void *ctx);
 }
 #endif
 
-
-#endif
-
+#endif /* LWIP_HDR_API_SHELL_H */
