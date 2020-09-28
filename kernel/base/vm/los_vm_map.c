@@ -365,7 +365,7 @@ VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
             if (nextStart < curEnd) {
                 continue;
             }
-            if ((nextStart - curEnd) >= len) {
+            if ((curEnd + len) <= nextStart) {
                 return curEnd;
             } else {
                 curEnd = curRegion->range.base + curRegion->range.size;
@@ -379,7 +379,7 @@ VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
             if (nextStart < curEnd) {
                 continue;
             }
-            if ((nextStart - curEnd) >= len) {
+            if ((curEnd + len) <= nextStart) {
                 return curEnd;
             } else {
                 curEnd = curRegion->range.base + curRegion->range.size;
@@ -388,7 +388,7 @@ VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
     }
 
     nextStart = vmSpace->mapBase + vmSpace->mapSize;
-    if ((nextStart - curEnd) >= len) {
+    if ((curEnd + len) <= nextStart) {
         return curEnd;
     }
 
