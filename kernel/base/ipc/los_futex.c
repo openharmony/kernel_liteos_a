@@ -547,12 +547,12 @@ STATIC INT32 OsFutexWaitTask(const UINT32 timeOut, const UINT32 *userVaddr, UINT
     if (LOS_ArchCopyFromUser(&lockVal, userVaddr, sizeof(UINT32))) {
         PRINT_ERR("Futex wait param check failed! copy from user failed!\n");
         futexRet = LOS_EINVAL;
-	goto EXIT_ERR;
+        goto EXIT_ERR;
     }
 
     if (lockVal != val) {
         futexRet = LOS_EBADF;
-	goto EXIT_ERR;
+        goto EXIT_ERR;
     }
 
     if (OsFutexInserTaskToHash(&taskCB, &node, futexKey)) {
