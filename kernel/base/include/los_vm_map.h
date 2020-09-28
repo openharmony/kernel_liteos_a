@@ -240,7 +240,6 @@ STATIC INLINE BOOL LOS_IsUserAddressRange(VADDR_T vaddr, size_t len)
     return (vaddr + len > vaddr) && LOS_IsUserAddress(vaddr) && (LOS_IsUserAddress(vaddr + len - 1));
 }
 
-
 STATIC INLINE BOOL LOS_IsVmallocAddress(VADDR_T vaddr)
 {
     return ((vaddr >= VMALLOC_START) &&
