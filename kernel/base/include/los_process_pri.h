@@ -78,22 +78,22 @@ typedef struct {
 
 typedef struct ProcessCB {
     CHAR                 processName[OS_PCB_NAME_LEN]; /**< Process name */
-    UINT32               processID;                    /**< process ID = leader thread ID */
-    UINT16               processStatus;                /**< [15:4] process Status; [3:0] The number of threads currently
+    UINT32               processID;                    /**< Process ID */
+    UINT16               processStatus;                /**< [15:4] Process Status; [3:0] The number of threads currently
                                                             running in the process */
-    UINT16               priority;                     /**< process priority */
-    UINT16               policy;                       /**< process policy */
+    UINT16               priority;                     /**< Process priority */
+    UINT16               policy;                       /**< Process policy */
     UINT16               timeSlice;                    /**< Remaining time slice */
     UINT16               consoleID;                    /**< The console id of task belongs  */
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; */
     UINT32               parentProcessID;              /**< Parent process ID */
-    UINT32               exitCode;                     /**< process exit status */
+    UINT32               exitCode;                     /**< Process exit status */
     LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */
-    LOS_DL_LIST          childrenList;                 /**< my children process list */
-    LOS_DL_LIST          exitChildList;                /**< my exit children process list */
-    LOS_DL_LIST          siblingList;                  /**< linkage in my parent's children list */
+    LOS_DL_LIST          childrenList;                 /**< Children process list */
+    LOS_DL_LIST          exitChildList;                /**< Exit children process list */
+    LOS_DL_LIST          siblingList;                  /**< Linkage in parent's children list */
     ProcessGroup         *group;                       /**< Process group to which a process belongs */
-    LOS_DL_LIST          subordinateGroupList;         /**< linkage in my group list */
+    LOS_DL_LIST          subordinateGroupList;         /**< Linkage in group list */
     UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */
     UINT32               threadScheduleMap;            /**< The scheduling bitmap table for the thread group of the
                                                             process */
@@ -106,16 +106,16 @@ typedef struct ProcessCB {
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended */
 #endif
-    UINTPTR              sigHandler;   /**< signal handler */
-    sigset_t             sigShare;     /**< signal share bit */
+    UINTPTR              sigHandler;   /**< Signal handler */
+    sigset_t             sigShare;     /**< Signal share bit */
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    ProcIpcInfo         ipcInfo;       /**< memory pool for lite ipc */
+    ProcIpcInfo         ipcInfo;       /**< Memory pool for lite ipc */
 #endif
-    LosVmSpace          *vmSpace;       /**< VMM space for processes */
+    LosVmSpace          *vmSpace;      /**< VMM space for processes */
 #ifdef LOSCFG_FS_VFS
     struct files_struct *files;        /**< Files held by the process */
 #endif
-    timer_t             timerID;       /**< iTimer */
+    timer_t             timerID;       /**< ITimer */
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
     User                *user;
