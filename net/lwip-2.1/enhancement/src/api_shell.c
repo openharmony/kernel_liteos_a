@@ -33,7 +33,7 @@
 #define icmp6_hdr netinet_icmp6_hdr
 #include <netinet/icmp6.h>
 #undef icmp6_hdr
-#include "api_shell_fix.h"
+#include "lwip/fixme.h"
 #include "lwip/opt.h"
 
 #if LWIP_ENABLE_LOS_SHELL_CMD
@@ -62,7 +62,8 @@
 #include <ctype.h>
 #include <poll.h>
 
-#include "api_shell.h"
+#include "lwip/api_shell.h"
+#include "lwip/tftpc.h"
 
 #include "lwip/dns.h"
 #include "lwip/netdb.h"
@@ -78,7 +79,7 @@
 #include "shell.h"
 #endif
 
-#define netif_find netifapi_netif_find_by_name
+#define LWIP_STATIC static
 
 #if LWIP_ARP
 extern sys_sem_t ip_conflict_detect;
@@ -3163,8 +3164,10 @@ void netstat_internal(void *ctx)
     int recvQlen = 0;
     int sendQlen = 0;
     u_int proto;
+#if PF_PKT_SUPPORT
     u8_t netif_name[IFNAMSIZ];
     struct netif *netif = NULL;
+#endif
 
     if (ndata == NULL) {
         return;

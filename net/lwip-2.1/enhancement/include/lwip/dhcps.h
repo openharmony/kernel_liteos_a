@@ -63,16 +63,6 @@ extern "C" {
 
 err_t dhcps_start(struct netif *netif, const char *start_ip, u16_t ip_num);
 void dhcps_stop(struct netif *netif);
-void dhcp_common_option(struct dhcp_msg *msg_out, u8_t option_type, u8_t option_len, u16_t *options_out_len);
-void dhcp_common_option_byte(struct dhcp_msg *msg_out, u8_t value, u16_t *options_out_len);
-void dhcp_common_option_short(struct dhcp_msg *msg_out, u16_t value, u16_t *options_out_len);
-void dhcp_common_option_long(struct dhcp_msg *msg_out, u32_t value, u16_t *options_out_len);
-void dhcp_common_option_trailer(struct dhcp_msg *msg_out, u16_t *options_out_len);
-#if LWIP_DHCP_BOOTP_FILE
-err_t dhcps_parse_options(struct pbuf *p, char *boot_file_name);
-#else
-err_t dhcps_parse_options(struct pbuf *p);
-#endif
 
 #if defined (__cplusplus) && __cplusplus
 }

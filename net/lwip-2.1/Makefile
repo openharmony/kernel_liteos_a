@@ -44,7 +44,7 @@ LOCAL_FLAGS += $(LOCAL_INCLUDE)
 
 LOCAL_SRCS := $(wildcard porting/src/*.c $(LWIPNOAPPSFILES))
 LOCAL_SRCS += $(wildcard enhancement/src/*.c)
-LOCAL_SRCS += $(wildcard $(LWIPDIR)/core/ipv4/dhcps.c)
+LOCAL_SRCS := $(filter-out $(LWIPDIR)/core/ipv4/dhcp.c, $(LOCAL_SRCS))
 LOCAL_SRCS := $(filter-out $(LWIPDIR)/core/ipv4/etharp.c, $(LOCAL_SRCS))
 LOCAL_SRCS := $(filter-out $(LWIPDIR)/api/sockets.c, $(LOCAL_SRCS))
 
