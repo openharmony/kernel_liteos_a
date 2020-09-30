@@ -221,5 +221,6 @@
 #define LWIP_TFTP                       LOSCFG_NET_LWIP_SACK_TFTP
 #define LWIP_DHCPS                      1
 #define LWIP_ENABLE_NET_CAPABILITY      1
+#define LWIP_ENABLE_CAP_NET_BROADCAST   0
 
 #endif /* _LWIP_PORTING_LWIPOPTS_H_ */
