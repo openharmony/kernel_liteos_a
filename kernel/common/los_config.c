@@ -132,6 +132,11 @@ extern "C" {
 extern UINT32 OsSystemInit(VOID);
 extern VOID SystemInit(VOID);
 
+VOID __attribute__((weak)) SystemInit(VOID)
+{
+    PRINT_WARN("Function not implemented. Using weak reference stub\n");
+}
+
 LITE_OS_SEC_TEXT_INIT VOID osRegister(VOID)
 {
     g_sysClock = OS_SYS_CLOCK;
