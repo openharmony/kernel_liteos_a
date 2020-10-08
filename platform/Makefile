@@ -49,6 +49,9 @@ LOCAL_SRCS := $(filter-out ../kernel/common/los_rootfs.c, $(LOCAL_SRCS))
 ifneq ($(LOSCFG_FS_VFS), y)
 LOCAL_SRCS := $(filter-out ../kernel/common/console.c ../kernel/common/virtual_serial.c, $(LOCAL_SRCS))
 endif
+ifneq ($(LOSCFG_BASE_CORE_HILOG), y)
+LOCAL_SRCS := $(filter-out ../kernel/common/los_hilog.c, $(LOCAL_SRCS))
+endif
 else
 LOCAL_SRCS += $(wildcard ../kernel/common/los_config.c)
 LOCAL_SRCS += $(wildcard ../kernel/common/los_printf.c)
