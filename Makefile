@@ -59,6 +59,9 @@ endif
 ifeq ($(LOSCFG_PLATFORM_HI3516DV300), y)
 FSTYPE = vfat
 endif
+ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
+FSTYPE = vfat
+endif
 ROOTFS_DIR = $(OUT)/rootfs
 ROOTFS_ZIP = $(OUT)/rootfs.zip
 VERSION =
@@ -97,13 +100,20 @@ endif
 ##### make dynload #####
 -include $(LITEOS_MK_PATH)/dynload.mk
 
+ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
+VENDOR_BOARD_INCLUDE := $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board
+else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
+VENDOR_BOARD_INCLUDE := $(LITEOSTOPDIR)/../../vendor/qemu/arm/$(LITEOS_PLATFORM)/config/board
+else
+$(error "No VENDOR_BOARD_INCLUDE defined")
+endif
 #-----need move when make version-----#
 ##### make lib #####
 $(__LIBS): $(OUT) $(CXX_INCLUDE)
 
 $(OUT): $(LITEOS_MENUCONFIG_H)
 	$(HIDE)mkdir -p $(OUT)/lib
-	$(HIDE)$(CC) -I$(LITEOS_PLATFORM_BASE)/include -I$(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board \
+	$(HIDE)$(CC) -I$(LITEOS_PLATFORM_BASE)/include -I$(VENDOR_BOARD_INCLUDE)  \
 		-E $(LITEOS_PLATFORM_BASE)/board.ld.S \
 		-o $(LITEOS_PLATFORM_BASE)/board.ld -P
 

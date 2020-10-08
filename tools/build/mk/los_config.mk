@@ -163,8 +163,10 @@ LITEOS_BASELIB += -lbase
 LIB_SUBDIRS       += kernel/base
 LITEOS_KERNEL_INCLUDE   := -I $(LITEOSTOPDIR)/kernel/include
 
+ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
 LITEOS_BASELIB += -lhi35xx_bsp
 LIB_SUBDIRS += $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/
+endif
 
 ifeq ($(LOSCFG_KERNEL_CPUP), y)
     LITEOS_BASELIB   += -lcpup
@@ -358,7 +360,11 @@ endif
 
 #################################### Net Option End####################################
 LITEOS_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../drivers/liteos
+ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
 LITEOS_VENDOR_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/platform
+else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
+LITEOS_VENDOR_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../vendor/qemu/arm/platform
+endif
 ################################## Driver Option Begin #################################
 ifeq ($(LOSCFG_DRIVERS_HDF), y)
 include $(LITEOSTOPDIR)/../../drivers/hdf/lite/hdf_lite.mk

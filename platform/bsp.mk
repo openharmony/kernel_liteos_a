@@ -56,6 +56,12 @@ else ifeq ($(LOSCFG_PLATFORM_HI3518EV300), y)
     USB_TYPE     := usb3.0_hi3518ev300
     LITEOS_CMACRO_TEST += -DTEST3518EV300
 
+########################## Qemu ARM Virt Options##############################
+else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
+    HWI_TYPE     := arm/interrupt/gic
+    TIMER_TYPE   := arm/timer/arm_generic
+    UART_TYPE    := amba_pl011
+
 endif
 
 HWI_SRC     := hw/$(HWI_TYPE)
@@ -69,22 +75,26 @@ LITEOS_BASELIB       += -lbsp
 
 LITEOS_PLATFORM      := $(subst $\",,$(LOSCFG_PLATFORM))
 
-PLATFORM_BSP_HISI_BASE := $(LITEOSTOPDIR)/platform
+PLATFORM_BSP_BASE := $(LITEOSTOPDIR)/platform
 
-PLATFORM_INCLUDE := -I $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/include \
-                    -I $(PLATFORM_BSP_HISI_BASE)/../kernel/common \
-                    -I $(PLATFORM_BSP_HISI_BASE)/../../../drivers/liteos/platform/pm \
-                    -I $(PLATFORM_BSP_HISI_BASE)/hw/include \
-                    -I $(PLATFORM_BSP_HISI_BASE)/include \
-                    -I $(PLATFORM_BSP_HISI_BASE)/$(UART_SRC)
+PLATFORM_INCLUDE := -I $(PLATFORM_BSP_BASE)/../kernel/common \
+                    -I $(PLATFORM_BSP_BASE)/../../../drivers/liteos/platform/pm \
+                    -I $(PLATFORM_BSP_BASE)/hw/include \
+                    -I $(PLATFORM_BSP_BASE)/include \
+                    -I $(PLATFORM_BSP_BASE)/$(UART_SRC)
 
 ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
+    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/include
     PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/include/hisoc
+else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
+    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/qemu/arm/$(LITEOS_PLATFORM)/config/board/include
+    # TODO: remove hisoc dependency in the code to avoid using hisoc here
+    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/qemu/arm/$(LITEOS_PLATFORM)/config/board/include/hisoc
 endif
 #
 #-include $(LITEOSTOPDIR)/platform/bsp/board/$(LITEOS_PLATFORM)/board.mk
 #
 
-LIB_SUBDIRS             += $(PLATFORM_BSP_HISI_BASE)
+LIB_SUBDIRS             += $(PLATFORM_BSP_BASE)
 LITEOS_PLATFORM_INCLUDE += $(PLATFORM_INCLUDE)
 LITEOS_CXXINCLUDE       += $(PLATFORM_INCLUDE)

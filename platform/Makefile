@@ -40,7 +40,10 @@ LOCAL_SRCS = $(wildcard $(HWI_SRC)/*.c) \
 LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/compat/posix/src \
                  -I $(LITEOSTOPDIR)/bsd/dev/random
 
-ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
+MAIN_PLATFORMS := $(LOSCFG_PLATFORM_HI3518EV300) \
+                  $(LOSCFG_PLATFORM_HI3516DV300) \
+                  $(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
+ifeq ($(findstring y, $(MAIN_PLATFORMS)), y)
 LOCAL_SRCS += $(wildcard ../kernel/common/*.c)
 LOCAL_SRCS := $(filter-out ../kernel/common/los_rootfs.c, $(LOCAL_SRCS))
 ifneq ($(LOSCFG_FS_VFS), y)
