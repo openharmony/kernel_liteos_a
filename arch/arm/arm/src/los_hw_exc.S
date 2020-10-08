@@ -57,7 +57,11 @@
     .global   _osExceptPrefetchAbortHdl
     .global   _osExceptSwiHdl
     .global   _osExceptUndefInstrHdl
+#if defined(LOSCFG_CC_STACKPROTECTOR_ALL) || \
+    defined(LOSCFG_CC_STACKPROTECTOR_STRONG) || \
+    defined(LOSCFG_CC_STACKPROTECTOR)
     .global   __stack_chk_guard_setup
+#endif
 
 
     .fpu vfpv4
@@ -147,6 +151,9 @@
 .endm
 #endif
 
+#if defined(LOSCFG_CC_STACKPROTECTOR_ALL) || \
+    defined(LOSCFG_CC_STACKPROTECTOR_STRONG) || \
+    defined(LOSCFG_CC_STACKPROTECTOR)
 @ Description: Stack-Protector Init
 __stack_chk_guard_setup:
     PUSH    {FP, LR}
@@ -156,6 +163,7 @@ __stack_chk_guard_setup:
     ORR     R2, R3, #0X80000000
     STR     R2, [R1]
     POP     {FP, PC}
+#endif
 
 @ Description: Undefined instruction exception handler
 _osExceptUndefInstrHdl:
