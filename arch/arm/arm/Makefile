@@ -35,6 +35,7 @@ LOCAL_SRCS := $(wildcard src/*.c) $(wildcard src/*.S)
 LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/kernel/base/include \
 	-I $(LITEOSTOPDIR)/kernel/extended/include \
+	-I $(LITEOSTOPDIR)/kernel/extended/dynload/include \
 	-I $(LITEOSTOPDIR)/arch/arm/arm/include \
 
 ifeq ($(LITEOS_ARM_ARCH), -march=armv7-a)
