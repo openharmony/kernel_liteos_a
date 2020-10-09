@@ -33,6 +33,10 @@ MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS := $(wildcard *.c)
 
+ifneq ($(LOSCFG_NET_LWIP_SACK), y)
+LOCAL_SRCS := $(filter-out net_syscall.c, $(LOCAL_SRCS))
+endif
+
 LOCAL_INCLUDE := -I $(LITEOSTOPDIR)/kernel/base/include \
                  -I $(LITEOSTOPDIR)/kernel/extended/dynload/include \
                  -I $(LITEOSTOPDIR)/fs/include \
