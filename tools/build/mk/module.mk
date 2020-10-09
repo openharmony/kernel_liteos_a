@@ -81,7 +81,7 @@ all : $(LIB)
 
 $(LOCAL_COBJS): $(OBJOUT)/%.o: %.c
 	$(HIDE)$(OBJ_MKDIR)
-	$(HIDE)$(CC) $(LITEOS_CFLAGS) $(LOCAL_FLAGS) $(LOCAL_CFLAGS) -c $< -o $@
+	$(HIDE)$(CC) $(LITEOS_CFLAGS) $(LOCAL_INCLUDE) $(LOCAL_FLAGS) $(LOCAL_CFLAGS) -c $< -o $@
 
 $(LOCAL_CPPOBJS): $(OBJOUT)/%.o: %.cpp
 	$(HIDE)$(OBJ_MKDIR)

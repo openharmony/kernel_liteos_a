@@ -36,6 +36,7 @@
 #include "time.h"
 #include "user_copy.h"
 #include "sys/times.h"
+#include "los_signal.h"
 #include "los_memory.h"
 #include "los_strncpy_from_user.h"
 

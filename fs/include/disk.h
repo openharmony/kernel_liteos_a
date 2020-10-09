@@ -47,6 +47,8 @@
 
 #endif
 
+#include "pthread.h"
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
