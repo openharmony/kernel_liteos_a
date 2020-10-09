@@ -142,12 +142,14 @@ static int lwip_setsockopt_wrap(int s, int level, int optname, const void *optva
 #if LWIP_ENABLE_NET_CAPABILITY
     if (level == SOL_SOCKET) {
         switch (optname) {
+#if LWIP_ENABLE_CAP_NET_BROADCAST
             case SO_BROADCAST:
                 if (!IsCapPermit(CAP_NET_BROADCAST)) {
                     set_errno(EPERM);
                     return -1;
                 }
                 break;
+#endif
             case SO_DEBUG:
             case SO_MARK:
             case SO_PRIORITY:
@@ -166,7 +168,7 @@ static int lwip_setsockopt_wrap(int s, int level, int optname, const void *optva
     return lwip_setsockopt2(s, level, optname, optval, optlen);
 }
 
-#if LWIP_ENABLE_NET_CAPABILITY
+#if LWIP_ENABLE_NET_CAPABILITY && LWIP_ENABLE_CAP_NET_BROADCAST
 static int ip_addr_isbroadcast_bysock(const ip_addr_t *ipaddr, int s)
 {
     struct sockaddr sa;
@@ -215,10 +217,12 @@ static int lwip_bind_wrap(int s, const struct sockaddr *name, socklen_t namelen)
             LWIP_ERROR("permission deny: NET_BIND_SERVICE\n", IsCapPermit(CAP_NET_BIND_SERVICE),
                        set_errno(EPERM); return -1);
         }
+#if LWIP_ENABLE_CAP_NET_BROADCAST
         if (ip_addr_ismulticast(&ipaddr) || ip_addr_isbroadcast_bysock(&ipaddr, s)) {
             LWIP_ERROR("permission deny: NET_BROADCAST\n", IsCapPermit(CAP_NET_BROADCAST),
                        set_errno(EPERM); return -1);
         }
+#endif
     }
 #endif
 
@@ -236,11 +240,12 @@ static ssize_t lwip_sendto_wrap(int s, const void *dataptr, size_t size, int fla
         u16_t port;
 
         SOCKADDR_TO_IPADDR_PORT(to, &ipaddr, port);
-
+#if LWIP_ENABLE_CAP_NET_BROADCAST
         if (ip_addr_ismulticast(&ipaddr) || ip_addr_isbroadcast_bysock(&ipaddr, s)) {
             LWIP_ERROR("permission deny: NET_BROADCAST\n", IsCapPermit(CAP_NET_BROADCAST),
                        set_errno(EPERM); return -1);
         }
+#endif
     }
 #endif
 
