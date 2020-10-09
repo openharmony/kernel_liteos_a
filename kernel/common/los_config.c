@@ -210,7 +210,17 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsDriverHiEventInit(VOID)
 extern void configure (void);
 LITE_OS_SEC_TEXT_INIT STATIC INT32 OsBsdInit(VOID)
 {
+    /*
+     * WORKAROUND: Inside configure(), nexus_init() function calls
+     *             HiSi-specific, library procedure - machine_resource_init().
+     *             The latter one is defined in libhi35xx_bsp.a which is only
+     *             available for Hi3516 and Hi3518.
+     *             Temporarily ifdef configure until this routine is implemented
+     *             by other platforms.
+     */
+#if defined(LOSCFG_PLATFORM_HI3516DV300) || defined(LOSCFG_PLATFORM_HI3518EV300)
     configure();
+#endif
     mi_startup(SI_SUB_ARCH_INIT);
     return LOS_OK;
 }
