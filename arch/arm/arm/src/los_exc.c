@@ -55,6 +55,7 @@
 #include "los_vm_phys.h"
 #include "los_vm_fault.h"
 #include "los_vm_common.h"
+#include "los_load_elf.h"
 #include "arm.h"
 #include "los_bitmap.h"
 #include "los_process_pri.h"
@@ -255,6 +256,39 @@ STATIC const CHAR *g_excTypeString[] = {
     "irq"
 };
 
+STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProcess)
+{
+    struct file *curFilep = NULL;
+    struct file *lastFilep = NULL;
+    LosVmMapRegion *curRegion = NULL;
+    LosVmMapRegion *lastRegion = NULL;
+
+    if ((region == NULL) || (runProcess == NULL)) {
+        return 0;
+    }
+
+    if (!LOS_IsRegionFileValid(region)) {
+        return region->range.base;
+    }
+
+    lastRegion = region;
+    do {
+        curRegion = lastRegion;
+        lastRegion = LOS_RegionFind(runProcess->vmSpace, curRegion->range.base - 1);
+        if ((lastRegion == NULL) || !LOS_IsRegionFileValid(lastRegion)) {
+            goto DONE;
+        }
+        curFilep = curRegion->unTypeData.rf.file;
+        lastFilep = lastRegion->unTypeData.rf.file;
+    } while (!strcmp(curFilep->f_path, lastFilep->f_path));
+
+DONE:
+    if (curRegion->range.base == EXEC_MMAP_BASE) {
+        return 0;
+    }
+    return curRegion->range.base;
+}
+
 STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
@@ -289,7 +323,7 @@ STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
             region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)excBufAddr->PC);
             if (region != NULL) {
                 PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),
-                             (VADDR_T)excBufAddr->PC - region->range.base);
+                             (VADDR_T)excBufAddr->PC - OsGetTextRegionBase(region, runProcess));
             }
         }
 
@@ -297,7 +331,7 @@ STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
         region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)excBufAddr->ULR);
         if (region != NULL) {
             PrintExcInfo("in %s ---> 0x%x", OsGetRegionNameOrFilePath(region),
-                         (VADDR_T)excBufAddr->ULR - region->range.base);
+                         (VADDR_T)excBufAddr->ULR - OsGetTextRegionBase(region, runProcess));
         }
         PrintExcInfo("\nusp   = 0x%x", excBufAddr->USP);
     } else {
