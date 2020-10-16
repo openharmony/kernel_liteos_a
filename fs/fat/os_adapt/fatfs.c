@@ -490,7 +490,7 @@ int fatfs_unbind(void *handle, struct inode **blkdriver)
     SETUP_SEARCH(&desc, g_fatVirPart.virtualinfo.devpartpath, false);
     FatfsVirtLock();
     result = FatFsUnbindVirPart(fat);
-    FatfsVirtLock();
+    FatfsVirtUnlock();
     if (result == FR_OK) {
         part = los_part_find(DiskDev[index]);
         (void)inode_find(&desc);
