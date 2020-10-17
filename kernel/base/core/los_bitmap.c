@@ -92,7 +92,7 @@ VOID LOS_BitmapSetNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsSet)
     UINTPTR maskToSet = BITMAP_FIRST_WORD_MASK(start);
 
     while (numsSet > bitsToSet) {
-        *p |= bitsToSet;
+        *p |= maskToSet;
         numsSet -= bitsToSet;
         bitsToSet = BITMAP_BITS_PER_WORD;
         maskToSet = OS_BITMAP_WORD_MASK;
