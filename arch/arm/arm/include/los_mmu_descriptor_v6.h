@@ -158,7 +158,7 @@ extern "C" {
 #define MMU_DESCRIPTOR_L2_AP01_0                                (MMU_DESCRIPTOR_L2_AP01(0))
 #define MMU_DESCRIPTOR_L2_AP01_1                                (MMU_DESCRIPTOR_L2_AP01(1))
 #define MMU_DESCRIPTOR_L2_AP01_3                                (MMU_DESCRIPTOR_L2_AP01(3))
-#define MMU_DESCRIPTOR_L2_AP_P_NA_U_NA                          (MMUDESCRIPTOR_L2_AP2_0 | MMU_DESCRIPTOR_L2_AP01_0)
+#define MMU_DESCRIPTOR_L2_AP_P_NA_U_NA                          (MMU_DESCRIPTOR_L2_AP2_0 | MMU_DESCRIPTOR_L2_AP01_0)
 #define MMU_DESCRIPTOR_L2_AP_P_RW_U_RW                          (MMU_DESCRIPTOR_L2_AP2_0 | MMU_DESCRIPTOR_L2_AP01_3)
 #define MMU_DESCRIPTOR_L2_AP_P_RW_U_NA                          (MMU_DESCRIPTOR_L2_AP2_0 | MMU_DESCRIPTOR_L2_AP01_1)
 #define MMU_DESCRIPTOR_L2_AP_P_RO_U_RO                          (MMU_DESCRIPTOR_L2_AP2_1 | MMU_DESCRIPTOR_L2_AP01_3)
