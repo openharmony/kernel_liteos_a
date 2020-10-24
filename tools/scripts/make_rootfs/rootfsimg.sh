@@ -43,7 +43,7 @@ tool_check() {
 local ret='0'
 command -v "$1" >/dev/null 2>&1 || { local ret='1'; }
 if [ "$ret" -ne 0 ]; then
-    echo "$1 tool is not exit, please install it" >&2
+    echo "$1 tool is not exist, please install it" >&2
 fi
 return 0
 }
