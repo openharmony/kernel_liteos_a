@@ -100,14 +100,14 @@ STATIC UINT32 OsShellSourceInit(INT32 consoleId)
         ret = LOS_NOK;
         goto ERR_OUT4;
     }
-    if ((consoleId == CONSOLE_TELNET)
+    if (consoleId == CONSOLE_TELNET
 #if !defined(LOSCFG_PLATFORM_ROOTFS)
         /*
 	 * In case of ROOTFS disabled but
 	 * serial console enabled, it is required
 	 * to create Shell task in kernel for it.
 	 */
-        || (consoleId == CONSOLE_SERIAL)
+        || consoleId == CONSOLE_SERIAL
 #endif
                                         ) {
         ret = OsShellCreateTask(shellCB);
