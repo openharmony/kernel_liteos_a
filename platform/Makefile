@@ -33,9 +33,12 @@ MODULE_NAME := bsp
 
 LOCAL_SRCS = $(wildcard $(HWI_SRC)/*.c) \
             $(wildcard $(TIMER_SRC)/*.c) \
-            $(wildcard $(HRTIMER_SRC)/*.c) \
             $(wildcard $(UART_SRC)/*.c) \
             $(wildcard ./main.c)
+
+ifeq ($(LOSCFG_HRTIMER_ENABLE), y)
+LOCAL_SRCS += $(wildcard $(HRTIMER_SRC)/*.c)
+endif
 
 LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/compat/posix/src \
                  -I $(LITEOSTOPDIR)/bsd/dev/random

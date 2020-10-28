@@ -64,9 +64,11 @@ else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
 
 endif
 
+ifeq ($(LOSCFG_HRTIMER_ENABLE), y)
+HRTIMER_SRC := hw/$(HRTIMER_TYPE)
+endif
 HWI_SRC     := hw/$(HWI_TYPE)
 TIMER_SRC   := hw/$(TIMER_TYPE)
-HRTIMER_SRC := hw/$(HRTIMER_TYPE)
 NET_SRC     := net/$(NET_TYPE)
 UART_SRC    := uart/$(UART_TYPE)
 USB_SRC     := usb/$(USB_TYPE)

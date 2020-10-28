@@ -56,3 +56,10 @@ config PLATFORM_BSP_GIC_V3
       General Interrupt Controller version 3.
 
 endchoice
+
+config HRTIMER_ENABLE
+    bool "HR TIMER enable"
+    default y
+    help
+      Enable High-resolution timer support
+
