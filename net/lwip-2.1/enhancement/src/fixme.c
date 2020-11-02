@@ -393,3 +393,85 @@ const char *const tcp_state_str[] = {
 };
 
 volatile int tcpip_init_finish = 1; // needed by api_shell.c
+
+int ip6addr_aton(const char *cp, ip6_addr_t *addr)
+{
+    const int ipv6_blocks = 8;
+    u16_t current_block_index = 0;
+    u16_t current_block_value = 0;
+    u16_t addr16[ipv6_blocks];
+    u16_t *a16 = (u16_t *)addr->addr;
+    int squash_pos = ipv6_blocks;
+    int i;
+    const char *s = cp;
+    const char *ss = cp-1;
+
+    for (; ; s++) {
+        if (current_block_index >= ipv6_blocks) {
+            return 0; // address too long
+        }
+        if (*s == 0) {
+            if (s - ss == 1) {
+                if (squash_pos != current_block_index) {
+                    return 0; // empty address or address ends with a single ':'
+                } // else address ends with one valid "::"
+            } else {
+                addr16[current_block_index++] = current_block_value;
+            }
+            break;
+        } else if (*s == ':') {
+            if (s - ss == 1) {
+                if (s != cp || s[1] != ':') {
+                    return 0; // address begins with a single ':' or contains ":::"
+                } // else address begins with one valid "::"
+            } else {
+                addr16[current_block_index++] = current_block_value;
+            }
+            if (s[1] == ':') {
+                if (squash_pos != ipv6_blocks) {
+                    return 0; // more than one "::"
+                }
+                squash_pos = current_block_index;
+                s++;
+            }
+            ss = s; // ss points to the recent ':' position
+            current_block_value = 0;
+        } else if (lwip_isxdigit(*s) && (s - ss) < 5) { // 4 hex-digits at most
+            current_block_value = (current_block_value << 4) +
+                (*s | ('a' - 'A')) - '0' - ('a' - '9' - 1) * (*s >= 'A');
+#if LWIP_IPV4
+        } else if (*s == '.' && current_block_index < ipv6_blocks - 1) {
+            ip4_addr_t ip4;
+            int ret = ip4addr_aton(ss+1, &ip4);
+            if (!ret) {
+                return 0;
+            }
+            ip4.addr = lwip_ntohl(ip4.addr);
+            addr16[current_block_index++] = (u16_t)(ip4.addr >> 16);
+            addr16[current_block_index++] = (u16_t)(ip4.addr);
+            break;
+#endif /* LWIP_IPV4 */
+        } else {
+            return 0; // unexpected char or too many digits
+        }
+    }
+
+    if (squash_pos == ipv6_blocks && current_block_index != ipv6_blocks) {
+        return 0; // address too short
+    }
+    if (squash_pos != ipv6_blocks && current_block_index == ipv6_blocks) {
+        return 0; // unexpected "::" in address
+    }
+
+    for (i = 0; i < squash_pos; ++i) {
+        a16[i] = lwip_htons(addr16[i]);
+    }
+    for (; i < ipv6_blocks - current_block_index + squash_pos; ++i) {
+        a16[i] = 0;
+    }
+    for (; i < ipv6_blocks; ++i) {
+        a16[i] = lwip_htons(addr16[i - ipv6_blocks + current_block_index]);
+    }
+
+    return 1;
+}

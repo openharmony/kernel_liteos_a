@@ -49,7 +49,7 @@
 #define DUP_ARP_DETECT_TIME             2000      /* 2 seconds period */
 #define SOF_BINDNONUNICAST              0x0800U   /* socket has bind to a non unicast */
 #define NETCONN_PKT_RAW                 0x80
-#define SYS_ARCH_ERROR                  SYS_ARCH_TIMEOUT
+#define SYS_ARCH_ERROR                  0x7fffffffUL
 
 #define LWIP_ENABLE_LOS_SHELL_CMD       LOSCFG_SHELL
 #define LWIP_SHELL_CMD_PING_RETRY_TIMES 4
