@@ -566,10 +566,10 @@ extern UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UINT32 intSav
 extern VOID OsTaskResourcesToFree(LosTaskCB *taskCB);
 extern VOID OsRunTaskToDelete(LosTaskCB *taskCB);
 extern UINT32 OsTaskSyncWait(const LosTaskCB *taskCB);
-extern INT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
+extern UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
 extern INT32 OsTaskSchedulerSetUnsafe(LosTaskCB *taskCB, UINT16 policy, UINT16 priority,
                                       BOOL policyFlag, UINT32 intSave);
-extern INT32 OsSetCurrTaskName(const CHAR *name);
+extern INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName);
 extern VOID OsTaskCBRecyleToFree(VOID);
 extern VOID OsTaskExitGroup(UINT32 status);
 extern VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status);

@@ -479,6 +479,7 @@ extern VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB);
 extern UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
                                    LosVmSpace *oldAspace, UINTPTR oldFiles);
 extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize);
+extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
 extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy, BOOL policyFlag);
 extern INT32 OsGetProcessPriority(INT32 which, INT32 pid);
 extern VOID *OsUserStackAlloc(UINT32 processID, UINT32 *size);

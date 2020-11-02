@@ -555,9 +555,7 @@ STATIC UINT32 OsCreateIdleProcess(VOID)
 #if (LOSCFG_KERNEL_SMP == YES)
     OS_TCB_FROM_TID(*idleTaskID)->cpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
-    (VOID)memset_s(OS_TCB_FROM_TID(*idleTaskID)->taskName, OS_TCB_NAME_LEN, 0, OS_TCB_NAME_LEN);
-    (VOID)memcpy_s(OS_TCB_FROM_TID(*idleTaskID)->taskName, OS_TCB_NAME_LEN, idleName, strlen(idleName));
-    return LOS_OK;
+    return (UINT32)OsSetTaskName(OS_TCB_FROM_TID(*idleTaskID), idleName, FALSE);
 }
 
 LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
@@ -653,35 +651,34 @@ STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
     return;
 }
 
-STATIC UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name)
+UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name)
 {
     errno_t errRet;
-    UINT32 len;
 
-    if (name != NULL) {
-        len = strlen(name);
-        if (len >= OS_PCB_NAME_LEN) {
-            len = OS_PCB_NAME_LEN - 1; /* 1: Truncate, reserving the termination operator for character turns */
-        }
-        errRet = memcpy_s(processCB->processName, sizeof(CHAR) * OS_PCB_NAME_LEN, name, len);
-        if (errRet != EOK) {
-            processCB->processName[0] = '\0';
-            return LOS_NOK;
-        }
-        processCB->processName[len] = '\0';
-        return LOS_OK;
+    if (processCB == NULL) {
+        return LOS_EINVAL;
     }
 
-    (VOID)memset_s(processCB->processName, sizeof(CHAR) * OS_PCB_NAME_LEN, 0, sizeof(CHAR) * OS_PCB_NAME_LEN);
+    if (name != NULL) {
+        errRet = strncpy_s(processCB->processName, OS_PCB_NAME_LEN, name, OS_PCB_NAME_LEN - 1);
+        if (errRet == EOK) {
+            return LOS_OK;
+        }
+    }
+
     switch (processCB->processMode) {
         case OS_KERNEL_MODE:
-            (VOID)snprintf_s(processCB->processName, sizeof(CHAR) * OS_PCB_NAME_LEN,
-                             (sizeof(CHAR) * OS_PCB_NAME_LEN) - 1, "KerProcess%u", processCB->processID);
+            errRet = snprintf_s(processCB->processName, OS_PCB_NAME_LEN, OS_PCB_NAME_LEN - 1,
+                                "KerProcess%u", processCB->processID);
             break;
         default:
-            (VOID)snprintf_s(processCB->processName, sizeof(CHAR) * OS_PCB_NAME_LEN,
-                             (sizeof(CHAR) * OS_PCB_NAME_LEN) - 1, "UserProcess%u", processCB->processID);
+            errRet = snprintf_s(processCB->processName, OS_PCB_NAME_LEN, OS_PCB_NAME_LEN - 1,
+                                "UserProcess%u", processCB->processID);
             break;
+    }
+
+    if (errRet < 0) {
+        return LOS_NOK;
     }
     return LOS_OK;
 }
@@ -715,12 +712,12 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
     if (OsProcessIsUserMode(processCB)) {
         space = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));
         if (space == NULL) {
-            PRINT_ERR("%s %d, alloc space failed\n", __FUNCTION__, __LINE__);
+            PRINT_ERR("Init process struct, alloc space memory failed!\n");
             return LOS_ENOMEM;
         }
         VADDR_T *ttb = LOS_PhysPagesAllocContiguous(1);
         if (ttb == NULL) {
-            PRINT_ERR("%s %d, alloc ttb or space failed\n", __FUNCTION__, __LINE__);
+            PRINT_ERR("Init process struct, alloc ttb failed!\n");
             (VOID)LOS_MemFree(m_aucSysMem0, space);
             return LOS_ENOMEM;
         }
@@ -728,7 +725,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
         retVal = OsUserVmSpaceInit(space, ttb);
         vmPage = OsVmVaddrToPage(ttb);
         if ((retVal == FALSE) || (vmPage == NULL)) {
-            PRINT_ERR("create space failed! ret: %d, vmPage: %#x\n", retVal, vmPage);
+            PRINT_ERR("Init process struct, create space failed!\n");
             processCB->processStatus = OS_PROCESS_FLAG_UNUSED;
             (VOID)LOS_MemFree(m_aucSysMem0, space);
             LOS_PhysPagesFreeContiguous(ttb, 1);
@@ -743,7 +740,6 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, U
 #ifdef LOSCFG_SECURITY_VID
     status = VidMapListInit(processCB);
     if (status != LOS_OK) {
-        PRINT_ERR("VidMapListInit failed!\n");
         return LOS_ENOMEM;
     }
 #endif
@@ -839,7 +835,6 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
         ret = LiteIpcPoolInit(&(processCB->ipcInfo));
         if (ret != LOS_OK) {
             ret = LOS_ENOMEM;
-            PRINT_ERR("LiteIpcPoolInit failed!\n");
             goto EXIT;
         }
     }
@@ -1224,7 +1219,7 @@ WAIT_BACK:
     return LOS_OK;
 }
 
-STATIC INT32 OsWaitRecycleChildPorcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status)
+STATIC UINT32 OsWaitRecycleChildPorcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status)
 {
     ProcessGroup *group = NULL;
     UINT32 pid = childCB->processID;
@@ -1246,7 +1241,7 @@ STATIC INT32 OsWaitRecycleChildPorcess(const LosProcessCB *childCB, UINT32 intSa
     return pid;
 }
 
-STATIC INT32 OsWaitChildProcessCheck(LosProcessCB *processCB, INT32 pid, LosProcessCB **childCB)
+STATIC UINT32 OsWaitChildProcessCheck(LosProcessCB *processCB, INT32 pid, LosProcessCB **childCB)
 {
     if (LOS_ListEmpty(&(processCB->childrenList)) && LOS_ListEmpty(&(processCB->exitChildList))) {
         return LOS_ECHILD;
@@ -1300,7 +1295,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
     }
 
     if (childCB != NULL) {
-        return OsWaitRecycleChildPorcess(childCB, intSave, status);
+        return (INT32)OsWaitRecycleChildPorcess(childCB, intSave, status);
     }
 
     if ((options & LOS_WAIT_WNOHANG) != 0) {
@@ -1325,7 +1320,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
         goto ERROR;
     }
 
-    return OsWaitRecycleChildPorcess(childCB, intSave, status);
+    return (INT32)OsWaitRecycleChildPorcess(childCB, intSave, status);
 
 ERROR:
     SCHEDULER_UNLOCK(intSave);
@@ -1372,7 +1367,7 @@ STATIC UINT32 OsSetProcessGroupIDUnsafe(UINT32 pid, UINT32 gid, ProcessGroup **g
     ProcessGroup *oldGroup = NULL;
     ProcessGroup *newGroup = NULL;
     LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
-    INT32 ret = OsSetProcessGroupCheck(processCB, gid);
+    UINT32 ret = OsSetProcessGroupCheck(processCB, gid);
     if (ret != LOS_OK) {
         return ret;
     }
@@ -1445,7 +1440,7 @@ LITE_OS_SEC_TEXT INT32 LOS_GetProcessGroupID(UINT32 pid)
         goto EXIT;
     }
 
-    gid = processCB->group->groupID;
+    gid = (INT32)processCB->group->groupID;
 
 EXIT:
     SCHEDULER_UNLOCK(intSave);
@@ -1457,10 +1452,9 @@ LITE_OS_SEC_TEXT INT32 LOS_GetCurrProcessGroupID(VOID)
     return LOS_GetProcessGroupID(OsCurrProcessGet()->processID);
 }
 
-STATIC VOID *OsUserInitStackAlloc(UINT32 processID, UINT32 *size)
+STATIC VOID *OsUserInitStackAlloc(LosProcessCB *processCB, UINT32 *size)
 {
     LosVmMapRegion *region = NULL;
-    LosProcessCB *processCB = OS_PCB_FROM_PID(processID);
     UINT32 stackSize = ALIGN(OS_USER_TASK_STACK_SIZE, PAGE_SIZE);
 
     region = LOS_RegionAlloc(processCB->vmSpace, 0, stackSize,
@@ -1482,7 +1476,6 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
                                              LosVmSpace *oldSpace, UINTPTR oldFiles)
 {
     UINT32 ret;
-    errno_t errRet;
     const CHAR *processName = NULL;
 
     if ((processCB == NULL) || (name == NULL)) {
@@ -1492,20 +1485,14 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     processName = strrchr(name, '/');
     processName = (processName == NULL) ? name : (processName + 1); /* 1: Do not include '/' */
 
-    ret = OsSetProcessName(processCB, processName);
+    ret = (UINT32)OsSetTaskName(OsCurrTaskGet(), processName, TRUE);
     if (ret != LOS_OK) {
         return ret;
-    }
-    errRet = memcpy_s(OsCurrTaskGet()->taskName, OS_TCB_NAME_LEN, processCB->processName, OS_PCB_NAME_LEN);
-    if (errRet != EOK) {
-        OsCurrTaskGet()->taskName[0] = '\0';
-        return LOS_NOK;
     }
 
 #if (LOSCFG_KERNEL_LITEIPC == YES)
     ret = LiteIpcPoolInit(&(processCB->ipcInfo));
     if (ret != LOS_OK) {
-        PRINT_ERR("LiteIpcPoolInit failed!\n");
         return LOS_NOK;
     }
 #endif
@@ -1524,7 +1511,6 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     VidMapDestroy(processCB);
     ret = VidMapListInit(processCB);
     if (ret != LOS_OK) {
-        PRINT_ERR("VidMapListInit failed!\n");
         return LOS_NOK;
     }
 #endif
@@ -1538,7 +1524,6 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
 
 LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize)
 {
-    LosProcessCB *processCB = NULL;
     LosTaskCB *taskCB = NULL;
     TaskContext *taskContext = NULL;
     UINT32 intSave;
@@ -1556,10 +1541,8 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
     }
 
     SCHEDULER_LOCK(intSave);
-    processCB = OsCurrProcessGet();
     taskCB = OsCurrTaskGet();
 
-    processCB->threadGroupID = taskCB->taskID;
     taskCB->userMapBase = mapBase;
     taskCB->userMapSize = mapSize;
     taskCB->taskEntry = (TSK_ENTRY_FUNC)entry;
@@ -1573,37 +1556,95 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
 STATIC UINT32 OsUserInitProcessStart(UINT32 processID, TSK_INIT_PARAM_S *param)
 {
     UINT32 intSave;
-    INT32 taskID;
+    UINT32 taskID;
     INT32 ret;
 
     taskID = OsCreateUserTask(processID, param);
-    if (taskID < 0) {
+    if (taskID == OS_INVALID_VALUE) {
         return LOS_NOK;
     }
 
     ret = LOS_SetTaskScheduler(taskID, LOS_SCHED_RR, OS_TASK_PRIORITY_LOWEST);
-    if (ret < 0) {
+    if (ret != LOS_OK) {
         PRINT_ERR("User init process set scheduler failed! ERROR:%d \n", ret);
         SCHEDULER_LOCK(intSave);
         (VOID)OsTaskDeleteUnsafe(OS_TCB_FROM_TID(taskID), OS_PRO_EXIT_OK, intSave);
-        return -ret;
+        return LOS_NOK;
     }
 
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
+STATIC UINT32 OsLoadUserInit(LosProcessCB *processCB)
 {
+    /*              userInitTextStart               -----
+     * | user text |
+     *
+     * | user data |                                initSize
+     *              userInitBssStart  ---
+     * | user bss  |                  initBssSize
+     *              userInitEnd       ---           -----
+     */
+    errno_t errRet;
     INT32 ret;
-    UINT32 size;
-    TSK_INIT_PARAM_S param = { 0 };
-    VOID *stack = NULL;
-    VOID *userText = NULL;
     CHAR *userInitTextStart = (CHAR *)&__user_init_entry;
     CHAR *userInitBssStart = (CHAR *)&__user_init_bss;
     CHAR *userInitEnd = (CHAR *)&__user_init_end;
     UINT32 initBssSize = userInitEnd - userInitBssStart;
     UINT32 initSize = userInitEnd - userInitTextStart;
+    VOID *userBss = NULL;
+    VOID *userText = NULL;
+
+    if ((LOS_Align((UINTPTR)userInitTextStart, PAGE_SIZE) != (UINTPTR)userInitTextStart) ||
+        (LOS_Align((UINTPTR)userInitEnd, PAGE_SIZE) != (UINTPTR)userInitEnd)) {
+        return LOS_EINVAL;
+    }
+
+    if ((initSize == 0) || (initSize <= initBssSize)) {
+        return LOS_EINVAL;
+    }
+
+    userText = LOS_PhysPagesAllocContiguous(initSize >> PAGE_SHIFT);
+    if (userText == NULL) {
+        return LOS_NOK;
+    }
+
+    errRet = memcpy_s(userText, initSize, (VOID *)&__user_init_load_addr, initSize - initBssSize);
+    if (errRet != EOK) {
+        PRINT_ERR("Load user init text, data and bss failed! err : %d\n", errRet);
+        goto ERROR;
+    }
+    ret = LOS_VaddrToPaddrMmap(processCB->vmSpace, (VADDR_T)(UINTPTR)userInitTextStart, LOS_PaddrQuery(userText),
+                               initSize, VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |
+                               VM_MAP_REGION_FLAG_PERM_EXECUTE | VM_MAP_REGION_FLAG_PERM_USER);
+    if (ret < 0) {
+        PRINT_ERR("Mmap user init text, data and bss failed! err : %d\n", ret);
+        goto ERROR;
+    }
+
+    /* The User init boot segment may not actually exist */
+    if (initBssSize != 0) {
+        userBss = (VOID *)((UINTPTR)userText + userInitBssStart - userInitTextStart);
+        errRet = memset_s(userBss, initBssSize, 0, initBssSize);
+        if (errRet != EOK) {
+            PRINT_ERR("memset user init bss failed! err : %d\n", errRet);
+            goto ERROR;
+        }
+    }
+
+    return LOS_OK;
+
+ERROR:
+    (VOID)LOS_PhysPagesFreeContiguous(userText, initSize >> PAGE_SHIFT);
+    return LOS_NOK;
+}
+
+LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
+{
+    UINT32 ret;
+    UINT32 size;
+    TSK_INIT_PARAM_S param = { 0 };
+    VOID *stack = NULL;
 
     LosProcessCB *processCB = OS_PCB_FROM_PID(g_userInitProcess);
     ret = OsProcessCreateInit(processCB, OS_USER_MODE, "Init", OS_PROCESS_USERINIT_PRIORITY);
@@ -1611,30 +1652,18 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
         return ret;
     }
 
-    userText = LOS_PhysPagesAllocContiguous(initSize >> PAGE_SHIFT);
-    if (userText == NULL) {
-        ret = LOS_NOK;
+    ret = OsLoadUserInit(processCB);
+    if (ret != LOS_OK) {
         goto ERROR;
     }
 
-    (VOID)memcpy_s(userText, initSize, (VOID *)&__user_init_load_addr, initSize);
-    ret = LOS_VaddrToPaddrMmap(processCB->vmSpace, (VADDR_T)(UINTPTR)userInitTextStart, LOS_PaddrQuery(userText),
-                               initSize, VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |
-                               VM_MAP_REGION_FLAG_PERM_EXECUTE | VM_MAP_REGION_FLAG_PERM_USER);
-    if (ret < 0) {
-        goto ERROR;
-    }
-
-    (VOID)memset_s((VOID *)((UINTPTR)userText + userInitBssStart - userInitTextStart), initBssSize, 0, initBssSize);
-
-    stack = OsUserInitStackAlloc(g_userInitProcess, &size);
+    stack = OsUserInitStackAlloc(processCB, &size);
     if (stack == NULL) {
-        PRINTK("user init process malloc user stack failed!\n");
-        ret = LOS_NOK;
+        PRINT_ERR("Alloc user init process user stack failed!\n");
         goto ERROR;
     }
 
-    param.pfnTaskEntry = (TSK_ENTRY_FUNC)userInitTextStart;
+    param.pfnTaskEntry = (TSK_ENTRY_FUNC)(CHAR *)&__user_init_entry;
     param.userParam.userSP = (UINTPTR)stack + size;
     param.userParam.userMapBase = (UINTPTR)stack;
     param.userParam.userMapSize = size;
@@ -1648,7 +1677,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
     return LOS_OK;
 
 ERROR:
-    (VOID)LOS_PhysPagesFreeContiguous(userText, initSize >> PAGE_SHIFT);
     OsDeInitPCB(processCB);
     return ret;
 }
@@ -1855,7 +1883,7 @@ STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *
     return LOS_OK;
 }
 
-STATIC INT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProcessCB *run)
+STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProcessCB *run)
 {
     UINT32 ret;
 
