@@ -698,7 +698,7 @@ STATUS_T OsVmRegionAdjust(LosVmSpace *space, VADDR_T newRegionStart, size_t size
         }
     }
 
-    region = LOS_RegionFind(space, nextRegionBase);
+    region = LOS_RegionFind(space, nextRegionBase - 1);
     if ((region != NULL) && (nextRegionBase < LOS_RegionEndAddr(region))) {
         newRegion = OsVmRegionSplit(region, nextRegionBase);
         if (newRegion == NULL) {
@@ -726,6 +726,9 @@ STATUS_T OsRegionsRemove(LosVmSpace *space, VADDR_T regionBase, size_t size)
 
     RB_SCAN_SAFE(&space->regionRbTree, pstRbNodeTemp, pstRbNodeNext)
         regionTemp = (LosVmMapRegion *)pstRbNodeTemp;
+        if (regionTemp->range.base > regionEnd) {
+            break;
+        }
         if (regionBase <= regionTemp->range.base && regionEnd >= LOS_RegionEndAddr(regionTemp)) {
             status = LOS_RegionFree(space, regionTemp);
             if (status != LOS_OK) {
@@ -734,9 +737,6 @@ STATUS_T OsRegionsRemove(LosVmSpace *space, VADDR_T regionBase, size_t size)
             }
         }
 
-        if (regionTemp->range.base > regionEnd) {
-            break;
-        }
     RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNodeTemp, pstRbNodeNext)
 
 ERR_REGION_SPLIT:
