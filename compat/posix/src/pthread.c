@@ -203,10 +203,9 @@ STATIC UINT32 InitPthreadData(pthread_t threadID, pthread_attr_t *userAttr,
         return LOS_NOK;
     }
     userAttr->stacksize   = taskCB->stackSize;
-    err = memcpy_s(taskCB->taskName, OS_TCB_NAME_LEN, created->name, strlen(created->name));
-    if (err != EOK) {
+    err = OsSetTaskName(taskCB, created->name, FALSE);
+    if (err != LOS_OK) {
         PRINT_ERR("%s: %d, err: %d\n", __FUNCTION__, __LINE__, err);
-        taskCB->taskName[0] = '\0';
         return LOS_NOK;
     }
 #if (LOSCFG_KERNEL_SMP == YES)
@@ -224,7 +223,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
 {
     pthread_attr_t userAttr;
     UINT32 ret;
-    CHAR name[PTHREAD_DATA_NAME_MAX];
+    CHAR name[PTHREAD_DATA_NAME_MAX] = {0};
     STATIC UINT16 pthreadNumber = 1;
     TSK_INIT_PARAM_S taskInitParam = {0};
     UINT32 taskHandle;
@@ -236,7 +235,6 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
 
     SetPthreadAttr(self, attr, &userAttr);
 
-    (VOID)memset_s(name, sizeof(name), 0, sizeof(name));
     (VOID)snprintf_s(name, sizeof(name), sizeof(name) - 1, "pth%02d", pthreadNumber);
     pthreadNumber++;
 

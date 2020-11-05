@@ -61,7 +61,7 @@
 #if (LOSCFG_KERNEL_LITEIPC == YES)
 #include "hm_liteipc.h"
 #endif
-#include "user_copy.h"
+#include "los_strncpy_from_user.h"
 #include "los_vm_syscall.h"
 #ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
 #include "los_oom.h"
@@ -107,7 +107,6 @@ VOID OsSetMainTask()
 {
     UINT32 i;
     CHAR *name = "osMain";
-    errno_t ret;
 
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
         g_mainTask[i].taskStatus = OS_TASK_STATUS_UNUSED;
@@ -117,10 +116,7 @@ VOID OsSetMainTask()
         g_mainTask[i].lockDep.lockDepth = 0;
         g_mainTask[i].lockDep.waitLock = NULL;
 #endif
-        ret = memcpy_s(g_mainTask[i].taskName, OS_TCB_NAME_LEN, name, strlen(name));
-        if (ret != EOK) {
-            g_mainTask[i].taskName[0] = '\0';
-        }
+        (VOID)strncpy_s(g_mainTask[i].taskName, OS_TCB_NAME_LEN, name, OS_TCB_NAME_LEN - 1);
         LOS_ListInit(&g_mainTask[i].lockList);
     }
 }
@@ -702,7 +698,6 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
 #endif
 #if (LOSCFG_KERNEL_LITEIPC == YES)
     LOS_ListInit(&(taskCB->msgListHead));
-    (VOID)memset_s(taskCB->accessMap, sizeof(taskCB->accessMap), 0, sizeof(taskCB->accessMap));
 #endif
     taskCB->policy = (initParam->policy == LOS_SCHED_FIFO) ? LOS_SCHED_FIFO : LOS_SCHED_RR;
     taskCB->taskStatus = OS_TASK_STATUS_INIT;
@@ -717,8 +712,8 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     LOS_ListInit(&taskCB->lockList);
 }
 
-LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
-                                                 const VOID *stackPtr, const VOID *topStack)
+STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
+                           const VOID *stackPtr, const VOID *topStack)
 {
     UINT32 intSave;
     UINT32 ret;
@@ -749,20 +744,16 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_IN
     processCB->threadCount++;
     SCHEDULER_UNLOCK(intSave);
 
-    if (initParam->pcName == NULL) {
-        (VOID)memset_s(taskCB->taskName, sizeof(CHAR) * OS_TCB_NAME_LEN, 0, sizeof(CHAR) * OS_TCB_NAME_LEN);
-        (VOID)snprintf_s(taskCB->taskName, sizeof(CHAR) * OS_TCB_NAME_LEN,
-                         (sizeof(CHAR) * OS_TCB_NAME_LEN) - 1, "thread%u", numCount);
-        return LOS_OK;
-    }
-
-    if (mode == OS_KERNEL_MODE) {
-        ret = memcpy_s(taskCB->taskName, sizeof(CHAR) * OS_TCB_NAME_LEN, initParam->pcName, strlen(initParam->pcName));
-        if (ret != EOK) {
-            taskCB->taskName[0] = '\0';
+    if (initParam->pcName != NULL) {
+        ret = (UINT32)OsSetTaskName(taskCB, initParam->pcName, FALSE);
+        if (ret == LOS_OK) {
+            return LOS_OK;
         }
     }
 
+    if (snprintf_s(taskCB->taskName, OS_TCB_NAME_LEN, OS_TCB_NAME_LEN - 1, "thread%u", numCount) < 0) {
+        return LOS_NOK;
+    }
     return LOS_OK;
 }
 
@@ -1644,53 +1635,45 @@ EXIT:
     return INT_NO_RESCH;
 }
 
-LITE_OS_SEC_TEXT INT32 OsSetCurrTaskName(const CHAR *name)
+LITE_OS_SEC_TEXT INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName)
 {
     UINT32 intSave;
-    UINT32 strLen;
     errno_t err;
-    LosTaskCB *runTask = NULL;
-    LosProcessCB *runProcess = NULL;
+    LosProcessCB *processCB = NULL;
     const CHAR *namePtr = NULL;
     CHAR nameBuff[OS_TCB_NAME_LEN] = { 0 };
 
-    runTask = OsCurrTaskGet();
-    runProcess = OS_PCB_FROM_PID(runTask->processID);
-    if (runProcess->processMode == OS_USER_MODE) {
-        (VOID)LOS_ArchCopyFromUser(nameBuff, (const VOID *)name, OS_TCB_NAME_LEN);
-        strLen = strnlen(nameBuff, OS_TCB_NAME_LEN);
-        namePtr = nameBuff;
-    } else {
-        strLen = strnlen(name, OS_TCB_NAME_LEN);
-        namePtr = name;
+    if ((taskCB == NULL) || (name == NULL)) {
+        return EINVAL;
     }
 
-    if (strLen == 0) {
-        err = EINVAL;
-        PRINT_ERR("set task(%u) name failed! %d\n", OsCurrTaskGet()->taskID, err);
-        return err;
-    } else if (strLen == OS_TCB_NAME_LEN) {
-        strLen = strLen - 1;
+    if (LOS_IsUserAddress((VADDR_T)(UINTPTR)name)) {
+        err = LOS_StrncpyFromUser(nameBuff, (const CHAR *)name, OS_TCB_NAME_LEN);
+        if (err < 0) {
+            return -err;
+        }
+        namePtr = nameBuff;
+    } else {
+        namePtr = name;
     }
 
     SCHEDULER_LOCK(intSave);
 
-    err = memcpy_s(runTask->taskName, OS_TCB_NAME_LEN, (VOID *)namePtr, strLen);
+    err = strncpy_s(taskCB->taskName, OS_TCB_NAME_LEN, (VOID *)namePtr, OS_TCB_NAME_LEN - 1);
     if (err != EOK) {
-        runTask->taskName[0] = '\0';
         err = EINVAL;
         goto EXIT;
     }
 
-    runTask->taskName[strLen] = '\0';
-
+    err = LOS_OK;
+    processCB = OS_PCB_FROM_PID(taskCB->processID);
     /* if thread is main thread, then set processName as taskName */
-    if (runTask->taskID == runProcess->threadGroupID) {
-        (VOID)memcpy_s(runProcess->processName, OS_PCB_NAME_LEN, (VOID *)runTask->taskName, OS_TCB_NAME_LEN);
+    if ((taskCB->taskID == processCB->threadGroupID) && (setPName == TRUE)) {
+        err = (INT32)OsSetProcessName(processCB, (const CHAR *)taskCB->taskName);
+        if (err != LOS_OK) {
+            err = EINVAL;
+        }
     }
-
-    SCHEDULER_UNLOCK(intSave);
-    return LOS_OK;
 
 EXIT:
     SCHEDULER_UNLOCK(intSave);
@@ -1747,6 +1730,7 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
         (VOID)OsTaskSyncWait(runTask[cpu]);
     }
 #endif
+    processCB->threadGroupID = OsCurrTaskGet()->taskID;
     SCHEDULER_UNLOCK(intSave);
 
     LOS_ASSERT(processCB->threadNumber == 1);
@@ -1838,7 +1822,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsCreateUserTaskParamCheck(UINT32 processID,
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT_INIT INT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam)
+LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam)
 {
     LosProcessCB *processCB = NULL;
     UINT32 taskID;
