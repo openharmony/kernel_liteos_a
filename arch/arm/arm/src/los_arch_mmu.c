@@ -624,8 +624,7 @@ STATUS_T LOS_ArchMmuChangeProt(LosArchMmu *archMmu, VADDR_T vaddr, size_t count,
 
         status = LOS_ArchMmuUnmap(archMmu, vaddr, 1);
         if (status < 0) {
-            VM_ERR("invalid args:aspace %p, vaddr %p, count %d",
-                   __FUNCTION__, __LINE__, archMmu, vaddr, count);
+            VM_ERR("invalid args:aspace %p, vaddr %p, count %d", archMmu, vaddr, count);
             return LOS_NOK;
         }
 
@@ -832,7 +831,7 @@ STATIC VOID OsSetKSectionAttr(VOID)
                              kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
                              VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE);
     if (status != (kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
-        VM_ERR("unmap failed, status: %d", status);
+        VM_ERR("mmap failed, status: %d", status);
         return;
     }
     LOS_VmSpaceReserve(kSpace, kmallocLength, bssEndBoundary);
