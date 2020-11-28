@@ -561,7 +561,7 @@ STATIC VOID OsDevPagesRemove(LosArchMmu *archMmu, VADDR_T vaddr, UINT32 count)
     status_t status;
 
     if ((archMmu == NULL) || (vaddr == 0) || (count == 0)) {
-        VM_ERR("OsAnonPagesRemove invalid args, archMmu %p, vaddr %p, count %d", archMmu, vaddr, count);
+        VM_ERR("OsDevPagesRemove invalid args, archMmu %p, vaddr %p, count %d", archMmu, vaddr, count);
         return;
     }
 
@@ -658,10 +658,9 @@ STATIC LosVmMapRegion *OsVmRegionSplit(LosVmMapRegion *oldRegion, VADDR_T newReg
     LosVmSpace *space = oldRegion->space;
     size_t size = LOS_RegionSize(newRegionStart, LOS_RegionEndAddr(oldRegion));
 
-    LOS_RbDelNode(&space->regionRbTree, &oldRegion->rbNode);
     oldRegion->range.size = LOS_RegionSize(oldRegion->range.base, newRegionStart - 1);
-    if (oldRegion->range.size != 0) {
-        LOS_RbAddNode(&space->regionRbTree, &oldRegion->rbNode);
+    if (oldRegion->range.size == 0) {
+        LOS_RbDelNode(&space->regionRbTree, &oldRegion->rbNode);
     }
 
     newRegion = OsVmRegionDup(oldRegion->space, oldRegion, newRegionStart, size);
@@ -682,15 +681,7 @@ STATUS_T OsVmRegionAdjust(LosVmSpace *space, VADDR_T newRegionStart, size_t size
     LosVmMapRegion *newRegion = NULL;
 
     region = LOS_RegionFind(space, newRegionStart);
-    if ((region == NULL) || (region->range.base >= nextRegionBase)) {
-        return LOS_ERRNO_VM_NOT_FOUND;
-    }
-
-    if ((region->range.base == newRegionStart) && (region->range.size == size)) {
-        return LOS_OK;
-    }
-
-    if (newRegionStart > region->range.base) {
+    if ((region != NULL) && (newRegionStart > region->range.base)) {
         newRegion = OsVmRegionSplit(region, newRegionStart);
         if (newRegion == NULL) {
             VM_ERR("region split fail");
@@ -796,7 +787,7 @@ STATUS_T OsIsRegionCanExpand(LosVmSpace *space, LosVmMapRegion *region, size_t s
 
     nextRegion = (LosVmMapRegion *)LOS_RbSuccessorNode(&space->regionRbTree, &region->rbNode);
     /* if the gap is larger than size, then we can expand */
-    if ((nextRegion != NULL) && ((nextRegion->range.base - region->range.base - region->range.size) > size)) {
+    if ((nextRegion != NULL) && ((nextRegion->range.base - region->range.base ) >= size)) {
         return LOS_OK;
     }
 
