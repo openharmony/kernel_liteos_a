@@ -48,7 +48,7 @@
 #define USE_TASKID_AS_HANDLE YES
 #define USE_MMAP YES
 #define IPC_MSG_DATA_SZ_MAX 1024
-#define IPC_MSG_OBJECT_NUM_MAX 256
+#define IPC_MSG_OBJECT_NUM_MAX (IPC_MSG_DATA_SZ_MAX / sizeof(SpecialObj))
 
 #define LITE_IPC_POOL_NAME "liteipc"
 #define LITE_IPC_POOL_PAGE_MAX_NUM 64 /* 256KB */
@@ -105,7 +105,7 @@ STATIC const struct file_operations_vfs g_liteIpcFops = {
 
 #if (LOSCFG_KERNEL_TRACE == YES)
 const char *g_operStr[OPERATION_NUM] = {"WRITE", "WRITE_DROP", "TRY_READ", "READ", "READ_DROP", "READ_TIMEOUT"};
-const char *g_msgTypeStr[MT_NUM] = {"REQUEST", "REPLY", "DEATH_NOTIFY"};
+const char *g_msgTypeStr[MT_NUM] = {"REQUEST", "REPLY", "FAILED_REPLY", "DEATH_NOTIFY"};
 const char *g_ipcStatusStr[2] = {"NOT_PEND", "PEND"};
 
 LITE_OS_SEC_TEXT STATIC UINT16 IpcTraceHook(UINT8 *inputBuffer, UINT32 id, UINT32 msg)
