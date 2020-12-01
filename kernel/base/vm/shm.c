@@ -337,10 +337,14 @@ VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region)
         return;
     }
 
+    LOS_ArchMmuUnmap(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);
     ShmPagesRefDec(seg);
     seg->ds.shm_nattch--;
-    if (seg->ds.shm_nattch <= 0) {
+    if (seg->ds.shm_nattch <= 0 && (seg->status & SHM_SEG_REMOVE)) {
         ShmFreeSeg(seg);
+    } else {
+        seg->ds.shm_dtime = time(NULL);
+        seg->ds.shm_lpid = LOS_GetCurrProcessID();/* may not be the space's PID. */
     }
     SYSV_SHM_UNLOCK();
 }
@@ -411,7 +415,7 @@ INT32 ShmGet(key_t key, size_t size, INT32 shmflg)
 
     SYSV_SHM_LOCK();
     if ((((UINT32)shmflg & IPC_CREAT) == 0) &&
-        (((UINT32)shmflg & IPC_EXCL) == 0)) {
+        (((UINT32)shmflg & IPC_EXCL) == 1)) {
         ret = -EINVAL;
         goto ERROR;
     }
@@ -487,13 +491,15 @@ LosVmMapRegion *ShmatVmmAlloc(struct shmIDSource *seg, const VOID *shmaddr,
         } else {
             vaddr = (VADDR_T)(UINTPTR)shmaddr;
         }
-        if ((shmflg & SHM_REMAP)) {
-            vaddr = (VADDR_T)LOS_MMap(vaddr, seg->ds.shm_segsz, prot,
-                                      MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-            region = LOS_RegionFind(space, vaddr);
-        } else {
-            region = LOS_RegionAlloc(space, vaddr, seg->ds.shm_segsz, regionFlags, 0);
+        if (!(shmflg & SHM_REMAP) && (LOS_RegionFind(space, vaddr) ||
+                LOS_RegionFind(space, vaddr + seg->ds.shm_segsz - 1) ||
+                LOS_RegionRangeFind(space, vaddr, seg->ds.shm_segsz - 1))) {
+            ret = EINVAL;
+            goto ERROR;
         }
+        vaddr = (VADDR_T)LOS_MMap(vaddr, seg->ds.shm_segsz, prot,
+                                      MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+        region = LOS_RegionFind(space, vaddr);
     }
 
     if (region == NULL) {
@@ -718,10 +724,10 @@ INT32 ShmDt(const VOID *shmaddr)
     if ((seg->ds.shm_nattch <= 0) &&
         (seg->status & SHM_SEG_REMOVE)) {
         ShmFreeSeg(seg);
+    } else {
+        seg->ds.shm_dtime = time(NULL);
+        seg->ds.shm_lpid = LOS_GetCurrProcessID();
     }
-
-    seg->ds.shm_dtime = time(NULL);
-    seg->ds.shm_lpid = LOS_GetCurrProcessID();
     SYSV_SHM_UNLOCK();
     (VOID)LOS_MuxRelease(&space->regionMux);
     return 0;
