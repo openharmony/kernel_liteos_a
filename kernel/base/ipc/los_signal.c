@@ -459,8 +459,8 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
     /* If pendingflag & set > 0, shound clear pending flag */
     sigset_t clear = sigcb->sigPendFlag & *set;
     if (clear) {
-        sigcb->sigPendFlag ^= clear;
         ret = FindFirstSetedBit((UINT64)clear) + 1;
+        sigcb->sigPendFlag ^= SIGNO2SET(ret);
     } else {
         OsSigAddSet(set, SIGKILL);
         OsSigAddSet(set, SIGSTOP);
