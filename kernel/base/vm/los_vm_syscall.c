@@ -179,11 +179,15 @@ VOID *LOS_DoBrk(VOID *addr)
         if (LOS_UnMMap(newBrk, (oldBrk - newBrk)) < 0) {
             return (void *)(UINTPTR)space->heapNow;
         }
-        space->heapNow = (VADDR_T)(UINTPTR)addr;
-        return addr;
+        space->heapNow = (VADDR_T)(UINTPTR)alignAddr;
+        return alignAddr;
     }
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
+    if ((UINTPTR)alignAddr >= space->mapBase) {
+        VM_ERR("Process heap memory space is insufficient");
+        return (VOID *)-ENOMEM;
+    }
     if (space->heapBase == space->heapNow) {
         region = LOS_RegionAlloc(space, space->heapBase, size,
                                  VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |
@@ -195,11 +199,6 @@ VOID *LOS_DoBrk(VOID *addr)
         }
         region->regionFlags |= VM_MAP_REGION_FLAG_HEAP;
         space->heap = region;
-    }
-
-    if ((UINTPTR)alignAddr >= space->mapBase) {
-        VM_ERR("Process heap memory space is insufficient");
-        goto REGION_ALLOC_FAILED;
     }
 
     space->heapNow = (VADDR_T)(UINTPTR)alignAddr;

@@ -71,7 +71,7 @@ STATIC VOID OsSemPendedTaskNamePrint(LosSemCB *semNode)
     PRINTK("Pended task list : ");
     for (i = 0; i < num; i++) {
         if (i == 0) {
-            PRINTK("%s\n", nameArr[i]);
+            PRINTK("\n%s", nameArr[i]);
         } else {
             PRINTK(", %s", nameArr[i]);
         }

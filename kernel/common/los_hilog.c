@@ -178,7 +178,7 @@ static ssize_t HiLogRead(FAR struct file *filep, char *buffer, size_t bufLen)
     }
 
     if (bufLen < header.len + sizeof(header)) {
-        dprintf("buffer too small,bufLen=%d, header.len=%d,%d\n", bufLen, header.len, header.hdrSize, header.nsec);
+        dprintf("buffer too small,bufLen=%d, header.len=%d,%d\n", bufLen, header.len, header.hdrSize);
         retval = -ENOMEM;
         goto out;
     }
@@ -248,13 +248,14 @@ static void HiLogCoverOldLog(size_t bufLen)
     struct HiLogEntry header;
     size_t totalSize = bufLen + sizeof(struct HiLogEntry);
 
-    while (totalSize + g_hiLogDev.size >= HILOG_BUFFER) {
+    while (totalSize + g_hiLogDev.size > HILOG_BUFFER) {
         retval = HiLogReadRingBuffer((unsigned char *)&header, sizeof(header));
         if (retval < 0) {
             break;
         }
 
-        HiLogBufferDec(sizeof(header) + header.len);
+        HiLogBufferDec(sizeof(header));
+        HiLogBufferDec(header.len);
     }
 }
 
