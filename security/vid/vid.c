@@ -138,6 +138,7 @@ static UINT16 GetFreeVid(VOID)
     }
 
     (void)memcpy_s(tmp, mapMaxNum * sizeof(UINT32), idMap->bitMap, (mapMaxNum - 1) * sizeof(UINT32));
+    LOS_MemFree(m_aucSysMem0, idMap->bitMap);
     idMap->bitMap = tmp;
     idMap->mapCount = mapMaxNum;
     idMap->bitMap[i] = 1;

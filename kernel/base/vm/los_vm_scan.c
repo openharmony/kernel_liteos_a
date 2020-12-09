@@ -337,7 +337,7 @@ int OsTryShrinkMemory(size_t nPage)
     return nReclaimed;
 }
 #else
-int TryShrinkMemory(size_t nPage)
+int OsTryShrinkMemory(size_t nPage)
 {
     return 0;
 }
