@@ -363,7 +363,7 @@ LITEOS_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../drivers/liteos
 ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
 LITEOS_VENDOR_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/platform
 else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-LITEOS_VENDOR_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../vendor/qemu/arm/platform
+LITEOS_VENDOR_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../device/qemu/arm/platform
 endif
 ################################## Driver Option Begin #################################
 ifeq ($(LOSCFG_DRIVERS_HDF), y)

@@ -89,9 +89,9 @@ ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV30
     PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/include
     PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/include/hisoc
 else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/qemu/arm/$(LITEOS_PLATFORM)/config/board/include
+    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../device/qemu/arm/$(LITEOS_PLATFORM)/config/board/include
     # TODO: remove hisoc dependency in the code to avoid using hisoc here
-    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/qemu/arm/$(LITEOS_PLATFORM)/config/board/include/hisoc
+    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../device/qemu/arm/$(LITEOS_PLATFORM)/config/board/include/hisoc
 endif
 #
 #-include $(LITEOSTOPDIR)/platform/bsp/board/$(LITEOS_PLATFORM)/board.mk

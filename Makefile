@@ -103,7 +103,7 @@ endif
 ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
 VENDOR_BOARD_INCLUDE := $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board
 else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-VENDOR_BOARD_INCLUDE := $(LITEOSTOPDIR)/../../vendor/qemu/arm/$(LITEOS_PLATFORM)/config/board
+VENDOR_BOARD_INCLUDE := $(LITEOSTOPDIR)/../../device/qemu/arm/$(LITEOS_PLATFORM)/config/board
 else
 $(error "No VENDOR_BOARD_INCLUDE defined")
 endif
