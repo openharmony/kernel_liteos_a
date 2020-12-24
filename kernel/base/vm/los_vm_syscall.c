@@ -186,7 +186,8 @@ VOID *LOS_DoBrk(VOID *addr)
     (VOID)LOS_MuxAcquire(&space->regionMux);
     if ((UINTPTR)alignAddr >= space->mapBase) {
         VM_ERR("Process heap memory space is insufficient");
-        return (VOID *)-ENOMEM;
+        ret = (VOID *)-ENOMEM;
+        goto REGION_ALLOC_FAILED;
     }
     if (space->heapBase == space->heapNow) {
         region = LOS_RegionAlloc(space, space->heapBase, size,
