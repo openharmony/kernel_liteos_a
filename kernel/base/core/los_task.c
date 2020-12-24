@@ -766,6 +766,7 @@ LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
     if (LOS_ListEmpty(&g_losFreeTask)) {
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("No idle TCB in the system!\n");
+        LOS_Panic("**************error***************\n");
         return NULL;
     }
 
