@@ -1626,6 +1626,7 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
     UINT32 i;
     CONSOLE_CB *console = NULL;
     LosTaskCB *taskCB = NULL;
+    INT32 waitTime = 30000; /* 30000: 30 seconds*/
 
     for (i = 0; i < CONSOLE_NUM; i++) {
         console = g_console[i];
@@ -1638,8 +1639,9 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
         }
 
         taskCB = OS_TCB_FROM_TID(console->sendTaskID);
-        while ((taskCB->taskEvent == NULL) && (taskID != console->sendTaskID)) {
+        while ((waitTime > 0) && (taskCB->taskEvent == NULL) && (taskID != console->sendTaskID)) {
             LOS_Mdelay(1); /* 1: wait console task pend */
+            --waitTime;
         }
     }
 }
