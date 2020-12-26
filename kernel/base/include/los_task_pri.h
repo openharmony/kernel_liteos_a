@@ -213,6 +213,14 @@ extern SPIN_LOCK_S g_taskSpin;
 
 /**
  * @ingroup los_task
+ * Flag that indicates the task property.
+ *
+ * The task is system-level task, like ResourcesTask.
+ */
+#define OS_TASK_FLAG_NO_DELETE  0x8000U
+
+/**
+ * @ingroup los_task
  * Boundary on which the stack size is aligned.
  *
  */

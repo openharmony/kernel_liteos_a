@@ -1626,7 +1626,7 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
     UINT32 i;
     CONSOLE_CB *console = NULL;
     LosTaskCB *taskCB = NULL;
-    INT32 waitTime = 30000; /* 30000: 30 seconds*/
+    INT32 waitTime = 3000; /* 3000: 3 seconds*/
 
     for (i = 0; i < CONSOLE_NUM; i++) {
         console = g_console[i];

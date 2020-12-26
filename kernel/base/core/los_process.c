@@ -610,7 +610,6 @@ STATIC LosProcessCB *OsGetFreePCB(VOID)
     if (LOS_ListEmpty(&g_freeProcess)) {
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("No idle PCB in the system!\n");
-        __asm__ __volatile__("swi 0");
         return NULL;
     }
 

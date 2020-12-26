@@ -766,7 +766,6 @@ LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
     if (LOS_ListEmpty(&g_losFreeTask)) {
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("No idle TCB in the system!\n");
-        LOS_Panic("**************error***************\n");
         return NULL;
     }
 
@@ -1205,6 +1204,13 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
         OS_GOTO_ERREND();
     }
 
+    if ((taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) ||
+        (taskCB->taskStatus & OS_TASK_FLAG_NO_DELETE)) {
+        SCHEDULER_UNLOCK(intSave);
+        OsBackTrace();
+        __asm__ __volatile__("swi 0");
+        return LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;
+    }
     processCB = OS_PCB_FROM_PID(taskCB->processID);
     if (processCB->threadNumber == 1) {
         if (processCB == OsCurrProcessGet()) {
@@ -1990,7 +1996,11 @@ LITE_OS_SEC_TEXT UINT32 OsCreateResourceFreeTask(VOID)
     taskInitParam.uwStackSize = OS_TASK_RESOURCE_STATCI_SIZE;
     taskInitParam.pcName = "ResourcesTask";
     taskInitParam.usTaskPrio = OS_TASK_RESOURCE_FREE_PRIORITY;
-    return LOS_TaskCreate(&taskID, &taskInitParam);
+    ret = LOS_TaskCreate(&taskID, &taskInitParam);
+    if (ret == LOS_OK) {
+        OS_TCB_FROM_TID(taskID)->taskStatus |= OS_TASK_FLAG_NO_DELETE;
+    }
+    return ret;
 }
 
 #ifdef __cplusplus
