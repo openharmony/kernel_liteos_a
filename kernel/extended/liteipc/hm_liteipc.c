@@ -929,7 +929,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CopyDataFromUser(IpcListNode *node, UINT32 bufSz,
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT STATIC BOOL IsLeagalReply(const IpcContent *content)
+LITE_OS_SEC_TEXT STATIC BOOL IsValidReply(const IpcContent *content)
 {
     UINT32 curProcessID = LOS_GetCurrProcessID();
     IpcListNode *node = (IpcListNode *)GetIpcKernelAddr(curProcessID, (INTPTR)(content->buffToFree));
@@ -983,7 +983,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
             if ((flag & BUFF_FREE) != BUFF_FREE) {
                 return -EINVAL;
             }
-            if (!IsLeagalReply(content)) {
+            if (!IsValidReply(content)) {
                 return -EINVAL;
             }
 #if (USE_TIMESTAMP == YES)
