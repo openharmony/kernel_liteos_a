@@ -57,7 +57,11 @@
     .global   _osExceptPrefetchAbortHdl
     .global   _osExceptSwiHdl
     .global   _osExceptUndefInstrHdl
+#if defined(LOSCFG_CC_STACKPROTECTOR_ALL) || \
+    defined(LOSCFG_CC_STACKPROTECTOR_STRONG) || \
+    defined(LOSCFG_CC_STACKPROTECTOR)
     .global   __stack_chk_guard_setup
+#endif
 
 
     .fpu vfpv4
@@ -147,15 +151,22 @@
 .endm
 #endif
 
+#if defined(LOSCFG_CC_STACKPROTECTOR_ALL) || \
+    defined(LOSCFG_CC_STACKPROTECTOR_STRONG) || \
+    defined(LOSCFG_CC_STACKPROTECTOR)
 @ Description: Stack-Protector Init
 __stack_chk_guard_setup:
     PUSH    {FP, LR}
+#if defined(LOSCFG_PLATFORM_HI3516DV300) || defined(LOSCFG_PLATFORM_HI3518EV300)
+    /* Randomize __stack_chk_quard using platform-specific function. */
     BL      OsRandomStackGuard
     LDR     R1, =__stack_chk_guard
     MOV     R3, R0
     ORR     R2, R3, #0X80000000
     STR     R2, [R1]
+#endif
     POP     {FP, PC}
+#endif
 
 @ Description: Undefined instruction exception handler
 _osExceptUndefInstrHdl:

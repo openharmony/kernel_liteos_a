@@ -35,7 +35,14 @@
 #include "los_printf.h"
 #include "los_task_pri.h"
 #include "los_process_pri.h"
+
+#ifdef LOSCFG_BASE_CORE_HILOG
 #include "log.h"
+#else
+#define HILOG_INFO(type, fmt, ...)	PRINT_INFO(fmt, __VA_ARGS__)
+#define HILOG_ERROR(type, fmt, ...)	PRINT_ERR(fmt, __VA_ARGS__)
+#endif
+
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #include "shell.h"

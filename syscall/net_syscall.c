@@ -29,7 +29,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "los_syscall.h"
 #include "los_process_pri.h"
 #include "lwip/sockets.h"
 #include <stdlib.h>

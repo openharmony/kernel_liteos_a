@@ -232,6 +232,17 @@ STATIC INT32 GetArgs(CHAR **args)
     }
 #endif
 
+#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
+    /*
+     * TODO: Implement method of fetching bootargs for
+     *       Qemu ARM virtual platform. If used without
+     *       bootloader it will pass DTB by default.
+     */
+    (void)ret;
+    PRINT_ERR("Fetching bootargs unimplemented.\n");
+    goto ERROUT;
+#endif
+
     for (i = 0; i < COMMAND_LINE_SIZE; i += len + 1) {
         len = strlen(cmdLine + i);
         tmp = strstr(cmdLine + i, bootargName);

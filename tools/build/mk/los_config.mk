@@ -163,8 +163,10 @@ LITEOS_BASELIB += -lbase
 LIB_SUBDIRS       += kernel/base
 LITEOS_KERNEL_INCLUDE   := -I $(LITEOSTOPDIR)/kernel/include
 
+ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
 LITEOS_BASELIB += -lhi35xx_bsp
 LIB_SUBDIRS += $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/
+endif
 
 ifeq ($(LOSCFG_KERNEL_CPUP), y)
     LITEOS_BASELIB   += -lcpup
@@ -358,7 +360,11 @@ endif
 
 #################################### Net Option End####################################
 LITEOS_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../drivers/liteos
+ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
 LITEOS_VENDOR_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/platform
+else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
+LITEOS_VENDOR_DRIVERS_BASE_PATH := $(LITEOSTOPDIR)/../../device/qemu/arm/platform
+endif
 ################################## Driver Option Begin #################################
 ifeq ($(LOSCFG_DRIVERS_HDF), y)
 include $(LITEOSTOPDIR)/../../drivers/hdf/lite/hdf_lite.mk
@@ -457,7 +463,10 @@ ifeq ($(LOSCFG_COMPILE_DEBUG), y)
     LITEOS_COPTS_OPTION  = -g -gdwarf-2
 else
     ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-        LITEOS_COPTS_OPTMIZE = -Oz -flto
+	# WORKAROUND: Disable LTO to avoid undefined __stack_chk_guard
+	#             problem. "externally_visible" attribute could be
+	#             a fix for that but it is not known to our LLVM.
+        LITEOS_COPTS_OPTMIZE = -Oz #-flto
     else
         LITEOS_COPTS_OPTMIZE = -O2
     endif

@@ -34,7 +34,6 @@
 #include "stdlib.h"
 #include "unistd.h"
 #include "sys/mount.h"
-#include "pthread.h"
 #include "linux/spinlock.h"
 #include "inode/inode.h"
 

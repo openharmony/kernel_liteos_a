@@ -33,18 +33,27 @@ MODULE_NAME := bsp
 
 LOCAL_SRCS = $(wildcard $(HWI_SRC)/*.c) \
             $(wildcard $(TIMER_SRC)/*.c) \
-            $(wildcard $(HRTIMER_SRC)/*.c) \
             $(wildcard $(UART_SRC)/*.c) \
             $(wildcard ./main.c)
+
+ifeq ($(LOSCFG_HRTIMER_ENABLE), y)
+LOCAL_SRCS += $(wildcard $(HRTIMER_SRC)/*.c)
+endif
 
 LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/compat/posix/src \
                  -I $(LITEOSTOPDIR)/bsd/dev/random
 
-ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
+MAIN_PLATFORMS := $(LOSCFG_PLATFORM_HI3518EV300) \
+                  $(LOSCFG_PLATFORM_HI3516DV300) \
+                  $(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
+ifeq ($(findstring y, $(MAIN_PLATFORMS)), y)
 LOCAL_SRCS += $(wildcard ../kernel/common/*.c)
 LOCAL_SRCS := $(filter-out ../kernel/common/los_rootfs.c, $(LOCAL_SRCS))
 ifneq ($(LOSCFG_FS_VFS), y)
 LOCAL_SRCS := $(filter-out ../kernel/common/console.c ../kernel/common/virtual_serial.c, $(LOCAL_SRCS))
+endif
+ifneq ($(LOSCFG_BASE_CORE_HILOG), y)
+LOCAL_SRCS := $(filter-out ../kernel/common/los_hilog.c, $(LOCAL_SRCS))
 endif
 else
 LOCAL_SRCS += $(wildcard ../kernel/common/los_config.c)

@@ -2,6 +2,7 @@ config PLATFORM
     string
     default "hi3516dv300"     if PLATFORM_HI3516DV300
     default "hi3518ev300"     if PLATFORM_HI3518EV300
+    default "virt"            if PLATFORM_QEMU_ARM_VIRT_CA7
 
 choice
     prompt "Board"
@@ -10,6 +11,8 @@ choice
       IPC has several chips:
       hi3516dv300
       hi3518ev300
+      Qemu ARM Virt variants (based on different CPU types):
+      qemu_arm_virt_ca7
 
 config PLATFORM_HI3516DV300
     bool "hi3516dv300"
@@ -18,6 +21,12 @@ config PLATFORM_HI3516DV300
 config PLATFORM_HI3518EV300
     bool "hi3518ev300"
     select ARCH_CORTEX_A7
+
+config PLATFORM_QEMU_ARM_VIRT_CA7
+    bool "qemu_arm_virt_ca7"
+    select ARCH_CORTEX_A7
+    help
+        QEMU ARM Virtual Platform using Cortex-A7 CPU.
 
 endchoice
 
@@ -47,3 +56,10 @@ config PLATFORM_BSP_GIC_V3
       General Interrupt Controller version 3.
 
 endchoice
+
+config HRTIMER_ENABLE
+    bool "HR TIMER enable"
+    default y
+    help
+      Enable High-resolution timer support
+
