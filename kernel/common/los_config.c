@@ -130,7 +130,6 @@ extern "C" {
 #endif /* __cplusplus */
 
 extern UINT32 OsSystemInit(VOID);
-extern VOID SystemInit(VOID);
 
 VOID __attribute__((weak)) SystemInit(VOID)
 {
