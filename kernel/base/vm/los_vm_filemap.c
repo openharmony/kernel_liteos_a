@@ -661,7 +661,7 @@ STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region)
             return LOS_ERRNO_VM_MAP_FAILED;
         }
     } else if (INODE_IS_DRIVER(inodePtr)) {
-        if (inodePtr->u.i_ops->mmap) {
+        if (inodePtr->u.i_ops && inodePtr->u.i_ops->mmap) {
             LOS_SetRegionTypeDev(region);
             return inodePtr->u.i_ops->mmap(filep, region);
         } else {
