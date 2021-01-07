@@ -500,6 +500,26 @@ out:
     return 0;
 }
 
+#ifdef LOSCFG_FS_NFS
+static int NfsMountRef(const char *serverIpAndPath, const char *mountPath,
+                       unsigned int uid, unsigned int gid) __attribute__((weakref("nfs_mount")));
+
+static int NfsMount(const char *serverIpAndPath, const char *mountPath,
+                    unsigned int uid, unsigned int gid)
+{
+    int ret;
+
+    if ((serverIpAndPath == NULL) || (mountPath == NULL)) {
+        return -EINVAL;
+    }
+    ret = NfsMountRef(serverIpAndPath, mountPath, uid, gid);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+    return ret;
+}
+#endif
+
 int SysMount(const char *source, const char *target, const char *filesystemtype, unsigned long mountflags,
              const void *data)
 {
@@ -534,6 +554,12 @@ int SysMount(const char *source, const char *target, const char *filesystemtype,
                 goto OUT;
             }
         }
+#ifdef LOSCFG_FS_NFS
+        if (strcmp(fstypeRet, "nfs") == 0) {
+            ret = NfsMount(sourceRet, targetRet, 0, 0);
+            goto OUT;
+        }
+#endif
     }
 
     ret = mount(sourceRet, targetRet, (filesystemtype ? fstypeRet : NULL), mountflags, data);
