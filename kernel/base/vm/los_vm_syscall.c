@@ -360,7 +360,9 @@ VADDR_T LOS_DoMremap(VADDR_T oldAddress, size_t oldSize, size_t newSize, int fla
             ret = -ENOMEM;
             goto OUT_MREMAP;
         }
-        status = LOS_ArchMmuMove(&space->archMmu, oldAddress, newAddr, newSize >> PAGE_SHIFT, regionOld->regionFlags);
+        status = LOS_ArchMmuMove(&space->archMmu, oldAddress, newAddr,
+                                 ((newSize < regionOld->range.size) ? newSize : regionOld->range.size) >> PAGE_SHIFT,
+                                 regionOld->regionFlags);
         if (status) {
             LOS_RegionFree(space, regionNew);
             ret = -ENOMEM;
@@ -390,8 +392,8 @@ VADDR_T LOS_DoMremap(VADDR_T oldAddress, size_t oldSize, size_t newSize, int fla
             ret = -ENOMEM;
             goto OUT_MREMAP;
         }
-        status = LOS_ArchMmuMove(&space->archMmu, oldAddress, regionNew->range.base, newSize >> PAGE_SHIFT,
-                                 regionOld->regionFlags);
+        status = LOS_ArchMmuMove(&space->archMmu, oldAddress, regionNew->range.base,
+                                 regionOld->range.size >> PAGE_SHIFT, regionOld->regionFlags);
         if (status) {
             LOS_RegionFree(space, regionNew);
             ret = -ENOMEM;

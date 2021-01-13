@@ -1204,11 +1204,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
         OS_GOTO_ERREND();
     }
 
-    if ((taskCB->taskStatus & OS_TASK_FLAG_SYSTEM_TASK) ||
-        (taskCB->taskStatus & OS_TASK_FLAG_NO_DELETE)) {
+    if (taskCB->taskStatus & (OS_TASK_FLAG_SYSTEM_TASK | OS_TASK_FLAG_NO_DELETE)) {
         SCHEDULER_UNLOCK(intSave);
         OsBackTrace();
-        __asm__ __volatile__("swi 0");
         return LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;
     }
     processCB = OS_PCB_FROM_PID(taskCB->processID);
