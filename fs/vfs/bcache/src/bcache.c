@@ -721,9 +721,11 @@ static INT32 BcacheInitCache(OsBcache *bc,
     return ENOERR;
 }
 
-static INT32 DrvBread(struct inode *priv, UINT8 *buf, UINT32 len, UINT64 pos)
+static INT32 DrvBread(struct Vnode *priv, UINT8 *buf, UINT32 len, UINT64 pos)
 {
-    INT32 ret = priv->u.i_bops->read(priv, buf, pos, len);
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)priv->data)->ops;
+
+    INT32 ret = bops->read(priv, buf, pos, len);
     if (ret != (INT32)len) {
         PRINT_ERR("%s failure\n", __FUNCTION__);
         return ret;
@@ -731,9 +733,10 @@ static INT32 DrvBread(struct inode *priv, UINT8 *buf, UINT32 len, UINT64 pos)
     return ENOERR;
 }
 
-static INT32 DrvBwrite(struct inode *priv, const UINT8 *buf, UINT32 len, UINT64 pos)
+static INT32 DrvBwrite(struct Vnode *priv, const UINT8 *buf, UINT32 len, UINT64 pos)
 {
-    INT32 ret = priv->u.i_bops->write(priv, buf, pos, len);
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)priv->data)->ops;
+    INT32 ret = bops->write(priv, buf, pos, len);
     if (ret != (INT32)len) {
         PRINT_ERR("%s failure\n", __FUNCTION__);
         return ret;
@@ -999,11 +1002,11 @@ VOID BcacheSyncThreadDeinit(const OsBcache *bc)
 }
 #endif
 
-OsBcache *BlockCacheInit(struct inode *devNode, UINT32 sectorSize, UINT32 sectorPerBlock,
+OsBcache *BlockCacheInit(struct Vnode *devNode, UINT32 sectorSize, UINT32 sectorPerBlock,
                          UINT32 blockNum, UINT64 blockCount)
 {
     OsBcache *bcache = NULL;
-    struct inode *blkDriver = devNode;
+    struct Vnode *blkDriver = devNode;
     UINT8 *bcacheMem = NULL;
     UINT8 *rwBuffer = NULL;
     UINT32 blockSize, memSize;

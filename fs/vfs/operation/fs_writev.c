@@ -35,8 +35,8 @@
 #include "string.h"
 #include "stdlib.h"
 #include "fs/fs.h"
-#include "inode/inode.h"
 #include "user_copy.h"
+#include "limits.h"
 
 static int iov_trans_to_buf(char *buf, ssize_t totallen, const struct iovec *iov, int iovcnt)
 {

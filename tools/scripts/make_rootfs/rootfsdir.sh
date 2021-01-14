@@ -34,7 +34,7 @@ BIN_DIR=$1
 LIB_DIR=$2
 ROOTFS_DIR=$3
 mkdir -p ${ROOTFS_DIR}/bin ${ROOTFS_DIR}/lib ${ROOTFS_DIR}/usr/bin ${ROOTFS_DIR}/usr/lib ${ROOTFS_DIR}/etc \
-${ROOTFS_DIR}/app ${ROOTFS_DIR}/data ${ROOTFS_DIR}/data/system ${ROOTFS_DIR}/data/system/param \
+${ROOTFS_DIR}/app ${ROOTFS_DIR}/data ${ROOTFS_DIR}/proc ${ROOTFS_DIR}/dev ${ROOTFS_DIR}/data/system ${ROOTFS_DIR}/data/system/param \
 ${ROOTFS_DIR}/system ${ROOTFS_DIR}/system/internal ${ROOTFS_DIR}/system/external
 if [ -d "${BIN_DIR}" ] && [ "$(ls -A "${BIN_DIR}")" != "" ]; then
     cp -f ${BIN_DIR}/* ${ROOTFS_DIR}/bin

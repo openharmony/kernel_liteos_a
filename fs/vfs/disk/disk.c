@@ -35,7 +35,8 @@
 #include "unistd.h"
 #include "sys/mount.h"
 #include "linux/spinlock.h"
-#include "inode/inode.h"
+
+#include "fs/path_cache.h"
 
 #ifdef LOSCFG_DRIVERS_MMC
 #include "mmc/block.h"
@@ -258,7 +259,7 @@ static VOID DiskPartDelFromDisk(los_disk *disk, los_part *part)
     disk->part_count--;
 }
 
-static los_part *DiskPartAllocate(struct inode *dev, UINT64 start, UINT64 count)
+static los_part *DiskPartAllocate(struct Vnode *dev, UINT64 start, UINT64 count)
 {
     UINT32 i;
     los_part *part = get_part(0); /* traversing from the beginning of the array */
@@ -307,11 +308,10 @@ static VOID DiskPartRelease(los_part *part)
 static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount, BOOL IsValidPart)
 {
     CHAR devName[DEV_NAME_BUFF_SIZE];
-    struct inode *diskDev = NULL;
-    struct inode *partDev = NULL;
+    struct Vnode *diskDev = NULL;
+    struct Vnode *partDev = NULL;
     los_part *part = NULL;
     INT32 ret;
-    struct inode_search_s desc;
 
     if ((disk == NULL) || (disk->disk_status == STAT_UNUSED) ||
         (disk->dev == NULL)) {
@@ -331,23 +331,21 @@ static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount,
             return VFS_ERROR;
         }
 
-        if (register_blockdriver(devName, diskDev->u.i_bops, RWE_RW_RW, diskDev->i_private)) {
+        if (register_blockdriver(devName, ((struct drv_data *)diskDev->data)->ops,
+                                 RWE_RW_RW, ((struct drv_data *)diskDev->data)->priv)) {
             PRINT_ERR("DiskAddPart : register %s fail!\n", devName);
             return VFS_ERROR;
         }
 
-        SETUP_SEARCH(&desc, devName, false);
-        ret = inode_find(&desc);
+        VnodeHold();
+        VnodeLookup(devName, &partDev, 0);
         if (ret < 0) {
+            VnodeDrop();
             PRINT_ERR("DiskAddPart : find %s fail!\n", devName);
             return VFS_ERROR;
         }
-        partDev = desc.node;
-
-        PRINTK("DiskAddPart : register %s ok!\n", devName);
-
         part = DiskPartAllocate(partDev, sectorStart, sectorCount);
-        inode_release(partDev);
+        VnodeDrop();
         if (part == NULL) {
             (VOID)unregister_blockdriver(devName);
             return VFS_ERROR;
@@ -439,11 +437,13 @@ static INT32 DiskPartitionMemZalloc(size_t boundary, size_t size, CHAR **gptBuf,
     return ENOERR;
 }
 
-static INT32 GPTInfoGet(struct inode *blkDrv, CHAR *gptBuf)
+static INT32 GPTInfoGet(struct Vnode *blkDrv, CHAR *gptBuf)
 {
     INT32 ret;
 
-    ret = blkDrv->u.i_bops->read(blkDrv, (UINT8 *)gptBuf, 1, 1); /* Read the device first sector */
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
+
+    ret = bops->read(blkDrv, (UINT8 *)gptBuf, 1, 1); /* Read the device first sector */
     if (ret != 1) { /* Read failed */
         PRINT_ERR("%s %d\n", __FUNCTION__, __LINE__);
         return -EIO;
@@ -481,12 +481,13 @@ static INT32 OsGPTPartitionRecognitionSub(struct disk_divide_info *info, const C
     return ENOERR;
 }
 
-static INT32 OsGPTPartitionRecognition(struct inode *blkDrv, struct disk_divide_info *info,
+static INT32 OsGPTPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_info *info,
                                        const CHAR *gptBuf, CHAR *partitionBuf, UINT32 *partitionCount)
 {
     UINT32 j;
     INT32 ret = VFS_ERROR;
     UINT64 partitionStart, partitionEnd;
+    struct block_operations *bops = NULL;
 
     for (j = 0; j < PAR_ENTRY_NUM_PER_SECTOR; j++) {
         if (!VERITY_AVAILABLE_PAR(&gptBuf[j * TABLE_SIZE])) {
@@ -507,7 +508,10 @@ static INT32 OsGPTPartitionRecognition(struct inode *blkDrv, struct disk_divide_
         }
 
         (VOID)memset_s(partitionBuf, info->sector_size, 0, info->sector_size);
-        ret = blkDrv->u.i_bops->read(blkDrv, (UINT8 *)partitionBuf, partitionStart, 1);
+
+        bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
+
+        ret = bops->read(blkDrv, (UINT8 *)partitionBuf, partitionStart, 1);
         if (ret != 1) { /* read failed */
             PRINT_ERR("%s %d\n", __FUNCTION__, __LINE__);
             return -EIO;
@@ -522,7 +526,7 @@ static INT32 OsGPTPartitionRecognition(struct inode *blkDrv, struct disk_divide_
     return ret;
 }
 
-static INT32 DiskGPTPartitionRecognition(struct inode *blkDrv, struct disk_divide_info *info)
+static INT32 DiskGPTPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_info *info)
 {
     CHAR *gptBuf = NULL;
     CHAR *partitionBuf = NULL;
@@ -550,7 +554,8 @@ static INT32 DiskGPTPartitionRecognition(struct inode *blkDrv, struct disk_divid
 
     for (i = 0; i < index; i++) {
         (VOID)memset_s(gptBuf, info->sector_size, 0, info->sector_size);
-        ret = blkDrv->u.i_bops->read(blkDrv, (UINT8 *)gptBuf, TABLE_START_SECTOR + i, 1);
+        struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
+        ret = bops->read(blkDrv, (UINT8 *)gptBuf, TABLE_START_SECTOR + i, 1);
         if (ret != 1) { /* read failed */
             PRINT_ERR("%s %d\n", __FUNCTION__, __LINE__);
             ret = -EIO;
@@ -573,12 +578,14 @@ OUT_WITH_MEM:
     return ret;
 }
 
-static INT32 OsMBRInfoGet(struct inode *blkDrv, CHAR *mbrBuf)
+static INT32 OsMBRInfoGet(struct Vnode *blkDrv, CHAR *mbrBuf)
 {
     INT32 ret;
 
     /* read MBR, start from sector 0, length is 1 sector */
-    ret = blkDrv->u.i_bops->read(blkDrv, (UINT8 *)mbrBuf, 0, 1);
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
+
+    ret = bops->read(blkDrv, (UINT8 *)mbrBuf, 0, 1);
     if (ret != 1) { /* read failed */
         PRINT_ERR("driver read return error: %d\n", ret);
         return -EIO;
@@ -592,7 +599,7 @@ static INT32 OsMBRInfoGet(struct inode *blkDrv, CHAR *mbrBuf)
     return ENOERR;
 }
 
-static INT32 OsEBRInfoGet(struct inode *blkDrv, const struct disk_divide_info *info,
+static INT32 OsEBRInfoGet(struct Vnode *blkDrv, const struct disk_divide_info *info,
                           CHAR *ebrBuf, const CHAR *mbrBuf)
 {
     INT32 ret;
@@ -602,8 +609,8 @@ static INT32 OsEBRInfoGet(struct inode *blkDrv, const struct disk_divide_info *i
             return VFS_ERROR;
         }
 
-        ret = blkDrv->u.i_bops->read(blkDrv, (UINT8 *)ebrBuf,
-                                     LD_DWORD_DISK(&mbrBuf[PAR_OFFSET + PAR_START_OFFSET]), 1);
+        struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
+        ret = bops->read(blkDrv, (UINT8 *)ebrBuf, LD_DWORD_DISK(&mbrBuf[PAR_OFFSET + PAR_START_OFFSET]), 1);
         if ((ret != 1) || (!VERIFY_FS(ebrBuf))) { /* read failed */
             PRINT_ERR("OsEBRInfoGet, verify_fs error, ret = %d\n", ret);
             return -EIO;
@@ -640,7 +647,7 @@ static INT32 OsPrimaryPartitionRecognition(const CHAR *mbrBuf, struct disk_divid
     return extendedFlag;
 }
 
-static INT32 OsLogicalPartitionRecognition(struct inode *blkDrv, struct disk_divide_info *info,
+static INT32 OsLogicalPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_info *info,
                                            UINT32 extendedAddress, CHAR *ebrBuf, INT32 mbrCount)
 {
     INT32 ret;
@@ -655,8 +662,8 @@ static INT32 OsLogicalPartitionRecognition(struct inode *blkDrv, struct disk_div
                       extendedAddress, extendedOffset);
             break;
         }
-        ret = blkDrv->u.i_bops->read(blkDrv, (UINT8 *)ebrBuf,
-                                     extendedAddress + extendedOffset, 1);
+        struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
+        ret = bops->read(blkDrv, (UINT8 *)ebrBuf, extendedAddress + extendedOffset, 1);
         if (ret != 1) { /* read failed */
             PRINT_ERR("driver read return error: %d, extendedAddress = %u, extendedOffset = %u\n", ret,
                       extendedAddress, extendedOffset);
@@ -679,7 +686,7 @@ static INT32 OsLogicalPartitionRecognition(struct inode *blkDrv, struct disk_div
     return ebrCount;
 }
 
-static INT32 DiskPartitionRecognition(struct inode *blkDrv, struct disk_divide_info *info)
+static INT32 DiskPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_info *info)
 {
     INT32 ret;
     INT32 extendedFlag;
@@ -689,7 +696,9 @@ static INT32 DiskPartitionRecognition(struct inode *blkDrv, struct disk_divide_i
     CHAR *mbrBuf = NULL;
     CHAR *ebrBuf = NULL;
 
-    if ((blkDrv == NULL) || (blkDrv->u.i_bops == NULL) || (blkDrv->u.i_bops->read == NULL)) {
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
+
+    if ((blkDrv == NULL) || (bops == NULL) || (bops->read == NULL)) {
         return -EINVAL;
     }
 
@@ -823,8 +832,9 @@ INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count)
         }
     } else {
 #endif
-    if ((disk->dev != NULL) && (disk->dev->u.i_bops != NULL) && (disk->dev->u.i_bops->read != NULL)) {
-        result = disk->dev->u.i_bops->read(disk->dev, (UINT8 *)buf, sector, count);
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
+    if ((disk->dev != NULL) && (bops != NULL) && (bops->read != NULL)) {
+        result = bops->read(disk->dev, (UINT8 *)buf, sector, count);
         if (result == (INT32)count) {
             result = ENOERR;
         }
@@ -882,8 +892,9 @@ INT32 los_disk_write(INT32 drvID, const VOID *buf, UINT64 sector, UINT32 count)
         }
     } else {
 #endif
-    if ((disk->dev != NULL) && (disk->dev->u.i_bops != NULL) && (disk->dev->u.i_bops->write != NULL)) {
-        result = disk->dev->u.i_bops->write(disk->dev, (UINT8 *)buf, sector, count);
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
+    if ((disk->dev != NULL) && (bops != NULL) && (bops->write != NULL)) {
+        result = bops->write(disk->dev, (UINT8 *)buf, sector, count);
         if (result == (INT32)count) {
             result = ENOERR;
         }
@@ -928,8 +939,10 @@ INT32 los_disk_ioctl(INT32 drvID, INT32 cmd, VOID *buf)
     }
 
     (VOID)memset_s(&info, sizeof(info), 0, sizeof(info));
-    if ((disk->dev->u.i_bops == NULL) || (disk->dev->u.i_bops->geometry == NULL) ||
-        (disk->dev->u.i_bops->geometry(disk->dev, &info) != 0)) {
+
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
+    if ((bops == NULL) || (bops->geometry == NULL) ||
+        (bops->geometry(disk->dev, &info) != 0)) {
         goto ERROR_HANDLE;
     }
 
@@ -1097,8 +1110,10 @@ INT32 los_part_ioctl(INT32 pt, INT32 cmd, VOID *buf)
     }
 
     (VOID)memset_s(&info, sizeof(info), 0, sizeof(info));
-    if ((part->dev->u.i_bops == NULL) || (part->dev->u.i_bops->geometry == NULL) ||
-        (part->dev->u.i_bops->geometry(part->dev, &info) != 0)) {
+
+    struct block_operations *bops = (struct block_operations *)((struct drv_data *)part->dev->data)->ops;
+    if ((bops == NULL) || (bops->geometry == NULL) ||
+        (bops->geometry(part->dev, &info) != 0)) {
         goto ERROR_HANDLE;
     }
 
@@ -1110,8 +1125,8 @@ INT32 los_part_ioctl(INT32 pt, INT32 cmd, VOID *buf)
     } else if (cmd == DISK_GET_SECTOR_SIZE) {
         *(size_t *)buf = info.geo_sectorsize;
     } else if (cmd == DISK_GET_BLOCK_SIZE) { /* Get erase block size in unit of sectors (UINT32) */
-        if ((part->dev->u.i_bops->ioctl == NULL) ||
-            (part->dev->u.i_bops->ioctl(part->dev, GET_ERASE_BLOCK_SIZE, (UINTPTR)buf) != 0)) {
+        if ((bops->ioctl == NULL) ||
+            (bops->ioctl(part->dev, GET_ERASE_BLOCK_SIZE, (UINTPTR)buf) != 0)) {
             goto ERROR_HANDLE;
         }
     } else {
@@ -1147,7 +1162,7 @@ static VOID DiskCacheThreadInit(UINT32 diskID, OsBcache *bc)
     }
 }
 
-static OsBcache *DiskCacheInit(UINT32 diskID, const struct geometry *diskInfo, struct inode *blkDriver)
+static OsBcache *DiskCacheInit(UINT32 diskID, const struct geometry *diskInfo, struct Vnode *blkDriver)
 {
 #define SECTOR_SIZE 512
 
@@ -1192,7 +1207,7 @@ static VOID DiskCacheDeinit(los_disk *disk)
 #endif
 
 static VOID DiskStructInit(const CHAR *diskName, INT32 diskID, const struct geometry *diskInfo,
-                           struct inode *blkDriver, los_disk *disk)
+                           struct Vnode *blkDriver, los_disk *disk)
 {
     size_t nameLen;
     disk->disk_id = diskID;
@@ -1293,7 +1308,7 @@ static INT32 DiskDeinit(los_disk *disk)
 }
 
 static VOID OsDiskInitSub(const CHAR *diskName, INT32 diskID, los_disk *disk,
-                          struct geometry *diskInfo, struct inode *blkDriver)
+                          struct geometry *diskInfo, struct Vnode *blkDriver)
 {
     pthread_mutexattr_t attr;
 #ifdef LOSCFG_FS_FAT_CACHE
@@ -1312,9 +1327,8 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
                     VOID *priv, INT32 diskID, VOID *info)
 {
     struct geometry diskInfo;
-    struct inode *blkDriver = NULL;
+    struct Vnode *blkDriver = NULL;
     los_disk *disk = get_disk(diskID);
-    struct inode_search_s desc;
     INT32 ret;
 
     if ((diskName == NULL) || (disk == NULL) ||
@@ -1327,28 +1341,27 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
         return VFS_ERROR;
     }
 
-    SETUP_SEARCH(&desc, diskName, false);
-    ret = inode_find(&desc);
+    VnodeHold();
+    ret = VnodeLookup(diskName, &blkDriver, 0);
     if (ret < 0) {
+        VnodeDrop();
         PRINT_ERR("disk_init : find %s fail!\n", diskName);
         ret = ENOENT;
         goto DISK_FIND_ERROR;
     }
-    blkDriver = desc.node;
+    struct block_operations *bops2 = (struct block_operations *)((struct drv_data *)blkDriver->data)->ops;
 
-    if ((blkDriver->u.i_bops == NULL) || (blkDriver->u.i_bops->geometry == NULL) ||
-        (blkDriver->u.i_bops->geometry(blkDriver, &diskInfo) != 0)) {
+    if ((bops2 == NULL) || (bops2->geometry == NULL) ||
+        (bops2->geometry(blkDriver, &diskInfo) != 0)) {
         goto DISK_BLKDRIVER_ERROR;
     }
+
     if (diskInfo.geo_sectorsize < DISK_MAX_SECTOR_SIZE) {
         goto DISK_BLKDRIVER_ERROR;
     }
 
-    PRINTK("disk_init : register %s ok!\n", diskName);
-
     OsDiskInitSub(diskName, diskID, disk, &diskInfo, blkDriver);
-    inode_release(blkDriver);
-
+    VnodeDrop();
     if (DiskDivideAndPartitionRegister(info, disk) != ENOERR) {
         (VOID)DiskDeinit(disk);
         return VFS_ERROR;
@@ -1364,7 +1377,7 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
 
 DISK_BLKDRIVER_ERROR:
     PRINT_ERR("disk_init : register %s ok but get disk info fail!\n", diskName);
-    inode_release(blkDriver);
+    VnodeDrop();
 DISK_FIND_ERROR:
     (VOID)unregister_blockdriver(diskName);
     return VFS_ERROR;
@@ -1479,7 +1492,7 @@ ERROR_HANDLE:
 #endif
 }
 
-static los_part *OsPartFind(los_disk *disk, const struct inode *blkDriver)
+static los_part *OsPartFind(los_disk *disk, const struct Vnode *blkDriver)
 {
     los_part *part = NULL;
 
@@ -1505,7 +1518,7 @@ EXIT:
     return part;
 }
 
-los_part *los_part_find(struct inode *blkDriver)
+los_part *los_part_find(struct Vnode *blkDriver)
 {
     INT32 i;
     los_disk *disk = NULL;
@@ -1532,18 +1545,16 @@ los_part *los_part_find(struct inode *blkDriver)
 INT32 los_part_access(const CHAR *dev, mode_t mode)
 {
     los_part *part = NULL;
-    struct inode *node = NULL;
-    struct inode_search_s desc;
-    (VOID)mode;
+    struct Vnode *node = NULL;
 
-    SETUP_SEARCH(&desc, dev, false);
-    if (inode_find(&desc) < 0) {
+    VnodeHold();
+    if (VnodeLookup(dev, &node, 0) < 0) {
+        VnodeDrop();
         return VFS_ERROR;
     }
-    node = desc.node;
 
     part = los_part_find(node);
-    inode_release(node);
+    VnodeDrop();
     if (part == NULL) {
         return VFS_ERROR;
     }
@@ -1639,7 +1650,6 @@ VOID show_part(los_part *part)
     PRINTK("part no in disk  : %u\n", part->part_no_disk);
     PRINTK("part no in mbr   : %u\n", part->part_no_mbr);
     PRINTK("part filesystem  : %02X\n", part->filesystem_type);
-    PRINTK("part dev name    : %s\n", part->dev->i_name);
     PRINTK("part sec start   : %llu\n", part->sector_start);
     PRINTK("part sec count   : %llu\n", part->sector_count);
 }

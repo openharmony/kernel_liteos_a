@@ -40,11 +40,11 @@
 #include "ff.h"
 #endif
 #include "sys/mount.h"
-#include "inode/inode.h"
 #ifdef LOSCFG_PLATFORM_ROOTFS
 #include "los_rootfs.h"
 #endif
 #include "mtd_list.h"
+#include "fs/path_cache.h"
 
 #ifdef LOSCFG_STORAGE_SPINOR
 #define DEV_STORAGE_PATH       "/dev/spinorblk2"
@@ -73,20 +73,8 @@ STATIC los_disk *g_emmcDisk = NULL;
 STATIC INT32 g_alignSize = 0;
 #endif
 
-#define VFAT_STORAGE_MOUNT_DIR_MODE 777
-#define DEFAULT_STORAGE_MOUNT_DIR_MODE 755
-
-STATIC UINT64 g_cmdLineAddr = COMMAND_LINE_ADDR;
-
-VOID OsSetCmdLineAddr(UINT64 addr)
-{
-    g_cmdLineAddr = addr;
-}
-
-UINT64 OsGetCmdLineAddr(VOID)
-{
-    return g_cmdLineAddr;
-}
+#define VFAT_STORAGE_MOUNT_DIR_MODE 0777
+#define DEFAULT_STORAGE_MOUNT_DIR_MODE 0755
 
 #ifdef LOSCFG_DRIVERS_MMC
 los_disk *GetMmcDisk(UINT8 type)
@@ -117,7 +105,7 @@ STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
 {
     INT32 ret;
 
-    struct mmc_block *block = g_emmcDisk->dev->i_private;
+    struct mmc_block *block = (struct mmc_block *)((struct drv_data *)g_emmcDisk->dev->data)->priv;
     const char *node_name = mmc_block_get_node_name(block);
     if (los_disk_deinit(g_emmcDisk->disk_id) != ENOERR) {
         PRINT_ERR("Failed to deinit emmc disk!\n");
@@ -434,7 +422,7 @@ STATIC VOID OsMountUserdata(const CHAR *fsType)
     ret = mkdir(userdataDir, VFAT_STORAGE_MOUNT_DIR_MODE);
     if (ret != LOS_OK) {
         err = get_errno();
-        PRINT_ERR("Failed to reserve inode /userdata, errno %d: %s\n", err, strerror(err));
+        PRINT_ERR("Failed to reserve vnode /userdata, errno %d: %s\n", err, strerror(err));
         return;
     }
     CHAR emmcUserdataDev[DISK_NAME] = {0};
@@ -477,12 +465,10 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
             PRINT_ERR("Failed to mount vfat rootfs, errno %d: %s\n", err, strerror(err));
             return ret;
         }
-        g_root_inode->i_mode |= S_IRWXU | S_IRWXG | S_IRWXO;
 #ifdef LOSCFG_STORAGE_EMMC
         ret = mkdir("/storage", VFAT_STORAGE_MOUNT_DIR_MODE);
-        if (ret != LOS_OK) {
-            err = get_errno();
-            PRINT_ERR("Failed to reserve inode /storage, errno %d: %s\n", err, strerror(err));
+        if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
+            PRINT_ERR("Failed to reserve vnode /storage, errno %d: %s\n", err, strerror(err));
         } else {
             CHAR emmcStorageDev[DISK_NAME] = {0};
             if (snprintf_s(emmcStorageDev, sizeof(emmcStorageDev), sizeof(emmcStorageDev) - 1,
@@ -507,9 +493,8 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
         }
 #if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
         ret = mkdir("/storage", DEFAULT_STORAGE_MOUNT_DIR_MODE);
-        if (ret != LOS_OK) {
-            err = get_errno();
-            PRINT_ERR("Failed to reserve inode /storage, errno %d: %s\n", err, strerror(err));
+        if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
+            PRINT_ERR("Failed to reserve vnode /storage, errno %d: %s\n", err, strerror(err));
         } else {
             ret = mount(DEV_STORAGE_PATH, "/storage", fsType, 0, NULL);
             if (ret != LOS_OK) {

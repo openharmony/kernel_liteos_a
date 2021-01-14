@@ -29,13 +29,16 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "internal.h"
+#include "proc_fs.h"
+
 #include <stdio.h>
 #include <sys/mount.h>
 #include <sys/statfs.h>
-#include "proc_fs.h"
 
-static int ShowType(FAR const char *mountPoint, FAR struct statfs *statBuf, FAR void *arg)
+#include "fs/file.h"
+#include "internal.h"
+
+static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)
 {
     struct SeqBuf *seqBuf = (struct SeqBuf *)arg;
     char *type = NULL;
@@ -47,8 +50,8 @@ static int ShowType(FAR const char *mountPoint, FAR struct statfs *statBuf, FAR 
             name = "proc";
             break;
         case JFFS2_SUPER_MAGIC:
-            type = "jffs";
-            name = "jffs";
+            type = "jffs2";
+            name = "jffs2";
             break;
         case NFS_SUPER_MAGIC:
             type = "nfs";
@@ -78,7 +81,7 @@ static int ShowType(FAR const char *mountPoint, FAR struct statfs *statBuf, FAR 
 static int MountsProcFill(struct SeqBuf *m, void *v)
 {
     foreach_mountpoint_t handler = ShowType;
-    (void)foreach_mountpoint(handler, (FAR void *)m);
+    (void)foreach_mountpoint(handler, (void *)m);
 
     return 0;
 }

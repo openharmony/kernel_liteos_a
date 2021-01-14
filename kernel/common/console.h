@@ -82,7 +82,7 @@ typedef struct {
     UINT32 consoleSem;
     UINT32 shellEntryId;
     UINT32 consoleMask;
-    struct inode *devInode;
+    struct Vnode *devVnode;
     CHAR *name;
     INT32 fd;
     UINT32 refCount;

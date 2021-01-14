@@ -47,6 +47,7 @@
 #include "lwip/sockets.h"
 #include "telnet_pri.h"
 
+#include "fs/vnode.h"
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -59,31 +60,31 @@ extern "C" {
 
 STATIC TELNET_DEV_S g_telnetDev;
 STATIC EVENT_CB_S *g_event;
-STATIC struct inode *g_currentInode;
+STATIC struct Vnode *g_currentVnode;
 
 STATIC INLINE TELNET_DEV_S *GetTelnetDevByFile(const struct file *file, BOOL isOpenOp)
 {
-    struct inode *telnetInode = NULL;
+    struct Vnode *telnetInode = NULL;
     TELNET_DEV_S *telnetDev = NULL;
 
     if (file == NULL) {
         return NULL;
     }
-    telnetInode = file->f_inode;
+    telnetInode = file->f_vnode;
     if (telnetInode == NULL) {
         return NULL;
     }
     /*
-     * Check if the f_inode is valid here for non-open ops (open is supposed to get invalid f_inode):
+     * Check if the f_vnode is valid here for non-open ops (open is supposed to get invalid f_vnode):
      * when telnet is disconnected, there still may be 'TelentShellTask' tasks trying to write
-     * to the file, but the file has illegal f_inode because the file is used by others.
+     * to the file, but the file has illegal f_vnode because the file is used by others.
      */
     if (!isOpenOp) {
-        if (telnetInode != g_currentInode) {
+        if (telnetInode != g_currentVnode) {
             return NULL;
         }
     }
-    telnetDev = (TELNET_DEV_S *)telnetInode->i_private;
+    telnetDev = (TELNET_DEV_S *)((struct drv_data*)telnetInode->data)->priv;
     return telnetDev;
 }
 
@@ -165,7 +166,7 @@ STATIC INT32 TelnetOpen(struct file *file)
         telnetDev->cmdFifo->fifoNum = FIFO_MAX;
         LOS_ListInit(&wait->poll_queue);
     }
-    g_currentInode = file->f_inode;
+    g_currentVnode = file->f_vnode;
     TelnetUnlock();
     return 0;
 }
@@ -189,7 +190,7 @@ STATIC INT32 TelnetClose(struct file *file)
         (VOID)LOS_EventDestroy(&telnetDev->eventTelnet);
         g_event = NULL;
     }
-    g_currentInode = NULL;
+    g_currentVnode = NULL;
     TelnetUnlock();
     return 0;
 }

@@ -44,7 +44,6 @@
 #include "shell.h"
 #include "shcmd.h"
 #include "proc_file.h"
-#include "inode/inode.h"
 #include "dirent.h"
 #include "fs/fs.h"
 #include "proc_fs.h"

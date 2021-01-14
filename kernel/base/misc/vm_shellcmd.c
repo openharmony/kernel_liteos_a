@@ -42,6 +42,7 @@
 #include "los_oom.h"
 #include "los_vm_dump.h"
 #include "los_process_pri.h"
+#include "fs/path_cache.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -186,6 +187,8 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpPmm(VOID)
 {
     OsVmPhysDump();
 
+    PathCacheMemoryDump();
+    VnodeMemoryDump();
     return OS_ERROR;
 }
 

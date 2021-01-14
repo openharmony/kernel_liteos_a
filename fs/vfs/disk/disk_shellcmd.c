@@ -32,41 +32,40 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "los_config.h"
-
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #include "disk.h"
 #include "shcmd.h"
 #include "shell.h"
+#include "fs/path_cache.h"
 
 INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
 {
-    struct inode *node = NULL;
+    struct Vnode *node = NULL;
     los_part *part = NULL;
     const CHAR *str = "/dev";
-    struct inode_search_s desc;
     int ret;
 
     if ((argc != 1) || (strncmp(argv[0], str, strlen(str)) != 0)) {
         PRINTK("Usage  :\n");
-        PRINTK("        partinfo <dev_inodename>\n");
-        PRINTK("        dev_inodename : the name of dev\n");
+        PRINTK("        partinfo <dev_vnodename>\n");
+        PRINTK("        dev_vnodename : the name of dev\n");
         PRINTK("Example:\n");
         PRINTK("        partinfo /dev/sdap0 \n");
 
         set_errno(EINVAL);
         return -LOS_NOK;
     }
-    SETUP_SEARCH(&desc, argv[0], false);
-    ret = inode_find(&desc);
+    VnodeHold();
+    ret = VnodeLookup(argv[0], &node, 0);
     if (ret < 0) {
         PRINT_ERR("no part found\n");
+        VnodeDrop();
         set_errno(ENOENT);
         return -LOS_NOK;
     }
-    node = desc.node;
 
     part = los_part_find(node);
-    inode_release(node);
+    VnodeDrop();
     show_part(part);
 
     return LOS_OK;

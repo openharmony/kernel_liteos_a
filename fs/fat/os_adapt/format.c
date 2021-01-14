@@ -38,62 +38,77 @@
 #include "integer.h"
 #ifdef LOSCFG_FS_FAT
 
-#define DEV_NAME_SIZE	4
+char FatLabel[LABEL_LEN];
+#define DEV_NAME_SIZE 4
+
 int format(const char *dev, int sectors, int option)
 {
-	INT err;
-	if (dev == NULL) {
-		set_errno(EINVAL);
-		return -1;
-	}
+    struct Vnode *device = NULL;
+    INT err;
+    if (dev == NULL) {
+        set_errno(EINVAL);
+        return -1;
+    }
 
-	if (strncmp(dev, "/dev", DEV_NAME_SIZE) != 0) {
-		PRINTK("Usage  :\n");
-		PRINTK("        format <dev_inodename> <sectors> <option> <label>\n");
-		PRINTK("        dev_inodename : the name of dev\n");
-		PRINTK("        sectors       : Size of allocation unit in unit of byte or sector, ");
-		PRINTK("0 instead of default size\n");
-		PRINTK("        options       : Index of filesystem. 1 for FAT filesystem, 2 for FAT32 filesystem, ");
-		PRINTK("7 for any, 8 for erase\n");
-		PRINTK("        label         : The volume of device. It will be emptyed when this parameter is null\n");
-		PRINTK("Example:\n");
-		PRINTK("        format /dev/mmcblk0 128 2\n");
+    if (strncmp(dev, "/dev", DEV_NAME_SIZE) != 0) {
+        PRINTK("Usage  :\n");
+        PRINTK("        format <dev_vnodename> <sectors> <option> <label>\n");
+        PRINTK("        dev_vnodename : the name of dev\n");
+        PRINTK("        sectors       : Size of allocation unit in unit of byte or sector, ");
+        PRINTK("0 instead of default size\n");
+        PRINTK("        options       : Index of filesystem. 1 for FAT filesystem, 2 for FAT32 filesystem, ");
+        PRINTK("7 for any, 8 for erase\n");
+        PRINTK("        label         : The volume of device. It will be emptyed when this parameter is null\n");
+        PRINTK("Example:\n");
+        PRINTK("        format /dev/mmcblk0 128 2\n");
 
-		set_errno(EINVAL);
-		return -1;
-	}
-	err = fatfs_mkfs(dev, sectors, option);
-	if (err < 0) {
-		set_errno(-err);
-		return -1;
-	}
+        set_errno(EINVAL);
+        return -1;
+    }
+    VnodeHold();
+    err = VnodeLookup(dev, &device, 0);
+    if (err == -ENOENT || err == -ENOSYS) {
+        VnodeDrop();
+        set_errno(ENODEV);
+        return -1;
+    } else if (err < 0) {
+        VnodeDrop();
+        set_errno(-err);
+        return -1;
+    }
+    err = fatfs_mkfs(device, sectors, option);
+    if (err < 0) {
+        set_errno(-err);
+        return -1;
+    }
 #ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-	else if (err >= VIRERR_BASE) {
-		set_errno(err);
-	}
+    else if (err >= VIRERR_BASE) {
+        set_errno(err);
+    }
 #endif
-	return 0;
+    VnodeDrop();
+    return 0;
 }
 
 void set_label(const char *name)
 {
-	INT len;
-	INT err;
+    INT len;
+    INT err;
 
-	(void)memset_s(FatLabel, LABEL_LEN, 0, LABEL_LEN);
+    (void)memset_s(FatLabel, LABEL_LEN, 0, LABEL_LEN);
 
-	if (name == NULL || *name == '\0') {
-		return;
-	}
+    if (name == NULL || *name == '\0') {
+        return;
+    }
 
-	len = strlen(name);
-	if (len >= LABEL_LEN) {
-		len = LABEL_LEN - 1;
-	}
+    len = strlen(name);
+    if (len >= LABEL_LEN) {
+        len = LABEL_LEN - 1;
+    }
 
-	err = strncpy_s(FatLabel, LABEL_LEN, name, len);
-	if (err != EOK) {
-		PRINT_ERR("Fat set_label error");
-	}
+    err = strncpy_s(FatLabel, LABEL_LEN, name, len);
+    if (err != EOK) {
+        PRINT_ERR("Fat set_label error");
+    }
 }
-#endif	/* #ifdef CONFIG_FS_FAT */
+#endif    /* #ifdef CONFIG_FS_FAT */

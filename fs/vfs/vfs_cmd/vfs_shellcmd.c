@@ -38,7 +38,6 @@
 #include "shell.h"
 #include "fs/fs.h"
 #include "sys/stat.h"
-#include "inode/inode.h"
 #include "stdlib.h"
 #include "unistd.h"
 #include "fs_other.h"
@@ -54,6 +53,7 @@
 
 #include "los_process_pri.h"
 #include <ctype.h>
+#include "fs/fs_operation.h"
 
 typedef enum
 {
@@ -241,12 +241,9 @@ out:
 int osShellCmdCat(int argc, const char **argv)
 {
   char *fullpath = NULL;
-  const char *filename = NULL;
-  char *fullpath_bak = NULL;
-  FAR const char *relpath = NULL;
   int ret;
   unsigned int ca_task;
-  FAR struct inode *inode = NULL;
+  struct Vnode *vnode = NULL;
   TSK_INIT_PARAM_S init_param;
   char *shell_working_directory = OsShellGetWorkingDirtectory();
   if (shell_working_directory == NULL)
@@ -256,40 +253,43 @@ int osShellCmdCat(int argc, const char **argv)
 
   ERROR_OUT_IF(argc != 1, PRINTK("cat [FILE]\n"), return -1);
 
-  filename = argv[0];
-  ret = vfs_normalize_path(shell_working_directory, filename, &fullpath);
+  ret = vfs_normalize_path(shell_working_directory, argv[0], &fullpath);
   ERROR_OUT_IF(ret < 0, set_err(-ret, "cat error"), return -1);
 
-  inode_semtake();
-  fullpath_bak = fullpath;
-  inode = inode_search((FAR const char **)&fullpath, (FAR struct inode **)NULL, (FAR struct inode **)NULL, &relpath);
-  if (inode == NULL)
-    {
-      set_errno(ENOENT);
-      perror("cat error");
-      inode_semgive();
-      free(fullpath_bak);
-      return -1;
-    }
-  if (INODE_IS_BLOCK(inode) || INODE_IS_DRIVER(inode))
-    {
-      set_errno(EPERM);
-      perror("cat error");
-      inode_semgive();
-      free(fullpath_bak);
-      return -1;
-    }
-  inode_semgive();
+  VnodeHold();
+  ret = VnodeLookup(fullpath, &vnode, O_RDONLY);
+    if (ret != LOS_OK)
+      {
+        set_errno(-ret);
+        perror("cat error");
+        VnodeDrop();
+        free(fullpath);
+        return -1;
+      }
+    if (vnode->type != VNODE_TYPE_REG)
+      {
+        set_errno(EINVAL);
+        perror("cat error");
+        VnodeDrop();
+        free(fullpath);
+        return -1;
+      }
+  VnodeDrop();
   (void)memset_s(&init_param, sizeof(init_param), 0, sizeof(TSK_INIT_PARAM_S));
   init_param.pfnTaskEntry = (TSK_ENTRY_FUNC)osShellCmdDoCatShow;
   init_param.usTaskPrio   = CAT_TASK_PRIORITY;
-  init_param.auwArgs[0]   = (UINTPTR)fullpath_bak;
+  init_param.auwArgs[0]   = (UINTPTR)fullpath;
   init_param.uwStackSize  = CAT_TASK_STACK_SIZE;
   init_param.pcName       = "shellcmd_cat";
   init_param.uwResved     = LOS_TASK_STATUS_DETACHED | OS_TASK_FLAG_SPECIFIES_PROCESS;
   init_param.processID    = 2; /* 2: kProcess */
 
   ret = (int)LOS_TaskCreate(&ca_task, &init_param);
+
+  if (ret != LOS_OK)
+    {
+      free(fullpath);
+    }
 
   return ret;
 }
@@ -479,7 +479,6 @@ int osShellCmdUmount(int argc, const char **argv)
   target_path = fullpath;
   cmp_num = strlen(fullpath);
   ret = strncmp(work_path, target_path, cmp_num);
-
   if (ret == 0)
     {
       work_path += cmp_num;
@@ -1338,12 +1337,11 @@ int osShellCmdRmdir(int argc, const char **argv)
     {
       ret = rmdir(fullpath);
     }
-  free(fullpath);
-
   if (ret == -1)
     {
-      perror("rmdir error");
+      PRINTK("rmdir %s failed. Error: %s.\n", fullpath, strerror(errno));
     }
+  free(fullpath);
 
   return 0;
 }

@@ -55,6 +55,8 @@
 #include "dirent.h"
 #include "fs/fs.h"
 #endif
+#include <sys/wait.h>
+#include "sys/resource.h"
 
 /* process */
 extern unsigned int SysGetGroupId(void);
@@ -187,7 +189,8 @@ extern int SysTimerSettime64(timer_t timerID, int flags, const struct itimerspec
 /* filesystem */
 #ifdef LOSCFG_FS_VFS
 typedef int (*PollFun)(struct pollfd *fds, nfds_t nfds, int timeout);
-extern int do_open(int dirfd, const char *path, int oflags, ...);
+extern int fp_open(char *fullpath, int oflags, mode_t mode);
+extern int do_open(int dirfd, const char *path, int oflags, mode_t mode);
 extern int do_unlink(int dirfd, const char *pathname);
 extern int do_mkdir(int dirfd, const char *pathname, mode_t mode);
 extern int do_rmdir(int dirfd, const char *pathname);

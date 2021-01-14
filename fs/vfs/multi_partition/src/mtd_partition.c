@@ -36,7 +36,6 @@
 #include "mtd_list.h"
 #include "los_config.h"
 #include "los_mux.h"
-#include "inode/inode.h"
 
 #include "mtd_common.h"
 
@@ -51,8 +50,8 @@ pthread_mutex_t g_mtdPartitionLock = PTHREAD_MUTEX_INITIALIZER;
 
 static VOID YaffsLockInit(VOID) __attribute__((weakref("yaffsfs_OSInitialisation")));
 static VOID YaffsLockDeinit(VOID) __attribute__((weakref("yaffsfs_OsDestroy")));
-static INT32 JffsLockInit(VOID) __attribute__((weakref("JffsMutexCreate")));
-static VOID JffsLockDeinit(VOID) __attribute__((weakref("JffsMutexDelete")));
+static INT32 Jffs2LockInit(VOID) __attribute__((weakref("Jffs2MutexCreate")));
+static VOID Jffs2LockDeinit(VOID) __attribute__((weakref("Jffs2MutexDelete")));
 
 partition_param *g_nandPartParam = NULL;
 partition_param *g_spinorPartParam = NULL;
@@ -154,8 +153,8 @@ static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev 
 
 static VOID MtdDeinitSpinorParam(VOID)
 {
-    if (JffsLockDeinit != NULL) {
-        JffsLockDeinit();
+    if (Jffs2LockDeinit != NULL) {
+        Jffs2LockDeinit();
     }
 }
 
@@ -171,8 +170,8 @@ static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
         return NULL;
     }
     if (spinorParam == NULL) {
-        if (JffsLockInit != NULL) {
-            if (JffsLockInit() != 0) { /* create jffs2 lock failed */
+        if (Jffs2LockInit != NULL) {
+            if (Jffs2LockInit() != 0) { /* create jffs2 lock failed */
                 return NULL;
             }
         }

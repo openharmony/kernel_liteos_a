@@ -93,12 +93,27 @@ source "../../kernel/liteos_a/fs/ramfs/Kconfig"
 source "../../kernel/liteos_a/fs/nfs/Kconfig"
 source "../../kernel/liteos_a/fs/proc/Kconfig"
 source "../../kernel/liteos_a/fs/jffs2/Kconfig"
-source "../../kernel/liteos_a/fs/zpfs/Kconfig"
 config ENABLE_READ_BUFFER
     bool "Enable read buffer Option"
     default n
     help
       Answer Y to add enable read buffer Option.
+
+config MAX_VNODE_SIZE
+    int "Vnode max number"
+    range 0 512
+    default 512
+    depends on FS_VFS
+    help
+      vnode number, range from 0 to 512.
+
+config MAX_PATH_CACHE_SIZE
+    int "PathCache max number"
+    range 0 1024
+    default 512
+    depends on FS_VFS
+    help
+      pathCache number, range from 0 to 1024.
 endmenu
 
 ######################## config options of net ############################

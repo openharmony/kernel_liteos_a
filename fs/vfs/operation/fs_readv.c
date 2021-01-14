@@ -35,8 +35,9 @@
 #include "string.h"
 #include "stdlib.h"
 #include "fs/fs.h"
-#include "inode/inode.h"
 #include "user_copy.h"
+#include "stdio.h"
+#include "limits.h"
 
 static char *pread_buf_and_check(int fd, const struct iovec *iov, int iovcnt, ssize_t *totalbytesread, off_t *offset)
 {

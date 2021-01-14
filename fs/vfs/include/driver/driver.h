@@ -54,8 +54,6 @@ extern "C" {
 * Global Variables
 ****************************************************************************/
 
-extern FAR struct inode *g_root_inode;
-
 /**
  * @ingroup  disk
  * @brief Set usb mode.

@@ -45,8 +45,8 @@ int osShellCmdFormat(int argc, char **argv)
     if (argc < 3) { /* 3, at least 3 params for this shell command. */
         perror("format error");
         PRINTK("Usage  :\n");
-        PRINTK("        format <dev_inodename> <sectors> <option> <label>\n");
-        PRINTK("        dev_inodename : the name of dev\n");
+        PRINTK("        format <dev_vnodename> <sectors> <option> <label>\n");
+        PRINTK("        dev_vnodename : the name of dev\n");
         PRINTK("        sectors       : Size of allocation unit in unit of byte or sector, ");
         PRINTK("0 instead of default size\n");
         PRINTK("        options       : Index of filesystem. 1 for FAT filesystem, ");

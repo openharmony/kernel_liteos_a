@@ -36,7 +36,6 @@
 #include "los_typedef.h"
 #include "sys/stat.h"
 #include "securec.h"
-#include "inode/inode.h"
 
 #if defined(__LP64__)
 #define  timeval64      timeval
