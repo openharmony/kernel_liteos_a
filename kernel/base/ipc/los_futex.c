@@ -301,15 +301,11 @@ STATIC VOID OsFutexInsertNewFutexKeyToHash(FutexNode *node)
          futexList != &(hashNode->lockList);
          futexList = futexList->pstNext) {
         headNode = OS_FUTEX_FROM_FUTEXLIST(futexList);
-        if (node->key > headNode->key) {
-            continue;
-        } else if (node->key < headNode->key) {
+        if (node->key <= headNode->key) {                 
             LOS_ListTailInsert(&(headNode->futexList), &(node->futexList));
             break;
         }
-
-        LOS_ListTailInsert(&(headNode->futexList), &(node->futexList));
-        break;
+        
     }
 
 EXIT:
