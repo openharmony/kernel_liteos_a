@@ -348,8 +348,6 @@ int fatfs_bind(struct inode *blkdriver, const void *data, void **handle, const c
     los_part *part = NULL;
     char drive[DRIVER_NAME_LEN];
     struct FatfsMountOpts opts = {0};
-    struct inode_search_s desc;
-    FAR struct inode *inode;
 
     FatParseOptions((char *)data, &opts);
 
@@ -424,6 +422,8 @@ int fatfs_bind(struct inode *blkdriver, const void *data, void **handle, const c
         free(dir);
 #ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
         /* Parent Partition Mount Success, then process virtual partition mount operation */
+        struct inode_search_s desc;
+        FAR struct inode *inode;
         if (result == FR_OK) {
             if (fat->fs_type != FS_FAT32)
                 return VIRERR_NOTFIT;
@@ -472,8 +472,6 @@ int fatfs_unbind(void *handle, struct inode **blkdriver)
     INT result;
     los_part *part = NULL;
     char drive[DRIVER_NAME_LEN];
-    struct inode_search_s desc;
-    FAR struct inode *inode;
 
     fat = (FATFS *)handle;
     if (fat == NULL)
@@ -487,6 +485,8 @@ int fatfs_unbind(void *handle, struct inode **blkdriver)
 
 #ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
     /* Release virtual partition objects before unbind real partition */
+    struct inode_search_s desc;
+    FAR struct inode *inode;
     SETUP_SEARCH(&desc, g_fatVirPart.virtualinfo.devpartpath, false);
     FatfsVirtLock();
     result = FatFsUnbindVirPart(fat);
