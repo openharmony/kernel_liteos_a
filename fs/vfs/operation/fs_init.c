@@ -49,8 +49,10 @@ void los_vfs_init(void)
         return;
     }
 
+#ifdef LOSCFG_FS_FAT_DISK
     spin_lock_init(&g_diskSpinlock);
     spin_lock_init(&g_diskFatBlockSpinlock);
+#endif
     files_initlist(&tg_filelist);
     fs_initialize();
     if ((err = inode_reserve("/", &g_root_inode)) < 0) {
