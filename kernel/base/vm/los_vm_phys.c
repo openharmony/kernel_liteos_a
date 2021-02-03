@@ -339,8 +339,7 @@ VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
 VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
 {
     paddr_t pa;
-    UINT32 order;
-    size_t count;
+    UINT32 order;    
     size_t n;
 
     while (TRUE) {
@@ -355,10 +354,11 @@ VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
         page += n;
     }
 
-    for (count = 0; count < nPages; count += n) {
+    while (nPages > 0) {
         order = LOS_HighBitGet(nPages);
         n = VM_ORDER_TO_PAGES(order);
         OsVmPhysPagesFree(page, order);
+        nPages -= n;
         page += n;
     }
 }
