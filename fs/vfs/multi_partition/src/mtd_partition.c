@@ -71,10 +71,18 @@ static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev 
      * you can change the SPIBLK_NAME or SPICHR_NAME to NULL.
      */
     spinorParam->flash_mtd = (struct MtdDev *)spinorMtd;
+#ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
     spinorParam->flash_ops = GetDevSpinorOps();
     spinorParam->char_ops = GetMtdCharFops();
     spinorParam->blockname = SPIBLK_NAME;
     spinorParam->charname = SPICHR_NAME;
+#else
+    extern struct block_operations *GetCfiBlkOps(void);
+    spinorParam->flash_ops = GetCfiBlkOps();
+    spinorParam->char_ops = NULL;
+    spinorParam->blockname = "/dev/cfiflash";
+    spinorParam->charname = NULL;
+#endif
     spinorParam->partition_head = g_spinorPartitionHead;
     spinorParam->block_size = spinorMtd->eraseSize;
 }
@@ -88,7 +96,12 @@ static VOID MtdDeinitSpinorParam(VOID)
 
 static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 {
+#ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
     struct MtdDev *spinorMtd = GetMtd("spinor");
+#else
+    extern struct MtdDev *GetCfiMtdDev(void);
+    struct MtdDev *spinorMtd = GetCfiMtdDev();
+#endif
     if (spinorMtd == NULL) {
         return NULL;
     }
@@ -121,7 +134,7 @@ static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 /* According the flash-type to init the param of the partition. */
 static INT32 MtdInitFsparParam(const CHAR *type, partition_param **fsparParam)
 {
-    if (strcmp(type, "spinor") == 0) {
+    if (strcmp(type, "spinor") == 0 || strcmp(type, "cfi-flash") == 0) {
         g_spinorPartParam = MtdInitSpinorParam(g_spinorPartParam);
         *fsparParam = g_spinorPartParam;
     } else {
@@ -138,7 +151,7 @@ static INT32 MtdInitFsparParam(const CHAR *type, partition_param **fsparParam)
 /* According the flash-type to deinit the param of the partition. */
 static INT32 MtdDeinitFsparParam(const CHAR *type)
 {
-    if (strcmp(type, "spinor") == 0) {
+    if (strcmp(type, "spinor") == 0  || strcmp(type, "cfi-flash") == 0) {
         MtdDeinitSpinorParam();
         g_spinorPartParam = NULL;
     } else {
@@ -356,7 +369,7 @@ static INT32 DeleteParamCheck(UINT32 partitionNum,
                               const CHAR *type,
                               partition_param **param)
 {
-    if (strcmp(type, "spinor") == 0) {
+    if (strcmp(type, "spinor") == 0  || strcmp(type, "cfi-flash") == 0) {
         *param = g_spinorPartParam;
     } else {
         PRINT_ERR("type error \n");
