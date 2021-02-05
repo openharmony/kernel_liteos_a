@@ -566,7 +566,7 @@ int ShellTaskInit(ShellCB *shellCB)
 
 static int ShellKernelReg(unsigned int shellHandle)
 {
-    return ioctl(0, CONSOLE_CONTROL_REG_USERTASK, shellHandle);
+    return ioctl(STDIN_FILENO, CONSOLE_CONTROL_REG_USERTASK, shellHandle);
 }
 
 void *ShellEntry(void *argv)
