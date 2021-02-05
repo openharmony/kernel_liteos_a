@@ -85,7 +85,7 @@ static int OsStrSeparateTabStrGet(const char **tabStr, CmdParsed *parsed, unsign
     if ((strlen(shiftStr) == 0) || (tempStr[strlen(tempStr) - 1] != shiftStr[strlen(shiftStr) - 1])) {
         *tabStr = "";
     } else {
-        if (OsCmdTokenSplit(shiftStr, ' ', parsed)) {
+        if (OsCmdParse(shiftStr, parsed)) {
             free(tempStr);
             return (int)SH_ERROR;
         }
