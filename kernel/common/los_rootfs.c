@@ -31,7 +31,7 @@
 #include "los_base.h"
 #include "los_typedef.h"
 #include "string.h"
-#ifdef LOSCFG_PLATFORM_HI3518EV300
+#if defined(LOSCFG_PLATFORM_HI3518EV300) || defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
 #include "mtd_partition.h"
 #endif
 #ifdef LOSCFG_DRIVERS_MMC
@@ -181,6 +181,24 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
         rootDev = AddEmmcRootfsPart(rootAddr, rootSize);
     } else
 #endif
+
+#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
+#define CFIFLASH_CAPACITY   64 * 1024 * 1024
+    INT32 ret;
+    if (strcmp(rootType, "cfi-flash") == 0) {
+        ret = add_mtd_partition("cfi-flash", rootAddr, rootSize, 0);
+        if (ret != LOS_OK) {
+            PRINT_ERR("Failed to add cfi-flash root partition!\n");
+        } else {
+            rootDev = "/dev/cfiflash0";
+            ret = add_mtd_partition("cfi-flash", (rootAddr + rootSize),
+                                CFIFLASH_CAPACITY - rootAddr - rootSize, 1);
+            if (ret != LOS_OK) {
+                PRINT_ERR("Failed to add cfi-flash storage partition!\n");
+            }
+        }
+    } else
+#endif
     {
         PRINT_ERR("Failed to find root dev type: %s\n", rootType);
     }
@@ -239,8 +257,7 @@ STATIC INT32 GetArgs(CHAR **args)
      *       bootloader it will pass DTB by default.
      */
     (void)ret;
-    PRINT_ERR("Fetching bootargs unimplemented.\n");
-    goto ERROUT;
+    cmdLine = "bootargs=root=cfi-flash fstype=jffs2 rootaddr=0xA00000 rootsize=27M";
 #endif
 
     for (i = 0; i < COMMAND_LINE_SIZE; i += len + 1) {
@@ -466,6 +483,19 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
             PRINT_ERR("Failed to reserve inode /storage, errno %d: %s\n", err, strerror(err));
         } else {
             ret = mount(DEV_STORAGE_PATH, "/storage", fsType, 0, NULL);
+            if (ret != LOS_OK) {
+                err = get_errno();
+                PRINT_ERR("Failed to mount /storage, errno %d: %s\n", err, strerror(err));
+            }
+        }
+#endif
+#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
+        ret = mkdir("/storage", DEFAULT_STORAGE_MOUNT_DIR_MODE);
+        if (ret != LOS_OK) {
+            err = get_errno();
+            PRINT_ERR("Failed to reserve inode /storage, errno %d: %s\n", err, strerror(err));
+        } else {
+            ret = mount("/dev/cfiflash1", "/storage", fsType, 0, NULL);
             if (ret != LOS_OK) {
                 err = get_errno();
                 PRINT_ERR("Failed to mount /storage, errno %d: %s\n", err, strerror(err));
