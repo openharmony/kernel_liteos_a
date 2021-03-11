@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -91,11 +91,6 @@ STATIC INT32 OsMapParamCheck(UINT32 flags, VADDR_T vaddr, PADDR_T paddr)
     }
 #endif
 
-    if (!(flags & VM_MAP_REGION_FLAG_PERM_READ)) {
-        VM_ERR("miss read flag");
-        return LOS_ERRNO_VM_INVALID_ARGS;
-    }
-
     /* paddr and vaddr must be aligned */
     if (!MMU_DESCRIPTOR_IS_L2_SIZE_ALIGNED(vaddr) || !MMU_DESCRIPTOR_IS_L2_SIZE_ALIGNED(paddr)) {
         return LOS_ERRNO_VM_INVALID_ARGS;
@@ -114,6 +109,9 @@ STATIC VOID OsCvtPte2AttsToFlags(PTE_T l1Entry, PTE_T l2Entry, UINT32 *flags)
 
     switch (l2Entry & MMU_DESCRIPTOR_L2_TEX_TYPE_MASK) {
         case MMU_DESCRIPTOR_L2_TYPE_STRONGLY_ORDERED:
+            *flags |= VM_MAP_REGION_FLAG_STRONGLY_ORDERED;
+            break;
+        case MMU_DESCRIPTOR_L2_TYPE_NORMAL_NOCACHE:
             *flags |= VM_MAP_REGION_FLAG_UNCACHED;
             break;
         case MMU_DESCRIPTOR_L2_TYPE_DEVICE_SHARED:
@@ -208,10 +206,10 @@ STATIC VOID OsTryUnmapL1PTE(const LosArchMmu *archMmu, vaddr_t vaddr, UINT32 sca
     }
 }
 
-/* convert user level mmu flags to L1 descriptors flags */
-STATIC UINT32 OsCvtSecFlagsToAttrs(UINT32 flags)
+STATIC UINT32 OsCvtSecCacheFlagsToMMUFlags(UINT32 flags)
 {
-    UINT32 mmuFlags = MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT;
+    UINT32 mmuFlags = 0;
+
     switch (flags & VM_MAP_REGION_FLAG_CACHE_MASK) {
         case VM_MAP_REGION_FLAG_CACHED:
             mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_NORMAL_WRITE_BACK_ALLOCATE;
@@ -219,9 +217,11 @@ STATIC UINT32 OsCvtSecFlagsToAttrs(UINT32 flags)
             mmuFlags |= MMU_DESCRIPTOR_L1_SECTION_SHAREABLE;
 #endif
             break;
-        case VM_MAP_REGION_FLAG_WRITE_COMBINING:
-        case VM_MAP_REGION_FLAG_UNCACHED:
+        case VM_MAP_REGION_FLAG_STRONGLY_ORDERED:
             mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_STRONGLY_ORDERED;
+            break;
+        case VM_MAP_REGION_FLAG_UNCACHED:
+            mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_NORMAL_NOCACHE;
             break;
         case VM_MAP_REGION_FLAG_UNCACHED_DEVICE:
             mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_DEVICE_SHARED;
@@ -229,23 +229,51 @@ STATIC UINT32 OsCvtSecFlagsToAttrs(UINT32 flags)
         default:
             return LOS_ERRNO_VM_INVALID_ARGS;
     }
+    return mmuFlags;
+}
 
-    switch (flags & (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_WRITE)) {
+STATIC UINT32 OsCvtSecAccessFlagsToMMUFlags(UINT32 flags)
+{
+    UINT32 mmuFlags = 0;
+
+    switch (flags & (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE)) {
         case 0:
+            mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_NA_U_NA;
+            break;
+        case VM_MAP_REGION_FLAG_PERM_READ:
+        case VM_MAP_REGION_FLAG_PERM_USER:
             mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RO_U_NA;
             break;
-        case VM_MAP_REGION_FLAG_PERM_WRITE:
-            mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RW_U_NA;
-            break;
-        case VM_MAP_REGION_FLAG_PERM_USER:
+        case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ:
             mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RO_U_RO;
             break;
+        case VM_MAP_REGION_FLAG_PERM_WRITE:
+        case VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE:
+            mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RW_U_NA;
+            break;
         case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_WRITE:
+        case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE:
             mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_RW_U_RW;
             break;
         default:
             break;
     }
+    return mmuFlags;
+}
+
+/* convert user level mmu flags to L1 descriptors flags */
+STATIC UINT32 OsCvtSecFlagsToAttrs(UINT32 flags)
+{
+    UINT32 mmuFlags;
+
+    mmuFlags = OsCvtSecCacheFlagsToMMUFlags(flags);
+    if (mmuFlags == LOS_ERRNO_VM_INVALID_ARGS) {
+        return mmuFlags;
+    }
+
+    mmuFlags |= MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT;
+
+    mmuFlags |= OsCvtSecAccessFlagsToMMUFlags(flags);
 
     if (!(flags & VM_MAP_REGION_FLAG_PERM_EXECUTE)) {
         mmuFlags |= MMU_DESCRIPTOR_L1_SECTION_XN;
@@ -271,6 +299,9 @@ STATIC VOID OsCvtSecAttsToFlags(PTE_T l1Entry, UINT32 *flags)
 
     switch (l1Entry & MMU_DESCRIPTOR_L1_TEX_TYPE_MASK) {
         case MMU_DESCRIPTOR_L1_TYPE_STRONGLY_ORDERED:
+            *flags |= VM_MAP_REGION_FLAG_STRONGLY_ORDERED;
+            break;
+        case MMU_DESCRIPTOR_L1_TYPE_NORMAL_NOCACHE:
             *flags |= VM_MAP_REGION_FLAG_UNCACHED;
             break;
         case MMU_DESCRIPTOR_L1_TYPE_DEVICE_SHARED:
@@ -494,8 +525,7 @@ STATIC VOID OsMapL1PTE(LosArchMmu *archMmu, PTE_T *pte1Ptr, vaddr_t vaddr, UINT3
     OsSavePte1(OsGetPte1Ptr(archMmu->virtTtb, vaddr), *pte1Ptr);
 }
 
-/* convert user level mmu flags to L2 descriptors flags */
-STATIC UINT32 OsCvtPte2FlagsToAttrs(uint32_t flags)
+STATIC UINT32 OsCvtPte2CacheFlagsToMMUFlags(UINT32 flags)
 {
     UINT32 mmuFlags = 0;
 
@@ -506,9 +536,11 @@ STATIC UINT32 OsCvtPte2FlagsToAttrs(uint32_t flags)
 #endif
             mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_NORMAL_WRITE_BACK_ALLOCATE;
             break;
-        case VM_MAP_REGION_FLAG_WRITE_COMBINING:
-        case VM_MAP_REGION_FLAG_UNCACHED:
+        case VM_MAP_REGION_FLAG_STRONGLY_ORDERED:
             mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_STRONGLY_ORDERED;
+            break;
+        case VM_MAP_REGION_FLAG_UNCACHED:
+            mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_NORMAL_NOCACHE;
             break;
         case VM_MAP_REGION_FLAG_UNCACHED_DEVICE:
             mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_DEVICE_SHARED;
@@ -516,23 +548,49 @@ STATIC UINT32 OsCvtPte2FlagsToAttrs(uint32_t flags)
         default:
             return LOS_ERRNO_VM_INVALID_ARGS;
     }
+    return mmuFlags;
+}
 
-    switch (flags & (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_WRITE)) {
+STATIC UINT32 OsCvtPte2AccessFlagsToMMUFlags(UINT32 flags)
+{
+    UINT32 mmuFlags = 0;
+
+    switch (flags & (VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE)) {
         case 0:
+            mmuFlags |= MMU_DESCRIPTOR_L1_AP_P_NA_U_NA;
+            break;
+        case VM_MAP_REGION_FLAG_PERM_READ:
+        case VM_MAP_REGION_FLAG_PERM_USER:
             mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RO_U_NA;
             break;
-        case VM_MAP_REGION_FLAG_PERM_WRITE:
-            mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RW_U_NA;
-            break;
-        case VM_MAP_REGION_FLAG_PERM_USER:
+        case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ:
             mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RO_U_RO;
             break;
+        case VM_MAP_REGION_FLAG_PERM_WRITE:
+        case VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE:
+            mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RW_U_NA;
+            break;
         case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_WRITE:
+        case VM_MAP_REGION_FLAG_PERM_USER | VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE:
             mmuFlags |= MMU_DESCRIPTOR_L2_AP_P_RW_U_RW;
             break;
         default:
             break;
     }
+    return mmuFlags;
+}
+
+/* convert user level mmu flags to L2 descriptors flags */
+STATIC UINT32 OsCvtPte2FlagsToAttrs(UINT32 flags)
+{
+    UINT32 mmuFlags;
+
+    mmuFlags = OsCvtPte2CacheFlagsToMMUFlags(flags);
+    if (mmuFlags == LOS_ERRNO_VM_INVALID_ARGS) {
+        return mmuFlags;
+    }
+
+    mmuFlags |= OsCvtPte2AccessFlagsToMMUFlags(flags);
 
     if (!(flags & VM_MAP_REGION_FLAG_PERM_EXECUTE)) {
         mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_SMALL_PAGE_XN;
@@ -624,8 +682,7 @@ STATUS_T LOS_ArchMmuChangeProt(LosArchMmu *archMmu, VADDR_T vaddr, size_t count,
 
         status = LOS_ArchMmuUnmap(archMmu, vaddr, 1);
         if (status < 0) {
-            VM_ERR("invalid args:aspace %p, vaddr %p, count %d",
-                   __FUNCTION__, __LINE__, archMmu, vaddr, count);
+            VM_ERR("invalid args:aspace %p, vaddr %p, count %d", archMmu, vaddr, count);
             return LOS_NOK;
         }
 
@@ -832,7 +889,7 @@ STATIC VOID OsSetKSectionAttr(VOID)
                              kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
                              VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE);
     if (status != (kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
-        VM_ERR("unmap failed, status: %d", status);
+        VM_ERR("mmap failed, status: %d", status);
         return;
     }
     LOS_VmSpaceReserve(kSpace, kmallocLength, bssEndBoundary);

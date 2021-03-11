@@ -83,19 +83,19 @@ config KERNEL_VDSO
     help
       If you wish to speed up some system calls.
 
-config KERNEL_TICKLESS
-    bool "Enable Tickless Feature"
-    default y
-    depends on KERNEL_EXTKERNEL
-    help
-      If you wish to build LiteOS with support for tickless.
-
 config KERNEL_TRACE
     bool "Enable Trace Feature"
     default n
-    depends on KERNEL_EXTKERNEL
+    depends on KERNEL_EXTKERNEL && DEBUG_VERSION
     help
       If you wish to record LiteOS's task and interrupt switch trace.
+
+config KERNEL_SHM
+    bool "Enable Shared Memory"
+    default y
+    depends on KERNEL_EXTKERNEL
+    help
+      Answer Y to enable LiteOS support shared memory.
 
 config KERNEL_LITEIPC
     bool "Enable liteipc"

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,11 +31,11 @@
 
 #include "los_hwi.h"
 #include "los_memory.h"
-#include "los_tickless_pri.h"
 #include "los_spinlock.h"
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
 #endif
+#include "los_sched_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -68,6 +68,11 @@ CHAR *OsGetHwiFormName(UINT32 index)
     return g_hwiFormName[index];
 }
 
+UINT32 LOS_GetSystemHwiMaximum(VOID)
+{
+    return OS_HWI_MAX_NUM;
+}
+
 typedef VOID (*HWI_PROC_FUNC0)(VOID);
 typedef VOID (*HWI_PROC_FUNC2)(INT32, VOID *);
 VOID OsInterrupt(UINT32 intNum)
@@ -75,16 +80,16 @@ VOID OsInterrupt(UINT32 intNum)
     HwiHandleForm *hwiForm = NULL;
     UINT32 *intCnt = NULL;
 
+    /* Must keep the operation at the beginning of the interface */
     intCnt = &g_intCount[ArchCurrCpuid()];
     *intCnt = *intCnt + 1;
+
+    OsSchedIrqStartTime();
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
     OsCpupIrqStart();
 #endif
 
-#ifdef LOSCFG_KERNEL_TICKLESS
-    OsTicklessUpdate(intNum);
-#endif
     hwiForm = (&g_hwiForm[intNum]);
 #ifndef LOSCFG_NO_SHARED_IRQ
     while (hwiForm->pstNext != NULL) {
@@ -107,10 +112,13 @@ VOID OsInterrupt(UINT32 intNum)
 #endif
     ++g_hwiFormCnt[intNum];
 
-    *intCnt = *intCnt - 1;
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
     OsCpupIrqEnd(intNum);
 #endif
+    OsSchedIrqUpdateUsedTime();
+
+    /* Must keep the operation at the end of the interface */
+    *intCnt = *intCnt - 1;
 }
 
 STATIC HWI_ARG_T OsHwiCpIrqParam(const HwiIrqParam *irqParam)

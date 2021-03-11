@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -83,7 +83,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskMemClear(UINT32 taskID)
     }
     if (g_tskMemUsedInfo[taskID].memUsed != 0) {
         PRINT_WARN("mem used of task '%s' is:0x%x, not zero when task being deleted\n",
-                   OsCurrTaskGet()->taskName, g_tskMemUsedInfo[taskID].memUsed);
+                   OS_TCB_FROM_TID(taskID)->taskName, g_tskMemUsedInfo[taskID].memUsed);
     }
     g_tskMemUsedInfo[taskID].memUsed = 0;
 }

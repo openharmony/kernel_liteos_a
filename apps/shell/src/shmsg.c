@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -61,8 +61,18 @@ char *GetCmdline(ShellCB *shellCB)
     }
 
     cmdNode = SH_LIST_ENTRY(cmdkey->list.pstNext, CmdKeyLink, list);
+    if (cmdNode == NULL) {
+        (void)pthread_mutex_unlock(&shellCB->keyMutex);
+        return NULL;
+    }
+
     SH_ListDelete(&(cmdNode->list));
     (void)pthread_mutex_unlock(&shellCB->keyMutex);
+
+    if (strlen(cmdNode->cmdString) == 0) {
+        free(cmdNode);
+        return NULL;
+    }
 
     return cmdNode->cmdString;
 }
@@ -73,7 +83,8 @@ static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
     CmdKeyLink *cmdkey = SH_LIST_ENTRY(string, CmdKeyLink, cmdString);
     CmdKeyLink *cmdNxt = NULL;
 
-    if ((string == NULL) || (*string == '\n') || (strlen(string) == 0)) {
+    if (*string == '\n') {
+        free(cmdkey);
         return;
     }
 
@@ -87,7 +98,7 @@ static void ShellSaveHistoryCmd(char *string, ShellCB *shellCB)
         }
     }
 
-    if (cmdHistory->count == CMD_HISTORY_LEN) {
+    if (cmdHistory->count >= CMD_HISTORY_LEN) {
         cmdNxt = SH_LIST_ENTRY(cmdHistory->list.pstNext, CmdKeyLink, list);
         SH_ListDelete(&(cmdNxt->list));
         SH_ListTailInsert(&(cmdHistory->list), &(cmdkey->list));

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,6 +30,12 @@
  */
 
 #define _GNU_SOURCE
+#include "menuconfig.h"
+#ifdef LOSCFG_FS_VFS
+#include "fs/fs.h"
+#include "fs/file.h"
+#endif
+#include "los_signal.h"
 #include "los_syscall.h"
 #include "los_task_pri.h"
 #include "los_process_pri.h"
@@ -40,10 +46,6 @@
 #include "mqueue.h"
 #include "los_futex_pri.h"
 #include "sys/times.h"
-#ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
-#include "fs/file.h"
-#endif
 #include "dirent.h"
 #include "fcntl.h"
 #include "unistd.h"

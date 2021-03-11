@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -92,7 +92,7 @@ VOID LOS_BitmapSetNBits(UINTPTR *bitmap, UINT32 start, UINT32 numsSet)
     UINTPTR maskToSet = BITMAP_FIRST_WORD_MASK(start);
 
     while (numsSet > bitsToSet) {
-        *p |= bitsToSet;
+        *p |= maskToSet;
         numsSet -= bitsToSet;
         bitsToSet = BITMAP_BITS_PER_WORD;
         maskToSet = OS_BITMAP_WORD_MASK;

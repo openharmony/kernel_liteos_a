@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -52,12 +52,19 @@ STATIC VOID OsVmPageInit(LosVmPage *page, paddr_t pa, UINT8 segID)
     page->physAddr = pa;
     page->segID = segID;
     page->order = VM_LIST_ORDER_MAX;
+    page->nPages = 0;
 }
 
 STATIC INLINE VOID OsVmPageOrderListInit(LosVmPage *page, size_t nPages)
 {
     OsVmPhysPagesFreeContiguous(page, nPages);
 }
+
+#define VMPAGEINIT(page, pa, segID) do {    \
+    OsVmPageInit(page, pa, segID);          \
+    (page)++;                               \
+    (pa) += PAGE_SIZE;                      \
+} while (0)
 
 VOID OsVmPageStartup(VOID)
 {
@@ -81,9 +88,22 @@ VOID OsVmPageStartup(VOID)
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {
         seg = &g_vmPhysSeg[segID];
         nPage = seg->size >> PAGE_SHIFT;
-        for (page = seg->pageBase, pa = seg->start; page <= seg->pageBase + nPage;
-             page++, pa += PAGE_SIZE) {
-            OsVmPageInit(page, pa, segID);
+        UINT32 count = nPage >> 3; /* 3: 2 ^ 3, nPage / 8, cycle count */
+        UINT32 left = nPage & 0x7; /* 0x7: nPage % 8, left page */
+
+        for (page = seg->pageBase, pa = seg->start; count > 0; count--) {
+            /* note: process large amount of data, optimize performance */
+            VMPAGEINIT(page, pa, segID);
+            VMPAGEINIT(page, pa, segID);
+            VMPAGEINIT(page, pa, segID);
+            VMPAGEINIT(page, pa, segID);
+            VMPAGEINIT(page, pa, segID);
+            VMPAGEINIT(page, pa, segID);
+            VMPAGEINIT(page, pa, segID);
+            VMPAGEINIT(page, pa, segID);
+        }
+        for (; left > 0; left--) {
+            VMPAGEINIT(page, pa, segID);
         }
         OsVmPageOrderListInit(seg->pageBase, nPage);
     }

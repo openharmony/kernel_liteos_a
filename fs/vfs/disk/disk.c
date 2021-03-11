@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,7 +34,6 @@
 #include "stdlib.h"
 #include "unistd.h"
 #include "sys/mount.h"
-#include "pthread.h"
 #include "linux/spinlock.h"
 #include "inode/inode.h"
 
@@ -153,6 +152,8 @@ INT32 los_alloc_diskid_byname(const CHAR *diskName)
 
     if (strncpy_s(disk->disk_name, (nameLen + 1), diskName, nameLen) != EOK) {
         PRINT_ERR("The strncpy_s failed.\n");
+        LOS_MemFree(m_aucSysMem0, disk->disk_name);
+        disk->disk_name = NULL;
         return VFS_ERROR;
     }
 
@@ -262,6 +263,10 @@ static los_part *DiskPartAllocate(struct inode *dev, UINT64 start, UINT64 count)
     UINT32 i;
     los_part *part = get_part(0); /* traversing from the beginning of the array */
 
+    if (part == NULL) {
+        return NULL;
+    }
+
     for (i = 0; i < SYS_MAX_PART; i++) {
         if (part->dev == NULL) {
             part->part_id = i;
@@ -299,7 +304,7 @@ static VOID DiskPartRelease(los_part *part)
  */
 #define DEV_NAME_BUFF_SIZE  (DISK_NAME + 3)
 
-static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount)
+static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount, BOOL IsValidPart)
 {
     CHAR devName[DEV_NAME_BUFF_SIZE];
     struct inode *diskDev = NULL;
@@ -318,34 +323,40 @@ static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount)
         return VFS_ERROR;
     }
 
-    ret = snprintf_s(devName, sizeof(devName), sizeof(devName) - 1, "%s%c%u",
-                     (disk->disk_name == NULL ? "null" : disk->disk_name), 'p', disk->part_count);
-    if (ret < 0) {
-        return VFS_ERROR;
-    }
-
     diskDev = disk->dev;
-    if (register_blockdriver(devName, diskDev->u.i_bops, RWE_RW_RW, diskDev->i_private)) {
-        PRINT_ERR("DiskAddPart : register %s fail!\n", devName);
-        return VFS_ERROR;
-    }
+    if (IsValidPart == TRUE) {
+        ret = snprintf_s(devName, sizeof(devName), sizeof(devName) - 1, "%s%c%u",
+                         ((disk->disk_name == NULL) ? "null" : disk->disk_name), 'p', disk->part_count);
+        if (ret < 0) {
+            return VFS_ERROR;
+        }
 
-    SETUP_SEARCH(&desc, devName, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
-        PRINT_ERR("DiskAddPart : find %s fail!\n", devName);
-        return VFS_ERROR;
-    }
-    partDev = desc.node;
+        if (register_blockdriver(devName, diskDev->u.i_bops, RWE_RW_RW, diskDev->i_private)) {
+            PRINT_ERR("DiskAddPart : register %s fail!\n", devName);
+            return VFS_ERROR;
+        }
 
-    PRINTK("DiskAddPart : register %s ok!\n", devName);
+        SETUP_SEARCH(&desc, devName, false);
+        ret = inode_find(&desc);
+        if (ret < 0) {
+            PRINT_ERR("DiskAddPart : find %s fail!\n", devName);
+            return VFS_ERROR;
+        }
+        partDev = desc.node;
 
-    part = DiskPartAllocate(partDev, sectorStart, sectorCount);
-    inode_release(partDev);
+        PRINTK("DiskAddPart : register %s ok!\n", devName);
 
-    if (part == NULL) {
-        (VOID)unregister_blockdriver(devName);
-        return VFS_ERROR;
+        part = DiskPartAllocate(partDev, sectorStart, sectorCount);
+        inode_release(partDev);
+        if (part == NULL) {
+            (VOID)unregister_blockdriver(devName);
+            return VFS_ERROR;
+        }
+    } else {
+        part = DiskPartAllocate(diskDev, sectorStart, sectorCount);
+        if (part == NULL) {
+            return VFS_ERROR;
+        }
     }
 
     DiskPartAddToDisk(disk, part);
@@ -372,13 +383,13 @@ static INT32 DiskDivide(los_disk *disk, struct disk_divide_info *info)
             info->part[i].sector_count = info->sector_count - info->part[i].sector_start;
             PRINT_ERR("Part[%u] sector_count change to %llu.\n", i, info->part[i].sector_count);
 
-            ret = DiskAddPart(disk, info->part[i].sector_start, info->part[i].sector_count);
+            ret = DiskAddPart(disk, info->part[i].sector_start, info->part[i].sector_count, TRUE);
             if (ret == VFS_ERROR) {
                 return VFS_ERROR;
             }
             break;
         }
-        ret = DiskAddPart(disk, info->part[i].sector_start, info->part[i].sector_count);
+        ret = DiskAddPart(disk, info->part[i].sector_start, info->part[i].sector_count, TRUE);
         if (ret == VFS_ERROR) {
             return VFS_ERROR;
         }
@@ -411,13 +422,13 @@ static INT32 DiskPartitionMemZalloc(size_t boundary, size_t size, CHAR **gptBuf,
     buffer1 = (CHAR *)memalign(boundary, size);
     if (buffer1 == NULL) {
         PRINT_ERR("%s buffer1 malloc %lu failed! %d\n", __FUNCTION__, size, __LINE__);
-        return VFS_ERROR;
+        return -ENOMEM;
     }
     buffer2 = (CHAR *)memalign(boundary, size);
     if (buffer2 == NULL) {
         PRINT_ERR("%s buffer2 malloc %lu failed! %d\n", __FUNCTION__, size, __LINE__);
         free(buffer1);
-        return VFS_ERROR;
+        return -ENOMEM;
     }
     (VOID)memset_s(buffer1, size, 0, size);
     (VOID)memset_s(buffer2, size, 0, size);
@@ -521,7 +532,7 @@ static INT32 DiskGPTPartitionRecognition(struct inode *blkDrv, struct disk_divid
 
     ret = DiskPartitionMemZalloc(MEM_ADDR_ALIGN_BYTE, info->sector_size, &gptBuf, &partitionBuf);
     if (ret != ENOERR) {
-        return VFS_ERROR;
+        return ret;
     }
 
     ret = GPTInfoGet(blkDrv, gptBuf);
@@ -679,7 +690,7 @@ static INT32 DiskPartitionRecognition(struct inode *blkDrv, struct disk_divide_i
     CHAR *ebrBuf = NULL;
 
     if ((blkDrv == NULL) || (blkDrv->u.i_bops == NULL) || (blkDrv->u.i_bops->read == NULL)) {
-        return VFS_ERROR;
+        return -EINVAL;
     }
 
     ret = DiskPartitionMemZalloc(MEM_ADDR_ALIGN_BYTE, info->sector_size, &mbrBuf, &ebrBuf);
@@ -734,12 +745,21 @@ INT32 DiskPartitionRegister(los_disk *disk)
     parInfo.sector_size = disk->sector_size;
     parInfo.sector_count = disk->sector_count;
     count = DiskPartitionRecognition(disk->dev, &parInfo);
-    if (count < 0) {
+    if (count == VFS_ERROR) {
+        part = get_part(DiskAddPart(disk, 0, disk->sector_count, FALSE));
+        if (part == NULL) {
+            return VFS_ERROR;
+        }
+        part->part_no_mbr = 0;
+        PRINTK("Disk %s doesn't contain a valid partition table.\n", disk->disk_name);
+        return ENOERR;
+    } else if (count < 0) {
         return VFS_ERROR;
     }
+
     parInfo.part_count = count;
     if (count == 0) {
-        part = get_part(DiskAddPart(disk, 0, disk->sector_count));
+        part = get_part(DiskAddPart(disk, 0, disk->sector_count, TRUE));
         if (part == NULL) {
             return VFS_ERROR;
         }
@@ -753,7 +773,7 @@ INT32 DiskPartitionRegister(los_disk *disk)
         /* Read the disk_divide_info structure to get partition's infomation. */
         if ((parInfo.part[i].type != 0) && (parInfo.part[i].type != EXTENDED_PAR) &&
             (parInfo.part[i].type != EXTENDED_8G)) {
-            part = get_part(DiskAddPart(disk, parInfo.part[i].sector_start, parInfo.part[i].sector_count));
+            part = get_part(DiskAddPart(disk, parInfo.part[i].sector_start, parInfo.part[i].sector_count, TRUE));
             if (part == NULL) {
                 return VFS_ERROR;
             }
@@ -990,7 +1010,7 @@ ERROR_HANDLE:
     return VFS_ERROR;
 }
 
-INT32 los_part_write(INT32 pt, VOID *buf, UINT64 sector, UINT32 count)
+INT32 los_part_write(INT32 pt, const VOID *buf, UINT64 sector, UINT32 count)
 {
     const los_part *part = get_part(pt);
     los_disk *disk = NULL;
@@ -1032,7 +1052,7 @@ INT32 los_part_write(INT32 pt, VOID *buf, UINT64 sector, UINT32 count)
         goto ERROR_HANDLE;
     }
 
-    ret = los_disk_write((INT32)part->disk_id, (const VOID *)buf, sector, count);
+    ret = los_disk_write((INT32)part->disk_id, buf, sector, count);
     if (ret < 0) {
         goto ERROR_HANDLE;
     }
@@ -1196,6 +1216,8 @@ static VOID DiskStructInit(const CHAR *diskName, INT32 diskID, const struct geom
 
     if (strncpy_s(disk->disk_name, (nameLen + 1), diskName, nameLen) != EOK) {
         PRINT_ERR("DiskStructInit strncpy_s failed.\n");
+        LOS_MemFree(m_aucSysMem0, disk->disk_name);
+        disk->disk_name = NULL;
         return;
     }
     disk->disk_name[nameLen] = '\0';
@@ -1559,7 +1581,11 @@ INT32 SetDiskPartName(los_part *part, const CHAR *src)
         goto ERROR_HANDLE;
     }
 
-    (VOID)strcpy_s(part->part_name, len + 1, src);
+    if (strcpy_s(part->part_name, len + 1, src) != EOK) {
+        free(part->part_name);
+        part->part_name = NULL;
+        goto ERROR_HANDLE;
+    }
 
     DISK_UNLOCK(&disk->disk_mutex);
     return ENOERR;

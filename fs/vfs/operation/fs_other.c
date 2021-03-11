@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,6 +38,7 @@
 #include "sys/select.h"
 #include "sys/stat.h"
 #include "sys/prctl.h"
+#include "fs/dirent_fs.h"
 #include "fs/fd_table.h"
 #include "fs/fs.h"
 #include "linux/spinlock.h"
@@ -96,30 +97,30 @@ int VfsPermissionCheck(uint fuid, uint fgid, mode_t fileMode, int accMode)
 
     tmpMode &= (READ_OP | WRITE_OP | EXEC_OP);
 
-    if ((accMode & tmpMode) == accMode) {
+    if (((uint)accMode & tmpMode) == accMode) {
         return 0;
     }
 
     tmpMode = 0;
     if (S_ISDIR(fileMode)) {
-        if ((accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_READ_SEARCH))) {
+        if (((uint)accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_READ_SEARCH))) {
             tmpMode |= EXEC_OP;
         }
     } else {
-        if ((accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_EXECUTE)) && (fileMode & MODE_IXUGO)) {
+        if (((uint)accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_EXECUTE)) && (fileMode & MODE_IXUGO)) {
             tmpMode |= EXEC_OP;
         }
     }
 
-    if ((accMode & WRITE_OP) && IsCapPermit(CAP_DAC_WRITE)) {
+    if (((uint)accMode & WRITE_OP) && IsCapPermit(CAP_DAC_WRITE)) {
         tmpMode |= WRITE_OP;
     }
 
-    if ((accMode & READ_OP) && IsCapPermit(CAP_DAC_READ_SEARCH)) {
+    if (((uint)accMode & READ_OP) && IsCapPermit(CAP_DAC_READ_SEARCH)) {
         tmpMode |= READ_OP;
     }
 
-    if ((accMode & tmpMode) == accMode) {
+    if (((uint)accMode & tmpMode) == accMode) {
         return 0;
     }
 
@@ -127,7 +128,7 @@ int VfsPermissionCheck(uint fuid, uint fgid, mode_t fileMode, int accMode)
 }
 
 #ifdef VFS_USING_WORKDIR
-int SetWorkDir(char *dir, size_t len)
+static int SetWorkDir(const char *dir, size_t len)
 {
   errno_t ret;
   uint lock_flags;
@@ -303,7 +304,7 @@ static struct dirent **scandir_get_file_list(const char *dir, int *num, int(*fil
 {
     DIR *od = NULL;
     int listSize = MAX_DIR_ENT;
-    int n = *num;
+    int n = 0;
     struct dirent **list = NULL;
     struct dirent **newList = NULL;
     struct dirent *ent = NULL;
@@ -493,7 +494,7 @@ static void PrintFileInfo64(const struct stat64 *stat64Info, const char *name)
     int i;
 
     for (i = 0; i < UGO_NUMS; i++) {
-        mode = stat64Info->st_mode >> (USER_MODE_SHIFT - i * UGO_NUMS);
+        mode = stat64Info->st_mode >> (uint)(USER_MODE_SHIFT - i * UGO_NUMS);
         str[i][0] = (mode & READ_OP) ? 'r' : '-';
         str[i][1] = (mode & WRITE_OP) ? 'w' : '-';
         str[i][UGO_NUMS - 1] = (mode & EXEC_OP) ? 'x' : '-';
@@ -513,7 +514,7 @@ static void PrintFileInfo(const struct stat *statInfo, const char *name)
     int i;
 
     for (i = 0; i < UGO_NUMS; i++) {
-        mode = statInfo->st_mode >> (USER_MODE_SHIFT - i * UGO_NUMS);
+        mode = statInfo->st_mode >> (uint)(USER_MODE_SHIFT - i * UGO_NUMS);
         str[i][0] = (mode & READ_OP) ? 'r' : '-';
         str[i][1] = (mode & WRITE_OP) ? 'w' : '-';
         str[i][UGO_NUMS - 1] = (mode & EXEC_OP) ? 'x' : '-';
@@ -584,6 +585,7 @@ void ls(const char *pathname)
                 }
 
                 fullpath_bak = fullpath;
+
                 if (stat64(fullpath, &stat64_info) == 0) {
                     PrintFileInfo64(&stat64_info, pdirent->d_name);
                 } else if (stat(fullpath, &stat_info) == 0) {

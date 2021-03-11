@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,7 +33,11 @@
 #define _LOS_SCHED_PRI_H
 
 #include "los_percpu_pri.h"
+#include "los_task_pri.h"
+#include "los_sys_pri.h"
+#include "los_process_pri.h"
 #include "los_hwi.h"
+#include "hal_timer.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -42,6 +46,30 @@ extern "C" {
 #endif /* __cplusplus */
 
 extern UINT32 g_taskScheduled;
+typedef BOOL (*SchedScan)(VOID);
+
+extern UINT64 g_sysSchedStartTime;
+
+STATIC INLINE UINT64 OsGerCurrSchedTimeCycle(VOID)
+{
+    if (g_sysSchedStartTime == 0) {
+        return g_sysSchedStartTime;
+    }
+
+    return (HalClockGetCycles() - g_sysSchedStartTime);
+}
+
+STATIC INLINE VOID OsSchedIrqUpdateUsedTime(VOID)
+{
+    LosTaskCB *runTask = OsCurrTaskGet();
+    runTask->irqUsedTime = OsGerCurrSchedTimeCycle() - runTask->irqStartTime;
+}
+
+STATIC INLINE VOID OsSchedIrqStartTime(VOID)
+{
+    LosTaskCB *runTask = OsCurrTaskGet();
+    runTask->irqStartTime = OsGerCurrSchedTimeCycle();
+}
 
 /*
  * Schedule flag, one bit represents one core.
@@ -102,6 +130,60 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
     return preemptable;
 }
 
+STATIC INLINE VOID OsCpuSchedLock(Percpu *cpu)
+{
+    cpu->taskLockCnt++;
+}
+
+STATIC INLINE VOID OsCpuSchedUnlock(Percpu *cpu, UINT32 intSave)
+{
+    if (cpu->taskLockCnt > 0) {
+        cpu->taskLockCnt--;
+        if ((cpu->taskLockCnt == 0) && (cpu->schedFlag == INT_PEND_RESCH) && OS_SCHEDULER_ACTIVE) {
+            cpu->schedFlag = INT_NO_RESCH;
+            LOS_IntRestore(intSave);
+            LOS_Schedule();
+            return;
+        }
+    }
+
+    LOS_IntRestore(intSave);
+}
+
+extern UINT32 OsSchedSetTickTimerType(UINT32 timerType);
+
+extern VOID OsSchedSetIdleTaskSchedPartam(LosTaskCB *idleTask);
+
+extern UINT32 OsSchedSwtmrScanRegister(SchedScan func);
+
+extern VOID OsSchedUpdateExpireTime(UINT64 startTime);
+
+extern VOID OsSchedToUserReleaseLock(VOID);
+
+extern VOID OsSchedTaskDeQueue(LosTaskCB *taskCB);
+
+extern VOID OsSchedTaskEnQueue(LosTaskCB *taskCB);
+
+extern UINT32 OsSchedTaskWait(LOS_DL_LIST *list, UINT32 timeout, BOOL needSched);
+
+extern VOID OsSchedTaskWake(LosTaskCB *resumedTask);
+
+extern BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priority);
+
+extern BOOL OsSchedModifyProcessSchedParam(LosProcessCB *processCB, UINT16 policy, UINT16 priority);
+
+extern VOID OsSchedDelay(LosTaskCB *runTask, UINT32 tick);
+
+extern VOID OsSchedYield(VOID);
+
+extern VOID OsSchedTaskExit(LosTaskCB *taskCB);
+
+extern VOID OsSchedTick(VOID);
+
+extern UINT32 OsSchedInit(VOID);
+
+extern VOID OsSchedStart(VOID);
+
 /*
  * This function simply picks the next task and switches to it.
  * Current task needs to already be in the right state or the right
@@ -109,31 +191,21 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
  */
 extern VOID OsSchedResched(VOID);
 
-/*
- * This function put the current task back to the ready queue and
- * try to do the schedule. However, the schedule won't be definitely
- * taken place while there're no other higher priority tasks or locked.
- */
-extern VOID OsSchedPreempt(VOID);
+extern VOID OsSchedIrqEndCheckNeedSched(VOID);
 
 /*
- * Just like OsSchedPreempt, except this function will do the OS_INT_ACTIVE
- * check, in case the schedule taken place in the middle of an interrupt.
- */
-STATIC INLINE VOID LOS_Schedule(VOID)
-{
-    if (OS_INT_ACTIVE) {
-        OsPercpuGet()->schedFlag = INT_PEND_RESCH;
-        return;
-    }
+* This function inserts the runTask to the lock pending list based on the
+* task priority.
+*/
+extern LOS_DL_LIST *OsSchedLockPendFindPos(const LosTaskCB *runTask, LOS_DL_LIST *lockList);
 
-    /*
-     * trigger schedule in task will also do the slice check
-     * if neccessary, it will give up the timeslice more in time.
-     * otherwhise, there's no other side effects.
-     */
-    OsSchedPreempt();
-}
+#ifdef LOSCFG_SCHED_TICK_DEBUG
+extern VOID OsSchedDebugRecordData(VOID);
+#endif
+
+extern UINT32 OsShellShowTickRespo(VOID);
+
+extern UINT32 OsShellShowSchedParam(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

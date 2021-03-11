@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@
 #include "los_signal.h"
 #include "pthread.h"
 #include "los_process_pri.h"
+#include "los_sched_pri.h"
 #include "los_hw_pri.h"
 #include "user_copy.h"
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -83,7 +84,8 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
     if (masked) {
         /* If signal is in wait list and mask list, need unblock it */
         if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {
-            OsTaskWake(stcb);
+            OsTaskWakeClearPendMask(stcb);
+            OsSchedTaskWake(stcb);
             OsSigEmptySet(&sigcb->sigwaitmask);
         } else {
             OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);
@@ -92,7 +94,8 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
         /* unmasked signal actions */
         OsSigAddSet(&sigcb->sigFlag, info->si_signo);
         if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {
-            OsTaskWake(stcb);
+            OsTaskWakeClearPendMask(stcb);
+            OsSchedTaskWake(stcb);
             OsSigEmptySet(&sigcb->sigwaitmask);
         }
     }
@@ -236,7 +239,8 @@ static int SigProcessKillSigHandler(LosTaskCB *tcb, void *arg)
     if ((tcb != NULL) && (info != NULL) && (info->sigInfo != NULL)) {
         sig_cb *sigcb = &tcb->sig;
         if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->sigInfo->si_signo)) {
-            OsTaskWake(tcb);
+            OsTaskWakeClearPendMask(tcb);
+            OsSchedTaskWake(tcb);
             OsSigEmptySet(&sigcb->sigwaitmask);
         }
     }
@@ -466,7 +470,8 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
         OsSigAddSet(set, SIGSTOP);
 
         sigcb->sigwaitmask |= *set;
-        ret = OsTaskWait(&sigcb->waitList, timeout, TRUE);
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_SIGNAL, sigcb->sigwaitmask, timeout);
+        ret = OsSchedTaskWait(&sigcb->waitList, timeout, TRUE);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             ret = -EAGAIN;
         }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,7 +43,7 @@ static void FileTableLock(struct fd_table_s *fdt)
         * The only case that an error should occur here is if the wait was
         * awakened by a signal.
         */
-        LOS_ASSERT(get_errno() == EINTR);
+        LOS_ASSERT(errno == EINTR);
     }
 }
 

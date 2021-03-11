@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@
 
 #include "los_typedef.h"
 #include "los_list.h"
+#include "los_sys_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -41,63 +42,34 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/*
- * Sortlink Rollnum Structure:
- *   ------------------------------------------
- *  | 31 | 30 | 29 |.......| 4 | 3 | 2 | 1 | 0 |
- *   ------------------------------------------
- *  |<-High Bits->|<---------Low Bits--------->|
- *
- *  Low Bits  : circles
- *  High Bits : sortlink index
- */
-#define OS_TSK_HIGH_BITS       3U
-#define OS_TSK_LOW_BITS        (32U - OS_TSK_HIGH_BITS)
-#define OS_TSK_SORTLINK_LOGLEN OS_TSK_HIGH_BITS
-#define OS_TSK_SORTLINK_LEN    (1U << OS_TSK_SORTLINK_LOGLEN)
-#define OS_TSK_SORTLINK_MASK   (OS_TSK_SORTLINK_LEN - 1U)
-#define OS_TSK_MAX_ROLLNUM     (0xFFFFFFFFU - OS_TSK_SORTLINK_LEN)
-#define OS_TSK_HIGH_BITS_MASK  (OS_TSK_SORTLINK_MASK << OS_TSK_LOW_BITS)
-#define OS_TSK_LOW_BITS_MASK   (~OS_TSK_HIGH_BITS_MASK)
-
-#define EVALUATE_L(NUM, VALUE) NUM = (((NUM) & OS_TSK_HIGH_BITS_MASK) | (VALUE))
-
-#define EVALUATE_H(NUM, VALUE) NUM = (((NUM) & OS_TSK_LOW_BITS_MASK) | ((VALUE) << OS_TSK_LOW_BITS))
-
-#define ROLLNUM_SUB(NUM1, NUM2)                 \
-    NUM1 = (((NUM1) & OS_TSK_HIGH_BITS_MASK) |  \
-    (ROLLNUM(NUM1) - ROLLNUM(NUM2)))
-
-#define ROLLNUM_ADD(NUM1, NUM2)                 \
-    NUM1 = (((NUM1) & OS_TSK_HIGH_BITS_MASK) |  \
-    (ROLLNUM(NUM1) + ROLLNUM(NUM2)))
-
-#define ROLLNUM_DEC(NUM) NUM = ((NUM) - 1)
-
-#define ROLLNUM(NUM) ((NUM) & OS_TSK_LOW_BITS_MASK)
-
-#define SORT_INDEX(NUM) ((NUM) >> OS_TSK_LOW_BITS)
-
-#define SET_SORTLIST_VALUE(sortList, value) (((SortLinkList *)(sortList))->idxRollNum = (value))
+typedef enum {
+    OS_SORT_LINK_TASK = 1,
+    OS_SORT_LINK_SWTMR = 2,
+} SortLinkType;
 
 typedef struct {
     LOS_DL_LIST sortLinkNode;
-    UINT32 idxRollNum;
+    UINT64      responseTime;
+#if (LOSCFG_KERNEL_SMP == YES)
+    UINT32      cpuid;
+#endif
 } SortLinkList;
 
 typedef struct {
-    LOS_DL_LIST *sortLink;
-    UINT16 cursor;
-    UINT16 reserved;
+    LOS_DL_LIST sortLink;
+    UINT32      nodeNum;
 } SortLinkAttribute;
 
+#define OS_SORT_LINK_INVALID_TIME ((UINT64)-1)
+#define SET_SORTLIST_VALUE(sortList, value) (((SortLinkList *)(sortList))->responseTime = (value))
+
+extern UINT64 OsGetNextExpireTime(UINT64 startTime);
 extern UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader);
-extern VOID OsAdd2SortLink(const SortLinkAttribute *sortLinkHeader, SortLinkList *sortList);
-extern VOID OsDeleteSortLink(const SortLinkAttribute *sortLinkHeader, SortLinkList *sortList);
+extern VOID OsDeleteNodeSortLink(SortLinkAttribute *sortLinkHeader, SortLinkList *sortList);
+extern VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, SortLinkType type);
+extern VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type);
+extern UINT32 OsSortLinkGetTargetExpireTime(const SortLinkList *targetSortList);
 extern UINT32 OsSortLinkGetNextExpireTime(const SortLinkAttribute *sortLinkHeader);
-extern UINT32 OsSortLinkGetTargetExpireTime(const SortLinkAttribute *sortLinkHeader,
-                                            const SortLinkList *targetSortList);
-extern VOID OsSortLinkUpdateExpireTime(UINT32 sleepTicks, SortLinkAttribute *sortLinkHeader);
 
 #ifdef __cplusplus
 #if __cplusplus

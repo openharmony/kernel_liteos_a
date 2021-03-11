@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,7 +36,6 @@
 #endif
 #include "los_hwi.h"
 #include "los_memory_pri.h"
-#include "uart.h"
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif
@@ -91,13 +90,29 @@ STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
 #endif
 }
 
+STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
+{
+    ssize_t writen = 0;
+    ssize_t cnt;
+    ssize_t toWrite = len;
+
+    for (;;) {
+        cnt = write(STDOUT_FILENO, str + writen, (size_t)toWrite);
+        if ((cnt < 0) || (toWrite == cnt)) {
+            break;
+        }
+        writen += cnt;
+        toWrite -= cnt;
+    }
+}
+
 VOID OutputControl(const CHAR *str, UINT32 len, OutputType type)
 {
     switch (type) {
         case CONSOLE_OUTPUT:
 #ifdef LOSCFG_PLATFORM_CONSOLE
             if (ConsoleEnable() == TRUE) {
-                (VOID)write(STDOUT_FILENO, str, (size_t)len);
+                ConsoleOutput(str, len);
                 break;
             }
 #endif
@@ -106,7 +121,7 @@ VOID OutputControl(const CHAR *str, UINT32 len, OutputType type)
             UartOutput(str, len, UART_WITH_LOCK);
             break;
         case EXC_OUTPUT:
-            UartOutput(str, len, UART_WITHOUT_LOCK);
+            UartPuts(str, len, UART_WITH_LOCK);
             break;
         default:
             break;
@@ -250,7 +265,7 @@ VOID PrintExcInfo(const CHAR *fmt, ...)
 VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...)
 {
     va_list ap;
-    va_start(ap, fmt);
+
     if (level > PRINT_LEVEL) {
         return;
     }
@@ -258,6 +273,8 @@ VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...
     if ((level != LOS_COMMON_LEVEL) && ((level > LOS_EMG_LEVEL) && (level <= LOS_TRACE_LEVEL))) {
         dprintf("[%s]", g_logString[level]);
     }
+
+    va_start(ap, fmt);
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);
     va_end(ap);
 }

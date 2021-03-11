@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,6 +31,7 @@
 
 #include "los_hw_pri.h"
 #include "los_tick_pri.h"
+#include "los_sched_pri.h"
 #include "los_sys_pri.h"
 #include "gic_common.h"
 
@@ -87,8 +88,6 @@
 
 #endif
 
-#define OS_CYCLE_PER_TICK (g_sysClock / LOSCFG_BASE_CORE_TICK_PER_SECOND)
-
 UINT32 HalClockFreqRead(VOID)
 {
     return READ_TIMER_REG32(TIMER_REG_CNTFRQ);
@@ -127,27 +126,12 @@ UINT64 HalClockGetCycles(VOID)
     return cntpct;
 }
 
-LITE_OS_SEC_TEXT VOID OsTickEntry(VOID)
-{
-    TimerCtlWrite(0);
-
-    OsTickHandler();
-
-    /*
-     * use last cval to generate the next tick's timing is
-     * absolute and accurate. DO NOT use tval to drive the
-     * generic time in which case tick will be slower.
-     */
-    TimerCvalWrite(TimerCvalRead() + OS_CYCLE_PER_TICK);
-    TimerCtlWrite(1);
-}
-
 LITE_OS_SEC_TEXT_INIT VOID HalClockInit(VOID)
 {
     UINT32 ret;
 
     g_sysClock = HalClockFreqRead();
-    ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickEntry, 0);
+    ret = LOS_HwiCreate(OS_TICK_INT_NUM, MIN_INTERRUPT_PRIORITY, 0, OsTickHandler, 0);
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d create tick irq failed, ret:0x%x\n", __FUNCTION__, __LINE__, ret);
     }
@@ -155,6 +139,11 @@ LITE_OS_SEC_TEXT_INIT VOID HalClockInit(VOID)
 
 LITE_OS_SEC_TEXT_INIT VOID HalClockStart(VOID)
 {
+    UINT32 ret = OsSchedSetTickTimerType(64); /* 64 bit tick timer */
+    if (ret != LOS_OK) {
+        return;
+    }
+
     HalIrqUnmask(OS_TICK_INT_NUM);
 
     /* triggle the first tick */
@@ -165,7 +154,7 @@ LITE_OS_SEC_TEXT_INIT VOID HalClockStart(VOID)
 
 VOID HalDelayUs(UINT32 usecs)
 {
-    UINT64 cycles = (UINT64)usecs * HalClockFreqRead() / OS_SYS_US_PER_SECOND;
+    UINT64 cycles = (UINT64)usecs * g_sysClock / OS_SYS_US_PER_SECOND;
     UINT64 deadline = HalClockGetCycles() + cycles;
 
     while (HalClockGetCycles() < deadline) {
@@ -186,7 +175,7 @@ UINT32 HalClockGetTickTimerCycles(VOID)
     return (UINT32)((cval > cycles) ? (cval - cycles) : 0);
 }
 
-VOID HalClockTickTimerReload(UINT32 cycles)
+VOID HalClockTickTimerReload(UINT64 cycles)
 {
     HalIrqMask(OS_TICK_INT_NUM);
     HalIrqClear(OS_TICK_INT_NUM);

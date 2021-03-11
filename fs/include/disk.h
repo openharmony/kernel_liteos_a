@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -46,6 +46,8 @@
 #include "inode/inode.h"
 
 #endif
+
+#include "pthread.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -475,7 +477,7 @@ INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count);
  * @see los_part_read
  *
  */
-INT32 los_part_write(INT32 pt, VOID *buf, UINT64 sector, UINT32 count);
+INT32 los_part_write(INT32 pt, const VOID *buf, UINT64 sector, UINT32 count);
 
 /**
  * @ingroup  disk

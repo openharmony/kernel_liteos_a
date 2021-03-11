@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,11 +31,7 @@
 
 #include "los_tick_pri.h"
 #include "los_swtmr_pri.h"
-#include "los_task_pri.h"
-#include "los_timeslice_pri.h"
-#ifdef LOSCFG_KERNEL_TICKLESS
-#include "los_tickless_pri.h"
-#endif
+#include "los_sched_pri.h"
 #ifdef LOSCFG_KERNEL_VDSO
 #include "los_vdso.h"
 #endif
@@ -46,7 +42,6 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-LITE_OS_SEC_BSS volatile UINT64 g_tickCount[LOSCFG_KERNEL_CORE_NUM] = {0};
 LITE_OS_SEC_DATA_INIT UINT32 g_sysClock;
 LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;
 LITE_OS_SEC_BSS DOUBLE g_cycle2NsScale;
@@ -59,31 +54,19 @@ LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_tickSpin);
  */
 LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
 {
-    UINT32 intSave;
-
-    TICK_LOCK(intSave);
-    g_tickCount[ArchCurrCpuid()]++;
-    TICK_UNLOCK(intSave);
+#ifdef LOSCFG_SCHED_TICK_DEBUG
+    OsSchedDebugRecordData();
+#endif
 
 #ifdef LOSCFG_KERNEL_VDSO
     OsUpdateVdsoTimeval();
-#endif
-
-#ifdef LOSCFG_KERNEL_TICKLESS
-    OsTickIrqFlagSet(OsTicklessFlagGet());
 #endif
 
 #if (LOSCFG_BASE_CORE_TICK_HW_TIME == YES)
     HalClockIrqClear(); /* diff from every platform */
 #endif
 
-    OsTimesliceCheck();
-
-    OsTaskScan(); /* task timeout scan */
-
-#if (LOSCFG_BASE_CORE_SWTMR == YES)
-    OsSwtmrScan();
-#endif
+    OsSchedTick();
 }
 
 #ifdef __cplusplus

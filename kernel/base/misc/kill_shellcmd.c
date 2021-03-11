@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,7 +35,14 @@
 #include "los_printf.h"
 #include "los_task_pri.h"
 #include "los_process_pri.h"
+
+#ifdef LOSCFG_BASE_CORE_HILOG
 #include "log.h"
+#else
+#define HILOG_INFO(type, fmt, ...)    PRINT_INFO(fmt, __VA_ARGS__)
+#define HILOG_ERROR(type, fmt, ...)   PRINT_ERR(fmt, __VA_ARGS__)
+#endif
+
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #include "shell.h"
@@ -57,13 +64,13 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdKill(INT32 argc, const CHAR **argv)
     if (argc == ARG_NUM) {
         sigNo = strtoul(argv[0], &endPtr, 0);
         if (*endPtr != 0) {
-            PRINTK("\nsigNo can't access %s.\n", argv[0]);
+            PRINT_ERR("\nsigNo can't access %s.\n", argv[0]);
             goto ERROR;
         }
         endPtr = NULL;
         pidNo = strtoul(argv[1], &endPtr, 0);
         if (*endPtr != 0) {
-            PRINTK("\npidNo can't access %s.\n", argv[1]);
+            PRINT_ERR("\npidNo can't access %s.\n", argv[1]);
             goto ERROR;
         }
 
@@ -74,11 +81,11 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdKill(INT32 argc, const CHAR **argv)
             goto ERROR;
         }
         if (ret < 0) {
-            PRINTK("\n Kill fail ret = %d! process not exist or sigNo is invalid\n", ret);
+            PRINT_ERR("\n Kill fail ret = %d! process not exist or sigNo is invalid\n", ret);
             goto ERROR;
         }
     } else {
-        PRINTK("\nPara number errno!\n");
+        PRINT_ERR("\nPara number errno!\n");
         goto ERROR;
     }
     return 0;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -49,10 +49,6 @@ extern "C" {
 
 #ifdef LOSCFG_NET_LWIP_SACK
 #define LWIP_BSD_API 1
-#endif
-
-#ifdef LOSCFG_DEBUG_VERSION
-#define LOSCFG_MEM_WATERLINE
 #endif
 
 #ifdef LOSCFG_DRIVERS_USB

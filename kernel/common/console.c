@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -47,6 +47,7 @@
 #endif
 #include "los_exc_pri.h"
 #include "los_process_pri.h"
+#include "los_sched_pri.h"
 #include "user_copy.h"
 #ifdef __cplusplus
 #if __cplusplus
@@ -451,7 +452,9 @@ STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
 {
     if ((readcount == EACH_CHAR) && (consoleCB->fifoIn <= (CONSOLE_FIFO_SIZE - 3))) {
         if (ch == '\b') {
-            consoleCB->fifo[--consoleCB->fifoIn] = '\0';
+            if (!ConsoleFifoEmpty(consoleCB)) {
+                consoleCB->fifo[--consoleCB->fifoIn] = '\0';
+            }
         } else {
             consoleCB->fifo[consoleCB->fifoIn] = (UINT8)ch;
             consoleCB->fifoIn++;
@@ -685,9 +688,13 @@ STATIC ssize_t ConsoleRead(struct file *filep, CHAR *buffer, size_t bufLen)
     BOOL userBuf = FALSE;
     const struct file_operations_vfs *fileOps = NULL;
 
-    if ((buffer == NULL) || (bufLen == 0) || (bufLen > CONSOLE_FIFO_SIZE)) {
+    if ((buffer == NULL) || (bufLen == 0)) {
         ret = EINVAL;
         goto ERROUT;
+    }
+
+    if (bufLen > CONSOLE_FIFO_SIZE) {
+        bufLen = CONSOLE_FIFO_SIZE;
     }
 
     userBuf = LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buffer, bufLen);
@@ -740,34 +747,38 @@ ERROUT:
 
 STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 {
-    INT32 cnt = 0;
+    INT32 cnt;
+    size_t writen = 0;
+    size_t toWrite = bufLen;
     UINT32 intSave;
 
 #ifdef LOSCFG_SHELL_DMESG
     (VOID)OsLogMemcpyRecord(buffer, bufLen);
-    if (!OsCheckConsoleLock()) {
+    if (OsCheckConsoleLock()) {
+        return 0;
+    }
 #endif
     LOS_CirBufLock(&cirBufSendCB->cirBufCB, &intSave);
-    while (cnt < (INT32)bufLen) {
-        if ((buffer[cnt] == '\n') || (buffer[cnt] == '\r')) {
+    while (writen < (INT32)bufLen) {
+        /* Transform for CR/LR mode */
+        if ((buffer[writen] == '\n') || (buffer[writen] == '\r')) {
             (VOID)LOS_CirBufWrite(&cirBufSendCB->cirBufCB, "\r", 1);
-            (VOID)LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[cnt], 1);
-            cnt++;
-            continue;
         }
-        (VOID)LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[cnt], 1);
-        cnt++;
+
+        cnt = LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[writen], 1);
+        if (cnt <= 0) {
+            break;
+        }
+        toWrite -= cnt;
+        writen += cnt;
     }
     LOS_CirBufUnlock(&cirBufSendCB->cirBufCB, intSave);
     /* Log is cached but not printed when a system exception occurs */
     if (OsGetSystemStatus() == OS_SYSTEM_NORMAL) {
         (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);
     }
-#ifdef LOSCFG_SHELL_DMESG
-    }
-#endif
 
-    return cnt;
+    return writen;
 }
 
 STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLen)
@@ -779,9 +790,13 @@ STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLe
     struct file *privFilep = NULL;
     const struct file_operations_vfs *fileOps = NULL;
 
-    if ((buffer == NULL) || (bufLen == 0) || (bufLen > CONSOLE_FIFO_SIZE)) {
+    if ((buffer == NULL) || (bufLen == 0)) {
         ret = EINVAL;
         goto ERROUT;
+    }
+
+    if (bufLen > CONSOLE_FIFO_SIZE) {
+        bufLen = CONSOLE_FIFO_SIZE;
     }
 
     userBuf = LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buffer, bufLen);
@@ -1128,14 +1143,14 @@ STATIC CirBufSendCB *ConsoleCirBufCreate(VOID)
     }
     (VOID)memset_s(cirBufSendCB, sizeof(CirBufSendCB), 0, sizeof(CirBufSendCB));
 
-    fifo = (CHAR *)LOS_MemAlloc(m_aucSysMem0, TELNET_CIRBUF_SIZE);
+    fifo = (CHAR *)LOS_MemAlloc(m_aucSysMem0, CONSOLE_CIRCBUF_SIZE);
     if (fifo == NULL) {
         goto ERROR_WITH_SENDCB;
     }
-    (VOID)memset_s(fifo, TELNET_CIRBUF_SIZE, 0, TELNET_CIRBUF_SIZE);
+    (VOID)memset_s(fifo, CONSOLE_CIRCBUF_SIZE, 0, CONSOLE_CIRCBUF_SIZE);
 
     cirBufCB = &cirBufSendCB->cirBufCB;
-    ret = LOS_CirBufInit(cirBufCB, fifo, TELNET_CIRBUF_SIZE);
+    ret = LOS_CirBufInit(cirBufCB, fifo, CONSOLE_CIRCBUF_SIZE);
     if (ret != LOS_OK) {
         goto ERROR_WITH_FIFO;
     }
@@ -1519,7 +1534,7 @@ INT32 ConsoleUpdateFd(VOID)
         } else if (g_console[CONSOLE_TELNET - 1] != NULL) {
             consoleID = CONSOLE_TELNET;
         } else {
-            PRINT_ERR("No console dev used.\n");
+            PRINTK("No console dev used.\n");
             return -1;
         }
     }
@@ -1626,6 +1641,7 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
     UINT32 i;
     CONSOLE_CB *console = NULL;
     LosTaskCB *taskCB = NULL;
+    INT32 waitTime = 3000; /* 3000: 3 seconds */
 
     for (i = 0; i < CONSOLE_NUM; i++) {
         console = g_console[i];
@@ -1638,8 +1654,9 @@ VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
         }
 
         taskCB = OS_TCB_FROM_TID(console->sendTaskID);
-        while ((taskCB->taskEvent == NULL) && (taskID != console->sendTaskID)) {
+        while ((waitTime > 0) && (taskCB->taskEvent == NULL) && (taskID != console->sendTaskID)) {
             LOS_Mdelay(1); /* 1: wait console task pend */
+            --waitTime;
         }
     }
 }

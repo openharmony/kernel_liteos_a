@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -66,7 +66,7 @@ extern "C" {
 
 /* config dirty ratio of bcache for fat file system */
 
-#define CONFIG_FS_FAT_DIRTY_RATIO      80
+#define CONFIG_FS_FAT_DIRTY_RATIO      60
 
 /* config time interval of sync thread for fat file system, in milliseconds */
 
@@ -87,7 +87,11 @@ extern "C" {
 #define CONFIG_STDIO_BUFFER_SIZE    0
 #define CONFIG_NUNGET_CHARS         0
 
-#define FD_SETSIZE                  (CONFIG_NFILE_DESCRIPTORS + CONFIG_NSOCKET_DESCRIPTORS)  // total fds
+#define FD_SET_TOTAL_SIZE               (FD_SETSIZE + CONFIG_NEXPANED_DESCRIPTORS)
+#define FD_SETSIZE                      (CONFIG_NFILE_DESCRIPTORS + CONFIG_NSOCKET_DESCRIPTORS)
+#define CONFIG_NEXPANED_DESCRIPTORS     (CONFIG_NTIME_DESCRIPTORS + CONFIG_NQUEUE_DESCRIPTORS)
+#define TIMER_FD_OFFSET                 FD_SETSIZE
+#define MQUEUE_FD_OFFSET                (FD_SETSIZE + CONFIG_NTIME_DESCRIPTORS)
 
 /* net configure */
 
@@ -108,6 +112,14 @@ extern "C" {
 #endif
 
 #define NR_OPEN_DEFAULT CONFIG_NFILE_DESCRIPTORS
+
+/* time configure */
+
+#define CONFIG_NTIME_DESCRIPTORS     0
+
+/* mqueue configure */
+
+#define CONFIG_NQUEUE_DESCRIPTORS    256
 
 /* directory configure */
 

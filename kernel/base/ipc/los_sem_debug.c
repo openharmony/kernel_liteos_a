@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -71,7 +71,7 @@ STATIC VOID OsSemPendedTaskNamePrint(LosSemCB *semNode)
     PRINTK("Pended task list : ");
     for (i = 0; i < num; i++) {
         if (i == 0) {
-            PRINTK("%s\n", nameArr[i]);
+            PRINTK("\n%s", nameArr[i]);
         } else {
             PRINTK(", %s", nameArr[i]);
         }

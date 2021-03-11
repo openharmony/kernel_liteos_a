@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,8 +34,8 @@
  * @ingroup kernel
  */
 
-#include "los_typedef.h"
 #include "los_asid.h"
+#include "los_bitmap.h"
 #include "los_spinlock.h"
 #include "los_mmu_descriptor_v6.h"
 

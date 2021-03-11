@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@
 #include "los_queue_pri.h"
 #include "los_queue_debug_pri.h"
 #include "los_task_pri.h"
+#include "los_sched_pri.h"
 #include "los_spinlock.h"
 #include "los_mp.h"
 #include "los_percpu_pri.h"
@@ -286,7 +287,8 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
             goto QUEUE_END;
         }
 
-        ret = OsTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_QUEUE, queueCB->queueID, timeout);
+        ret = OsSchedTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             ret = LOS_ERRNO_QUEUE_TIMEOUT;
             goto QUEUE_END;
@@ -299,7 +301,8 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
 
     if (!LOS_ListEmpty(&queueCB->readWriteList[!readWrite])) {
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));
-        OsTaskWake(resumedTask);
+        OsTaskWakeClearPendMask(resumedTask);
+        OsSchedTaskWake(resumedTask);
         SCHEDULER_UNLOCK(intSave);
         LOS_MpSchedule(OS_MP_CPU_ALL);
         LOS_Schedule();

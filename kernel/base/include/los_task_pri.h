@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,15 +33,19 @@
 #define _LOS_TASK_PRI_H
 
 #include "los_task.h"
-#include "los_sched_pri.h"
-#include "los_sortlink_pri.h"
+#include "los_percpu_pri.h"
 #include "los_spinlock.h"
-#if (LOSCFG_KERNEL_SCHED_STATISTICS == YES)
+#ifdef LOSCFG_SCHED_DEBUG
 #include "los_stat_pri.h"
 #endif
 #include "los_stackinfo_pri.h"
 #include "los_futex_pri.h"
 #include "los_signal.h"
+#ifdef LOSCFG_KERNEL_CPUP
+#include "los_cpup_pri.h"
+#endif
+
+#include "los_trace.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -121,7 +125,7 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * The task is suspended.
  */
-#define OS_TASK_STATUS_SUSPEND      0x0008U
+#define OS_TASK_STATUS_SUSPENDED    0x0008U
 
 /**
  * @ingroup los_task
@@ -129,7 +133,7 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * The task is blocked.
  */
-#define OS_TASK_STATUS_PEND         0x0010U
+#define OS_TASK_STATUS_PENDING      0x0010U
 
 /**
  * @ingroup los_task
@@ -154,6 +158,9 @@ extern SPIN_LOCK_S g_taskSpin;
  * The task is pend for a period of time.
  */
 #define OS_TASK_STATUS_PEND_TIME    0x0080U
+
+#define OS_TASK_STATUS_BLOCKED      (OS_TASK_STATUS_INIT | OS_TASK_STATUS_PENDING | \
+                                     OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)
 
 /**
  * @ingroup los_task
@@ -191,17 +198,17 @@ extern SPIN_LOCK_S g_taskSpin;
  * @ingroup los_task
  * Flag that indicates the task property.
  *
- * The task is idle task, Belong to idle process.
+ * The task is system-level task, like idle, swtmr and etc.
  */
-#define OS_TASK_FLAG_IDLEFLAG       0x1000U
+#define OS_TASK_FLAG_SYSTEM_TASK    0x1000U
 
 /**
  * @ingroup los_task
  * Flag that indicates the task property.
  *
- * The task is system-level task, like idle, swtmr and etc.
+ * The task is no-delete system task, like resourceTask.
  */
-#define OS_TASK_FLAG_SYSTEM_TASK    0x2000U
+#define OS_TASK_FLAG_NO_DELETE    0x2000U
 
 /**
  * @ingroup los_task
@@ -296,26 +303,36 @@ extern SPIN_LOCK_S g_taskSpin;
 typedef struct {
     VOID            *stackPointer;      /**< Task stack pointer */
     UINT16          taskStatus;         /**< Task status */
+
+    /* The scheduling */
     UINT16          priority;           /**< Task priority */
     UINT16          policy;
-    UINT16          timeSlice;          /**< Remaining time slice */
+    UINT64          startTime;          /**< The start time of each phase of task */
+    UINT64          irqStartTime;       /**< Interrupt start time */
+    UINT32          irqUsedTime;        /**< Interrupt consumption time */
+    UINT32          initTimeSlice;      /**< Task init time slice */
+    INT32           timeSlice;          /**< Task remaining time slice */
+    UINT32          waitTimes;          /**< Task delay time, tick number */
+    SortLinkList    sortList;           /**< Task sortlink node */
+
     UINT32          stackSize;          /**< Task stack size */
     UINTPTR         topOfStack;         /**< Task stack top */
     UINT32          taskID;             /**< Task ID */
     TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */
     VOID            *joinRetval;        /**< pthread adaption */
-    VOID            *taskSem;           /**< Task-held semaphore */
     VOID            *taskMux;           /**< Task-held mutex */
     VOID            *taskEvent;         /**< Task-held event */
     UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 */
     CHAR            taskName[OS_TCB_NAME_LEN]; /**< Task name */
     LOS_DL_LIST     pendList;           /**< Task pend node */
     LOS_DL_LIST     threadList;         /**< thread list */
-    SortLinkList    sortList;           /**< Task sortlink node */
     UINT32          eventMask;          /**< Event mask */
     UINT32          eventMode;          /**< Event mode */
     UINT32          priBitMap;          /**< BitMap for recording the change of task priority,
                                              the priority can not be greater than 31 */
+#ifdef LOSCFG_KERNEL_CPUP
+    OsCpupBase      taskCpup;           /**< task cpu usage */
+#endif
     INT32           errorNo;            /**< Error Num */
     UINT32          signal;             /**< Task signal */
     sig_cb          sig;
@@ -323,16 +340,15 @@ typedef struct {
     UINT16          currCpu;            /**< CPU core number of this task is running on */
     UINT16          lastCpu;            /**< CPU core number of this task is running on last time */
     UINT16          cpuAffiMask;        /**< CPU affinity mask, support up to 16 cores */
-    UINT32          timerCpu;           /**< CPU core number of this task is delayed or pended */
 #if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
     UINT32          syncSignal;         /**< Synchronization for signal handling */
 #endif
 #if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
     LockDep         lockDep;
 #endif
-#if (LOSCFG_KERNEL_SCHED_STATISTICS == YES)
-    SchedStat       schedStat;          /**< Schedule statistics */
 #endif
+#ifdef LOSCFG_SCHED_DEBUG
+    SchedStat       schedStat;          /**< Schedule statistics */
 #endif
     UINTPTR         userArea;
     UINTPTR         userMapBase;
@@ -341,7 +357,7 @@ typedef struct {
     FutexNode       futex;
     LOS_DL_LIST     joinList;           /**< join list */
     LOS_DL_LIST     lockList;           /**< Hold the lock list */
-    UINT32          waitID;             /**< Wait for the PID or GID of the child process */
+    UINTPTR         waitID;             /**< Wait for the PID or GID of the child process */
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process */
 #if (LOSCFG_KERNEL_LITEIPC == YES)
@@ -372,7 +388,6 @@ typedef int (*ForEachTaskCB)(LosTaskCB *tcb, void *arg);
  *
  */
 extern UINT32 g_taskMaxNum;
-
 
 /**
  * @ingroup los_task
@@ -443,133 +458,29 @@ STATIC INLINE BOOL OsTaskIsInactive(const LosTaskCB *taskCB)
 /* get task info */
 #define OS_ALL_TASK_MASK  0xFFFFFFFF
 
-#define OS_PROCESS_PRI_QUEUE_SIZE(processCB) OsPriQueueProcessSize(g_priQueueList, (processCB)->priority)
-
-#define OS_TASK_PRI_QUEUE_ENQUEUE(processCB, taskCB) \
-    OsPriQueueEnqueue((processCB)->threadPriQueueList, &((processCB)->threadScheduleMap), \
-                      &((taskCB)->pendList), (taskCB)->priority)
-
-#define OS_TASK_PRI_QUEUE_ENQUEUE_HEAD(processCB, taskCB) \
-    OsPriQueueEnqueueHead((processCB)->threadPriQueueList, &((processCB)->threadScheduleMap), \
-                      &((taskCB)->pendList), (taskCB)->priority)
-
-#define OS_TASK_PRI_QUEUE_DEQUEUE(processCB, taskCB) \
-    OsPriQueueDequeue((processCB)->threadPriQueueList, &((processCB)->threadScheduleMap), &((taskCB)->pendList))
-
-
-#define OS_TASK_SCHED_QUEUE_ENQUEUE(taskCB, status) OsTaskSchedQueueEnqueue(taskCB, status)
-#define OS_TASK_SCHED_QUEUE_DEQUEUE(taskCB, status) OsTaskSchedQueueDequeue(taskCB, status)
-
-#define OS_PROCESS_PRI_QUEUE_ENQUEUE(processCB) \
-    OsPriQueueEnqueue(g_priQueueList, &g_priQueueBitmap, &((processCB)->pendList), (processCB)->priority)
-#define OS_PROCESS_PRI_QUEUE_ENQUEUE_HEAD(processCB) \
-    OsPriQueueEnqueueHead(g_priQueueList, &g_priQueueBitmap, &((processCB)->pendList), (processCB)->priority)
-#define OS_PROCESS_PRI_QUEUE_DEQUEUE(processCB) OsPriQueueProcessDequeue(&((processCB)->pendList))
-
-#define OS_TASK_PRI_QUEUE_SIZE(processCB, taskCB) OsPriQueueSize((processCB)->threadPriQueueList, (taskCB)->priority)
-#define OS_TASK_GET_NEW(processCB) LOS_DL_LIST_ENTRY(OsPriQueueTop((processCB)->threadPriQueueList,     \
-                                                                    &((processCB)->threadScheduleMap)), \
-                                                     LosTaskCB, pendList)
-
-#define OS_PROCESS_GET_NEW() \
-        LOS_DL_LIST_ENTRY(OsPriQueueTop(g_priQueueList, &g_priQueueBitmap), LosProcessCB, pendList)
-
-/**
- * @ingroup  los_task
- * @brief Modify the priority of task.
- *
- * @par Description:
- * This API is used to modify the priority of task.
- *
- * @attention
- * <ul>
- * <li>The taskCB should be a correct pointer to task control block structure.</li>
- * <li>the priority should be in [0, OS_TASK_PRIORITY_LOWEST].</li>
- * </ul>
- *
- * @param  taskCB [IN] Type #LosTaskCB * pointer to task control block structure.
- * @param  priority  [IN] Type #UINT16 the priority of task.
- *
- * @retval  None.
- * @par Dependency:
- * <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
- * @see
- */
-extern VOID OsTaskPriModify(LosTaskCB *taskCB, UINT16 priority);
-
-/**
- * @ingroup  los_task
- * @brief pend running task to pendlist
- *
- * @par Description:
- * This API is used to pend task to pendlist and add to sorted delay list.
- *
- * @attention
- * <ul>
- * <li>The list should be a vaild pointer to pendlist.</li>
- * </ul>
- *
- * @param  list       [IN] Type #LOS_DL_LIST * pointer to list which running task will be pended.
- * @param  timeout    [IN] Type #UINT32  Expiry time. The value range is [0,LOS_WAIT_FOREVER].
- * @param  needSched  [IN] Type #bool  need sched
- *
- * @retval  LOS_OK       wait success
- * @retval  LOS_NOK      pend out
- * @par Dependency:
- * <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
- * @see OsTaskWake
- */
-extern UINT32 OsTaskWait(LOS_DL_LIST *list, UINT32 timeout, BOOL needSched);
-
-/**
- * @ingroup  los_task
- * @brief delete task from pendlist.
- *
- * @par Description:
- * This API is used to delete task from pendlist and also add to the priqueue.
- *
- * @attention
- * <ul>
- * <li>The resumedTask should be the task which will be add to priqueue.</li>
- * </ul>
- *
- * @param  resumedTask [IN] Type #LosTaskCB * pointer to the task which will be add to priqueue.
- *
- * @retval  None.
- * @par Dependency:
- * <ul><li>los_task_pri.h: the header file that contains the API declaration.</li></ul>
- * @see OsTaskWait
- */
-extern VOID OsTaskWake(LosTaskCB *resumedTask);
-
 extern UINT32 OsTaskSetDeatchUnsafe(LosTaskCB *taskCB);
 extern VOID OsTaskJoinPostUnsafe(LosTaskCB *taskCB);
 extern UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB);
+extern BOOL OsTaskCpuAffiSetUnsafe(UINT32 taskID, UINT16 newCpuAffiMask, UINT16 *oldCpuAffiMask);
 extern VOID OsTaskSchedule(LosTaskCB *, LosTaskCB *);
-extern VOID OsStartToRun(LosTaskCB *);
-extern VOID OsTaskScan(VOID);
+extern VOID OsTaskContextLoad(LosTaskCB *newTask);
 extern VOID OsIdleTask(VOID);
 extern UINT32 OsIdleTaskCreate(VOID);
 extern UINT32 OsTaskInit(VOID);
 extern UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv);
 extern UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqfile, UINT16 flag);
-extern VOID* OsGetMainTask(VOID);
+extern LosTaskCB *OsGetMainTask(VOID);
 extern VOID OsSetMainTask(VOID);
-extern LosTaskCB* OsGetTopTask(VOID);
 extern UINT32 OsGetIdleTaskId(VOID);
 extern VOID OsTaskEntry(UINT32 taskID);
 extern SortLinkAttribute *OsTaskSortLinkGet(VOID);
-extern UINT32 OsTaskSwitchCheck(LosTaskCB *oldTask, LosTaskCB *newTask);
-extern UINT32 OsTaskProcSignal(VOID);
-extern VOID OsSchedStatistics(LosTaskCB *runTask, LosTaskCB *newTask);
+extern VOID OsTaskProcSignal(VOID);
 extern UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UINT32 intSave);
 extern VOID OsTaskResourcesToFree(LosTaskCB *taskCB);
 extern VOID OsRunTaskToDelete(LosTaskCB *taskCB);
 extern UINT32 OsTaskSyncWait(const LosTaskCB *taskCB);
-extern INT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
-extern INT32 OsTaskSchedulerSetUnsafe(LosTaskCB *taskCB, UINT16 policy, UINT16 priority,
-                                      BOOL policyFlag, UINT32 intSave);
-extern INT32 OsSetCurrTaskName(const CHAR *name);
+extern UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
+extern INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName);
 extern VOID OsTaskCBRecyleToFree(VOID);
 extern VOID OsTaskExitGroup(UINT32 status);
 extern VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status);
@@ -578,6 +489,65 @@ extern VOID OsProcessSuspendAllTask(VOID);
 extern UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB);
 extern VOID OsWriteResourceEvent(UINT32 events);
 extern UINT32 OsCreateResourceFreeTask(VOID);
+
+#define OS_TASK_WAIT_ANYPROCESS (1 << 0U)
+#define OS_TASK_WAIT_PROCESS    (1 << 1U)
+#define OS_TASK_WAIT_GID        (1 << 2U)
+#ifdef LOSCFG_DEBUG_VERSION
+#define OS_TASK_WAIT_SEM        (OS_TASK_WAIT_GID + 1)
+#define OS_TASK_WAIT_QUEUE      (OS_TASK_WAIT_SEM + 1)
+#define OS_TASK_WAIT_JOIN       (OS_TASK_WAIT_QUEUE + 1)
+#define OS_TASK_WAIT_SIGNAL     (OS_TASK_WAIT_JOIN + 1)
+#define OS_TASK_WAIT_LITEIPC    (OS_TASK_WAIT_SIGNAL + 1)
+#define OS_TASK_WAIT_MUTEX      (OS_TASK_WAIT_LITEIPC + 1)
+#define OS_TASK_WAIT_FUTEX      (OS_TASK_WAIT_MUTEX + 1)
+#define OS_TASK_WAIT_EVENT      (OS_TASK_WAIT_FUTEX + 1)
+#define OS_TASK_WAIT_COMPLETE   (OS_TASK_WAIT_EVENT + 1)
+
+STATIC INLINE VOID OsTaskWaitSetPendMask(UINT16 mask, UINTPTR lockID, UINT32 timeout)
+{
+    LosTaskCB *runTask = OsCurrTaskGet();
+    runTask->waitID = lockID;
+    runTask->waitFlag = mask;
+    (VOID)timeout;
+#ifdef LOSCFG_KERNEL_TRACE
+    UINT16 status = OS_TASK_STATUS_PENDING;
+    if (timeout != LOS_WAIT_FOREVER) {
+        status |= OS_TASK_STATUS_PEND_TIME;
+    }
+    LOS_Trace(LOS_TRACE_TASK, runTask->taskEntry, status, mask, lockID);
+#endif
+}
+
+STATIC INLINE VOID OsTaskWakeClearPendMask(LosTaskCB *resumeTask)
+{
+    resumeTask->waitID = 0;
+    resumeTask->waitFlag = 0;
+#ifdef LOSCFG_KERNEL_TRACE
+    LosTaskCB *runTask = OsCurrTaskGet();
+    LOS_Trace(LOS_TRACE_TASK, resumeTask->taskEntry, (UINT16)OS_TASK_STATUS_READY,
+              runTask->taskStatus, runTask->taskEntry);
+#endif
+}
+
+STATIC INLINE VOID OsTraceTaskSchedule(LosTaskCB *newTask, LosTaskCB *runTask)
+{
+    (VOID)newTask;
+    (VOID)runTask;
+#ifdef LOSCFG_KERNEL_TRACE
+    LOS_Trace(LOS_TRACE_TASK, newTask->taskEntry, (UINT16)OS_TASK_STATUS_RUNNING,
+              runTask->taskStatus, runTask->taskEntry);
+#endif
+}
+
+#else
+
+#define OsTaskWaitSetPendMask(mask, lockID, timeout)
+#define OsTaskWakeClearPendMask(taskCB)
+#define OsTraceTaskSchedule(newTask, runTask)
+
+#endif
+
 #ifdef __cplusplus
 #if __cplusplus
 }

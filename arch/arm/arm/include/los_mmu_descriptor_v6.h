@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -104,6 +104,8 @@ extern "C" {
     ((x) << MMU_DESCRIPTOR_L1_TEX_SHIFT) /* type extension */
 #define MMU_DESCRIPTOR_L1_TYPE_STRONGLY_ORDERED                 \
     (MMU_DESCRIPTOR_L1_TEX(MMU_DESCRIPTOR_TEX_0) | MMU_DESCRIPTOR_NON_CACHEABLE)
+#define MMU_DESCRIPTOR_L1_TYPE_NORMAL_NOCACHE                   \
+    (MMU_DESCRIPTOR_L1_TEX(MMU_DESCRIPTOR_TEX_1) | MMU_DESCRIPTOR_NON_CACHEABLE)
 #define MMU_DESCRIPTOR_L1_TYPE_DEVICE_SHARED                    \
     (MMU_DESCRIPTOR_L1_TEX(MMU_DESCRIPTOR_TEX_0) | MMU_DESCRIPTOR_WRITE_BACK_ALLOCATE)
 #define MMU_DESCRIPTOR_L1_TYPE_DEVICE_NON_SHARED                \
@@ -141,6 +143,8 @@ extern "C" {
     ((x) << MMU_DESCRIPTOR_L2_TEX_SHIFT) /* type extension */
 #define MMU_DESCRIPTOR_L2_TYPE_STRONGLY_ORDERED                 \
     (MMU_DESCRIPTOR_L2_TEX(MMU_DESCRIPTOR_TEX_0) | MMU_DESCRIPTOR_NON_CACHEABLE)
+#define MMU_DESCRIPTOR_L2_TYPE_NORMAL_NOCACHE                   \
+    (MMU_DESCRIPTOR_L2_TEX(MMU_DESCRIPTOR_TEX_1) | MMU_DESCRIPTOR_NON_CACHEABLE)
 #define MMU_DESCRIPTOR_L2_TYPE_DEVICE_SHARED                    \
     (MMU_DESCRIPTOR_L2_TEX(MMU_DESCRIPTOR_TEX_0) | MMU_DESCRIPTOR_WRITE_BACK_ALLOCATE)
 #define MMU_DESCRIPTOR_L2_TYPE_DEVICE_NON_SHARED                \
@@ -158,7 +162,7 @@ extern "C" {
 #define MMU_DESCRIPTOR_L2_AP01_0                                (MMU_DESCRIPTOR_L2_AP01(0))
 #define MMU_DESCRIPTOR_L2_AP01_1                                (MMU_DESCRIPTOR_L2_AP01(1))
 #define MMU_DESCRIPTOR_L2_AP01_3                                (MMU_DESCRIPTOR_L2_AP01(3))
-#define MMU_DESCRIPTOR_L2_AP_P_NA_U_NA                          (MMUDESCRIPTOR_L2_AP2_0 | MMU_DESCRIPTOR_L2_AP01_0)
+#define MMU_DESCRIPTOR_L2_AP_P_NA_U_NA                          (MMU_DESCRIPTOR_L2_AP2_0 | MMU_DESCRIPTOR_L2_AP01_0)
 #define MMU_DESCRIPTOR_L2_AP_P_RW_U_RW                          (MMU_DESCRIPTOR_L2_AP2_0 | MMU_DESCRIPTOR_L2_AP01_3)
 #define MMU_DESCRIPTOR_L2_AP_P_RW_U_NA                          (MMU_DESCRIPTOR_L2_AP2_0 | MMU_DESCRIPTOR_L2_AP01_1)
 #define MMU_DESCRIPTOR_L2_AP_P_RO_U_RO                          (MMU_DESCRIPTOR_L2_AP2_1 | MMU_DESCRIPTOR_L2_AP01_3)
@@ -205,6 +209,12 @@ extern "C" {
 #define MMU_INITIAL_MAP_STRONGLY_ORDERED                                    \
     (MMU_DESCRIPTOR_L1_TYPE_SECTION |                                       \
     MMU_DESCRIPTOR_L1_TYPE_STRONGLY_ORDERED |                               \
+    MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT |                                 \
+    MMU_DESCRIPTOR_L1_AP_P_RW_U_NA)
+
+#define MMU_INITIAL_MAP_NORMAL_NOCACHE                                      \
+    (MMU_DESCRIPTOR_L1_TYPE_SECTION |                                       \
+    MMU_DESCRIPTOR_L1_TYPE_NORMAL_NOCACHE |                                 \
     MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT |                                 \
     MMU_DESCRIPTOR_L1_AP_P_RW_U_NA)
 

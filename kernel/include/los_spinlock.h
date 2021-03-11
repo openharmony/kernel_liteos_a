@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -49,7 +49,7 @@ extern INT32 ArchSpinTrylock(size_t *lock);
 
 typedef struct Spinlock {
     size_t      rawLock;
-#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
+#if (LOSCFG_KERNEL_SMP == YES)
     UINT32      cpuid;
     VOID        *owner;
     const CHAR  *name;
@@ -57,12 +57,19 @@ typedef struct Spinlock {
 } SPIN_LOCK_S;
 
 #if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
-#define SPINLOCK_OWNER_INIT     NULL
-
 #define LOCKDEP_CHECK_IN(lock)  OsLockDepCheckIn(lock)
 #define LOCKDEP_RECORD(lock)    OsLockDepRecord(lock)
 #define LOCKDEP_CHECK_OUT(lock) OsLockDepCheckOut(lock)
 #define LOCKDEP_CLEAR_LOCKS()   OsLockdepClearSpinlocks()
+#else
+#define LOCKDEP_CHECK_IN(lock)
+#define LOCKDEP_RECORD(lock)
+#define LOCKDEP_CHECK_OUT(lock)
+#define LOCKDEP_CLEAR_LOCKS()
+#endif
+
+#if (LOSCFG_KERNEL_SMP == YES)
+#define SPINLOCK_OWNER_INIT     NULL
 
 #define SPIN_LOCK_INITIALIZER(lockName) \
 {                                       \
@@ -71,20 +78,7 @@ typedef struct Spinlock {
     .owner      = SPINLOCK_OWNER_INIT,  \
     .name       = #lockName,            \
 }
-#else
-#define LOCKDEP_CHECK_IN(lock)
-#define LOCKDEP_RECORD(lock)
-#define LOCKDEP_CHECK_OUT(lock)
-#define LOCKDEP_CLEAR_LOCKS()
-#define SPIN_LOCK_INITIALIZER(lockName) \
-{                                       \
-    .rawLock    = 0U,                   \
-}
-#endif
 
-#define SPIN_LOCK_INIT(lock)  SPIN_LOCK_S lock = SPIN_LOCK_INITIALIZER(lock)
-
-#if (LOSCFG_KERNEL_SMP == YES)
 /**
  * @ingroup  los_spinlock
  * @brief Lock the spinlock.
@@ -101,19 +95,7 @@ typedef struct Spinlock {
  * <ul><li>los_spinlock.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_SpinUnlock
  */
-LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinLock(SPIN_LOCK_S *lock)
-{
-    /*
-     * disable the scheduler, so it won't do schedule untill
-     * scheduler is reenabled. The LOS_TaskUnlock should not
-     * be directly called along this critic area.
-     */
-    LOS_TaskLock();
-
-    LOCKDEP_CHECK_IN(lock);
-    ArchSpinLock(&lock->rawLock);
-    LOCKDEP_RECORD(lock);
-}
+extern VOID LOS_SpinLock(SPIN_LOCK_S *lock);
 
 /**
  * @ingroup  los_spinlock
@@ -132,20 +114,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinLock(SPIN_LOCK_S *lock)
  * <ul><li>los_spinlock.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_SpinLock
  */
-LITE_OS_SEC_ALW_INLINE STATIC INLINE INT32 LOS_SpinTrylock(SPIN_LOCK_S *lock)
-{
-    LOS_TaskLock();
-
-    INT32 ret = ArchSpinTrylock(&lock->rawLock);
-    if (ret == LOS_OK) {
-        LOCKDEP_CHECK_IN(lock);
-        LOCKDEP_RECORD(lock);
-    } else {
-        LOS_TaskUnlock();
-    }
-
-    return ret;
-}
+extern INT32 LOS_SpinTrylock(SPIN_LOCK_S *lock);
 
 /**
  * @ingroup  los_spinlock
@@ -163,14 +132,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE INT32 LOS_SpinTrylock(SPIN_LOCK_S *lock)
  * <ul><li>los_spinlock.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_SpinLock
  */
-LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinUnlock(SPIN_LOCK_S *lock)
-{
-    LOCKDEP_CHECK_OUT(lock);
-    ArchSpinUnlock(&lock->rawLock);
-
-    /* restore the scheduler flag */
-    LOS_TaskUnlock();
-}
+extern VOID LOS_SpinUnlock(SPIN_LOCK_S *lock);
 
 /**
  * @ingroup  los_spinlock
@@ -189,11 +151,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinUnlock(SPIN_LOCK_S *lock)
  * <ul><li>los_spinlock.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_SpinLock
  */
-LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinLockSave(SPIN_LOCK_S *lock, UINT32 *intSave)
-{
-    *intSave = LOS_IntLock();
-    LOS_SpinLock(lock);
-}
+extern VOID LOS_SpinLockSave(SPIN_LOCK_S *lock, UINT32 *intSave);
 
 /**
  * @ingroup  los_spinlock
@@ -212,11 +170,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinLockSave(SPIN_LOCK_S *lock, UI
  * <ul><li>los_spinlock.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_SpinUnlock
  */
-LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinUnlockRestore(SPIN_LOCK_S *lock, UINT32 intSave)
-{
-    LOS_SpinUnlock(lock);
-    LOS_IntRestore(intSave);
-}
+extern VOID LOS_SpinUnlockRestore(SPIN_LOCK_S *lock, UINT32 intSave);
 
 /**
  * @ingroup  los_spinlock
@@ -234,10 +188,7 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinUnlockRestore(SPIN_LOCK_S *loc
  * @par Dependency:
  * <ul><li>los_spinlock.h: the header file that contains the API declaration.</li></ul>
  */
-LITE_OS_SEC_ALW_INLINE STATIC INLINE BOOL LOS_SpinHeld(const SPIN_LOCK_S *lock)
-{
-    return (lock->rawLock != 0);
-}
+extern BOOL LOS_SpinHeld(const SPIN_LOCK_S *lock);
 
 /**
  * @ingroup  los_spinlock
@@ -255,17 +206,13 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE BOOL LOS_SpinHeld(const SPIN_LOCK_S *lock)
  * @par Dependency:
  * <ul><li>los_spinlock.h: the header file that contains the API declaration.</li></ul>
  */
-LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinInit(SPIN_LOCK_S *lock)
-{
-    lock->rawLock     = 0;
-#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
-    lock->cpuid       = (UINT32)-1;
-    lock->owner       = SPINLOCK_OWNER_INIT;
-    lock->name        = "spinlock";
-#endif
-}
+extern VOID LOS_SpinInit(SPIN_LOCK_S *lock);
 
 #else
+#define SPIN_LOCK_INITIALIZER(lockName) \
+{                                       \
+    .rawLock    = 0U,                   \
+}
 
 /*
  * For Non-SMP system, these apis does not handle with spinlocks,
@@ -311,6 +258,8 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_SpinInit(SPIN_LOCK_S *lock)
 }
 
 #endif
+
+#define SPIN_LOCK_INIT(lock)  SPIN_LOCK_S lock = SPIN_LOCK_INITIALIZER(lock)
 
 #ifdef __cplusplus
 #if __cplusplus

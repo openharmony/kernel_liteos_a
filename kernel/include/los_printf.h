@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -109,6 +109,10 @@ typedef enum {
 } OutputType;
 
 extern VOID OsVprintf(const CHAR *fmt, va_list ap, OutputType type);
+
+#define UART_WITHOUT_LOCK 0
+#define UART_WITH_LOCK    1
+extern VOID UartPuts(const CHAR *s, UINT32 len, BOOL isLock);
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -125,7 +125,7 @@ extern VOID OsLockDepCheckOut(SPIN_LOCK_S *lock);
  * @ingroup los_lockdep
  *
  * @par Description:
- * This API is used to clear lockdep record of curret task.
+ * This API is used to clear lockdep record of current task.
  * @attention
  * <ul>
  * <li>None.</li>

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,10 +33,6 @@
 #include "shmsg.h"
 #include "shcmd.h"
 #include "console.h"
-#include "asm/hal_platform_ints.h"
-#ifdef LOSCFG_DRIVERS_HDF_PLATFORM_UART
-#include "hisoc/uart.h"
-#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -100,7 +96,16 @@ STATIC UINT32 OsShellSourceInit(INT32 consoleId)
         ret = LOS_NOK;
         goto ERR_OUT4;
     }
+#if !defined(LOSCFG_PLATFORM_ROOTFS)
+    /*
+     * In case of ROOTFS disabled but
+     * serial console enabled, it is required
+     * to create Shell task in kernel for it.
+     */
+    if (consoleId == CONSOLE_TELNET || consoleId == CONSOLE_SERIAL) {
+#else
     if (consoleId == CONSOLE_TELNET) {
+#endif
         ret = OsShellCreateTask(shellCB);
         if (ret != LOS_OK) {
             goto ERR_OUT4;
@@ -120,7 +125,6 @@ ERR_OUT1:
     consoleCB->shellHandle = NULL;
     return ret;
 }
-
 
 UINT32 OsShellInit(INT32 consoleId)
 {

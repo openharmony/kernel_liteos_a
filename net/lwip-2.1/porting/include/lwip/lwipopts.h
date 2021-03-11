@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@
 #ifndef _LWIP_PORTING_LWIPOPTS_H_
 #define _LWIP_PORTING_LWIPOPTS_H_
 
+#include "menuconfig.h"
 
 // lwIP debug options, comment the ones you don't want
 #if LWIP_DEBUG
@@ -215,7 +216,10 @@
 #define LWIP_CONFIG_NUM_SOCKETS         128
 #define IP_REASS_MAX_MEM_SIZE           (MEM_SIZE / 4)
 
+// Options for enhancement code, same for old lwipopts.h
+#define LWIP_NETIF_PROMISC              1
 #define LWIP_DHCPS                      1
 #define LWIP_ENABLE_NET_CAPABILITY      1
+#define LWIP_ENABLE_CAP_NET_BROADCAST   0
 
 #endif /* _LWIP_PORTING_LWIPOPTS_H_ */

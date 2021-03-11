@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -46,8 +46,10 @@ enum DmaMemType {
     DMA_NOCACHE
 };
 
-#define IS_PERIPH_ADDR(addr)    ((addr >= PERIPH_PMM_BASE) && (addr <= PERIPH_PMM_BASE + PERIPH_PMM_SIZE))
-#define IS_MEMORY_ADDR(addr)    ((addr >= DDR_MEM_ADDR) && (addr <= DDR_MEM_ADDR + DDR_MEM_SIZE))
+#define IS_PERIPH_ADDR(addr) \
+    (((addr) >= U32_C(PERIPH_PMM_BASE)) && ((addr) <= U32_C(PERIPH_PMM_BASE) + U32_C(PERIPH_PMM_SIZE)))
+#define IS_MEMORY_ADDR(addr) \
+    (((addr) >= U32_C(DDR_MEM_ADDR)) && ((addr) <= U32_C(DDR_MEM_ADDR) + U32_C(DDR_MEM_SIZE)))
 
 /* thread safety */
 VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMemType type);

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,9 +31,9 @@
 
 #include "los_timer_pri.h"
 #include "los_tick_pri.h"
+#include "los_sched_pri.h"
 #include "los_sys_pri.h"
 #include "los_hwi.h"
-#include "hisoc/sys_ctrl.h"
 #include "los_swtmr.h"
 
 #ifdef __cplusplus
@@ -64,19 +64,15 @@ STATIC volatile UINT64 g_schedClockCycle = 0;
 STATIC volatile UINT32 g_timeClkLast = 0;
 STATIC UINT16 g_swtmrID;
 
-#ifdef LOSCFG_KERNEL_TICKLESS
-VOID HalClockTickTimerReload(UINT32 period)
+VOID HalClockTickTimerReload(UINT64 period)
 {
-    UINT32 cyclesPerTick;
-    cyclesPerTick = g_sysClock / LOSCFG_BASE_CORE_TICK_PER_SECOND;
-
-    WRITE_UINT32(period, TIMER_TICK_REG_BASE + TIMER_LOAD);
-    WRITE_UINT32(cyclesPerTick, TIMER_TICK_REG_BASE + TIMER_BGLOAD);
+    UINT32 cycle = (UINT32)period;
+    WRITE_UINT32(cycle, TIMER_TICK_REG_BASE + TIMER_LOAD);
+    WRITE_UINT32(cycle, TIMER_TICK_REG_BASE + TIMER_BGLOAD);
 
     HalClockIrqClear();
     HalIrqClear(NUM_HAL_INTERRUPT_TIMER);
 }
-#endif
 
 VOID ResetTimerMasked(VOID)
 {
@@ -348,6 +344,11 @@ VOID SchedClockSwtmr(VOID)
 
 LITE_OS_SEC_TEXT_INIT VOID HalClockStart(VOID)
 {
+    UINT32 ret = OsSchedSetTickTimerType(32); /* 32 bit tick timer */
+    if (ret != LOS_OK) {
+        return;
+    }
+
     HalIrqUnmask(NUM_HAL_INTERRUPT_TIMER);
     HalClockEnable();
 

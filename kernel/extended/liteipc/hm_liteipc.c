@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,10 +35,12 @@
 #include "los_mp.h"
 #include "los_mux.h"
 #include "los_process_pri.h"
+#include "los_sched_pri.h"
 #include "los_spinlock.h"
 #include "los_task_pri.h"
 #if (LOSCFG_KERNEL_TRACE == YES)
 #include "los_trace.h"
+#include "los_trace_frame.h"
 #endif
 #include "los_vm_map.h"
 #include "los_vm_phys.h"
@@ -48,7 +50,7 @@
 #define USE_TASKID_AS_HANDLE YES
 #define USE_MMAP YES
 #define IPC_MSG_DATA_SZ_MAX 1024
-#define IPC_MSG_OBJECT_NUM_MAX 256
+#define IPC_MSG_OBJECT_NUM_MAX (IPC_MSG_DATA_SZ_MAX / sizeof(SpecialObj))
 
 #define LITE_IPC_POOL_NAME "liteipc"
 #define LITE_IPC_POOL_PAGE_MAX_NUM 64 /* 256KB */
@@ -104,116 +106,42 @@ STATIC const struct file_operations_vfs g_liteIpcFops = {
 };
 
 #if (LOSCFG_KERNEL_TRACE == YES)
+typedef enum {
+    WRITE,
+    WRITE_DROP,
+    TRY_READ,
+    READ,
+    READ_DROP,
+    READ_TIMEOUT,
+    OPERATION_NUM
+} IpcOpertion;
+
 const char *g_operStr[OPERATION_NUM] = {"WRITE", "WRITE_DROP", "TRY_READ", "READ", "READ_DROP", "READ_TIMEOUT"};
-const char *g_msgTypeStr[MT_NUM] = {"REQUEST", "REPLY", "DEATH_NOTIFY"};
+const char *g_msgTypeStr[MT_NUM] = {"REQUEST", "REPLY", "FAILED_REPLY", "DEATH_NOTIFY"};
 const char *g_ipcStatusStr[2] = {"NOT_PEND", "PEND"};
-
-LITE_OS_SEC_TEXT STATIC UINT16 IpcTraceHook(UINT8 *inputBuffer, UINT32 id, UINT32 msg)
-{
-    IpcTraceFrame *ipcInfo = NULL;
-    if (inputBuffer == NULL) {
-        return 0;
-    }
-
-    ipcInfo = (IpcTraceFrame *)inputBuffer;
-    ipcInfo->idInfo = id;
-    ipcInfo->msgInfo = msg;
-    ipcInfo->timestamp = LOS_CurrNanosec();
-
-    return sizeof(IpcTraceFrame);
-}
 
 LITE_OS_SEC_TEXT STATIC VOID IpcTrace(IpcMsg *msg, UINT32 operation, UINT32 ipcStatus, UINT32 msgType)
 {
     UINT32 curTid = LOS_CurTaskIDGet();
     UINT32 curPid = LOS_GetCurrProcessID();
+    UINT32 srcTid;
+    UINT32 srcPid;
     UINT32 dstTid;
+    UINT32 dstPid;
     UINT32 ret = (msg == NULL) ? INVAILD_ID : GetTid(msg->target.handle, &dstTid);
-    IdArg id = {INVAILD_ID, INVAILD_ID, INVAILD_ID, INVAILD_ID};
-    MsgArg msgArg;
     if (operation <= WRITE_DROP) {
-        id.srcTid = curTid;
-        id.srcPid = curPid;
-        id.dstTid = ret ? INVAILD_ID : dstTid;
-        id.dstPid = ret ? INVAILD_ID : OS_TCB_FROM_TID(dstTid)->processID;
+        srcTid = curTid;
+        srcPid = curPid;
+        dstTid = ret ? INVAILD_ID : dstTid;
+        dstPid = ret ? INVAILD_ID : OS_TCB_FROM_TID(dstTid)->processID;
     } else {
-        id.srcTid = (msg == NULL) ? INVAILD_ID : msg->taskID;
-        id.srcPid = (msg == NULL) ? INVAILD_ID : msg->processID;
-        id.dstTid = curTid;
-        id.dstPid = curPid;
+        srcTid = (msg == NULL) ? INVAILD_ID : msg->taskID;
+        srcPid = (msg == NULL) ? INVAILD_ID : msg->processID;
+        dstTid = curTid;
+        dstPid = curPid;
     }
-    msgArg.msgType = msgType;
-    msgArg.code = (msg == NULL) ? INVAILD_ID : msg->code;
-    msgArg.operation = operation;
-    msgArg.ipcStatus = ipcStatus;
-
-    VOID *ptr1 = &id;
-    VOID *ptr2 = &msgArg;
-    LOS_Trace(LOS_TRACE_IPC, *((UINT32 *)ptr1), *((UINT32 *)ptr2));
-}
-
-UINT32 IpcInfoCheck(IpcTraceFrame *ipcInfo)
-{
-    MsgArg *msgArg = NULL;
-
-    if (ipcInfo == NULL) {
-        return LOS_NOK;
-    }
-
-    msgArg = (MsgArg *)&ipcInfo->msgInfo;
-    if ((msgArg->operation >= OPERATION_NUM) ||
-        (msgArg->msgType >= MT_NUM)) {
-        return LOS_NOK;
-    }
-
-    return LOS_OK;
-}
-
-LITE_OS_SEC_TEXT STATIC VOID IpcTracePrint(UINT32 cpuID, IpcTraceFrame *ipcInfo)
-{
-    IdArg *idArg = (IdArg *)&ipcInfo->idInfo;
-    MsgArg *msgArg = (MsgArg *)&ipcInfo->msgInfo;
-
-    if (IpcInfoCheck(ipcInfo) != LOS_OK) {
-        return;
-    }
-
-    PRINTK("[LiteIPCTrace]timestamp:%016lld", ipcInfo->timestamp);
-    PRINTK(" cpuID:%02d", cpuID);
-    PRINTK(" operation:%13s", g_operStr[msgArg->operation]);
-    PRINTK(" msgType:%12s", g_msgTypeStr[msgArg->msgType]);
-    UINT32 isPend = (msgArg->ipcStatus & IPC_THREAD_STATUS_PEND) == IPC_THREAD_STATUS_PEND;
-    PRINTK(" ipcStatus:%9s", g_ipcStatusStr[isPend]);
-    PRINTK(" code:%03d", msgArg->code);
-    PRINTK(" srcTid:%03d", idArg->srcTid);
-    PRINTK(" srcPid:%03d", idArg->srcPid);
-    PRINTK(" dstTid:%03d", idArg->dstTid);
-    PRINTK(" dstPid:%03d\n", idArg->dstPid);
-}
-
-VOID IpcBacktrace(VOID)
-{
-    INT32 pos;
-    INT32 i;
-    TraceBuffer buff;
-    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
-        LOS_TraceBufGet(&buff, i);
-        pos = buff.tracePos;
-        while (pos >= sizeof(IpcTraceFrame) + LOS_TRACE_TAG_LENGTH) {
-            UINT32 *traceType = (UINT32 *)(buff.dataBuf + pos - LOS_TRACE_TAG_LENGTH);
-            pos -= sizeof(IpcTraceFrame) + LOS_TRACE_TAG_LENGTH;
-            switch (*traceType) {
-                case LOS_TRACE_IPC: {
-                    IpcTraceFrame *ipcInfo = (IpcTraceFrame *)(buff.dataBuf + pos);
-                    IpcTracePrint(i, ipcInfo);
-                    break;
-                }
-                default:
-                    PRINTK("other module trace\n");
-                    break;
-            }
-        }
-    }
+    UINT8 code = (msg == NULL) ? INVAILD_ID : (UINT8)msg->code;
+    LOS_Trace(LOS_TRACE_IPC, srcTid, srcPid, dstTid, dstPid, msgType, code, operation, ipcStatus);
 }
 #endif
 
@@ -229,7 +157,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LiteIpcInit(VOID)
     if (ret != LOS_OK) {
         return ret;
     }
-    ret = (UINT32)register_driver(LITEIPC_DRIVER, &g_liteIpcFops, DRIVER_MODE, NULL);
+    ret = (UINT32)register_driver(LITEIPC_DRIVER, &g_liteIpcFops, LITEIPC_DRIVER_MODE, NULL);
     if (ret != LOS_OK) {
         PRINT_ERR("register lite_ipc driver failed:%d\n", ret);
     }
@@ -238,9 +166,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 LiteIpcInit(VOID)
         LOS_ListInit(&(g_ipcUsedNodelist[i]));
     }
 #if (LOSCFG_KERNEL_TRACE == YES)
-    ret = LOS_TraceUserReg(LOS_TRACE_IPC, IpcTraceHook, sizeof(IpcTraceFrame));
+    ret = LOS_TraceReg(LOS_TRACE_IPC, OsIpcTrace, LOS_TRACE_IPC_NAME, LOS_TRACE_ENABLE);
     if (ret != LOS_OK) {
-        PRINT_ERR("liteipc LOS_TraceUserReg failed:%d\n", ret);
+        PRINT_ERR("liteipc LOS_TraceReg failed:%d\n", ret);
     }
 #endif
     return ret;
@@ -294,7 +222,6 @@ LITE_OS_SEC_TEXT STATIC INT32 DoIpcMmap(LosProcessCB *pcb, LosVmMapRegion *regio
             PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
             break;
         }
-        LOS_AtomicInc(&vmPage->refCounts);
     }
     /* if any failure happened, rollback */
     if (i != (region->range.size >> PAGE_SHIFT)) {
@@ -929,7 +856,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CopyDataFromUser(IpcListNode *node, UINT32 bufSz,
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT STATIC BOOL IsLeagalReply(const IpcContent *content)
+LITE_OS_SEC_TEXT STATIC BOOL IsValidReply(const IpcContent *content)
 {
     UINT32 curProcessID = LOS_GetCurrProcessID();
     IpcListNode *node = (IpcListNode *)GetIpcKernelAddr(curProcessID, (INTPTR)(content->buffToFree));
@@ -983,14 +910,13 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
             if ((flag & BUFF_FREE) != BUFF_FREE) {
                 return -EINVAL;
             }
-            if (!IsLeagalReply(content)) {
+            if (!IsValidReply(content)) {
                 return -EINVAL;
             }
 #if (USE_TIMESTAMP == YES)
             if (now > msg->timestamp + LITEIPC_TIMEOUT_NS) {
 #if (LOSCFG_KERNEL_TRACE == YES)
                 IpcTrace(msg, WRITE_DROP, 0, msg->type);
-                IpcBacktrace();
 #endif
                 PRINT_ERR("A timeout reply, request timestamp:%lld, now:%lld\n", msg->timestamp, now);
                 return -ETIME;
@@ -1052,7 +978,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
 #endif
     if (tcb->ipcStatus & IPC_THREAD_STATUS_PEND) {
         tcb->ipcStatus &= ~IPC_THREAD_STATUS_PEND;
-        OsTaskWake(tcb);
+        OsTaskWakeClearPendMask(tcb);
+        OsSchedTaskWake(tcb);
         SCHEDULER_UNLOCK(intSave);
         LOS_MpSchedule(OS_MP_CPU_ALL);
         LOS_Schedule();
@@ -1138,7 +1065,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
             IpcTrace(NULL, TRY_READ, tcb->ipcStatus, syncFlag ? MT_REPLY : MT_REQUEST);
 #endif
             tcb->ipcStatus |= IPC_THREAD_STATUS_PEND;
-            ret = OsTaskWait(&g_ipcPendlist, timeout, TRUE);
+            OsTaskWaitSetPendMask(OS_TASK_WAIT_LITEIPC, OS_INVALID_VALUE, timeout);
+            ret = OsSchedTaskWait(&g_ipcPendlist, timeout, TRUE);
             if (ret == LOS_ERRNO_TSK_TIMEOUT) {
 #if (LOSCFG_KERNEL_TRACE == YES)
                 IpcTrace(NULL, READ_TIMEOUT, tcb->ipcStatus, syncFlag ? MT_REPLY : MT_REQUEST);

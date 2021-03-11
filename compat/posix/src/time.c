@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,7 +30,6 @@
  */
 
 #include "time.h"
-#include "asm/hal_platform_ints.h"
 #include "stdint.h"
 #include "stdio.h"
 #include "sys/times.h"
@@ -744,7 +743,7 @@ int timer_settime(timer_t timerID, int flags,
     swtmr->ucMode = interval ? LOS_SWTMR_MODE_OPP : LOS_SWTMR_MODE_NO_SELFDELETE;
     swtmr->uwExpiry = expiry + !!expiry; // PS: skip the first tick because it is NOT a full tick.
     swtmr->uwInterval = interval;
-    swtmr->ucOverrun = 0;
+    swtmr->uwOverrun = 0;
     LOS_SpinUnlockRestore(&g_swtmrSpin, intSave);
 
     if ((value->it_value.tv_sec == 0) && (value->it_value.tv_nsec == 0)) {
@@ -813,20 +812,15 @@ int timer_getoverrun(timer_t timerID)
         return -1;
     }
 
-    overRun = (INT32)(swtmr->ucOverrun);
+    overRun = (INT32)(swtmr->uwOverrun);
     return (overRun > DELAYTIMER_MAX) ? DELAYTIMER_MAX : overRun;
 }
 
-STATIC INT32 DoNanoSleep(UINT64 nseconds)
+STATIC INT32 DoNanoSleep(UINT64 useconds)
 {
-    UINT64 tick;
     UINT32 ret;
-    const UINT32 nsPerTick = OS_SYS_NS_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND;
 
-    tick = (nseconds + nsPerTick - 1) / nsPerTick; // Round up for ticks
-
-    /* PS: skip the first tick because it is NOT a full tick. */
-    ret = LOS_TaskDelay((tick >= UINT32_MAX) ? UINT32_MAX : (tick ? ((UINT32)tick + 1) : 0));
+    ret = LOS_TaskDelay(OsUS2Tick(useconds));
     if (ret == LOS_OK || ret == LOS_ERRNO_TSK_YIELD_NOT_ENOUGH_TASK) {
         return 0;
     }
@@ -835,12 +829,12 @@ STATIC INT32 DoNanoSleep(UINT64 nseconds)
 
 int usleep(unsigned useconds)
 {
-    return DoNanoSleep((UINT64)useconds * OS_SYS_NS_PER_US);
+    return DoNanoSleep((UINT64)useconds);
 }
 
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
-    UINT64 nseconds;
+    UINT64 useconds;
     INT32 ret = -1;
 
     (VOID)rmtp;
@@ -851,14 +845,14 @@ int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
         return ret;
     }
 
-    nseconds = (UINT64)rqtp->tv_sec * OS_SYS_NS_PER_SECOND + rqtp->tv_nsec;
+    useconds = (UINT64)rqtp->tv_sec * OS_SYS_US_PER_SECOND + rqtp->tv_nsec / OS_SYS_NS_PER_US;
 
-    return DoNanoSleep(nseconds);
+    return DoNanoSleep(useconds);
 }
 
 unsigned int sleep(unsigned int seconds)
 {
-    return DoNanoSleep((UINT64)seconds * OS_SYS_NS_PER_SECOND);
+    return DoNanoSleep((UINT64)seconds * OS_SYS_US_PER_SECOND);
 }
 
 double difftime(time_t time2, time_t time1)
@@ -879,15 +873,10 @@ clock_t clock(VOID)
 
 clock_t times(struct tms *buf)
 {
-    clock_t clockTick;
+    clock_t clockTick = -1;
 
-    clockTick = LOS_TickCountGet();
-    if (buf != NULL) {
-        buf->tms_cstime = clockTick;
-        buf->tms_cutime = clockTick;
-        buf->tms_stime  = clockTick;
-        buf->tms_utime  = clockTick;
-    }
+    (void)buf;
+    set_errno(ENOSYS);
 
     return clockTick;
 }
@@ -914,6 +903,12 @@ int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue
         }
     }
     LOS_TaskUnlock();
+
+    if (!ValidTimeval(&value->it_value) || !ValidTimeval(&value->it_interval)) {
+        set_errno(EINVAL);
+        return -1;
+    }
+
     TIMEVAL_TO_TIMESPEC(&value->it_value, &spec.it_value);
     TIMEVAL_TO_TIMESPEC(&value->it_interval, &spec.it_interval);
 

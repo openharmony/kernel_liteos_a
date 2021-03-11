@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -267,14 +267,11 @@ typedef struct tagSwTmrCtrl {
     SortLinkList stSortList;
     UINT8 ucState;      /**< Software timer state */
     UINT8 ucMode;       /**< Software timer mode */
-    UINT8 ucOverrun;    /**< Times that a software timer repeats timing */
     UINT16 usTimerID;   /**< Software timer ID */
+    UINT32 uwOverrun;    /**< Times that a software timer repeats timing */
     UINT32 uwCount;     /**< Times that a software timer works */
     UINT32 uwInterval;  /**< Timeout interval of a periodic software timer */
     UINT32 uwExpiry;    /**< Timeout interval of an one-off software timer */
-#if (LOSCFG_KERNEL_SMP == YES)
-    UINT32 uwCpuid;     /**< The cpu where the timer running on */
-#endif
     UINTPTR uwArg;      /**< Parameter passed in when the callback function
                              that handles software timer timeout is called */
     SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */

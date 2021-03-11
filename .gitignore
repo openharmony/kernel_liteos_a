@@ -1,5 +1,4 @@
 /out
-/fs/proc
 /test
 /include
 .config*
@@ -22,4 +21,3 @@ platform/include/menuconfig.h
 platform/board.ld
 apps/init/init
 apps/shell/shell
-lib/libc/musl

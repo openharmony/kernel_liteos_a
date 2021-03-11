@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -182,19 +182,20 @@ pthread_mutex_t g_mutex_cat = PTHREAD_MUTEX_INITIALIZER;
 
 int osShellCmdDoCatShow(UINTPTR arg)
 {
+  int ret = 0;
   char buf[CAT_BUF_SIZE];
-  size_t size;
-  FILE *ini = NULL;
+  size_t size, writen, toWrite;
+  ssize_t cnt;
   char *fullpath = (char *)arg;
+  FILE *ini = NULL;
 
   (void)pthread_mutex_lock(&g_mutex_cat);
   ini = fopen(fullpath, "r");
   if (ini == NULL)
     {
+      ret = -1;
       perror("cat error");
-      (void)pthread_mutex_unlock(&g_mutex_cat);
-      free(fullpath);
-      return -1;
+      goto out;
     }
 
   do
@@ -203,21 +204,38 @@ int osShellCmdDoCatShow(UINTPTR arg)
       size = fread(buf, 1, CAT_BUF_SIZE, ini);
       if ((int)size < 0)
         {
+          ret = -1;
           perror("cat error");
-          (void)pthread_mutex_unlock(&g_mutex_cat);
-          free(fullpath);
-          (void)fclose(ini);
-          return -1;
+          goto out_with_fclose;
         }
-      (void)write(1, buf, size);
-      (void)LOS_TaskDelay(1);
-    }
-  while (size == CAT_BUF_SIZE);
 
-  free(fullpath);
+      for (toWrite = size, writen = 0; toWrite > 0;)
+        {
+          cnt = write(1, buf + writen, toWrite);
+          if (cnt == 0)
+            {
+              /* avoid task-starvation */
+              (void)LOS_TaskDelay(1);
+              continue;
+            }
+          else if (cnt < 0)
+            {
+              perror("cat write error");
+              break;
+            }
+
+          writen += cnt;
+          toWrite -= cnt;
+        }
+    }
+  while (size > 0);
+
+out_with_fclose:
   (void)fclose(ini);
+out:
+  free(fullpath);
   (void)pthread_mutex_unlock(&g_mutex_cat);
-  return 0;
+  return ret;
 }
 
 int osShellCmdCat(int argc, const char **argv)
@@ -640,7 +658,8 @@ static int os_shell_cmd_do_cp(const char *src_filepath, const char *dst_filename
   char *buf = NULL;
   const char *filename = NULL;
   size_t r_size, w_size;
-  int src_fd, dst_fd;
+  int src_fd = -1;
+  int dst_fd = -1;
   struct stat stat_buf;
   mode_t src_mode;
   char *shell_working_directory = OsShellGetWorkingDirtectory();
@@ -747,7 +766,7 @@ static int os_shell_cmd_do_cp(const char *src_filepath, const char *dst_filename
       goto errout_with_mutex;
     }
 
-  dst_fd = open(dst_fullpath, O_CREAT | O_WRONLY, src_mode);
+  dst_fd = open(dst_fullpath, O_CREAT | O_WRONLY | O_TRUNC, src_mode);
   if (dst_fd < 0)
     {
       PRINTK("cp error: can't create %s. %s.\n", dst_fullpath, strerror(errno));
@@ -829,6 +848,12 @@ static int os_shell_cmd_do_rmdir(const char *pathname)
       if (strcmp(dirent->d_name, "..") && strcmp(dirent->d_name, "."))
         {
           size_t fullpath_buf_size = strlen(pathname) + strlen(dirent->d_name) + SEPARATOR_EOF_LEN;
+          if (fullpath_buf_size <= 0)
+            {
+              PRINTK("buffer size is invalid!\n");
+              (void)closedir(d);
+              return -1;
+            }
           fullpath = (char *)malloc(fullpath_buf_size);
           if (fullpath == NULL)
             {
@@ -1413,7 +1438,7 @@ int osShellCmdChmod(int argc, const char **argv)
     {
       if ((p[i] <= '7') && (p[i] >= '0'))
         {
-          mode = (mode << MODE_BIT) | (p[i] - '0');
+          mode = ((uint)mode << MODE_BIT) | (uint)(p[i] - '0');
         }
       else
         {
@@ -1541,10 +1566,8 @@ int osShellCmdChgrp(int argc, const char **argv)
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 SHELLCMD_ENTRY(lsfd_shellcmd, CMD_TYPE_EX, "lsfd", XARGS, (CmdCallBackFunc)osShellCmdLsfd);
-#if (defined(LOSCFG_FS_FAT) || defined(LOSCFG_FS_RAMFS) ||  defined(LOSCFG_FS_JFFS))
 SHELLCMD_ENTRY(statfs_shellcmd, CMD_TYPE_EX, "statfs", XARGS, (CmdCallBackFunc)osShellCmdStatfs);
 SHELLCMD_ENTRY(touch_shellcmd, CMD_TYPE_EX, "touch", XARGS, (CmdCallBackFunc)osShellCmdTouch);
-#endif
 #if (defined(LOSCFG_FS_FAT))
 SHELLCMD_ENTRY(sync_shellcmd, CMD_TYPE_EX, "sync", XARGS, (CmdCallBackFunc)osShellCmdSync);
 #endif
@@ -1560,11 +1583,7 @@ SHELLCMD_ENTRY(mkdir_shellcmd, CMD_TYPE_EX, "mkdir", XARGS, (CmdCallBackFunc)osS
 SHELLCMD_ENTRY(chmod_shellcmd, CMD_TYPE_EX, "chmod", XARGS, (CmdCallBackFunc)osShellCmdChmod);
 SHELLCMD_ENTRY(chown_shellcmd, CMD_TYPE_EX, "chown", XARGS, (CmdCallBackFunc)osShellCmdChown);
 SHELLCMD_ENTRY(chgrp_shellcmd, CMD_TYPE_EX, "chgrp", XARGS, (CmdCallBackFunc)osShellCmdChgrp);
-#if (defined(LOSCFG_FS_FAT) || defined(LOSCFG_FS_RAMFS) ||  defined(LOSCFG_FS_JFFS))
 SHELLCMD_ENTRY(mount_shellcmd, CMD_TYPE_EX, "mount", XARGS, (CmdCallBackFunc)osShellCmdMount);
 SHELLCMD_ENTRY(umount_shellcmd, CMD_TYPE_EX, "umount", XARGS, (CmdCallBackFunc)osShellCmdUmount);
-#endif
-#if (defined(LOSCFG_FS_FAT) || defined(LOSCFG_FS_RAMFS) || defined(LOSCFG_FS_JFFS))
 SHELLCMD_ENTRY(cp_shellcmd, CMD_TYPE_EX, "cp", XARGS, (CmdCallBackFunc)osShellCmdCp);
-#endif
 #endif

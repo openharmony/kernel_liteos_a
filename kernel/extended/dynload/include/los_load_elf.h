@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -86,6 +86,15 @@ extern "C" {
 #define PF_X                                0x1
 
 typedef struct {
+    LD_ELF_EHDR  elfEhdr;
+    LD_ELF_PHDR  *elfPhdr;
+    UINT32       fileLen;
+    INT32        fd;
+} ELFInfo;
+
+typedef struct {
+    ELFInfo      execInfo;
+    ELFInfo      interpInfo;
     const CHAR   *fileName;
     CHAR         *execName;
     INT32        argc;
@@ -100,14 +109,6 @@ typedef struct {
     INT32        stackProt;
     UINTPTR      loadAddr;
     UINTPTR      elfEntry;
-    LD_ELF_EHDR  elfEhdr;
-    LD_ELF_PHDR  *elfPhdr;
-    UINT32       execFileLen;
-    INT32        execFD;
-    LD_ELF_EHDR  interpELFEhdr;
-    LD_ELF_PHDR  *interpELFPhdr;
-    UINT32       interpFileLen;
-    INT32        interpFD;
     UINTPTR      topOfMem;
     UINTPTR      oldFiles;
     LosVmSpace   *newSpace;
