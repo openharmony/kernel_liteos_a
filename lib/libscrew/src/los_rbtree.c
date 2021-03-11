@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -296,9 +296,6 @@ STATIC VOID OsRbDeleteNode(LosRbTree *pstTree, VOID *pstData)
         return;
     }
 
-    if (pstTree == NULL) {
-        return;
-    }
     (pstTree->ulNodes)--;
 
     if (!LOS_ListEmpty(&pstTree->stWalkHead)) {

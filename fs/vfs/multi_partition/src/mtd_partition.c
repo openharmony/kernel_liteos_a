@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,7 +38,6 @@
 #include "los_mux.h"
 #include "inode/inode.h"
 
-#if defined(LOSCFG_FS_JFFS)
 #include "mtd_common.h"
 
 #ifdef __cplusplus
@@ -50,17 +49,83 @@ extern "C" {
 #define DRIVER_NAME_ADD_SIZE    3
 pthread_mutex_t g_mtdPartitionLock = PTHREAD_MUTEX_INITIALIZER;
 
+static VOID YaffsLockInit(VOID) __attribute__((weakref("yaffsfs_OSInitialisation")));
+static VOID YaffsLockDeinit(VOID) __attribute__((weakref("yaffsfs_OsDestroy")));
 static INT32 JffsLockInit(VOID) __attribute__((weakref("JffsMutexCreate")));
 static VOID JffsLockDeinit(VOID) __attribute__((weakref("JffsMutexDelete")));
 
+partition_param *g_nandPartParam = NULL;
 partition_param *g_spinorPartParam = NULL;
 mtd_partition *g_spinorPartitionHead = NULL;
+mtd_partition *g_nandPartitionHead = NULL;
 
 #define RWE_RW_RW 0755
+
+partition_param *GetNandPartParam(VOID)
+{
+    return g_nandPartParam;
+}
+
+partition_param *GetSpinorPartParam(VOID)
+{
+    return g_spinorPartParam;
+}
 
 mtd_partition *GetSpinorPartitionHead(VOID)
 {
     return g_spinorPartitionHead;
+}
+
+
+static VOID MtdNandParamAssign(partition_param *nandParam, const struct MtdDev *nandMtd)
+{
+    LOS_ListInit(&g_nandPartitionHead->node_info);
+    /*
+     * If the user do not want to use block mtd or char mtd ,
+     * you can change the NANDBLK_NAME or NANDCHR_NAME to NULL.
+     */
+    nandParam->flash_mtd = (struct MtdDev *)nandMtd;
+    nandParam->flash_ops = GetDevNandOps();
+    nandParam->char_ops = GetMtdCharFops();
+    nandParam->blockname = NANDBLK_NAME;
+    nandParam->charname = NANDCHR_NAME;
+    nandParam->partition_head = g_nandPartitionHead;
+    nandParam->block_size = nandMtd->eraseSize;
+}
+
+static VOID MtdDeinitNandParam(VOID)
+{
+    if (YaffsLockDeinit != NULL) {
+        YaffsLockDeinit();
+    }
+}
+
+static partition_param *MtdInitNandParam(partition_param *nandParam)
+{
+    struct MtdDev *nandMtd = GetMtd("nand");
+    if (nandMtd == NULL) {
+        return NULL;
+    }
+    if (nandParam == NULL) {
+        if (YaffsLockInit != NULL) {
+            YaffsLockInit();
+        }
+        nandParam = (partition_param *)zalloc(sizeof(partition_param));
+        if (nandParam == NULL) {
+            MtdDeinitNandParam();
+            return NULL;
+        }
+        g_nandPartitionHead = (mtd_partition *)zalloc(sizeof(mtd_partition));
+        if (g_nandPartitionHead == NULL) {
+            MtdDeinitNandParam();
+            free(nandParam);
+            return NULL;
+        }
+
+        MtdNandParamAssign(nandParam, nandMtd);
+    }
+
+    return nandParam;
 }
 
 static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev *spinorMtd)
@@ -134,7 +199,10 @@ static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 /* According the flash-type to init the param of the partition. */
 static INT32 MtdInitFsparParam(const CHAR *type, partition_param **fsparParam)
 {
-    if (strcmp(type, "spinor") == 0 || strcmp(type, "cfi-flash") == 0) {
+    if (strcmp(type, "nand") == 0) {
+        g_nandPartParam = MtdInitNandParam(g_nandPartParam);
+        *fsparParam = g_nandPartParam;
+    } else if (strcmp(type, "spinor") == 0 || strcmp(type, "cfi-flash") == 0) {
         g_spinorPartParam = MtdInitSpinorParam(g_spinorPartParam);
         *fsparParam = g_spinorPartParam;
     } else {
@@ -151,7 +219,10 @@ static INT32 MtdInitFsparParam(const CHAR *type, partition_param **fsparParam)
 /* According the flash-type to deinit the param of the partition. */
 static INT32 MtdDeinitFsparParam(const CHAR *type)
 {
-    if (strcmp(type, "spinor") == 0  || strcmp(type, "cfi-flash") == 0) {
+    if (strcmp(type, "nand") == 0) {
+        MtdDeinitNandParam();
+        g_nandPartParam = NULL;
+    } else if (strcmp(type, "spinor") == 0 || strcmp(type, "cfi-flash") == 0) {
         MtdDeinitSpinorParam();
         g_spinorPartParam = NULL;
     } else {
@@ -369,7 +440,9 @@ static INT32 DeleteParamCheck(UINT32 partitionNum,
                               const CHAR *type,
                               partition_param **param)
 {
-    if (strcmp(type, "spinor") == 0  || strcmp(type, "cfi-flash") == 0) {
+    if (strcmp(type, "nand") == 0) {
+        *param = g_nandPartParam;
+    } else if (strcmp(type, "spinor") == 0 || strcmp(type, "cfi-flash") == 0) {
         *param = g_spinorPartParam;
     } else {
         PRINT_ERR("type error \n");
@@ -488,4 +561,3 @@ INT32 delete_mtd_partition(UINT32 partitionNum, const CHAR *type)
 }
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-#endif

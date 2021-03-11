@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -492,7 +492,7 @@ int fatfs_unbind(void *handle, struct inode **blkdriver)
     result = FatFsUnbindVirPart(fat);
     FatfsVirtUnlock();
     if (result == FR_OK) {
-        part = los_part_find(DiskDev[index]);
+        part = get_part((INT)fat->pdrv);
         (void)inode_find(&desc);
         inode = desc.node;
         if (part == NULL || part->dev == inode) {
@@ -515,7 +515,7 @@ int fatfs_unbind(void *handle, struct inode **blkdriver)
     VolToPart[index].ps = 0;
     VolToPart[index].pc = 0;
 
-    part = los_part_find(DiskDev[index]);
+    part = get_part((INT)fat->pdrv);
     if (part != NULL && part->part_name) {
         free(part->part_name);
         part->part_name = NULL;
@@ -543,17 +543,17 @@ static BYTE FatFsGetMode(int oflags, int *accMode)
 
     if ((UINT)oflags & O_WRONLY) {
         fmode |= FA_WRITE;
-        *accMode |= WRITE_OP;
+        *accMode = (unsigned int)(*accMode) | WRITE_OP;
     }
 
     if (((UINT)oflags & O_ACCMODE) & O_RDWR) {
         fmode |= FA_WRITE;
-        *accMode |= WRITE_OP;
+        *accMode = (unsigned int)(*accMode) | WRITE_OP;
     }
     /* Creates a new file if the file is not existing, otherwise, just open it. */
     if ((UINT)oflags & O_CREAT) {
         fmode |= FA_OPEN_ALWAYS;
-        *accMode |= WRITE_OP;
+        *accMode = (unsigned int)(*accMode) | WRITE_OP;
         /* Creates a new file. If the file already exists, the function shall fail. */
         if ((UINT)oflags & O_EXCL)
             fmode |= FA_CREATE_NEW;
@@ -561,7 +561,7 @@ static BYTE FatFsGetMode(int oflags, int *accMode)
     /* Creates a new file. If the file already exists, its length shall be truncated to 0. */
     if ((UINT)oflags & O_TRUNC) {
         fmode |= FA_CREATE_ALWAYS;
-        *accMode |= WRITE_OP;
+        *accMode = (unsigned int)(*accMode) | WRITE_OP;
     }
 
     return fmode;
@@ -598,31 +598,31 @@ static unsigned int FatFsCheckPermission(struct inode *mountpt, bool dirFlag, in
 
     fileMode &= (READ_OP | WRITE_OP | EXEC_OP);
 
-    if ((accMode & fileMode) == accMode) {
+    if (((unsigned int)accMode & fileMode) == (unsigned int)accMode) {
         return FAT_PERM;
     }
 
     fileMode = 0;
     if (S_ISDIR(mountpt->i_mode)) {
-        if ((accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_READ_SEARCH))) {
+        if (((unsigned int)accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_READ_SEARCH))) {
             fileMode |= EXEC_OP;
         }
     } else {
-        if ((accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_EXECUTE))
+        if (((unsigned int)accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_EXECUTE))
             && (mountpt->i_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
             fileMode |= EXEC_OP;
         }
     }
 
-    if ((accMode & WRITE_OP) && IsCapPermit(CAP_DAC_WRITE)) {
+    if (((unsigned int)accMode & WRITE_OP) && IsCapPermit(CAP_DAC_WRITE)) {
         fileMode |= WRITE_OP;
     }
 
-    if ((accMode & READ_OP) && IsCapPermit(CAP_DAC_READ_SEARCH)) {
+    if (((unsigned int)accMode & READ_OP) && IsCapPermit(CAP_DAC_READ_SEARCH)) {
         fileMode |= READ_OP;
     }
 
-    if ((accMode & fileMode) == accMode) {
+    if (((unsigned int)accMode & fileMode) == (unsigned int)accMode) {
         return FAT_PERM;
     }
 
@@ -1190,7 +1190,7 @@ int fatfs_stat(struct inode *mountpt, const char *path, struct stat *buf)
         get_stmtime(buf, &finfo);
     }
 
-    if (result == FR_INVALID_NAME) { /* root directoy */
+    if ((result == FR_INVALID_NAME) && (strlen(path) == 0)) { /* root directory */
         buf->st_dev      = 0;
         buf->st_mode  = S_IFREG | S_IRUSR | S_IRGRP | S_IROTH |
                         S_IWUSR | S_IWGRP | S_IWOTH;
@@ -1256,7 +1256,6 @@ int fatfs_statfs(struct inode *mountpt, struct statfs *buf)
         return fatfs_2_vfs(result);
     }
 
-    (void)memset_s((void *)buf, sizeof(struct statfs), 0, sizeof(struct statfs));
     buf->f_type   = MSDOS_SUPER_MAGIC;
     buf->f_bfree  = freClust;
     buf->f_bavail = freClust;
@@ -1274,7 +1273,7 @@ int fatfs_statfs(struct inode *mountpt, struct statfs *buf)
     /* Maximum length of filenames: 8 is the basename length, 1 is the dot, 3 is the extension length */
     buf->f_namelen = (8 + 1 + 3);
 #endif
-
+    buf->f_flags  = mountpt->mountflags;
     return 0;
 #else
     return -ENOSYS;
@@ -1331,9 +1330,10 @@ int fatfs_utime(struct inode *mountpt, const char *pathname, const struct tm * s
      */
 
     /* fdate: bit[15:9] Year since 1980(0..127), bit[8:5] Month(0..11), bit[4:0] Day(1..31) */
-    finfo.fdate = (WORD)(((set_tm->tm_year - 80) << 9) | (set_tm->tm_mon + 1) << 5 | set_tm->tm_mday);
+    finfo.fdate = (WORD)(((UINT)(set_tm->tm_year - 80) << 9) | ((UINT)(set_tm->tm_mon + 1) << 5) |
+                  (UINT)set_tm->tm_mday);
     /* ftime: bit[15:11] Hour(0..23), bit[10:5] Minute(0..59), bit[4:0] Second/2(0..29) */
-    finfo.ftime = (WORD)(set_tm->tm_hour << 11 | set_tm->tm_min << 5 | set_tm->tm_sec >> 1);
+    finfo.ftime = (WORD)(((UINT)set_tm->tm_hour << 11) | ((UINT)set_tm->tm_min << 5) | ((UINT)set_tm->tm_sec >> 1));
     result = f_utime(filePath, &finfo);
     status = fatfs_2_vfs(result);
     free(filePath);
@@ -1421,6 +1421,7 @@ int fatfs_closedir(struct inode *mountpt, struct fs_dirent_s *dir)
 
 int fatfs_readdir(struct inode *mountpt, struct fs_dirent_s *dir)
 {
+    int i = 0;
 #if FF_FS_MINIMIZE <= 1
     DIR *fdir = NULL;
     FILINFO fno;
@@ -1429,37 +1430,41 @@ int fatfs_readdir(struct inode *mountpt, struct fs_dirent_s *dir)
 
     FAT_CHECK(dir);
     fdir = (DIR *)(dir->u.fs_dir);
-    d = &dir->fd_dir;
 
-    (void)memset_s(&fno, sizeof(FILINFO), 0, sizeof(FILINFO));
-    result = f_readdir(fdir, &fno);
-    if (result != FR_OK) {
-        return fatfs_2_vfs(result);
+    while (i < dir->read_cnt) {
+        d = &(dir->fd_dir[i]);
+
+        (void)memset_s(&fno, sizeof(FILINFO), 0, sizeof(FILINFO));
+        result = f_readdir(fdir, &fno);
+        if (result != FR_OK) {
+            break;
+        }
+
+        /*
+         * 0x00:Reached end of directory.
+         * 0xFF:The directory is empty.
+         */
+        if (fno.fname[0] == 0 || fno.fname[0] == (TCHAR)0xFF) {
+            break;
+        }
+
+        if (fno.fattrib & AM_DIR) {
+            d->d_type = DT_DIR;
+        } else {
+            d->d_type = DT_REG;
+        }
+
+        if (strncpy_s(d->d_name, sizeof(d->d_name), fno.fname, strlen(fno.fname)) != EOK) {
+            return -ENAMETOOLONG;
+        }
+
+        dir->fd_position++;
+        dir->fd_dir[i].d_off = dir->fd_position;
+        dir->fd_dir[i].d_reclen = (uint16_t)sizeof(struct dirent);
+        i++;
     }
 
-    /*
-     * 0x00:Reached end of directory.
-     * 0xFF:The directory is empty.
-     */
-    if (fno.fname[0] == 0 || fno.fname[0] == (TCHAR)0xFF) {
-        return -ENOENT;
-    }
-
-    if (fno.fattrib & AM_DIR) {
-        d->d_type = DT_DIR;
-    } else {
-        d->d_type = DT_REG;
-    }
-
-    d->d_reclen = (WORD)sizeof(struct dirent);
-
-    if (strncpy_s(d->d_name, sizeof(d->d_name), fno.fname, strlen(fno.fname)) != EOK) {
-        return -ENAMETOOLONG;
-    }
-
-    d->d_off = dir->fd_position;
-
-    return ENOERR;
+    return i;
 #else
     return -ENOSYS;
 #endif

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,6 +35,7 @@
 #include "los_typedef.h"
 #include "los_task.h"
 #include "los_mux.h"
+#include "fs/fs.h"
 #include "syscall.h"
 #ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_exec_elf.h"
@@ -97,6 +98,8 @@ extern void SysUserExitGroup(int status);
 extern void SysThreadExit(int status);
 extern int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
                     unsigned int absTime, const unsigned int *newUserAddr);
+extern int SysSchedGetAffinity(int id, unsigned int *cpuset, int flag);
+extern int SysSchedSetAffinity(int id, const unsigned short cpuset, int flag);
 extern mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *attr);
 extern int SysMqClose(mqd_t personal);
 extern int SysMqGetSetAttr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old);
@@ -250,13 +253,14 @@ extern int SysUnlinkat(int dirfd, const char *pathname, int flag);
 extern int SysRenameat(int oldfd, const char *oldpath, int newdfd, const char *newpath);
 extern int SysFallocate(int fd, int mode, off_t offset, off_t len);
 extern int SysFallocate64(int fd, int mode, off64_t offset, off64_t len);
-extern ssize_t SysPreadv(int fd, const struct iovec *iov, int iovcnt, off_t offset);
-extern ssize_t SysPwritev(int fd, const struct iovec *iov, int iovcnt, off_t offset);
+extern ssize_t SysPreadv(int fd, const struct iovec *iov, int iovcnt, long loffset, long hoffset);
+extern ssize_t SysPwritev(int fd, const struct iovec *iov, int iovcnt, long loffset, long hoffset);
 extern void SysSync(void);
 extern int SysGetdents64(int fd, struct dirent *de_user, unsigned int count);
 extern int do_opendir(const char *path, int oflags);
 extern char *SysRealpath(const char *path, char *resolvedPath);
 extern int SysUmask(int mask);
 extern int SysShellExec(const char *msgName, const char *cmdString);
+extern int SysReboot(int magic, int magic2, int type);
 #endif
 #endif /* _LOS_SYSCALL_H */

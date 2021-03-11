@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,10 +43,10 @@
 #include "los_printf.h"
 #include "los_swtmr.h"
 #include "los_swtmr_pri.h"
-#include "los_timeslice_pri.h"
 #include "los_memory_pri.h"
 #include "los_sem_pri.h"
 #include "los_mux_pri.h"
+#include "los_rwlock_pri.h"
 #include "los_queue_pri.h"
 #include "los_memstat_pri.h"
 #include "los_hwi_pri.h"
@@ -76,9 +76,6 @@
 
 #ifdef LOSCFG_DRIVERS_HDF_PLATFORM_UART
 #include "console.h"
-#endif
-#ifdef LOSCFG_KERNEL_TICKLESS
-#include "los_tickless.h"
 #endif
 #ifdef LOSCFG_ARCH_CORTEX_M7
 #include "los_exc_pri.h"
@@ -123,18 +120,30 @@
 #include "los_hilog.h"
 #endif
 
+#ifdef LOSCFG_QUICK_START
+#include "los_quick_start_pri.h"
+#endif
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-extern UINT32 OsSystemInit(VOID);
+STATIC SystemRebootFunc g_rebootHook = NULL;
 
-VOID __attribute__((weak)) SystemInit(VOID)
+VOID OsSetRebootHook(SystemRebootFunc func)
 {
-    PRINT_WARN("Function not implemented. Using weak reference stub\n");
+    g_rebootHook = func;
 }
+
+SystemRebootFunc OsGetRebootHook(VOID)
+{
+    return g_rebootHook;
+}
+
+extern UINT32 OsSystemInit(VOID);
+extern VOID SystemInit(VOID);
 
 LITE_OS_SEC_TEXT_INIT VOID osRegister(VOID)
 {
@@ -142,34 +151,6 @@ LITE_OS_SEC_TEXT_INIT VOID osRegister(VOID)
     g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;
 
     return;
-}
-
-LITE_OS_SEC_TEXT_INIT VOID OsStart(VOID)
-{
-    LosProcessCB *runProcess = NULL;
-    LosTaskCB *taskCB = NULL;
-    UINT32 cpuid = ArchCurrCpuid();
-
-    OsTickStart();
-
-    LOS_SpinLock(&g_taskSpin);
-    taskCB = OsGetTopTask();
-
-    runProcess = OS_PCB_FROM_PID(taskCB->processID);
-    runProcess->processStatus |= OS_PROCESS_STATUS_RUNNING;
-#if (LOSCFG_KERNEL_SMP == YES)
-    /*
-     * attention: current cpu needs to be set, in case first task deletion
-     * may fail because this flag mismatch with the real current cpu.
-     */
-    taskCB->currCpu = cpuid;
-    runProcess->processStatus = OS_PROCESS_RUNTASK_COUNT_ADD(runProcess->processStatus);
-#endif
-
-    OS_SCHEDULER_SET(cpuid);
-
-    PRINTK("cpu %d entering scheduler\n", cpuid);
-    OsStartToRun(taskCB);
 }
 
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
@@ -225,7 +206,6 @@ LITE_OS_SEC_TEXT_INIT STATIC INT32 OsBsdInit(VOID)
 }
 #endif
 
-
 LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 {
     UINT32 ret;
@@ -241,6 +221,10 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 
 #ifdef LOSCFG_SHELL_LK
     OsLkLoggerInit(NULL);
+#endif
+
+#if (LOSCFG_KERNEL_TRACE == YES)
+    LOS_TraceInit();
 #endif
 
 #ifdef LOSCFG_EXC_INTERACTION
@@ -279,7 +263,8 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
         return ret;
     }
 
-#if ((LOSCFG_BASE_IPC_QUEUE == YES) || (LOSCFG_BASE_IPC_MUX == YES) || (LOSCFG_BASE_IPC_SEM == YES))
+#if ((LOSCFG_BASE_IPC_QUEUE == YES) || (LOSCFG_BASE_IPC_MUX == YES) || \
+     (LOSCFG_BASE_IPC_SEM == YES) || (LOSCFG_BASE_IPC_RWLOCK == YES))
     ret = OsIpcInit();
     if (ret != LOS_OK) {
         return ret;
@@ -310,7 +295,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     }
 #endif
 
-    ret = OsKernelInitProcess();
+    ret = OsSystemProcessCreate();
     if (ret != LOS_OK) {
         return ret;
     }
@@ -351,24 +336,19 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     if (ret != LOS_OK) {
         return ret;
     }
-
-#if LOSCFG_DRIVERS_HIEVENT
-    OsDriverHiEventInit();
-#endif
-
-#if (LOSCFG_KERNEL_TRACE == YES)
-    LOS_TraceInit();
-#endif
-
-#if (LOSCFG_KERNEL_LITEIPC == YES)
-    ret = LiteIpcInit();
+#if (LOSCFG_BASE_CORE_HILOG == YES)
+    ret = HiLogDriverInit();
     if (ret != LOS_OK) {
         return ret;
     }
 #endif
 
-#if (LOSCFG_BASE_CORE_HILOG == YES)
-    ret = HiLogDriverInit();
+#if LOSCFG_DRIVERS_HIEVENT
+    OsDriverHiEventInit();
+#endif
+
+#if (LOSCFG_KERNEL_LITEIPC == YES)
+    ret = LiteIpcInit();
     if (ret != LOS_OK) {
         return ret;
     }
@@ -412,6 +392,14 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     return LOS_TaskCreate(&taskID, &sysTask);
 }
 
+#ifdef LOSCFG_QUICK_START
+UINT32 OsSystemInitStep2(VOID)
+{
+    SystemInit2();
+    return 0;
+}
+#endif
+
 #ifdef LOSCFG_MEM_RECORDINFO
 STATIC UINT32 OsMemShowTaskCreate(VOID)
 {
@@ -448,9 +436,6 @@ UINT32 OsSystemInit(VOID)
         return ret;
     }
     PRINTK("create memshow_Task ok\n");
-#endif
-#ifdef LOSCFG_KERNEL_TICKLESS
-    LOS_TicklessEnable();
 #endif
 
     return 0;

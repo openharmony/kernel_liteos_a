@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,9 +31,11 @@
 
 #include "los_process_pri.h"
 #include "los_task_pri.h"
+#include "los_sched_pri.h"
 #include "los_hw_pri.h"
 #include "los_sys_pri.h"
 #include "los_futex_pri.h"
+#include "los_mp.h"
 #include "user_copy.h"
 #include "time.h"
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -66,7 +68,7 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
 {
     int ret;
     unsigned int intSave;
-    LosTaskCB *taskCB = NULL;
+    bool needSched = false;
 
     if (OS_TID_CHECK_INVALID(tid)) {
         return EINVAL;
@@ -81,24 +83,28 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
     }
 
     SCHEDULER_LOCK(intSave);
-    taskCB = OS_TCB_FROM_TID(tid);
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(tid);
     ret = OsUserTaskOperatePermissionsCheck(taskCB);
     if (ret != LOS_OK) {
         SCHEDULER_UNLOCK(intSave);
         return ret;
     }
 
-    return OsTaskSchedulerSetUnsafe(taskCB, policy, priority, policyFlag, intSave);
+    policy = (policyFlag == true) ? policy : taskCB->policy;
+    needSched = OsSchedModifyTaskSchedParam(taskCB, policy, priority);
+    SCHEDULER_UNLOCK(intSave);
+
+    LOS_MpSchedule(OS_MP_CPU_ALL);
+    if (needSched && OS_SCHEDULER_ACTIVE) {
+        LOS_Schedule();
+    }
+
+    return LOS_OK;
 }
 
 void SysSchedYield(int type)
 {
-    if (type < 0) {
-        (void)LOS_TaskYield();
-        return;
-    }
-
-    (void)LOS_ProcessYield();
+    (void)LOS_TaskYield();
     return;
 }
 
@@ -127,10 +133,6 @@ int SysSchedGetScheduler(int id, int flag)
         return policy;
     }
 
-    if (id == 0) {
-        id = (int)LOS_GetCurrProcessID();
-    }
-
     return LOS_GetProcessScheduler(id);
 }
 
@@ -139,16 +141,11 @@ int SysSchedSetScheduler(int id, int policy, int prio, int flag)
     int ret;
 
     if (flag < 0) {
-        return -OsUserTaskSchedulerSet(id, policy, prio, TRUE);
+        return -OsUserTaskSchedulerSet(id, policy, prio, true);
     }
 
     if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) {
         return -EINVAL;
-    }
-
-    /* Temporarily not support linux policy: SCHED_BATCH 3U, SCHED_RESET_ON_FORK 4U, SCHED_IDLE 5U, SCHED_DEADLINE 6U */
-    if ((policy == 0) || (policy == 3) || (policy == 4) || (policy == 5) || (policy == 6)) {
-        return -ENOSYS;
     }
 
     if (id == 0) {
@@ -160,7 +157,7 @@ int SysSchedSetScheduler(int id, int policy, int prio, int flag)
         return ret;
     }
 
-    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, prio, policy, TRUE);
+    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, prio, policy);
 }
 
 int SysSchedGetParam(int id, int flag)
@@ -198,30 +195,6 @@ int SysSchedGetParam(int id, int flag)
     return OsGetProcessPriority(LOS_PRIO_PROCESS, id);
 }
 
-int SysSchedSetParam(int id, unsigned int prio, int flag)
-{
-    int ret;
-
-    if (flag < 0) {
-        return -OsUserTaskSchedulerSet(id, LOS_SCHED_RR, prio, FALSE);
-    }
-
-    if (prio < OS_USER_PROCESS_PRIORITY_HIGHEST) {
-        return -EINVAL;
-    }
-
-    if (id == 0) {
-        id = (int)LOS_GetCurrProcessID();
-    }
-
-    ret = OsPermissionToCheck(id, LOS_GetCurrProcessID());
-    if (ret < 0) {
-        return ret;
-    }
-
-    return OsSetProcessScheduler(LOS_PRIO_PROCESS, id, prio, LOS_SCHED_RR, FALSE);
-}
-
 int SysSetProcessPriority(int which, int who, unsigned int prio)
 {
     int ret;
@@ -239,7 +212,16 @@ int SysSetProcessPriority(int which, int who, unsigned int prio)
         return ret;
     }
 
-    return OsSetProcessScheduler(which, who, prio, LOS_SCHED_RR, FALSE);
+    return OsSetProcessScheduler(which, who, prio, LOS_GetProcessScheduler(who));
+}
+
+int SysSchedSetParam(int id, unsigned int prio, int flag)
+{
+    if (flag < 0) {
+        return -OsUserTaskSchedulerSet(id, LOS_SCHED_RR, prio, false);
+    }
+
+    return SysSetProcessPriority(LOS_PRIO_PROCESS, id, prio);
 }
 
 int SysGetProcessPriority(int which, int who)
@@ -253,11 +235,7 @@ int SysGetProcessPriority(int which, int who)
 
 int SysSchedGetPriorityMin(int policy)
 {
-    /* Temporarily not support linux policy: SCHED_BATCH 3U, SCHED_RESET_ON_FORK 4U, SCHED_IDLE 5U, SCHED_DEADLINE 6U */
-    if ((policy == 0) || (policy == 3) || (policy == 4) || (policy == 5) || (policy == 6)) {
-        return -ENOSYS;
-    }
-    if ((policy != LOS_SCHED_RR) && (policy != LOS_SCHED_FIFO)) {
+    if (policy != LOS_SCHED_RR) {
         return -EINVAL;
     }
 
@@ -266,11 +244,7 @@ int SysSchedGetPriorityMin(int policy)
 
 int SysSchedGetPriorityMax(int policy)
 {
-    /* Temporarily not support linux policy: SCHED_BATCH 3U, SCHED_RESET_ON_FORK 4U, SCHED_IDLE 5U, SCHED_DEADLINE 6U */
-    if ((policy == 0) || (policy == 3) || (policy == 4) || (policy == 5) || (policy == 6)) {
-        return -ENOSYS;
-    }
-    if ((policy != LOS_SCHED_RR) && (policy != LOS_SCHED_FIFO)) {
+    if (policy != LOS_SCHED_RR) {
         return -EINVAL;
     }
 
@@ -279,10 +253,12 @@ int SysSchedGetPriorityMax(int policy)
 
 int SysSchedRRGetInterval(int pid, struct timespec *tp)
 {
+    unsigned int intSave;
     int ret;
-    time_t msec;
+    time_t timeSlice = 0;
     struct timespec tv;
-    LosProcessCB *pcb = NULL;
+    LosTaskCB *taskCB = NULL;
+    LosProcessCB *processCB = NULL;
 
     if (tp == NULL) {
         return -EINVAL;
@@ -292,15 +268,30 @@ int SysSchedRRGetInterval(int pid, struct timespec *tp)
         return -EINVAL;
     }
 
+    if (pid == 0) {
+        processCB = OsCurrProcessGet();
+    } else {
+        processCB = OS_PCB_FROM_PID(pid);
+    }
+
+    SCHEDULER_LOCK(intSave);
     /* if can not find process by pid return ESRCH */
-    pcb = OS_PCB_FROM_PID(pid);
-    if (OsProcessIsInactive(pcb)) {
+    if (OsProcessIsInactive(processCB)) {
+        SCHEDULER_UNLOCK(intSave);
         return -ESRCH;
     }
 
-    msec = LOS_Tick2MS(OS_PROCESS_SCHED_RR_INTERVAL);
-    tv.tv_sec = msec / OS_SYS_MS_PER_SECOND;
-    tv.tv_nsec = (msec % OS_SYS_MS_PER_SECOND) * OS_SYS_NS_PER_MS;
+    LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &processCB->threadSiblingList, LosTaskCB, threadList) {
+        if (!OsTaskIsInactive(taskCB) && (taskCB->policy == LOS_SCHED_RR)) {
+            timeSlice += taskCB->initTimeSlice;
+        }
+    }
+
+    SCHEDULER_UNLOCK(intSave);
+
+    timeSlice = timeSlice * OS_NS_PER_CYCLE;
+    tv.tv_sec = timeSlice / OS_SYS_NS_PER_SECOND;
+    tv.tv_nsec = timeSlice % OS_SYS_NS_PER_SECOND;
     ret = LOS_ArchCopyToUser(tp, &tv, sizeof(struct timespec));
     if (ret != 0) {
         return -EFAULT;
@@ -786,7 +777,7 @@ int SysGetGroups(int size, int list[])
 #endif
 }
 
-int SysSetGroups(int size, int list[])
+int SysSetGroups(int size, const int list[])
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
     int ret;
@@ -994,6 +985,122 @@ int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
 unsigned int SysGetTid(void)
 {
     return OsCurrTaskGet()->taskID;
+}
+
+/* If flag >= 0, the process mode is used. If flag < 0, the thread mode is used. */
+static int SchedAffinityParameterPreprocess(int id, int flag, unsigned int *taskID, unsigned int *processID)
+{
+    if (flag >= 0) {
+        if (OS_PID_CHECK_INVALID(id)) {
+            return -ESRCH;
+        }
+        *taskID = (id == 0) ? (OsCurrTaskGet()->taskID) : (OS_PCB_FROM_PID((UINT32)id)->threadGroupID);
+        *processID = (id == 0) ? (OS_TCB_FROM_TID(*taskID)->processID) : id;
+    } else {
+        if (OS_TID_CHECK_INVALID(id)) {
+            return -ESRCH;
+        }
+        *taskID = id;
+        *processID = OS_INVALID_VALUE;
+    }
+    return LOS_OK;
+}
+
+/* If flag >= 0, the process mode is used. If flag < 0, the thread mode is used. */
+int SysSchedGetAffinity(int id, unsigned int *cpuset, int flag)
+{
+    int ret;
+    unsigned int processID;
+    unsigned int taskID;
+    unsigned int intSave;
+    unsigned int cpuAffiMask;
+
+    ret = SchedAffinityParameterPreprocess(id, flag, &taskID, &processID);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    if (flag >= 0) {
+        if (OsProcessIsInactive(OS_PCB_FROM_PID(processID))) {
+            SCHEDULER_UNLOCK(intSave);
+            return -ESRCH;
+        }
+    } else {
+        ret = OsUserTaskOperatePermissionsCheck(OS_TCB_FROM_TID(taskID));
+        if (ret != LOS_OK) {
+            SCHEDULER_UNLOCK(intSave);
+            if (ret == EINVAL) {
+                return -ESRCH;
+            }
+            return -ret;
+        }
+    }
+
+#if (LOSCFG_KERNEL_SMP == YES)
+    cpuAffiMask = (unsigned int)OS_TCB_FROM_TID(taskID)->cpuAffiMask;
+#else
+    cpuAffiMask = 1;
+#endif /* LOSCFG_KERNEL_SMP */
+
+    SCHEDULER_UNLOCK(intSave);
+    ret = LOS_ArchCopyToUser(cpuset, &cpuAffiMask, sizeof(unsigned int));
+    if (ret != LOS_OK) {
+        return -EFAULT;
+    }
+
+    return LOS_OK;
+}
+
+/* If flag >= 0, the process mode is used. If flag < 0, the thread mode is used. */
+int SysSchedSetAffinity(int id, const unsigned short cpuset, int flag)
+{
+    int ret;
+    unsigned int processID;
+    unsigned int taskID;
+    unsigned int intSave;
+    unsigned short currCpuMask;
+    bool needSched = FALSE;
+
+    if (cpuset > LOSCFG_KERNEL_CPU_MASK) {
+        return -EINVAL;
+    }
+
+    ret = SchedAffinityParameterPreprocess(id, flag, &taskID, &processID);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    if (flag >= 0) {
+        ret = OsPermissionToCheck(processID, LOS_GetCurrProcessID());
+        if (ret != LOS_OK) {
+            return ret;
+        }
+        SCHEDULER_LOCK(intSave);
+        if (OsProcessIsInactive(OS_PCB_FROM_PID(processID))) {
+            SCHEDULER_UNLOCK(intSave);
+            return -ESRCH;
+        }
+    } else {
+        SCHEDULER_LOCK(intSave);
+        ret = OsUserTaskOperatePermissionsCheck(OS_TCB_FROM_TID(taskID));
+        if (ret != LOS_OK) {
+            SCHEDULER_UNLOCK(intSave);
+            if (ret == EINVAL) {
+                return -ESRCH;
+            }
+            return -ret;
+        }
+    }
+
+    needSched = OsTaskCpuAffiSetUnsafe(taskID, cpuset, &currCpuMask);
+    SCHEDULER_UNLOCK(intSave);
+    if (needSched && OS_SCHEDULER_ACTIVE) {
+        LOS_MpSchedule(currCpuMask);
+        LOS_Schedule();
+    }
+
+    return LOS_OK;
 }
 
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -47,7 +47,6 @@
 #define ip_tx_bytes cachehit
 
 #define DUP_ARP_DETECT_TIME             2000      /* 2 seconds period */
-#define SOF_BINDNONUNICAST              0x0800U   /* socket has bind to a non unicast */
 #define NETCONN_PKT_RAW                 0x80
 #define SYS_ARCH_ERROR                  0x7fffffffUL
 

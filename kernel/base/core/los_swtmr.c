@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@
 #include "los_queue_pri.h"
 #include "los_task_pri.h"
 #include "los_process_pri.h"
+#include "los_sched_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -142,6 +143,11 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
         if (ret != LOS_OK) {
             return LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
         }
+
+        ret = OsSchedSwtmrScanRegister((SchedScan)OsSwtmrScan);
+        if (ret != LOS_OK) {
+            return ret;
+        }
     }
 
     ret = LOS_QueueCreate(NULL, OS_SWTMR_HANDLE_QUEUE_SIZE, &g_percpu[cpuid].swtmrHandlerQueue, 0, sizeof(CHAR *));
@@ -168,22 +174,22 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
  */
 LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
 {
-    if ((swtmr->ucOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
+    UINT32 ticks;
+    UINT64 currTime = OsGerCurrSchedTimeCycle();
+
+    if ((swtmr->uwOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_OPP) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE))) {
-        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwExpiry);
+        ticks = swtmr->uwExpiry;
     } else {
-        SET_SORTLIST_VALUE(&(swtmr->stSortList), swtmr->uwInterval);
+        ticks = swtmr->uwInterval;
     }
-
-    OsAdd2SortLink(&OsPercpuGet()->swtmrSortLink, &swtmr->stSortList);
-
     swtmr->ucState = OS_SWTMR_STATUS_TICKING;
 
-#if (LOSCFG_KERNEL_SMP == YES)
-    swtmr->uwCpuid = ArchCurrCpuid();
-#endif
-
+    OsAdd2SortLink(&swtmr->stSortList, currTime, ticks, OS_SORT_LINK_SWTMR);
+    if (OS_SCHEDULER_ACTIVE) {
+        OsSchedUpdateExpireTime(currTime);
+    }
     return;
 }
 
@@ -199,64 +205,70 @@ STATIC INLINE VOID OsSwtmrDelete(SWTMR_CTRL_S *swtmr)
     swtmr->uwOwnerPid = 0;
 }
 
+STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, SWTMR_CTRL_S *swtmr)
+{
+    LOS_SpinLock(&g_swtmrSpin);
+    SwtmrHandlerItemPtr swtmrHandler = (SwtmrHandlerItemPtr)LOS_MemboxAlloc(g_swtmrHandlerPool);
+    if (swtmrHandler != NULL) {
+        swtmrHandler->handler = swtmr->pfnHandler;
+        swtmrHandler->arg = swtmr->uwArg;
+
+        if (LOS_QueueWrite(cpu->swtmrHandlerQueue, swtmrHandler, sizeof(CHAR *), LOS_NO_WAIT)) {
+            (VOID)LOS_MemboxFree(g_swtmrHandlerPool, swtmrHandler);
+        }
+    }
+
+    if (swtmr->ucMode == LOS_SWTMR_MODE_ONCE) {
+        OsSwtmrDelete(swtmr);
+
+        if (swtmr->usTimerID < (OS_SWTMR_MAX_TIMERID - LOSCFG_BASE_CORE_SWTMR_LIMIT)) {
+            swtmr->usTimerID += LOSCFG_BASE_CORE_SWTMR_LIMIT;
+        } else {
+            swtmr->usTimerID %= LOSCFG_BASE_CORE_SWTMR_LIMIT;
+        }
+    } else if (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE) {
+        swtmr->ucState = OS_SWTMR_STATUS_CREATED;
+    } else {
+        swtmr->uwOverrun++;
+        OsSwtmrStart(swtmr);
+    }
+
+    LOS_SpinUnlock(&g_swtmrSpin);
+}
+
 /*
  * Description: Tick interrupt interface module of software timer
  * Return     : LOS_OK on success or error code on failure
  */
 LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
 {
-    SortLinkList *sortList = NULL;
-    SWTMR_CTRL_S *swtmr = NULL;
-    SwtmrHandlerItemPtr swtmrHandler = NULL;
-    LOS_DL_LIST *listObject = NULL;
+    Percpu *cpu = OsPercpuGet();
     SortLinkAttribute* swtmrSortLink = &OsPercpuGet()->swtmrSortLink;
-
-    swtmrSortLink->cursor = (swtmrSortLink->cursor + 1) & OS_TSK_SORTLINK_MASK;
-    listObject = swtmrSortLink->sortLink + swtmrSortLink->cursor;
+    LOS_DL_LIST *listObject = &swtmrSortLink->sortLink;
 
     /*
      * it needs to be carefully coped with, since the swtmr is in specific sortlink
      * while other cores still has the chance to process it, like stop the timer.
      */
-    LOS_SpinLock(&g_swtmrSpin);
+    LOS_SpinLock(&cpu->swtmrSortLinkSpin);
 
     if (LOS_ListEmpty(listObject)) {
-        LOS_SpinUnlock(&g_swtmrSpin);
+        LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
         return;
     }
-    sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-    ROLLNUM_DEC(sortList->idxRollNum);
+    SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
 
-    while (ROLLNUM(sortList->idxRollNum) == 0) {
+    UINT64 currTime = OsGerCurrSchedTimeCycle();
+    while (sortList->responseTime <= currTime) {
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-        LOS_ListDelete(&sortList->sortLinkNode);
-        swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
+        OsDeleteNodeSortLink(swtmrSortLink, sortList);
 
-        swtmrHandler = (SwtmrHandlerItemPtr)LOS_MemboxAlloc(g_swtmrHandlerPool);
-        if (swtmrHandler != NULL) {
-            swtmrHandler->handler = swtmr->pfnHandler;
-            swtmrHandler->arg = swtmr->uwArg;
+        SWTMR_CTRL_S *swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
+        LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 
-            if (LOS_QueueWrite(OsPercpuGet()->swtmrHandlerQueue, swtmrHandler, sizeof(CHAR *), LOS_NO_WAIT)) {
-                (VOID)LOS_MemboxFree(g_swtmrHandlerPool, swtmrHandler);
-            }
-        }
+        OsWakePendTimeSwtmr(cpu, swtmr);
 
-        if (swtmr->ucMode == LOS_SWTMR_MODE_ONCE) {
-            OsSwtmrDelete(swtmr);
-
-            if (swtmr->usTimerID < (OS_SWTMR_MAX_TIMERID - LOSCFG_BASE_CORE_SWTMR_LIMIT)) {
-                swtmr->usTimerID += LOSCFG_BASE_CORE_SWTMR_LIMIT;
-            } else {
-                swtmr->usTimerID %= LOSCFG_BASE_CORE_SWTMR_LIMIT;
-            }
-        } else if (swtmr->ucMode == LOS_SWTMR_MODE_NO_SELFDELETE) {
-            swtmr->ucState = OS_SWTMR_STATUS_CREATED;
-        } else {
-            swtmr->ucOverrun++;
-            OsSwtmrStart(swtmr);
-        }
-
+        LOS_SpinLock(&cpu->swtmrSortLinkSpin);
         if (LOS_ListEmpty(listObject)) {
             break;
         }
@@ -264,7 +276,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
     }
 
-    LOS_SpinUnlock(&g_swtmrSpin);
+    LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 }
 
 /*
@@ -282,21 +294,14 @@ LITE_OS_SEC_TEXT UINT32 OsSwtmrGetNextTimeout(VOID)
  */
 LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
 {
-    SortLinkAttribute *sortLinkHeader = NULL;
-
-#if (LOSCFG_KERNEL_SMP == YES)
-    /*
-     * the timer is running on the specific processor,
-     * we need delete the timer from that processor's sortlink.
-     */
-    sortLinkHeader = &g_percpu[swtmr->uwCpuid].swtmrSortLink;
-#else
-    sortLinkHeader = &g_percpu[0].swtmrSortLink;
-#endif
-    OsDeleteSortLink(sortLinkHeader, &swtmr->stSortList);
+    OsDeleteSortLink(&swtmr->stSortList, OS_SORT_LINK_SWTMR);
 
     swtmr->ucState = OS_SWTMR_STATUS_CREATED;
-    swtmr->ucOverrun = 0;
+    swtmr->uwOverrun = 0;
+
+    if (OS_SCHEDULER_ACTIVE) {
+        OsSchedUpdateExpireTime(OsGerCurrSchedTimeCycle());
+    }
 }
 
 /*
@@ -305,19 +310,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
  */
 LITE_OS_SEC_TEXT STATIC UINT32 OsSwtmrTimeGet(const SWTMR_CTRL_S *swtmr)
 {
-    SortLinkAttribute *sortLinkHeader = NULL;
-
-#if (LOSCFG_KERNEL_SMP == YES)
-    /*
-     * the timer is running on the specific processor,
-     * we need search the timer from that processor's sortlink.
-     */
-    sortLinkHeader = &g_percpu[swtmr->uwCpuid].swtmrSortLink;
-#else
-    sortLinkHeader = &g_percpu[0].swtmrSortLink;
-#endif
-
-    return OsSortLinkGetTargetExpireTime(sortLinkHeader, &swtmr->stSortList);
+    return OsSortLinkGetTargetExpireTime(&swtmr->stSortList);
 }
 
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
@@ -361,12 +354,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
     swtmr->uwOwnerPid = OsCurrProcessGet()->processID;
     swtmr->pfnHandler = handler;
     swtmr->ucMode = mode;
-    swtmr->ucOverrun = 0;
+    swtmr->uwOverrun = 0;
     swtmr->uwInterval = interval;
     swtmr->uwExpiry = interval;
     swtmr->uwArg = arg;
     swtmr->ucState = OS_SWTMR_STATUS_CREATED;
-    SET_SORTLIST_VALUE(&(swtmr->stSortList), 0);
+    SET_SORTLIST_VALUE(&swtmr->stSortList, OS_SORT_LINK_INVALID_TIME);
     *swtmrID = swtmr->usTimerID;
 
     return LOS_OK;
@@ -383,10 +376,10 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
         return LOS_ERRNO_SWTMR_ID_INVALID;
     }
 
-    SWTMR_LOCK(intSave);
     swtmrCBID = swtmrID % LOSCFG_BASE_CORE_SWTMR_LIMIT;
     swtmr = g_swtmrCBArray + swtmrCBID;
 
+    SWTMR_LOCK(intSave);
     if (swtmr->usTimerID != swtmrID) {
         SWTMR_UNLOCK(intSave);
         return LOS_ERRNO_SWTMR_ID_INVALID;
@@ -426,9 +419,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStop(UINT16 swtmrID)
         return LOS_ERRNO_SWTMR_ID_INVALID;
     }
 
-    SWTMR_LOCK(intSave);
     swtmrCBID = swtmrID % LOSCFG_BASE_CORE_SWTMR_LIMIT;
     swtmr = g_swtmrCBArray + swtmrCBID;
+    SWTMR_LOCK(intSave);
 
     if (swtmr->usTimerID != swtmrID) {
         SWTMR_UNLOCK(intSave);
@@ -469,9 +462,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrTimeGet(UINT16 swtmrID, UINT32 *tick)
         return LOS_ERRNO_SWTMR_TICK_PTR_NULL;
     }
 
-    SWTMR_LOCK(intSave);
     swtmrCBID = swtmrID % LOSCFG_BASE_CORE_SWTMR_LIMIT;
     swtmr = g_swtmrCBArray + swtmrCBID;
+    SWTMR_LOCK(intSave);
 
     if (swtmr->usTimerID != swtmrID) {
         SWTMR_UNLOCK(intSave);
@@ -506,9 +499,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
         return LOS_ERRNO_SWTMR_ID_INVALID;
     }
 
-    SWTMR_LOCK(intSave);
     swtmrCBID = swtmrID % LOSCFG_BASE_CORE_SWTMR_LIMIT;
     swtmr = g_swtmrCBArray + swtmrCBID;
+    SWTMR_LOCK(intSave);
 
     if (swtmr->usTimerID != swtmrID) {
         SWTMR_UNLOCK(intSave);

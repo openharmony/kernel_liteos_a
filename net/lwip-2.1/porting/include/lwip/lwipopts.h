@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -218,7 +218,6 @@
 
 // Options for enhancement code, same for old lwipopts.h
 #define LWIP_NETIF_PROMISC              1
-#define LWIP_TFTP                       LOSCFG_NET_LWIP_SACK_TFTP
 #define LWIP_DHCPS                      1
 #define LWIP_ENABLE_NET_CAPABILITY      1
 #define LWIP_ENABLE_CAP_NET_BROADCAST   0

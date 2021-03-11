@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -58,10 +58,6 @@ endif
 else
 LOCAL_SRCS += $(wildcard ../kernel/common/los_config.c)
 LOCAL_SRCS += $(wildcard ../kernel/common/los_printf.c)
-endif
-
-ifeq ($(LOSCFG_DRIVERS_USB), y)
-LOCAL_SRCS += $(wildcard $(USB_SRC)/*.c)
 endif
 
 ifeq ($(LOSCFG_KERNEL_TICKLESS), y)

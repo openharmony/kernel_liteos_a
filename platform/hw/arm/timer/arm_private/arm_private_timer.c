@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,6 +31,7 @@
 
 #include "asm/platform.h"
 #include "los_hwi.h"
+#include "los_sched_pri.h"
 #include "los_tick_pri.h"
 
 #define OS_CYCLE_PER_TICK (TIMER_FREQ / LOSCFG_BASE_CORE_TICK_PER_SECOND)
@@ -67,6 +68,11 @@ VOID HalClockFreqWrite(UINT32 freq)
 
 VOID HalClockStart(VOID)
 {
+    UINT32 ret = OsSchedSetTickTimerType(32); /* 32 bit tick timer */
+    if (ret != LOS_OK) {
+        return;
+    }
+
     HalIrqUnmask(PRVTIMER_INT_NUM);
 
     g_privateTimer->load = OS_CYCLE_PER_TICK;
@@ -124,12 +130,12 @@ UINT32 HalClockGetTickTimerCycles(VOID)
     return g_privateTimer->count;
 }
 
-VOID HalClockTickTimerReload(UINT32 period)
+VOID HalClockTickTimerReload(UINT64 period)
 {
     HalIrqUnmask(PRVTIMER_INT_NUM);
 
     /* set control counter regs to defaults */
-    g_privateTimer->load = period;
+    g_privateTimer->load = (UINT32)period;
     g_privateTimer->control = 0x06; /* IAE bits = 110, not eanbled yet */
     g_privateTimer->control |= 0x01; /* reenable private timer */
 }

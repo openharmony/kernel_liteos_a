@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,6 +36,7 @@
 #include "shmsg.h"
 #endif
 #include "sys/utsname.h"
+#include "sys/reboot.h"
 #include "user_copy.h"
 #include "los_strncpy_from_user.h"
 #include "capability_type.h"
@@ -64,6 +65,21 @@ int SysUname(struct utsname *name)
         return -EFAULT;
     }
     return ret;
+}
+
+int SysReboot(int magic, int magic2, int type)
+{
+    (void)magic;
+    (void)magic2;
+    if (!IsCapPermit(CAP_REBOOT)) {
+        return -EPERM;
+    }
+    SystemRebootFunc rebootHook = OsGetRebootHook();
+    if ((type == RB_AUTOBOOT) && (rebootHook != NULL)) {
+        rebootHook();
+        return 0;
+    }
+    return -EFAULT;
 }
 
 #ifdef LOSCFG_SHELL

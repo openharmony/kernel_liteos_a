@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -406,7 +406,7 @@ unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size)
     }
     output = (char *)malloc(len + 1);
     if (output == NULL) {
-        printf("malloc failure in %s[%d]", __FUNCTION__, __LINE__);
+        printf("malloc failure in %s[%d]\n", __FUNCTION__, __LINE__);
         return (unsigned int)SH_ERROR;
     }
 

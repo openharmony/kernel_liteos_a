@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -54,7 +54,6 @@ extern "C" {
 
 #define MEM_SIZE_1K 0x400
 #define MEM_SIZE_1M 0x100000
-#define MEMPT_ARG_NUM_2         2
 
 #define MEM_SIZE_TO_KB(size)    (((size) + (MEM_SIZE_1K >> 1)) / MEM_SIZE_1K)
 #define MEM_SIZE_TO_MB(size)    (((size) + (MEM_SIZE_1M >> 1)) / MEM_SIZE_1M)
@@ -126,46 +125,6 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[])
 }
 
 #ifdef LOSCFG_SHELL
-LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemRead(INT32 argc, const CHAR *argv[])
-{
-    size_t tempAddr;
-    size_t length;
-    CHAR *ptrlen = NULL;
-    CHAR *ptrAddr = NULL;
-
-    if ((argc == 0) || (argc > 2)) { /* argc is num of parameters */
-        PRINTK("\nUsage: readreg [ADDRESS] [LENGTH]\n");
-        return OS_ERROR;
-    }
-
-    if (argc == 1) {
-        length = 0;
-    } else {
-        length = strtoul(argv[1], &ptrlen, 0);
-        if ((ptrlen == NULL) || (*ptrlen != 0)) {
-            PRINTK("readreg invalid length %s\n", argv[1]);
-            return OS_ERROR;
-        }
-    }
-    tempAddr = strtoul(argv[0], &ptrAddr, 0);
-    if ((ptrAddr == NULL) || (*ptrAddr != 0)) {
-        PRINTK("readreg invalid address %s\n", argv[0]);
-        return OS_ERROR;
-    }
-
-    if (OsVmAddrCheck(tempAddr, length) == LOS_OK) {
-        goto DONE;
-    }
-
-    PRINTK("readreg invalid address %s\n", argv[0]);
-    return OS_ERROR;
-
-DONE:
-    OsDumpMemByte(length, tempAddr);
-
-    return 0;
-}
-
 LITE_OS_SEC_TEXT_MINOR STATIC VOID OsShellCmdSectionInfo(INT32 argc, const CHAR *argv[])
 {
     size_t textLen = &__text_end - &__text_start;
@@ -304,24 +263,6 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemUsed(INT32 argc, const CHAR *argv[])
     return 0;
 }
 #endif
-#ifdef LOSCFG_MEM_RECORDINFO
-LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemRecordEnable(INT32 argc, const CHAR *argv[])
-{
-    OsMemRecordShowSet(1);
-    return 0;
-}
-
-LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemRecordDisable(INT32 argc, const CHAR *argv[])
-{
-    OsMemRecordShowSet(0);
-    return 0;
-}
-
-SHELLCMD_ENTRY(memshowenable_shellcmd, CMD_TYPE_EX, "memshowenable", 0,
-               (CmdCallBackFunc)OsShellCmdMemRecordEnable);
-SHELLCMD_ENTRY(memshowdisable_shellcmd, CMD_TYPE_EX, "memshowdisable", 0,
-               (CmdCallBackFunc)OsShellCmdMemRecordDisable);
-#endif
 
 #ifdef LOSCFG_MEM_LEAKCHECK
 SHELLCMD_ENTRY(memused_shellcmd, CMD_TYPE_EX, "memused", 0, (CmdCallBackFunc)OsShellCmdMemUsed);
@@ -329,7 +270,6 @@ SHELLCMD_ENTRY(memused_shellcmd, CMD_TYPE_EX, "memused", 0, (CmdCallBackFunc)OsS
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 SHELLCMD_ENTRY(memcheck_shellcmd, CMD_TYPE_EX, "memcheck", 0, (CmdCallBackFunc)OsShellCmdMemCheck);
-SHELLCMD_ENTRY(readreg_shellcmd, CMD_TYPE_EX, "readreg", MEMPT_ARG_NUM_2, (CmdCallBackFunc)OsShellCmdMemRead);
 #endif
 SHELLCMD_ENTRY(free_shellcmd, CMD_TYPE_EX, "free", XARGS, (CmdCallBackFunc)OsShellCmdFree);
 SHELLCMD_ENTRY(uname_shellcmd, CMD_TYPE_EX, "uname", XARGS, (CmdCallBackFunc)OsShellCmdUname);

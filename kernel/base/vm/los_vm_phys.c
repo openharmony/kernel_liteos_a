@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -96,7 +96,7 @@ VOID OsVmPhysSegAdd(VOID)
 {
     INT32 i, ret;
 
-    LOS_ASSERT(g_vmPhysSegNum <= VM_PHYS_SEG_MAX);
+    LOS_ASSERT(g_vmPhysSegNum < VM_PHYS_SEG_MAX);
 
     for (i = 0; i < (sizeof(g_physArea) / sizeof(g_physArea[0])); i++) {
         ret = OsVmPhysSegCreate(g_physArea[i].start, g_physArea[i].size);
@@ -280,16 +280,58 @@ LosVmPage *OsVmVaddrToPage(VOID *ptr)
     return NULL;
 }
 
-LosVmPage *OsVmPhysPagesAlloc(struct VmPhysSeg *seg, size_t nPages)
+STATIC INLINE VOID OsVmRecycleExtraPages(LosVmPage *page, size_t startPage, size_t endPage)
+{
+    if (startPage >= endPage) {
+        return;
+    }
+
+    OsVmPhysPagesFreeContiguous(page, endPage - startPage);
+}
+
+STATIC LosVmPage *OsVmPhysLargeAlloc(struct VmPhysSeg *seg, size_t nPages)
 {
     struct VmFreeList *list = NULL;
     LosVmPage *page = NULL;
+    LosVmPage *tmp = NULL;
+    PADDR_T paStart;
+    PADDR_T paEnd;
+    size_t size = nPages << PAGE_SHIFT;
+
+    list = &seg->freeList[VM_LIST_ORDER_MAX - 1];
+    LOS_DL_LIST_FOR_EACH_ENTRY(page, &list->node, LosVmPage, node) {
+        paStart = page->physAddr;
+        paEnd = paStart + size;
+        if (paEnd > (seg->start + seg->size)) {
+            continue;
+        }
+
+        for (;;) {
+            paStart += PAGE_SIZE << (VM_LIST_ORDER_MAX - 1);
+            if ((paStart >= paEnd) || (paStart < seg->start) ||
+                (paStart >= (seg->start + seg->size))) {
+                break;
+            }
+            tmp = &seg->pageBase[(paStart - seg->start) >> PAGE_SHIFT];
+            if (tmp->order != (VM_LIST_ORDER_MAX - 1)) {
+                break;
+            }
+        }
+        if (paStart >= paEnd) {
+            return page;
+        }
+    }
+
+    return NULL;
+}
+
+STATIC LosVmPage *OsVmPhysPagesAlloc(struct VmPhysSeg *seg, size_t nPages)
+{
+    struct VmFreeList *list = NULL;
+    LosVmPage *page = NULL;
+    LosVmPage *tmp = NULL;
     UINT32 order;
     UINT32 newOrder;
-
-    if ((seg == NULL) || (nPages == 0)) {
-        return NULL;
-    }
 
     order = OsVmPagesToOrder(nPages);
     if (order < VM_LIST_ORDER_MAX) {
@@ -301,11 +343,22 @@ LosVmPage *OsVmPhysPagesAlloc(struct VmPhysSeg *seg, size_t nPages)
             page = LOS_DL_LIST_ENTRY(LOS_DL_LIST_FIRST(&list->node), LosVmPage, node);
             goto DONE;
         }
+    } else {
+        newOrder = VM_LIST_ORDER_MAX - 1;
+        page = OsVmPhysLargeAlloc(seg, nPages);
+        if (page != NULL) {
+            goto DONE;
+        }
     }
     return NULL;
 DONE:
-    OsVmPhysFreeListDelUnsafe(page);
+
+    for (tmp = page; tmp < &page[nPages]; tmp = &tmp[1 << newOrder]) {
+        OsVmPhysFreeListDelUnsafe(tmp);
+    }
     OsVmPhysPagesSpiltUnsafe(page, order, newOrder);
+    OsVmRecycleExtraPages(&page[nPages], nPages, ROUNDUP(nPages, (1 << min(order, newOrder))));
+
     return page;
 }
 
@@ -339,7 +392,7 @@ VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
 VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
 {
     paddr_t pa;
-    UINT32 order;    
+    UINT32 order;
     size_t n;
 
     while (TRUE) {
@@ -369,10 +422,6 @@ STATIC LosVmPage *OsVmPhysPagesGet(size_t nPages)
     struct VmPhysSeg *seg = NULL;
     LosVmPage *page = NULL;
     UINT32 segID;
-
-    if (nPages == 0) {
-        return NULL;
-    }
 
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {
         seg = &g_vmPhysSeg[segID];

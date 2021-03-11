@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -46,12 +46,12 @@
 #define FUTEX_MASK        0x3U
 
 typedef struct {
-    UINTPTR      key;
-    UINT32       index;
-    UINT32       pid;
-    LOS_DL_LIST  pendList;
-    LOS_DL_LIST  queueList;
-    LOS_DL_LIST  futexList;
+    UINTPTR      key;           /* private:uvaddr   shared:paddr */
+    UINT32       index;         /* hash bucket index */
+    UINT32       pid;           /* private:process id   shared:OS_INVALID(-1) */
+    LOS_DL_LIST  pendList;      /* point to pendList in TCB struct */
+    LOS_DL_LIST  queueList;     /* thread list blocked by this lock */
+    LOS_DL_LIST  futexList;     /* point to the next FutexNode */
 } FutexNode;
 
 extern UINT32 OsFutexInit(VOID);

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -438,7 +438,7 @@ int ip6addr_aton(const char *cp, ip6_addr_t *addr)
             current_block_value = 0;
         } else if (lwip_isxdigit(*s) && (s - ss) < 5) { // 4 hex-digits at most
             current_block_value = (current_block_value << 4) +
-                (*s | ('a' - 'A')) - '0' - ('a' - '9' - 1) * (*s >= 'A');
+                ((u8_t)(*s) | ('a' - 'A')) - '0' - ('a' - '9' - 1) * (*s >= 'A');
 #if LWIP_IPV4
         } else if (*s == '.' && current_block_index < ipv6_blocks - 1) {
             ip4_addr_t ip4;

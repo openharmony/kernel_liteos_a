@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -35,15 +35,18 @@
 #define BYTES_PER_MBYTE         0x100000
 #define BYTES_PER_KBYTE         0x400
 
-#define COMMAND_LINE_ADDR       512 * BYTES_PER_KBYTE
+#define COMMAND_LINE_ADDR       LOSCFG_BOOTENV_ADDR * BYTES_PER_KBYTE
 #define COMMAND_LINE_SIZE       1024
 
-#ifdef LOSCFG_PLATFORM_HI3518EV300
+#ifdef LOSCFG_STORAGE_SPINOR
 #define ROOTFS_ROOT_TYPE        "flash"
 #define ROOTFS_FS_TYPE          "jffs2"
+#elif defined(LOSCFG_STORAGE_SPINAND)
+#define ROOTFS_ROOT_TYPE        "nand"
+#define ROOTFS_FS_TYPE          "yaffs2"
 #endif
 
-#ifdef LOSCFG_PLATFORM_HI3516DV300
+#ifdef LOSCFG_STORAGE_EMMC
 #define ROOTFS_ROOT_TYPE        "emmc"
 #define ROOTFS_FS_TYPE          "vfat"
 #endif
@@ -56,8 +59,13 @@
 #define ROOTFS_FLASH_SIZE       0xa00000
 #endif
 
+#ifdef LOSCFG_STORAGE_SPINOR
 #define FLASH_TYPE              "spinor"
 #define FLASH_DEV_NAME          "/dev/spinorblk0"
+#elif defined(LOSCFG_STORAGE_SPINAND)
+#define FLASH_TYPE              "nand"
+#define FLASH_DEV_NAME          "/dev/nandblk0"
+#endif
 
 #define EMMC_SEC_SIZE           512
 
@@ -65,5 +73,10 @@
 #define HEX_NUMBER_STRING       "0123456789abcdefABCDEF"
 
 INT32 OsMountRootfs(VOID);
+VOID OsSetCmdLineAddr(UINT64 addr);
+UINT64 OsGetCmdLineAddr(VOID);
 
+#ifdef LOSCFG_QUICK_START
+CHAR *OsGetArgsAddr(VOID);
+#endif
 #endif /* _LOS_ROOTFS_H */

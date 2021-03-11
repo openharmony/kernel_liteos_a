@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -123,8 +123,6 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
 #ifdef LOSCFG_SHELL
     CHAR buf[PATH_MAX + 1] = { 0 };
 #endif
-    VADDR_T *virtTtb = NULL;
-    LosVmPage *vmPage = NULL;
 
     if ((fileName == NULL) || ((argv != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)argv)) ||
         ((envp != NULL) && !LOS_IsUserAddress((VADDR_T)(UINTPTR)envp))) {
@@ -144,28 +142,11 @@ INT32 LOS_DoExecveFile(const CHAR *fileName, CHAR * const *argv, CHAR * const *e
     }
 #endif
 
-    loadInfo.newSpace = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));
+    loadInfo.newSpace = OsCreateUserVmSapce();
     if (loadInfo.newSpace == NULL) {
         PRINT_ERR("%s %d, failed to allocate new vm space\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
     }
-    virtTtb = LOS_PhysPagesAllocContiguous(1);
-    if (virtTtb == NULL) {
-        PRINT_ERR("%s %d, failed to allocate ttb page\n", __FUNCTION__, __LINE__);
-        LOS_MemFree(m_aucSysMem0, loadInfo.newSpace);
-        return -ENOMEM;
-    }
-
-    (VOID)memset_s(virtTtb, PAGE_SIZE, 0, PAGE_SIZE);
-    ret = OsUserVmSpaceInit(loadInfo.newSpace, virtTtb);
-    vmPage = OsVmVaddrToPage(virtTtb);
-    if ((ret == FALSE) || (vmPage == NULL)) {
-        PRINT_ERR("%s %d, create space failed, ret: %d, vmPage: %#x\n", __FUNCTION__, __LINE__, ret, vmPage);
-        LOS_MemFree(m_aucSysMem0, loadInfo.newSpace);
-        LOS_PhysPagesFreeContiguous(virtTtb, 1);
-        return -ENOMEM;
-    }
-    LOS_ListAdd(&loadInfo.newSpace->archMmu.ptList, &(vmPage->node));
 
     loadInfo.argv = argv;
     loadInfo.envp = envp;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,7 +34,7 @@
 #include "los_spinlock.h"
 #include "los_mp.h"
 #include "los_percpu_pri.h"
-
+#include "los_sched_pri.h"
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
 #include "los_exc.h"
 #endif
@@ -150,9 +150,9 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventM
         runTask->eventMask = eventMask;
         runTask->eventMode = mode;
         runTask->taskEvent = eventCB;
-        ret = OsTaskWait(&eventCB->stEventList, timeout, TRUE);
+        OsTaskWaitSetPendMask(OS_TASK_WAIT_EVENT, eventMask, timeout);
+        ret = OsSchedTaskWait(&eventCB->stEventList, timeout, TRUE);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
-            runTask->taskEvent = NULL;
             return LOS_ERRNO_EVENT_READ_TIMEOUT;
         }
 
@@ -188,7 +188,8 @@ LITE_OS_SEC_TEXT STATIC UINT8 OsEventResume(LosTaskCB *resumedTask, const PEVENT
         exitFlag = 1;
 
         resumedTask->taskEvent = NULL;
-        OsTaskWake(resumedTask);
+        OsTaskWakeClearPendMask(resumedTask);
+        OsSchedTaskWake(resumedTask);
     }
 
     return exitFlag;

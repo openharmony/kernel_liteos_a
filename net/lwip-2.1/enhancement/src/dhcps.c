@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -487,7 +487,6 @@ LWIP_STATIC ip4_addr_t validate_request_message(struct netif *netif, struct dhcp
             if (client_lease == NULL) {
                 LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE,
                             ("validate_request_message: No Configuration found corresponding to request message\n"));
-                requested_ip.addr = 1;
                 return requested_ip;
             }
 

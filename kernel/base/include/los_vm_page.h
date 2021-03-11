@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -45,7 +45,6 @@ extern "C" {
 
 typedef struct VmPage {
     LOS_DL_LIST         node;        /**< vm object dl list */
-    UINT32              index;       /**< vm page index to vm object */
     PADDR_T             physAddr;    /**< vm page physical addr */
     Atomic              refCounts;   /**< vm page ref count */
     UINT32              flags;       /**< vm page flags */

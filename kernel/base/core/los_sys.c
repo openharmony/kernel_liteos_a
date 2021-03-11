@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,7 +30,7 @@
  */
 
 #include "los_sys_pri.h"
-#include "los_tick_pri.h"
+#include "los_sched_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -38,22 +38,11 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_MAX_VALUE    0xFFFFFFFF
+#define OS_MAX_VALUE    0xFFFFFFFFUL
 
 LITE_OS_SEC_TEXT_MINOR UINT64 LOS_TickCountGet(VOID)
 {
-    UINT32 intSave;
-    UINT64 tick;
-
-    /*
-     * use core0's tick as system's timeline,
-     * the tick needs to be atomic.
-     */
-    TICK_LOCK(intSave);
-    tick = g_tickCount[0];
-    TICK_UNLOCK(intSave);
-
-    return tick;
+    return OsGerCurrSchedTimeCycle() / OS_CYCLE_PER_TICK;
 }
 
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_CyclePerTickGet(VOID)
@@ -73,6 +62,17 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MS2Tick(UINT32 millisec)
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_Tick2MS(UINT32 tick)
 {
     return ((UINT64)tick * OS_SYS_MS_PER_SECOND) / LOSCFG_BASE_CORE_TICK_PER_SECOND;
+}
+
+LITE_OS_SEC_TEXT_MINOR UINT32 OsUS2Tick(UINT64 microsec)
+{
+    const UINT32 usPerTick = OS_SYS_US_PER_SECOND / LOSCFG_BASE_CORE_TICK_PER_SECOND;
+
+    UINT64 ticks = (microsec + usPerTick - 1) / usPerTick;
+    if (ticks > OS_MAX_VALUE) {
+        ticks = OS_MAX_VALUE;
+    }
+    return (UINT32)ticks;
 }
 
 #ifdef __cplusplus

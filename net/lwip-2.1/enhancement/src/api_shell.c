@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -63,7 +63,6 @@
 #include <poll.h>
 
 #include "lwip/api_shell.h"
-#include "lwip/tftpc.h"
 
 #include "lwip/dns.h"
 #include "lwip/netdb.h"
@@ -276,6 +275,9 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
     char *addr = NULL;
 #endif
 
+    if (buf_len < 1) {
+        goto out;
+    }
     if (netif->link_layer_type == LOOPBACK_IF) {
         ret = snprintf_s(tmp, buf_len, (buf_len - 1), "%.2s\t", netif->name);
     } else {
@@ -1173,6 +1175,9 @@ void lwip_arp_show_internal(struct netif *netif, char *printf_buf, unsigned int 
     u8_t state, i;
     int ret;
     char *tmp = printf_buf;
+    if (buf_len < 1) {
+        return;
+    }
     ret = snprintf_s(tmp, buf_len, (buf_len - 1), "%-24s%-24s%-12s%-12s\n", "Address", "HWaddress", "Iface", "Type");
     if ((ret <= 0) || ((unsigned int)ret >= buf_len))
         return;
@@ -1874,7 +1879,7 @@ u32_t osShellPing(int argc, const char **argv)
 #endif /* LWIP_DNS */
 
     if (dst_ipaddr.addr == IPADDR_NONE || dst_ipaddr.addr == IPADDR_ANY) {
-        PRINTK("Invalid dest ipaddr: %s\n", argv[i]);
+        PRINTK("Invalid dest ipaddr: NONE or ANY\n");
         return LOS_NOK;
     }
 
@@ -1971,7 +1976,7 @@ u32_t osShellPing(int argc, const char **argv)
     to.sin_port = 0;
 
     if (to.sin_addr.s_addr == IPADDR_NONE || to.sin_addr.s_addr == IPADDR_ANY) {
-        PRINTK("ping : invalid ip address : %s\n", argv[0]);
+        PRINTK("ping : invalid ip address : NONE or ANY\n");
         return LOS_NOK;
     }
 
@@ -2627,126 +2632,6 @@ SHELLCMD_ENTRY(ntpdate_shellcmd, CMD_TYPE_EX, "ntpdate", XARGS, (CmdCallBackFunc
 
 #endif /* LWIP_SNTP*/
 
-
-#ifdef LOSCFG_NET_LWIP_SACK_TFTP
-static char *TftpError[] = {
-    "TFTP transfer finish\n",
-    "Error while creating UDP socket\n",
-    "Error while binding to the UDP socket\n",
-    "Error returned by select() system call\n",
-    "Error while receiving data from the peer\n",
-    "Error while sending data to the peer\n",
-    "Requested file is not found\n",
-    "This is the error sent by the server when hostname cannot be resolved\n",
-    "Input paramters passed to TFTP interfaces are invalid\n",
-    "Error detected in TFTP packet or the error received from the TFTP server\n",
-    "Error during packet synhronization while sending or unexpected packet is received\n",
-    "File size limit crossed, Max block can be 0xFFFF, each block containing 512 bytes\n",
-    "File name lenght greater than 256\n",
-    "Hostname IP is not valid\n",
-    "TFTP server returned file access error\n",
-    "TFTP server returned error signifying that the DISK is full to write\n",
-    "TFTP server returned error signifying that the file exist\n",
-    "The source file name do not exisits\n",
-    "Memory allocaion failed in TFTP client\n",
-    "File open failed\n",
-    "File read error\n",
-    "File create error\n",
-    "File write error\n",
-    "Max time expired while waiting for file to be recived\n",
-    "Error when the received packet is less than 4bytes(error lenght) or greater than 512bytes\n",
-    "Returned by TFTP server for protocol user error\n",
-    "The destination file path length greater than 256\n",
-    "Returned by TFTP server for undefined transfer ID\n",
-    "IOCTL fucntion failed at TFTP client while setting the socket to non-block\n",
-};
-
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
-#endif
-
-u32_t osShellTftp(int argc, const char **argv)
-{
-    u32_t ulRemoteAddr = IPADDR_NONE;
-    const u16_t usTftpServPort = 69;
-    u8_t ucTftpGet = 0;
-    s8_t *szLocalFileName = NULL;
-    s8_t *szRemoteFileName = NULL;
-    u32_t ret;
-
-    int i = 0;
-    if (argc < 1 || argv == NULL) {
-        goto usage;
-    }
-
-    if (!tcpip_init_finish) {
-        PRINTK("%s: tcpip_init have not been called\n", __FUNCTION__);
-        return LOS_NOK;
-    }
-
-    while (i < argc) {
-        if (strcmp(argv[i], "-p") == 0) {
-            ucTftpGet = 0;
-            i++;
-            continue;
-        }
-
-        if (strcmp(argv[i], "-g") == 0) {
-            ucTftpGet = 1;
-            i++;
-            continue;
-        }
-
-        if (strcmp(argv[i], "-l") == 0 && ((i + 1) < argc)) {
-            szLocalFileName = (s8_t *)argv[i + 1];
-            i += 2;
-            continue;
-        }
-
-        if (strcmp(argv[i], "-r") == 0 && ((i + 1) < argc)) {
-            szRemoteFileName = (s8_t *)argv[i + 1];
-            i += 2;
-            continue;
-        }
-
-        if ((i + 1) == argc) {
-            ulRemoteAddr = inet_addr(argv[i]);
-            break;
-        }
-
-        goto usage;
-    }
-
-    if (ulRemoteAddr == IPADDR_NONE || szLocalFileName == NULL || szRemoteFileName == NULL) {
-        goto usage;
-    }
-
-    if (ucTftpGet) {
-        ret = lwip_tftp_get_file_by_filename(ntohl(ulRemoteAddr), usTftpServPort,
-                                             TRANSFER_MODE_BINARY, szRemoteFileName, szLocalFileName);
-    } else {
-        ret = lwip_tftp_put_file_by_filename(ntohl(ulRemoteAddr), usTftpServPort,
-                                             TRANSFER_MODE_BINARY, szLocalFileName, szRemoteFileName);
-    }
-
-    LWIP_ASSERT("TFTP UNKNOW ERROR!", ret < ARRAY_SIZE(TftpError));
-    PRINTK("%s", TftpError[ret]);
-    if (ret) {
-        return LOS_NOK;
-    } else {
-        return LOS_OK;
-    }
-usage:
-    PRINTK("usage:\nTransfer a file from/to tftp server\n");
-    PRINTK("tftp <-g/-p> -l FullPathLocalFile -r RemoteFile Host\n");
-    return LOS_NOK;
-}
-#ifdef LOSCFG_SHELL_CMD_DEBUG
-SHELLCMD_ENTRY(tftp_shellcmd, CMD_TYPE_EX, "tftp", XARGS, (CmdCallBackFunc)osShellTftp);
-#endif /* LOSCFG_SHELL_CMD_DEBUG */
-#endif /* LOSCFG_NET_LWIP_SACK_TFTP */
-
-
 #if LWIP_DNS
 u32_t osShellDns(int argc, const char **argv)
 {
@@ -2841,7 +2726,6 @@ int netstat_get_udp_sendQLen6(struct udp_pcb *udppcb, struct pbuf *udpbuf)
 
     if (!(ip6_addr_cmp(&iphdr->dest, ip_2_ip6(&udppcb->remote_ip)) &&
           (ip_addr_isany(&udppcb->local_ip) ||
-           ip_get_option(udppcb, SOF_BINDNONUNICAST) ||
            ip6_addr_cmp(&iphdr->src, ip_2_ip6(&udppcb->local_ip))))) {
         goto FUNC_OUT;
     }
@@ -2930,7 +2814,6 @@ int netstat_get_udp_sendQLen(struct udp_pcb *udppcb, struct pbuf *udpbuf)
 
     if (!(ip4_addr_cmp(&iphdr->dest, ip_2_ip4(&udppcb->remote_ip)) &&
           (ip_addr_isany(&udppcb->local_ip) ||
-           ip_get_option(udppcb, SOF_BINDNONUNICAST) ||
            ip4_addr_cmp(&iphdr->src, ip_2_ip4(&udppcb->local_ip))))) {
         goto FUNC_OUT;
     }
@@ -3883,7 +3766,7 @@ u32_t osShellIpDebug(int argc, const char **argv)
     for (i = 0; i < LWIP_ND6_NUM_PREFIXES; i++) {
         if (prefix_list[i].netif != NULL && prefix_list[i].invalidation_timer > 0) {
             atleastOneEntry = 1;
-            (void)ip6addr_ntoa_r((const ip6_addr_t *)(prefix_list[i].prefix.addr), (acIPv6Addr), INET6_ADDRSTRLEN);
+            (void)ip6addr_ntoa_r((const ip6_addr_t *)(prefix_list[i].prefix.addr), (acIPv6Addr), sizeof(acIPv6Addr));
             PRINTK("%-50s ", acIPv6Addr);
             PRINTK("%-16s ", netif_get_name(prefix_list[i].netif));
             PRINTK("%-20u\n", prefix_list[i].invalidation_timer);
@@ -3910,7 +3793,7 @@ u32_t osShellIpDebug(int argc, const char **argv)
         if (neighbor_cache[i].state != ND6_NO_ENTRY) {
             atleastOneEntry = 1;
             (void)ip6addr_ntoa_r((const ip6_addr_t *)(neighbor_cache[i].next_hop_address.addr), (acIPv6Addr),
-                                 INET6_ADDRSTRLEN);
+                                 sizeof(acIPv6Addr));
             PRINTK("%-50s ", acIPv6Addr);
 
             if (snprintf_s(aclladdr, sizeof(aclladdr), sizeof(aclladdr) - 1, "%02X:%02X:%02X:%02X:%02X:%02X",
@@ -3944,10 +3827,10 @@ u32_t osShellIpDebug(int argc, const char **argv)
         if (!ip6_addr_isany(&(destination_cache[i].destination_addr))) {
             atleastOneEntry = 1;
             (void)ip6addr_ntoa_r((const ip6_addr_t *)(destination_cache[i].destination_addr.addr), (acIPv6Addr),
-                                 INET6_ADDRSTRLEN);
+                                 sizeof(acIPv6Addr));
             PRINTK("%-50s ", acIPv6Addr);
             (void)ip6addr_ntoa_r((const ip6_addr_t *)(destination_cache[i].next_hop_addr.addr), (acIPv6Addr),
-                                 INET6_ADDRSTRLEN);
+                                 sizeof(acIPv6Addr));
             PRINTK("%-50s ", acIPv6Addr);
             PRINTK("%-10u ", destination_cache[i].pmtu);
             PRINTK("%-10u\n", destination_cache[i].age);
@@ -3971,7 +3854,7 @@ u32_t osShellIpDebug(int argc, const char **argv)
         if (default_router_list[i].neighbor_entry) {
             atleastOneEntry = 1;
             (void)ip6addr_ntoa_r((const ip6_addr_t *)((default_router_list[i].neighbor_entry)->next_hop_address.addr),
-                                 (acIPv6Addr), INET6_ADDRSTRLEN);
+                                 (acIPv6Addr), sizeof(acIPv6Addr));
             PRINTK("%-50s ", acIPv6Addr);
             PRINTK("%-20u ", default_router_list[i].invalidation_timer);
             PRINTK("%-10u\n", default_router_list[i].flags);

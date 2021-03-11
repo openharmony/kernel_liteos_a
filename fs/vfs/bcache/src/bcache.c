@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -442,19 +442,6 @@ static OsBcacheBlock *GetSlowBlock(OsBcache *bc, BOOL read)
         block = LOS_DL_LIST_ENTRY(node, OsBcacheBlock, listNode);
         node = block->listNode.pstPrev;
 
-        if (block->readBuff == read && read && !block->modified) {
-            DelBlock(bc, block);
-            block->used = TRUE;
-            LOS_ListDelete(&block->listNode);
-            return block; /* read only block */
-        }
-    }
-
-    node = bc->listHead.pstPrev;
-    while (node != &bc->listHead) {
-        block = LOS_DL_LIST_ENTRY(node, OsBcacheBlock, listNode);
-        node = block->listNode.pstPrev;
-
         if (block->readBuff == read) {
             if (block->modified == TRUE) {
                 BcacheSyncBlock(bc, block);
@@ -490,6 +477,7 @@ static VOID WriteMergedBlocks(OsBcache *bc, OsBcacheBlock *begin, int blocks)
     while (blocks > 0) {
         next = LOS_DL_LIST_ENTRY(cur->numNode.pstNext, OsBcacheBlock, numNode);
         DelBlock(bc, cur);
+        cur->modified = FALSE;
         blocks--;
         cur = next;
     }
@@ -656,6 +644,9 @@ static INT32 BcacheGetBlock(OsBcache *bc, UINT64 num, BOOL readData, OsBcacheBlo
         block = GetSlowBlock(bc, readData);
     }
 
+    if (block == NULL) {
+        return -ENOMEM;
+    }
     BlockInit(bc, block, num);
 
     if (readData == TRUE) {
@@ -904,10 +895,9 @@ INT32 OsSdSync(INT32 id)
 #ifdef LOSCFG_FS_FAT_CACHE
     INT32 ret;
     los_disk *disk = get_disk(id);
-    if (disk == NULL) {
+    if ((disk == NULL) || (disk->disk_status == STAT_UNUSED)) {
         return VFS_ERROR;
     }
-
     if (pthread_mutex_lock(&disk->disk_mutex) != ENOERR) {
         PRINT_ERR("%s %d, mutex lock fail!\n", __FUNCTION__, __LINE__);
         return VFS_ERROR;

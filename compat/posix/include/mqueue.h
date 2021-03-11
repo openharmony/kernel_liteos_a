@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,6 +43,9 @@
 #include "limits.h"
 #include "los_typedef.h"
 #include "time.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "los_queue_pri.h"
 
@@ -71,11 +74,23 @@ extern "C" {
 /* not suppurt prio */
 #define MQ_PRIO_MAX 1
 
+typedef union send_receive_t {
+    unsigned oth : 3;
+    unsigned grp : 6;
+    unsigned usr : 9;
+    short data;
+} mode_s;
+
 /* TYPE DEFINITIONS */
 struct mqarray {
     UINT32 mq_id : 31;
     UINT32 unlinkflag : 1;
     char *mq_name;
+    UINT32 unlink_ref;
+    mode_s mode_data; /* mode data of mqueue */
+    uid_t euid; /* euid of mqueue */
+    gid_t egid; /* egid of mqueue */
+    fd_set mq_fdset; /* mqueue sysFd bit map */
     LosQueueCB *mqcb;
     struct mqpersonal *mq_personal;
 };
@@ -84,7 +99,9 @@ struct mqpersonal {
     struct mqarray *mq_posixdes;
     struct mqpersonal *mq_next;
     int mq_flags;
+    int mq_mode;  /* Mode of mqueue */
     UINT32 mq_status;
+    UINT32 mq_refcount;
 };
 
 /**
@@ -399,6 +416,8 @@ extern int mq_timedsend(mqd_t personal, const char *msg, size_t msgLen,
  */
 extern ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen,
                                unsigned int *msgPrio, const struct timespec *absTimeout);
+
+extern void mqueue_refer(int sysFd);
 
 #ifdef __cplusplus
 #if __cplusplus

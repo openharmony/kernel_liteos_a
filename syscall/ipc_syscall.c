@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -37,6 +37,24 @@
 #include "user_copy.h"
 #include "los_signal.h"
 #include "los_strncpy_from_user.h"
+#include "fs_file.h"
+
+#define MQUEUE_FD_U2K(id) \
+    do { \
+        int sysFd = GetAssociatedSystemFd((INTPTR)(id)); \
+        (id) = (mqd_t)sysFd; \
+    } while (0)
+#define MQUEUE_FD_K2U(id) \
+    do { \
+        int procFd = AllocAndAssocProcessFd((INTPTR)(id), MIN_START_FD); \
+        if (procFd == -1) { \
+            mq_close(id); \
+            set_errno(EMFILE); \
+            (id) = (mqd_t)(-EMFILE); \
+        } else { \
+            (id) = (mqd_t)procFd; \
+        } \
+    } while (0)
 
 mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *attr)
 {
@@ -52,6 +70,8 @@ mqd_t SysMqOpen(const char *mqName, int openFlag, mode_t mode, struct mq_attr *a
     if (ret == -1) {
         return (mqd_t)-get_errno();
     }
+    /* SysFd to procFd */
+    MQUEUE_FD_K2U(ret);
     return ret;
 }
 
@@ -59,6 +79,7 @@ int SysMqClose(mqd_t personal)
 {
     int ret;
 
+    MQUEUE_FD_U2K(personal);
     ret = mq_close(personal);
     if (ret < 0) {
         return -get_errno();
@@ -77,6 +98,7 @@ int SysMqGetSetAttr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old)
             return -EFAULT;
         }
     }
+    MQUEUE_FD_U2K(mqd);
     ret = mq_getsetattr(mqd, new ? &knew : NULL, old ? &kold : NULL);
     if (ret < 0) {
         return -get_errno();
@@ -133,6 +155,7 @@ int SysMqTimedSend(mqd_t personal, const char *msg, size_t msgLen, unsigned int 
         free(msgIntr);
         return -EFAULT;
     }
+    MQUEUE_FD_U2K(personal);
     ret = mq_timedsend(personal, msgIntr, msgLen, msgPrio, absTimeout ? &timeout : NULL);
     free(msgIntr);
     if (ret < 0) {
@@ -162,6 +185,7 @@ ssize_t SysMqTimedReceive(mqd_t personal, char *msg, size_t msgLen, unsigned int
     if (msgIntr == NULL) {
         return -ENOMEM;
     }
+    MQUEUE_FD_U2K(personal);
     receiveLen = mq_timedreceive(personal, msgIntr, msgLen, &kMsgPrio, absTimeout ? &timeout : NULL);
     if (receiveLen < 0) {
         free(msgIntr);
@@ -281,6 +305,7 @@ int SysSigSuspend(sigset_t_l *setl)
     return OsSigSuspend(&set);
 }
 
+#ifdef LOSCFG_KERNEL_PIPE
 int SysMkFifo(const char *pathName, mode_t mode)
 {
     int retValue;
@@ -292,4 +317,4 @@ int SysMkFifo(const char *pathName, mode_t mode)
     }
     return mkfifo(kPathName, mode);
 }
-
+#endif

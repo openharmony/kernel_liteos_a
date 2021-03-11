@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -50,6 +50,9 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+/* If the kernel malloc size is less than 16k, use heap, otherwise use physical pages */
+#define KMALLOC_LARGE_SIZE    (PAGE_SIZE << 2)
+
 typedef struct VmMapRange {
     VADDR_T             base;           /**< vm region base addr */
     UINT32              size;           /**< vm region size */
@@ -84,7 +87,6 @@ struct VmMapRegion {
     VM_OFFSET_T         pgOff;          /**< region page offset to file */
     UINT32              regionFlags;   /**< region flags: cow, user_wired */
     UINT32              shmid;          /**< shmid about shared region */
-    UINT8               protectFlags;   /**< vm region protect flags: PROT_READ, PROT_WRITE, */
     UINT8               forkFlags;      /**< vm space fork flags: COPY, ZERO, */
     UINT8               regionType;     /**< vm region type: ANON, FILE, DEV */
     union {
@@ -132,7 +134,7 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_CACHED               (0<<0)
 #define     VM_MAP_REGION_FLAG_UNCACHED             (1<<0)
 #define     VM_MAP_REGION_FLAG_UNCACHED_DEVICE      (2<<0) /* only exists on some arches, otherwise UNCACHED */
-#define     VM_MAP_REGION_FLAG_WRITE_COMBINING      (3<<0) /* only exists on some arches, otherwise UNCACHED */
+#define     VM_MAP_REGION_FLAG_STRONGLY_ORDERED     (3<<0) /* only exists on some arches, otherwise UNCACHED */
 #define     VM_MAP_REGION_FLAG_CACHE_MASK           (3<<0)
 #define     VM_MAP_REGION_FLAG_PERM_USER            (1<<2)
 #define     VM_MAP_REGION_FLAG_PERM_READ            (1<<3)
@@ -151,7 +153,9 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_VDSO                 (1<<14)
 #define     VM_MAP_REGION_FLAG_MMAP                 (1<<15)
 #define     VM_MAP_REGION_FLAG_SHM                  (1<<16)
-#define     VM_MAP_REGION_FLAG_INVALID              (1<<17) /* indicates that flags are not specified */
+#define     VM_MAP_REGION_FLAG_FIXED                (1<<17)
+#define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)
+#define     VM_MAP_REGION_FLAG_INVALID              (1<<19) /* indicates that flags are not specified */
 
 STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned long flags)
 {
@@ -159,10 +163,12 @@ STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned lo
 
     regionFlags |= VM_MAP_REGION_FLAG_PERM_USER;
     regionFlags |= (prot & PROT_READ) ? VM_MAP_REGION_FLAG_PERM_READ : 0;
-    regionFlags |= (prot & PROT_WRITE) ? VM_MAP_REGION_FLAG_PERM_WRITE : 0;
-    regionFlags |= (prot & PROT_EXEC) ? VM_MAP_REGION_FLAG_PERM_EXECUTE : 0;
+    regionFlags |= (prot & PROT_WRITE) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE) : 0;
+    regionFlags |= (prot & PROT_EXEC) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_EXECUTE) : 0;
     regionFlags |= (flags & MAP_SHARED) ? VM_MAP_REGION_FLAG_SHARED : 0;
     regionFlags |= (flags & MAP_PRIVATE) ? VM_MAP_REGION_FLAG_PRIVATE : 0;
+    regionFlags |= (flags & MAP_FIXED) ? VM_MAP_REGION_FLAG_FIXED : 0;
+    regionFlags |= (flags & MAP_FIXED_NOREPLACE) ? VM_MAP_REGION_FLAG_FIXED_NOREPLACE : 0;
 
     return regionFlags;
 }
@@ -261,10 +267,9 @@ VOID OsInitMappingStartUp(VOID);
 VOID OsKSpaceInit(VOID);
 BOOL LOS_IsRangeInSpace(const LosVmSpace *space, VADDR_T vaddr, size_t size);
 STATUS_T LOS_VmSpaceReserve(LosVmSpace *space, size_t size, VADDR_T vaddr);
-LosVmSpace *LOS_GetKVmSpace(VOID);
 INT32 OsUserHeapFree(LosVmSpace *vmSpace, VADDR_T addr, size_t len);
 VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len);
-VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len);
+VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, UINT32 regionFlags);
 LosVmMapRegion *OsCreateRegion(VADDR_T vaddr, size_t len, UINT32 regionFlags, unsigned long offset);
 BOOL OsInsertRegion(LosRbTree *regionRbTree, LosVmMapRegion *region);
 LosVmSpace *LOS_SpaceGet(VADDR_T vaddr);
@@ -281,6 +286,7 @@ STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region);
 STATUS_T LOS_VmSpaceFree(LosVmSpace *space);
 STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, size_t len, UINT32 flags);
 BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb);
+LosVmSpace *OsCreateUserVmSapce(VOID);
 STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace);
 STATUS_T LOS_UserSpaceVmAlloc(LosVmSpace *space, size_t size, VOID **ptr, UINT8 align_log2, UINT32 regionFlags);
 LosMux *OsGVmSpaceMuxGet(VOID);

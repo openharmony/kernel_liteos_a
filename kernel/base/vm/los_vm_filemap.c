@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -202,7 +202,7 @@ ssize_t OsMappingRead(struct file *filp, char *buf, size_t size)
 
         readSize = MIN2((PAGE_SIZE - offInPage), readLeft);
 
-        (VOID)memcpy_s((VOID *)buf, readLeft, (char *)kvaddr + offInPage, readSize);
+        (VOID)memcpy_s((VOID *)buf, readLeft, (char *)(UINTPTR)kvaddr + offInPage, readSize);
         buf += readSize;
         readLeft -= readSize;
         readTotal += readSize;
@@ -488,7 +488,9 @@ VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
         fpage->n_maps--;
         LOS_ListDelete(&info->node);
         LOS_AtomicDec(&fpage->vmPage->refCounts);
+        LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
         LOS_MemFree(m_aucSysMem0, info);
+        return;
     }
     LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
 }
@@ -520,8 +522,8 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
     } else {
         fpage = OsPageCacheAlloc(mapping, vmf->pgoff);
         if (fpage == NULL) {
-            VM_ERR("Failed to alloc a page frame");
             LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
+            VM_ERR("Failed to alloc a page frame");
             return LOS_NOK;
         }
         newCache = true;

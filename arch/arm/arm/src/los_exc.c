@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -341,7 +341,7 @@ STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
                      excBufAddr->SP);
     }
 
-    PrintExcInfo("fp    = 0x%x\n", excBufAddr->R11);
+    PrintExcInfo("\nfp    = 0x%x\n", excBufAddr->R11);
 }
 
 STATIC VOID OsExcRegsInfo(const ExcContext *excBufAddr)
@@ -422,7 +422,7 @@ STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
             mmuFlag = FALSE;
         }
         PrintExcInfo("       0x%08x   0x%08x   0x%08x\n",
-                     startVaddr, LOS_PaddrToKVaddr(startPaddr), pageCount << PAGE_SHIFT);
+                     startVaddr, LOS_PaddrToKVaddr(startPaddr), (UINT32)pageCount << PAGE_SHIFT);
         pageCount = 0;
         startPaddr = 0;
     }
@@ -544,6 +544,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
     OsProcessExitCodeCoreDumpSet(runProcess);
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
+
     /* kill user exc process */
     LOS_Exit(OS_PRO_EXIT_OK);
 
@@ -784,9 +785,9 @@ VOID OsBackTrace(VOID)
 {
     UINT32 regFP = Get_Fp();
     LosTaskCB *runTask = OsCurrTaskGet();
-    PRINTK("OsBackTrace fp = 0x%x\n", regFP);
-    PRINTK("runTask->taskName = %s\n", runTask->taskName);
-    PRINTK("runTask->taskID = %u\n", runTask->taskID);
+    PrintExcInfo("OsBackTrace fp = 0x%x\n", regFP);
+    PrintExcInfo("runTask->taskName = %s\n", runTask->taskName);
+    PrintExcInfo("runTask->taskID = %u\n", runTask->taskID);
     BackTrace(regFP);
 }
 
@@ -1005,6 +1006,35 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 #endif
         }
     }
+
+#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_FS_VFS
+    /* Wait for the end of the Console task to avoid multicore printing code */
+    OsWaitConsoleSendTaskPend(OsCurrTaskGet()->taskID);
+#endif
+#endif
+}
+
+LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
+{
+#ifdef LOSCFG_DEBUG_VERSION
+    LosVmSpace *space = NULL;
+    VADDR_T vaddr;
+#endif
+
+    /* You are not allowed to add any other print information before this exception information */
+    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
+#ifdef LOSCFG_DEBUG_VERSION
+        vaddr = ROUNDDOWN(far, PAGE_SIZE);
+        space = LOS_SpaceGet(vaddr);
+        if (space != NULL) {
+            LOS_DumpMemRegion(vaddr);
+        }
+#endif
+        PrintExcInfo("##################excFrom: User!####################\n");
+    } else {
+        PrintExcInfo("##################excFrom: kernel!###################\n");
+    }
 }
 
 /*
@@ -1021,19 +1051,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 
     OsExcPriorDisposal(excBufAddr);
 
-#if (LOSCFG_KERNEL_SMP == YES)
-#ifdef LOSCFG_FS_VFS
-    /* Wait for the end of the Console task to avoid multicore printing code */
-    OsWaitConsoleSendTaskPend(OsCurrTaskGet()->taskID);
-#endif
-#endif
-
-    /* You are not allowed to add any other print information before this exception information */
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
-        PrintExcInfo("##################excFrom: User!####################\n");
-    } else {
-        PrintExcInfo("##################excFrom: kernel###################!\n");
-    }
+    OsPrintExcHead(far);
 
 #if (LOSCFG_KERNEL_SMP == YES)
     OsAllCpuStatusOutput();
@@ -1070,6 +1088,15 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 #ifdef LOSCFG_EXC_INTERACTION
     OsExcInteractionTaskKeep();
 #endif
+
+#ifdef LOSCFG_SHELL_CMD_DEBUG
+    SystemRebootFunc rebootHook = OsGetRebootHook();
+    if ((OsSystemExcIsReset() == TRUE) && (rebootHook != NULL)) {
+        LOS_Mdelay(3000); /* 3000: System dead, delay 3 seconds after system restart */
+        rebootHook();
+    }
+#endif
+
     while (1) {}
 }
 
@@ -1090,6 +1117,46 @@ VOID __stack_chk_fail(VOID)
     /* __builtin_return_address is a builtin function, building in gcc */
     LOS_Panic("stack-protector: Kernel stack is corrupted in: %p\n",
               __builtin_return_address(0));
+}
+
+VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCount)
+{
+    UINT32 count = 0;
+    UINT32 index = 0;
+    UINT32 stackStart, stackEnd;
+    LosTaskCB *taskCB = NULL;
+    UINTPTR framePtr, tmpFramePtr, linkReg;
+
+    if (LR == NULL) {
+        return;
+    }
+    /* if LR array is not enough,just record LRSize. */
+    if (LRSize < recordCount) {
+        recordCount = LRSize;
+    }
+
+    taskCB = OsCurrTaskGet();
+    stackStart = taskCB->topOfStack;
+    stackEnd = stackStart + taskCB->stackSize;
+
+    framePtr = Get_Fp();
+    while ((framePtr > stackStart) && (framePtr < stackEnd) && IS_ALIGNED(framePtr, sizeof(CHAR *))) {
+        tmpFramePtr = framePtr;
+        linkReg = *(UINTPTR *)framePtr;
+        if (index >= jumpCount) {
+            LR[count++] = linkReg;
+            if (count == recordCount) {
+                break;
+            }
+        }
+        index++;
+        framePtr = *(UINTPTR *)(tmpFramePtr - sizeof(UINTPTR));
+    }
+
+    /* if linkReg is not enough,clean up the last of the effective LR as the end. */
+    if (count < recordCount) {
+        LR[count] = 0;
+    }
 }
 
 #ifdef __cplusplus

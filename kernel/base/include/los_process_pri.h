@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,8 +32,6 @@
 #ifndef _LOS_PROCESS_PRI_H
 #define _LOS_PROCESS_PRI_H
 
-#include "los_sortlink_pri.h"
-#include "los_priqueue_pri.h"
 #include "los_task_pri.h"
 #include "los_sem_pri.h"
 #include "los_process.h"
@@ -82,10 +80,9 @@ typedef struct ProcessCB {
     UINT16               processStatus;                /**< [15:4] Process Status; [3:0] The number of threads currently
                                                             running in the process */
     UINT16               priority;                     /**< Process priority */
-    UINT16               policy;                       /**< Process policy */
-    UINT16               timeSlice;                    /**< Remaining time slice */
     UINT16               consoleID;                    /**< The console id of task belongs  */
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; */
+    UINT16               readyTaskNum;                 /**< The number of ready tasks in the current process */
     UINT32               parentProcessID;              /**< Parent process ID */
     UINT32               exitCode;                     /**< Process exit status */
     LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */
@@ -95,11 +92,7 @@ typedef struct ProcessCB {
     ProcessGroup         *group;                       /**< Process group to which a process belongs */
     LOS_DL_LIST          subordinateGroupList;         /**< Linkage in group list */
     UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */
-    UINT32               threadScheduleMap;            /**< The scheduling bitmap table for the thread group of the
-                                                            process */
     LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process */
-    LOS_DL_LIST          threadPriQueueList[OS_PRIORITY_QUEUE_NUM]; /**< The process's thread group schedules the
-                                                                         priority hash table */
     volatile UINT32      threadNumber; /**< Number of threads alive under this process */
     UINT32               threadCount;  /**< Total number of threads created under this process */
     LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid */
@@ -109,25 +102,28 @@ typedef struct ProcessCB {
     UINTPTR              sigHandler;   /**< Signal handler */
     sigset_t             sigShare;     /**< Signal share bit */
 #if (LOSCFG_KERNEL_LITEIPC == YES)
-    ProcIpcInfo         ipcInfo;       /**< Memory pool for lite ipc */
+    ProcIpcInfo          ipcInfo;      /**< Memory pool for lite ipc */
 #endif
-    LosVmSpace          *vmSpace;      /**< VMM space for processes */
+    LosVmSpace           *vmSpace;     /**< VMM space for processes */
 #ifdef LOSCFG_FS_VFS
-    struct files_struct *files;        /**< Files held by the process */
+    struct files_struct  *files;       /**< Files held by the process */
 #endif
-    timer_t             timerID;       /**< ITimer */
+    timer_t              timerID;      /**< ITimer */
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
     User                *user;
     UINT32              capability;
 #endif
 #ifdef LOSCFG_SECURITY_VID
-    TimerIdMap          timerIdMap;
+    TimerIdMap           timerIdMap;
 #endif
 #ifdef LOSCFG_DRIVERS_TZDRIVER
-    struct file         *execFile;     /**< Exec bin of the process */
+    struct file          *execFile;   /**< Exec bin of the process */
 #endif
-    mode_t umask;
+    mode_t               umask;
+#ifdef LOSCFG_KERNEL_CPUP
+    OsCpupBase           processCpup; /**< Process cpu usage */
+#endif
 } LosProcessCB;
 
 #define CLONE_VM       0x00000100
@@ -171,9 +167,9 @@ typedef struct ProcessCB {
  * @ingroup los_process
  * Flag that indicates the process or process control block status.
  *
- * The process is pend
+ * The process is pending
  */
-#define OS_PROCESS_STATUS_PEND           0x0080U
+#define OS_PROCESS_STATUS_PENDING       0x0080U
 
 /**
  * @ingroup los_process
@@ -269,12 +265,6 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)
 
 /**
  * @ingroup los_process
- * Hold the time slice process
- */
-#define OS_PROCESS_SCHED_RR_INTERVAL     LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT
-
-/**
- * @ingroup los_process
  * The highest priority of a kernel mode process.
  */
 #define OS_PROCESS_PRIORITY_HIGHEST      0
@@ -324,13 +314,14 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)
 #define LOS_SCHED_NORMAL  0U
 #define LOS_SCHED_FIFO    1U
 #define LOS_SCHED_RR      2U
+#define LOS_SCHED_IDLE    3U
 
 #define LOS_PRIO_PROCESS  0U
 #define LOS_PRIO_PGRP     1U
 #define LOS_PRIO_USER     2U
 
-#define OS_KERNEL_PROCESS_GROUP         2U
 #define OS_USER_PRIVILEGE_PROCESS_GROUP 1U
+#define OS_KERNEL_PROCESS_GROUP         2U
 
 /*
  * Process exit code
@@ -365,7 +356,6 @@ STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)
 }
 
 extern LosProcessCB *g_processCBArray;
-extern LosProcessCB *g_runProcess[LOSCFG_KERNEL_CORE_NUM];
 extern UINT32 g_processMaxNum;
 
 #define OS_PID_CHECK_INVALID(pid) (((UINT32)(pid)) >= g_processMaxNum)
@@ -378,35 +368,16 @@ STATIC INLINE BOOL OsProcessIDUserCheckInvalid(UINT32 pid)
 STATIC INLINE LosProcessCB *OsCurrProcessGet(VOID)
 {
     UINT32 intSave;
-    LosProcessCB *runProcess = NULL;
 
     intSave = LOS_IntLock();
-    runProcess = g_runProcess[ArchCurrCpuid()];
+    LosProcessCB *runProcess = (LosProcessCB *)OsPercpuGet()->runProcess;
     LOS_IntRestore(intSave);
     return runProcess;
 }
 
 STATIC INLINE VOID OsCurrProcessSet(const LosProcessCB *process)
 {
-    g_runProcess[ArchCurrCpuid()] = (LosProcessCB *)process;
-}
-
-STATIC INLINE UINT32 OsCpuProcessIDGetUnsafe(UINT16 cpuID)
-{
-    LosProcessCB *runProcess = g_runProcess[cpuID];
-    return runProcess->processID;
-}
-
-STATIC INLINE UINT32 OsCpuProcessIDGet(UINT16 cpuID)
-{
-    UINT32 pid;
-    UINT32 intSave;
-
-    SCHEDULER_LOCK(intSave);
-    pid = OsCpuProcessIDGetUnsafe(cpuID);
-    SCHEDULER_UNLOCK(intSave);
-
-    return pid;
+    OsPercpuGet()->runProcess = (UINTPTR)process;
 }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -448,17 +419,17 @@ STATIC INLINE User *OsCurrUserGet(VOID)
 /*
  * Wait for any child process to finish
  */
-#define OS_PROCESS_WAIT_ANY (1 << 0U)
+#define OS_PROCESS_WAIT_ANY OS_TASK_WAIT_ANYPROCESS
 
 /*
  * Wait for the child process specified by the pid to finish
  */
-#define OS_PROCESS_WAIT_PRO (1 << 1U)
+#define OS_PROCESS_WAIT_PRO OS_TASK_WAIT_PROCESS
 
 /*
  * Waits for any child process in the specified process group to finish.
  */
-#define OS_PROCESS_WAIT_GID (1 << 2U)
+#define OS_PROCESS_WAIT_GID OS_TASK_WAIT_GID
 
 #define OS_PROCESS_INFO_ALL 1
 #define OS_PROCESS_DEFAULT_UMASK 0022
@@ -467,7 +438,7 @@ extern UINTPTR __user_init_entry;
 extern UINTPTR __user_init_bss;
 extern UINTPTR __user_init_end;
 extern UINTPTR __user_init_load_addr;
-extern UINT32 OsKernelInitProcess(VOID);
+extern UINT32 OsSystemProcessCreate(VOID);
 extern VOID OsProcessCBRecyleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);
 extern VOID OsProcessExit(LosTaskCB *runTask, INT32 status);
@@ -480,7 +451,7 @@ extern UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
                                    LosVmSpace *oldAspace, UINTPTR oldFiles);
 extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize);
 extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
-extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy, BOOL policyFlag);
+extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy);
 extern INT32 OsGetProcessPriority(INT32 which, INT32 pid);
 extern VOID *OsUserStackAlloc(UINT32 processID, UINT32 *size);
 extern UINT32 OsGetUserInitProcessID(VOID);

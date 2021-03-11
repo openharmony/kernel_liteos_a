@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,11 +36,9 @@
 #ifndef _LOS_CONFIG_H
 #define _LOS_CONFIG_H
 
-#include "platform_config.h"
 #include "los_tick.h"
 #include "los_vm_zone.h"
 #include "sys_config.h"
-#include "hisoc/clock.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -96,7 +94,7 @@ extern UINT32 __heap_end;
  * Number of Ticks in one second
  */
 #ifndef LOSCFG_BASE_CORE_TICK_PER_SECOND
-#define LOSCFG_BASE_CORE_TICK_PER_SECOND 100
+#define LOSCFG_BASE_CORE_TICK_PER_SECOND  1000  /* 1ms per tick */
 #endif
 
 /**
@@ -111,7 +109,7 @@ extern UINT32 __heap_end;
  * @ingroup los_config
  * Sched clck interval
  */
-#define SCHED_CLOCK_INTETRVAL_TICKS 100
+#define SCHED_CLOCK_INTETRVAL_TICKS  LOSCFG_BASE_CORE_TICK_PER_SECOND
 
 /**
  * @ingroup los_config
@@ -215,7 +213,7 @@ extern UINT32 __heap_end;
  * Longest execution time of tasks with the same priorities
  */
 #ifndef LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT
-#define LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT 2
+#define LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT  20000 /* 20ms */
 #endif
 
 /**
@@ -359,17 +357,12 @@ extern UINT32 __heap_end;
 
 #define LOSCFG_KERNEL_CPU_MASK                          ((1 << LOSCFG_KERNEL_CORE_NUM) - 1)
 
-/****************************** trace module configuration **************************/
-#ifndef LOSCFG_KERNEL_TRACE
-#define LOSCFG_KERNEL_TRACE                             NO
-#endif
-
 /**
  * @ingroup los_trace
  * It's the total size of trace buffer. It's in the unit of char
  */
-#if (LOSCFG_KERNEL_TRACE == YES)
-#define LOS_TRACE_BUFFER_SIZE                           2048
+#ifdef LOSCFG_KERNEL_TRACE
+#define LOS_TRACE_BUFFER_SIZE                           (1024 * 512)
 #endif
 
 /**
@@ -388,7 +381,7 @@ extern UINT32 __heap_end;
 #define KERNEL_MAJOR                     2
 #define KERNEL_MINOR                     0
 #define KERNEL_PATCH                     0
-#define KERNEL_ITRE                      35
+#define KERNEL_ITRE                      37
 
 #define VERSION_NUM(a, b, c, d) (((a) << 24) | ((b) << 16) | (c) << 8 | (d))
 #define KERNEL_OPEN_VERSION_NUM VERSION_NUM(KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE)
@@ -474,6 +467,10 @@ VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_writ
 
 extern VOID OsStart(VOID);
 extern INT32 OsMain(VOID);
+
+typedef VOID (*SystemRebootFunc)(VOID);
+VOID OsSetRebootHook(SystemRebootFunc func);
+SystemRebootFunc OsGetRebootHook(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

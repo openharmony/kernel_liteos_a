@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -47,15 +47,6 @@ extern "C" {
 UINTPTR g_vmBootMemBase = (UINTPTR)&__bss_end;
 BOOL g_kHeapInited = FALSE;
 
-UINT32 OsVmAddrCheck(size_t tempAddr, size_t length)
-{
-    if ((tempAddr >= KERNEL_VMM_BASE) && ((tempAddr + length) <= (PERIPH_UNCACHED_BASE + PERIPH_UNCACHED_SIZE))) {
-        return LOS_OK;
-    }
-
-    return LOS_NOK;
-}
-
 VOID *OsVmBootMemAlloc(size_t len)
 {
     UINTPTR ptr;
@@ -84,14 +75,16 @@ UINT32 OsSysMemInit(VOID)
     }
 
     OsVmPageStartup();
+    g_kHeapInited = TRUE;
     OsInitMappingStartUp();
 
+#ifdef LOSCFG_KERNEL_SHM
     ret = ShmInit();
     if (ret < 0) {
         VM_ERR("ShmInit fail");
         return LOS_NOK;
     }
-
+#endif
     return LOS_OK;
 }
 

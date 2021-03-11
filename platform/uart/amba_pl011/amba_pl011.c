@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -30,10 +30,6 @@
  */
 
 #include "amba_pl011.h"
-#include "asm/platform.h"
-#include "uart.h"
-#include "los_hwi.h"
-#include "los_spinlock.h"
 #include "los_event.h"
 #include "los_task_pri.h"
 
@@ -41,7 +37,11 @@ EVENT_CB_S g_stShellEvent;
 
 CHAR g_inputCmd[CMD_LENGTH];
 INT32 g_inputIdx = 0;
+#ifdef LOSCFG_QUICK_START
+__attribute__ ((section(".data"))) UINT32 g_uart_fputc_en = 0;
+#else
 __attribute__ ((section(".data"))) UINT32 g_uart_fputc_en = 1;
+#endif
 
 #define REG32(addr) ((volatile UINT32 *)(UINTPTR)(addr))
 #define UARTREG(base, reg)  (*REG32((base) + (reg)))

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -45,7 +45,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #define LITEIPC_DRIVER "/dev/lite_ipc"
-#define DRIVER_MODE 0666
+#define LITEIPC_DRIVER_MODE 0644
 #define MAX_SERVICE_NUM LOSCFG_BASE_CORE_TSK_LIMIT
 #define USE_TIMESTAMP YES
 
@@ -173,41 +173,6 @@ typedef struct {
 #define IPC_THREAD_STATUS_START        0x0002U
 #define IPC_THREAD_STATUS_PEND         0x0004U
 #define IPC_THREAD_STATUS_STOP         0x0008U
-
-#if (LOSCFG_KERNEL_TRACE == YES)
-#define LOS_TRACE_IPC 3
-
-typedef enum {
-    WRITE,
-    WRITE_DROP,
-    TRY_READ,
-    READ,
-    READ_DROP,
-    READ_TIMEOUT,
-    OPERATION_NUM
-} IpcOpertion;
-
-typedef struct {
-    UINT32  srcTid : 8;
-    UINT32  srcPid : 8;
-    UINT32  dstTid : 8;
-    UINT32  dstPid : 8;
-} IdArg;
-
-typedef struct {
-    UINT32  msgType : 8;
-    UINT32  code : 8;
-    UINT32  operation : 8;
-    UINT32  ipcStatus : 8;
-} MsgArg;
-
-typedef struct {
-    UINT32  idInfo;
-    UINT32  msgInfo;
-    UINT64  timestamp;
-} IpcTraceFrame;
-#endif
-
 
 /* init liteipc driver */
 extern UINT32 LiteIpcInit(VOID);

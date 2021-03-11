@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -50,20 +50,24 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-STATUS_T OsCheckMMapParams(VADDR_T vaddr, unsigned prot, unsigned long flags, size_t len, unsigned long pgoff)
+STATUS_T OsCheckMMapParams(VADDR_T *vaddr, unsigned long flags, size_t len, unsigned long pgoff)
 {
-    if ((vaddr != 0) && !LOS_IsUserAddressRange(vaddr, len)) {
+    if ((len == 0) || (len > USER_ASPACE_SIZE)) {
+        return -EINVAL;
+    }
+    if (len > OsCurrProcessGet()->vmSpace->mapSize) {
+        return -ENOMEM;
+    }
+
+    if (((flags & MAP_FIXED) == 0) && ((flags & MAP_FIXED_NOREPLACE) == 0)) {
+        *vaddr = ROUNDUP(*vaddr, PAGE_SIZE);
+        if ((*vaddr != 0) && (!LOS_IsUserAddressRange(*vaddr, len))) {
+            *vaddr = 0;
+        }
+    } else if ((!LOS_IsUserAddressRange(*vaddr, len)) || (!IS_ALIGNED(*vaddr, PAGE_SIZE))) {
         return -EINVAL;
     }
 
-    if (len == 0) {
-        return -EINVAL;
-    }
-
-    /* we only support some prot and flags */
-    if ((prot & PROT_SUPPORT_MASK) == 0) {
-        return -EINVAL;
-    }
     if ((flags & MAP_SUPPORT_MASK) == 0) {
         return -EINVAL;
     }
@@ -73,6 +77,23 @@ STATUS_T OsCheckMMapParams(VADDR_T vaddr, unsigned prot, unsigned long flags, si
 
     if (((len >> PAGE_SHIFT) + pgoff) < pgoff) {
         return -EINVAL;
+    }
+
+    return LOS_OK;
+}
+
+STATUS_T OsNamedMmapingPermCheck(struct file *filep, unsigned long flags, unsigned prot)
+{
+    if (!((unsigned int)filep->f_oflags & O_RDWR) && (((unsigned int)filep->f_oflags & O_ACCMODE) ^ O_RDONLY)) {
+        return -EACCES;
+    }
+    if (flags & MAP_SHARED) {
+        if (((unsigned int)filep->f_oflags & O_APPEND) && (prot & PROT_WRITE)) {
+            return -EACCES;
+        }
+        if ((prot & PROT_WRITE) && !((unsigned int)filep->f_oflags & O_RDWR)) {
+            return -EACCES;
+        }
     }
 
     return LOS_OK;
@@ -93,9 +114,8 @@ VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, 
     struct file *filep = NULL;
     LosVmSpace *vmSpace = OsCurrProcessGet()->vmSpace;
 
-    vaddr = ROUNDUP(vaddr, PAGE_SIZE);
     len = ROUNDUP(len, PAGE_SIZE);
-    STATUS_T checkRst = OsCheckMMapParams(vaddr, prot, flags, len, pgoff);
+    STATUS_T checkRst = OsCheckMMapParams(&vaddr, flags, len, pgoff);
     if (checkRst != LOS_OK) {
         return checkRst;
     }
@@ -104,6 +124,11 @@ VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, 
         status = fs_getfilep(fd, &filep);
         if (status < 0) {
             return -EBADF;
+        }
+
+        status = OsNamedMmapingPermCheck(filep, flags, prot);
+        if (status < 0) {
+            return status;
         }
     }
 
@@ -151,6 +176,33 @@ STATUS_T LOS_UnMMap(VADDR_T addr, size_t size)
     return OsUnMMap(OsCurrProcessGet()->vmSpace, addr, size);
 }
 
+STATIC INLINE BOOL OsProtMprotectPermCheck(unsigned long prot, LosVmMapRegion *region)
+{
+    UINT32 protFlags = 0;
+    UINT32 permFlags = 0;
+    UINT32 fileFlags = (((region->unTypeData).rf).file)->f_oflags;
+    permFlags |= ((fileFlags & O_ACCMODE) ^ O_RDONLY) ? 0 : VM_MAP_REGION_FLAG_PERM_READ;
+    permFlags |= (fileFlags & O_WRONLY) ? VM_MAP_REGION_FLAG_PERM_WRITE : 0;
+    permFlags |= (fileFlags & O_RDWR) ? (VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE) : 0;
+    protFlags |= (prot & PROT_READ) ? VM_MAP_REGION_FLAG_PERM_READ : 0;
+    protFlags |= (prot & PROT_WRITE) ? VM_MAP_REGION_FLAG_PERM_WRITE : 0;
+
+    return ((protFlags & permFlags) == protFlags);
+}
+
+VOID *OsShrinkHeap(VOID *addr, LosVmSpace *space)
+{
+    VADDR_T newBrk, oldBrk;
+
+    newBrk = LOS_Align((VADDR_T)(UINTPTR)addr, PAGE_SIZE);
+    oldBrk = LOS_Align(space->heapNow, PAGE_SIZE);
+    if (LOS_UnMMap(newBrk, (oldBrk - newBrk)) < 0) {
+        return (void *)(UINTPTR)space->heapNow;
+    }
+    space->heapNow = (VADDR_T)(UINTPTR)addr;
+    return addr;
+}
+
 VOID *LOS_DoBrk(VOID *addr)
 {
     LosVmSpace *space = OsCurrProcessGet()->vmSpace;
@@ -158,7 +210,7 @@ VOID *LOS_DoBrk(VOID *addr)
     VOID *ret = NULL;
     LosVmMapRegion *region = NULL;
     VOID *alignAddr = NULL;
-    VADDR_T newBrk, oldBrk;
+    VOID *shrinkAddr = NULL;
 
     if (addr == NULL) {
         return (void *)(UINTPTR)space->heapNow;
@@ -173,26 +225,23 @@ VOID *LOS_DoBrk(VOID *addr)
     alignAddr = (CHAR *)(UINTPTR)(space->heapBase) + size;
     PRINT_INFO("brk addr %p , size 0x%x, alignAddr %p, align %d\n", addr, size, alignAddr, PAGE_SIZE);
 
+    (VOID)LOS_MuxAcquire(&space->regionMux);
     if (addr < (VOID *)(UINTPTR)space->heapNow) {
-        newBrk = LOS_Align((VADDR_T)(UINTPTR)addr, PAGE_SIZE);
-        oldBrk = LOS_Align(space->heapNow, PAGE_SIZE);
-        if (LOS_UnMMap(newBrk, (oldBrk - newBrk)) < 0) {
-            return (void *)(UINTPTR)space->heapNow;
-        }
-        space->heapNow = (VADDR_T)(UINTPTR)alignAddr;
-        return alignAddr;
+        shrinkAddr = OsShrinkHeap(addr, space);
+        (VOID)LOS_MuxRelease(&space->regionMux);
+        return shrinkAddr;
     }
 
-    (VOID)LOS_MuxAcquire(&space->regionMux);
     if ((UINTPTR)alignAddr >= space->mapBase) {
         VM_ERR("Process heap memory space is insufficient");
         ret = (VOID *)-ENOMEM;
         goto REGION_ALLOC_FAILED;
     }
+
     if (space->heapBase == space->heapNow) {
         region = LOS_RegionAlloc(space, space->heapBase, size,
                                  VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |
-                                 VM_MAP_REGION_FLAG_PERM_USER, 0);
+                                 VM_MAP_REGION_FLAG_FIXED | VM_MAP_REGION_FLAG_PERM_USER, 0);
         if (region == NULL) {
             ret = (VOID *)-ENOMEM;
             VM_ERR("LOS_RegionAlloc failed");
@@ -229,6 +278,18 @@ int LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot)
     if ((prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC))) {
         ret = -EINVAL;
         goto OUT_MPROTECT;
+    }
+
+    if ((region->regionFlags & VM_MAP_REGION_FLAG_VDSO) || (region->regionFlags & VM_MAP_REGION_FLAG_HEAP)) {
+        ret = -EPERM;
+        goto OUT_MPROTECT;
+    }
+
+    if (LOS_IsRegionTypeFile(region) && (region->regionFlags & VM_MAP_REGION_FLAG_SHARED)) {
+        if (!OsProtMprotectPermCheck(prot, region)) {
+            ret = -EACCES;
+            goto OUT_MPROTECT;
+        }
     }
 
     len = LOS_Align(len, PAGE_SIZE);

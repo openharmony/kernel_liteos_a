@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -235,6 +235,7 @@ int remove_mapping_nolock(const char *fullpath, const struct file *ex_filp)
     fmap = LOS_DL_LIST_ENTRY(mapping,
     struct file_map, mapping);
     LOS_ListDelete(&fmap->head);
+    LOS_MemFree(m_aucSysMem0, fmap->owner);
     LOS_MemFree(m_aucSysMem0, fmap);
 
 out:

@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -38,8 +38,6 @@ LITEOSTHIRDPARTY := $(LITEOSTOPDIR)/../../third_party
 export LITEOSTOPDIR
 export LITEOSTHIRDPARTY
 
--include $(LITEOSTOPDIR)/tools/build/config.mk
-
 RM = -rm -rf
 MAKE = make
 __LIBS = libs
@@ -53,14 +51,33 @@ LITEOS_MENUCONFIG_H = $(LITEOSTOPDIR)/include/generated/autoconf.h
 LITEOS_PLATFORM_BASE = $(LITEOSTOPDIR)/platform
 LITEOS_PLATFORM_MENUCONFIG_H = $(LITEOS_PLATFORM_BASE)/include/menuconfig.h
 
-ifeq ($(LOSCFG_PLATFORM_HI3518EV300), y)
+export CONFIG_=LOSCFG_
+MENUCONFIG_PATH = $(LITEOSTOPDIR)/tools/menuconfig
+KCONFIG_FILE_PATH = $(LITEOSTOPDIR)/Kconfig
+
+ifeq ($(OS), Linux)
+MENUCONFIG_MCONF := $(MENUCONFIG_PATH)/mconf
+MENUCONFIG_CONF := $(MENUCONFIG_PATH)/conf
+else
+MENUCONFIG_MCONF := $(MENUCONFIG_PATH)/kconfig-mconf.exe
+MENUCONFIG_CONF := $(MENUCONFIG_PATH)/kconfig-conf.exe
+endif
+
+$(shell env CONFIG_=$(CONFIG_) $(MENUCONFIG_CONF) -s --olddefconfig $(KCONFIG_FILE_PATH))
+
+-include $(LITEOSTOPDIR)/tools/build/config.mk
+
+ifeq ($(LOSCFG_STORAGE_SPINOR), y)
 FSTYPE = jffs2
 endif
-ifeq ($(LOSCFG_PLATFORM_HI3516DV300), y)
+ifeq ($(LOSCFG_STORAGE_EMMC), y)
 FSTYPE = vfat
 endif
+ifeq ($(LOSCFG_STORAGE_SPINAND), y)
+FSTYPE = yaffs2
+endif
 ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-FSTYPE = vfat
+FSTYPE = jffs2
 endif
 ROOTFS_DIR = $(OUT)/rootfs
 ROOTFS_ZIP = $(OUT)/rootfs.zip
@@ -100,21 +117,14 @@ endif
 ##### make dynload #####
 -include $(LITEOS_MK_PATH)/dynload.mk
 
-ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
-VENDOR_BOARD_INCLUDE := $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board
-else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-VENDOR_BOARD_INCLUDE := $(LITEOSTOPDIR)/../../device/qemu/arm/$(LITEOS_PLATFORM)/config/board
-else
-$(error "No VENDOR_BOARD_INCLUDE defined")
-endif
 #-----need move when make version-----#
 ##### make lib #####
 $(__LIBS): $(OUT) $(CXX_INCLUDE)
 
 $(OUT): $(LITEOS_MENUCONFIG_H)
 	$(HIDE)mkdir -p $(OUT)/lib
-	$(HIDE)$(CC) -I$(LITEOS_PLATFORM_BASE)/include -I$(VENDOR_BOARD_INCLUDE)  \
-		-E $(LITEOS_PLATFORM_BASE)/board.ld.S \
+	$(HIDE)$(CC) -I$(LITEOSTOPDIR)/kernel/base/include -I$(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
+		-I$(LITEOS_PLATFORM_BASE)/include -E $(LITEOS_PLATFORM_BASE)/board.ld.S \
 		-o $(LITEOS_PLATFORM_BASE)/board.ld -P
 
 $(BUILD):
@@ -127,14 +137,10 @@ $(LITEOS_LIBS_TARGET): $(__LIBS)
 	$(HIDE)echo "=============== make lib done  ==============="
 
 ##### make menuconfig #####
-export CONFIG_=LOSCFG_
-MENUCONFIG_PATH = $(LITEOSTOPDIR)/tools/menuconfig
-KCONFIG_FILE_PATH = $(LITEOSTOPDIR)/Kconfig
-
-menuconfig:$(MENUCONFIG_PATH)/mconf
+menuconfig:$(MENUCONFIG_MCONF)
 	$< $(KCONFIG_FILE_PATH)
 
-genconfig:$(MENUCONFIG_PATH)/conf
+genconfig:$(MENUCONFIG_CONF)
 	$(HIDE)mkdir -p include/config include/generated
 	$< --olddefconfig $(KCONFIG_FILE_PATH)
 	$< --silentoldconfig $(KCONFIG_FILE_PATH)
@@ -185,6 +191,7 @@ $(ROOTFS): $(ROOTFSDIR)
 	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsimg.sh $(ROOTFS_DIR) $(FSTYPE)
 	$(HIDE)cd $(ROOTFS_DIR)/.. && zip -r $(ROOTFS_ZIP) $(ROOTFS)
 ifneq ($(OUT), $(LITEOS_TARGET_DIR))
+	rm -rf $(LITEOS_TARGET_DIR)rootfs
 	$(HIDE)mv $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)rootfs
 endif
 
@@ -193,7 +200,7 @@ clean:
 		do $(MAKE) -C $$dir clean|| exit 1; \
 	done
 	$(HIDE)$(MAKE) -C apps clean
-	$(HIDE)$(RM) $(__OBJS) $(LITEOS_TARGET) $(OUT) $(BUILD) $(LITEOS_MENUCONFIG_H) *.bak *~
+	$(HIDE)$(RM) $(__OBJS) $(LITEOS_TARGET) $(BUILD) $(LITEOS_MENUCONFIG_H) *.bak *~
 	$(HIDE)$(RM) $(LITEOS_PLATFORM_MENUCONFIG_H)
 	$(HIDE)$(RM) include
 	$(HIDE)$(MAKE) cleanrootfs
@@ -210,4 +217,14 @@ cleanrootfs:
 	$(HIDE)$(RM) $(OUT)/rootfs.zip
 	$(HIDE)$(RM) $(OUT)/rootfs.img
 
-.PHONY: all lib clean cleanall $(LITEOS_TARGET) debug release help
+update_all_config:
+	$(HIDE)shopt -s globstar && for f in tools/build/config/**/*.config ; \
+		do \
+			echo updating $$f; \
+			test -f $$f && cp $$f .config && $(MENUCONFIG_CONF) -s --olddefconfig $(KCONFIG_FILE_PATH) && $(MENUCONFIG_CONF) --savedefconfig $$f $(KCONFIG_FILE_PATH); \
+		done
+
+%.config:
+	$(HIDE)test -f tools/build/config/$@ && cp tools/build/config/$@ .config && $(MENUCONFIG_MCONF) $(KCONFIG_FILE_PATH) && $(MENUCONFIG_CONF) --savedefconfig tools/build/config/$@ $(KCONFIG_FILE_PATH)
+
+.PHONY: all lib clean cleanall $(LITEOS_TARGET) debug release help update_all_config

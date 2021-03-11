@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -79,20 +79,21 @@ LITEOS_PLATFORM      := $(subst $\",,$(LOSCFG_PLATFORM))
 
 PLATFORM_BSP_BASE := $(LITEOSTOPDIR)/platform
 
-PLATFORM_INCLUDE := -I $(PLATFORM_BSP_BASE)/../kernel/common \
+PLATFORM_INCLUDE := -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
+                    -I $(PLATFORM_BSP_BASE)/../kernel/common \
                     -I $(PLATFORM_BSP_BASE)/../../../drivers/liteos/platform/pm \
                     -I $(PLATFORM_BSP_BASE)/hw/include \
                     -I $(PLATFORM_BSP_BASE)/include \
                     -I $(PLATFORM_BSP_BASE)/$(UART_SRC)
 
-ifeq ($(findstring y, $(LOSCFG_PLATFORM_HI3518EV300)$(LOSCFG_PLATFORM_HI3516DV300)), y)
-    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/include
-    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../vendor/hisi/hi35xx/$(LITEOS_PLATFORM)/config/board/include/hisoc
-else ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../device/qemu/arm/$(LITEOS_PLATFORM)/config/board/include
-    # TODO: remove hisoc dependency in the code to avoid using hisoc here
-    PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../device/qemu/arm/$(LITEOS_PLATFORM)/config/board/include/hisoc
+ifeq ($(LOSCFG_PLATFORM_PATCHFS), y)
+    PLATFORM_INCLUDE += -I $(PLATFORM_BSP_BASE)/../kernel/common/patchfs
 endif
+
+ifeq ($(LOSCFG_FS_ZPFS), y)
+    PLATFORM_INCLUDE += -I $(PLATFORM_BSP_BASE)/../fs/zpfs
+endif
+
 #
 #-include $(LITEOSTOPDIR)/platform/bsp/board/$(LITEOS_PLATFORM)/board.mk
 #

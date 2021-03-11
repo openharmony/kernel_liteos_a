@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,13 +32,25 @@
 #ifndef __VM_ZONE_H__
 #define __VM_ZONE_H__
 
-#include "board.h"
+#include "target_config.h"
 
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+
+#ifdef LOSCFG_TEE_ENABLE
+#define KERNEL_VADDR_BASE       0x41000000
+#else
+#define KERNEL_VADDR_BASE       0x40000000
+#endif
+#define KERNEL_VADDR_SIZE       DDR_MEM_SIZE
+
+#define SYS_MEM_BASE            DDR_MEM_ADDR
+#define SYS_MEM_END             (SYS_MEM_BASE + SYS_MEM_SIZE_DEFAULT)
+
+#define EXC_INTERACT_MEM_SIZE   0x100000
 
 #define _U32_C(X)  X##U
 #define U32_C(X)   _U32_C(X)

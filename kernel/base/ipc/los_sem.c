@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@
 #include "los_err_pri.h"
 #include "los_task_pri.h"
 #include "los_exc.h"
+#include "los_sched_pri.h"
 #include "los_spinlock.h"
 #include "los_mp.h"
 #include "los_percpu_pri.h"
@@ -115,6 +116,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *
 
     unusedSem = LOS_DL_LIST_FIRST(&g_unusedSemList);
     LOS_ListDelete(unusedSem);
+    SCHEDULER_UNLOCK(intSave);
     semCreated = GET_SEM_LIST(unusedSem);
     semCreated->semCount = count;
     semCreated->semStat = OS_SEM_USED;
@@ -123,8 +125,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *
     *semHandle = semCreated->semID;
 
     OsSemDbgUpdateHook(semCreated->semID, OsCurrTaskGet()->taskEntry, count);
-
-    SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 
 ERR_HANDLER:
@@ -227,10 +227,9 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
         goto OUT;
     }
 
-    runTask->taskSem = (VOID *)semPended;
-    retErr = OsTaskWait(&semPended->semList, timeout, TRUE);
+    OsTaskWaitSetPendMask(OS_TASK_WAIT_SEM, semPended->semID, timeout);
+    retErr = OsSchedTaskWait(&semPended->semList, timeout, TRUE);
     if (retErr == LOS_ERRNO_TSK_TIMEOUT) {
-        runTask->taskSem = NULL;
         retErr = LOS_ERRNO_SEM_TIMEOUT;
     }
 
@@ -243,10 +242,6 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
 {
     LosSemCB *semPosted = NULL;
     LosTaskCB *resumedTask = NULL;
-
-    if (GET_SEM_INDEX(semHandle) >= LOSCFG_BASE_IPC_SEM_LIMIT) {
-        return LOS_ERRNO_SEM_INVALID;
-    }
 
     semPosted = GET_SEM(semHandle);
     if ((semPosted->semID != semHandle) || (semPosted->semStat == OS_SEM_UNUSED)) {
@@ -261,8 +256,8 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
     }
     if (!LOS_ListEmpty(&semPosted->semList)) {
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(semPosted->semList)));
-        resumedTask->taskSem = NULL;
-        OsTaskWake(resumedTask);
+        OsTaskWakeClearPendMask(resumedTask);
+        OsSchedTaskWake(resumedTask);
         if (needSched != NULL) {
             *needSched = TRUE;
         }
@@ -278,6 +273,10 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)
     UINT32 intSave;
     UINT32 ret;
     BOOL needSched = FALSE;
+
+    if (GET_SEM_INDEX(semHandle) >= LOSCFG_BASE_IPC_SEM_LIMIT) {
+        return LOS_ERRNO_SEM_INVALID;
+    }
 
     SCHEDULER_LOCK(intSave);
     ret = OsSemPostUnsafe(semHandle, &needSched);

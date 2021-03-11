@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,20 +32,11 @@
 #include "asm.h"
 #include "arch_config.h"
 
-#ifdef LOSCFG_KERNEL_SMP_LOCKDEP
-    .extern   OsLockDepCheckOut
-#endif
-    .extern   g_taskSpin
-    .extern   g_percpu
-    .global   OsStartToRun
+    .extern   OsSchedToUserReleaseLock
     .global   OsTaskSchedule
+    .global   OsTaskContextLoad
     .global   OsIrqHandler
-    .global   ArchSpinUnlock
-    .global   OsSchedToUserSpinUnlock
 
-    .equ OS_TASK_STATUS_RUNNING,       0x0010U
-    .equ OS_PERCPU_STRUCT_SIZE,        0x28U
-    .equ OS_PERCPU_TASK_LOCK_OFFSET,   0x14U
     .fpu vfpv4
 
 /* macros to align and unalign the stack on 8 byte boundary for ABI compliance */
@@ -87,26 +78,6 @@
     VMSR    FPEXC, \reg1
 #endif
 .endm
-
-/* R0: new task */
-OsStartToRun:
-
-    MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)
-
-    LDRH    R1, [R0, #4]
-    ORR     R1, #OS_TASK_STATUS_RUNNING
-    STRH    R1, [R0, #4]
-
-    /* R0 is new task, save it on tpidrprw */
-    MCR     p15, 0, R0, c13, c0, 4
-    ISB
-
-    VPUSH   {S0}                                     /* fpu */
-    VPOP    {S0}
-    VPUSH   {D0}
-    VPOP    {D0}
-
-    B       OsTaskContextLoad
 
 /*
  * R0: new task
@@ -152,23 +123,10 @@ OsTaskContextLoad:
     BNE     OsKernelTaskLoad
 
 #ifdef LOSCFG_KERNEL_SMP
-#ifdef LOSCFG_KERNEL_SMP_LOCKDEP
     /* 8 bytes stack align */
     SUB     SP, SP, #4
-    LDR     R0, =g_taskSpin
-    BL      OsLockDepCheckOut
+    BL      OsSchedToUserReleaseLock
     ADD     SP, SP, #4
-#endif
-    /* R0 = &g_taskSpin.rawLock */
-    LDR     R0, =g_taskSpin
-    BL      ArchSpinUnlock
-    LDR     R2, =g_percpu
-    MRC     P15, 0, R3, C0, C0, 5
-    UXTB    R3, R3
-    MOV     R1, #OS_PERCPU_STRUCT_SIZE
-    MLA     R3, R1, R3, R2
-    MOV     R2, #0
-    STR     R2, [R3, #OS_PERCPU_TASK_LOCK_OFFSET]
 #endif
 
     MVN     R3, #CPSR_INT_DISABLE
@@ -245,9 +203,7 @@ OsIrqFromKernel:
     /* process pending signals */
     BL      OsTaskProcSignal
 
-    /* check if needs to schedule */
-    CMP     R0, #0
-    BLNE    OsSchedPreempt
+    BL      OsSchedIrqEndCheckNeedSched
 
     MOV     R0,SP
     MOV     R1,R7

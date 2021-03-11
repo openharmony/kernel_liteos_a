@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -33,9 +33,10 @@ set -e
 system=$(uname -s)
 ROOTFS_DIR=$1
 FSTYPE=$2
-ROOTFS_IMG=${ROOTFS_DIR}".img"
+ROOTFS_IMG=${ROOTFS_DIR}"_"${FSTYPE}".img"
 JFFS2_TOOL=mkfs.jffs2
 WIN_JFFS2_TOOL=mkfs.jffs2.exe
+YAFFS2_TOOL=mkyaffs2image100
 VFAT_TOOL=mkfs.vfat
 MCOPY_TOOL=mcopy
 
@@ -43,7 +44,7 @@ tool_check() {
 local ret='0'
 command -v "$1" >/dev/null 2>&1 || { local ret='1'; }
 if [ "$ret" -ne 0 ]; then
-    echo "$1 tool is not exist, please install it" >&2
+    echo "$1 tool is not exit, please install it" >&2
 fi
 return 0
 }
@@ -64,6 +65,9 @@ if [ "${FSTYPE}" = "jffs2" ]; then
         tool_check ${JFFS2_TOOL}
         ${JFFS2_TOOL} -q -o ${ROOTFS_IMG} -d ${ROOTFS_DIR} --pagesize=4096
     fi
+elif [ "${FSTYPE}" = "yaffs2" ]; then
+        tool_check ${YAFFS2_TOOL}
+	${YAFFS2_TOOL}  ${ROOTFS_DIR} ${ROOTFS_IMG} 2k 24bit
 elif [ "${FSTYPE}" = "vfat" ]; then
     if [ "${system}" != "Linux" ] ; then
         echo "Unsupported fs type!" >&2

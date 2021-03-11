@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@
 #include "los_base.h"
 #include "los_typedef.h"
 #include "string.h"
-#if defined(LOSCFG_PLATFORM_HI3518EV300) || defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
+#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
 #include "mtd_partition.h"
 #endif
 #ifdef LOSCFG_DRIVERS_MMC
@@ -46,10 +46,16 @@
 #endif
 #include "mtd_list.h"
 
-#ifdef LOSCFG_PLATFORM_HI3518EV300
+#ifdef LOSCFG_STORAGE_SPINOR
 #define DEV_STORAGE_PATH       "/dev/spinorblk2"
 #define SECOND_MTD_PART_NUM 2
-#define STORAGE_SIZE 0x100000
+#define STORAGE_SIZE 0x80000
+#endif
+
+#ifdef LOSCFG_STORAGE_SPINAND
+#define DEV_STORAGE_PATH       "/dev/nandblk2"
+#define SECOND_MTD_PART_NUM 2
+#define STORAGE_SIZE 0xa00000
 #endif
 
 #ifdef __cplusplus
@@ -58,7 +64,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#ifdef LOSCFG_PLATFORM_HI3516DV300
+#ifdef LOSCFG_STORAGE_EMMC
 #define STORAGE_SIZE 0x3200000
 STATIC los_disk *g_emmcDisk = NULL;
 #endif
@@ -69,6 +75,18 @@ STATIC INT32 g_alignSize = 0;
 
 #define VFAT_STORAGE_MOUNT_DIR_MODE 777
 #define DEFAULT_STORAGE_MOUNT_DIR_MODE 755
+
+STATIC UINT64 g_cmdLineAddr = COMMAND_LINE_ADDR;
+
+VOID OsSetCmdLineAddr(UINT64 addr)
+{
+    g_cmdLineAddr = addr;
+}
+
+UINT64 OsGetCmdLineAddr(VOID)
+{
+    return g_cmdLineAddr;
+}
 
 #ifdef LOSCFG_DRIVERS_MMC
 los_disk *GetMmcDisk(UINT8 type)
@@ -94,7 +112,7 @@ los_disk *GetMmcDisk(UINT8 type)
 }
 #endif
 
-#ifdef LOSCFG_PLATFORM_HI3516DV300
+#ifdef LOSCFG_STORAGE_EMMC
 STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
 {
     INT32 ret;
@@ -143,17 +161,17 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 {
     const CHAR *rootDev = NULL;
 
-#ifdef LOSCFG_PLATFORM_HI3518EV300
+#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
     INT32 ret;
     if (strcmp(rootType, "flash") == 0) {
         ret = add_mtd_partition(FLASH_TYPE, rootAddr, rootSize, 0);
         if (ret != LOS_OK) {
-            PRINT_ERR("Failed to add spinor root partition!\n");
+            PRINT_ERR("Failed to add spinor/spinand root partition!\n");
         } else {
             rootDev = FLASH_DEV_NAME;
             ret = add_mtd_partition(FLASH_TYPE, (rootAddr + rootSize), STORAGE_SIZE, SECOND_MTD_PART_NUM);
             if (ret != LOS_OK) {
-                PRINT_ERR("Failed to add spinor storage partition!\n");
+                PRINT_ERR("Failed to add spinor/spinand storage partition!\n");
             }
         }
     } else
@@ -176,7 +194,7 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
     } else
 #endif
 
-#ifdef LOSCFG_PLATFORM_HI3516DV300
+#ifdef LOSCFG_STORAGE_EMMC
     if (strcmp(rootType, "emmc") == 0) {
         rootDev = AddEmmcRootfsPart(rootAddr, rootSize);
     } else
@@ -184,8 +202,9 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
 #define CFIFLASH_CAPACITY   64 * 1024 * 1024
-    INT32 ret;
     if (strcmp(rootType, "cfi-flash") == 0) {
+        INT32 ret;
+        extern INT32 add_mtd_partition(const CHAR *type, UINT32 startAddr, UINT32 length, UINT32 partitionNum);
         ret = add_mtd_partition("cfi-flash", rootAddr, rootSize, 0);
         if (ret != LOS_OK) {
             PRINT_ERR("Failed to add cfi-flash root partition!\n");
@@ -208,6 +227,11 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 #ifndef LOSCFG_SECURITY_BOOT
 STATIC INT32 GetArgs(CHAR **args)
 {
+#ifdef LOSCFG_QUICK_START
+    *args = OsGetArgsAddr();
+    return LOS_OK;
+
+#else
     INT32 ret;
     INT32 i;
     INT32 len = 0;
@@ -221,7 +245,7 @@ STATIC INT32 GetArgs(CHAR **args)
         return LOS_NOK;
     }
 
-#ifdef LOSCFG_PLATFORM_HI3516DV300
+#ifdef LOSCFG_STORAGE_EMMC
     g_emmcDisk = GetMmcDisk(EMMC);
     if (g_emmcDisk == NULL) {
         PRINT_ERR("Get EMMC disk failed!\n");
@@ -236,7 +260,7 @@ STATIC INT32 GetArgs(CHAR **args)
     g_alignSize = EMMC_SEC_SIZE;
 #endif
 
-#ifdef LOSCFG_PLATFORM_HI3518EV300
+#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
     struct MtdDev *mtd = GetMtd(FLASH_TYPE);
     if (mtd == NULL) {
         PRINT_ERR("Get spinor mtd failed!\n");
@@ -249,7 +273,6 @@ STATIC INT32 GetArgs(CHAR **args)
         goto ERROUT;
     }
 #endif
-
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
     /*
      * TODO: Implement method of fetching bootargs for
@@ -277,6 +300,7 @@ STATIC INT32 GetArgs(CHAR **args)
 ERROUT:
     free(cmdLine);
     return LOS_NOK;
+#endif
 }
 
 STATIC INT32 MatchRootPos(CHAR *p, const CHAR *rootInfoName, INT32 *rootInfo)
@@ -360,15 +384,16 @@ STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootA
 STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize)
 {
     CHAR *args = NULL;
-    CHAR *argsBak = NULL;
     CHAR *p = NULL;
 
     if (GetArgs(&args) != LOS_OK) {
         PRINT_ERR("Cannot get bootargs!\n");
         return LOS_NOK;
     }
+#ifndef LOSCFG_QUICK_START
+    CHAR *argsBak = NULL;
     argsBak = args;
-
+#endif
     p = strsep(&args, " ");
     while (p != NULL) {
         if (MatchRootInfo(p, rootType, fsType, rootAddr, rootSize) != LOS_OK) {
@@ -377,7 +402,9 @@ STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 
         p = strsep(&args, " ");
     }
     if ((*fsType != NULL) && (*rootType != NULL)) {
+#ifndef LOSCFG_QUICK_START
         free(argsBak);
+#endif
         return LOS_OK;
     }
 
@@ -391,12 +418,14 @@ ERROUT:
         free(*fsType);
         *fsType = NULL;
     }
+#ifndef LOSCFG_QUICK_START
     free(argsBak);
+#endif
     return LOS_NOK;
 }
 #endif
 
-#ifdef LOSCFG_PLATFORM_HI3516DV300
+#ifdef LOSCFG_STORAGE_EMMC
 STATIC VOID OsMountUserdata(const CHAR *fsType)
 {
     INT32 ret;
@@ -449,7 +478,7 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
             return ret;
         }
         g_root_inode->i_mode |= S_IRWXU | S_IRWXG | S_IRWXO;
-#ifdef LOSCFG_PLATFORM_HI3516DV300
+#ifdef LOSCFG_STORAGE_EMMC
         ret = mkdir("/storage", VFAT_STORAGE_MOUNT_DIR_MODE);
         if (ret != LOS_OK) {
             err = get_errno();
@@ -473,10 +502,10 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
         ret = mount(rootDev, "/", fsType, MS_RDONLY, NULL);
         if (ret != LOS_OK) {
             err = get_errno();
-            PRINT_ERR("Failed to mount rootfs, errno %d: %s\n", err, strerror(err));
+            PRINT_ERR("Failed to mount rootfs,rootDev %s, errno %d: %s\n", rootDev, err, strerror(err));
             return ret;
         }
-#ifdef LOSCFG_PLATFORM_HI3518EV300
+#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
         ret = mkdir("/storage", DEFAULT_STORAGE_MOUNT_DIR_MODE);
         if (ret != LOS_OK) {
             err = get_errno();

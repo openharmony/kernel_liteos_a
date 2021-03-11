@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -53,6 +53,7 @@ void los_vfs_init(void)
     spin_lock_init(&g_diskSpinlock);
     spin_lock_init(&g_diskFatBlockSpinlock);
 #endif
+    files_initialize();
     files_initlist(&tg_filelist);
     fs_initialize();
     if ((err = inode_reserve("/", &g_root_inode)) < 0) {

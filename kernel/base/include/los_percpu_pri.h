@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@
 
 #include "los_base.h"
 #include "los_hw_cpu.h"
+#include "los_spinlock.h"
 #include "los_sortlink_pri.h"
 
 #ifdef __cplusplus
@@ -51,17 +52,22 @@ typedef enum {
 #endif
 
 typedef struct {
-    SortLinkAttribute taskSortLink;             /* task sort link */
-    SortLinkAttribute swtmrSortLink;            /* swtmr sort link */
+    SortLinkAttribute taskSortLink;          /* task sort link */
+    SPIN_LOCK_S       taskSortLinkSpin;      /* task sort link spin lock */
+    SortLinkAttribute swtmrSortLink;         /* swtmr sort link */
+    SPIN_LOCK_S       swtmrSortLinkSpin;     /* swtmr sort link spin lock */
+    UINT64            responseTime;          /* Response time for current nuclear Tick interrupts */
+    UINT32            responseID;            /* The response ID of the current nuclear TICK interrupt */
+    UINTPTR           runProcess;            /* The address of the process control block pointer to which
+                                                the current kernel is running */
+    UINT32            idleTaskID;            /* idle task id */
+    UINT32            taskLockCnt;           /* task lock flag */
+    UINT32            swtmrHandlerQueue;     /* software timer timeout queue id */
+    UINT32            swtmrTaskID;           /* software timer task id */
 
-    UINT32 idleTaskID;                          /* idle task id */
-    UINT32 taskLockCnt;                         /* task lock flag */
-    UINT32 swtmrHandlerQueue;                   /* software timer timeout queue id */
-    UINT32 swtmrTaskID;                         /* software timer task id */
-
-    UINT32 schedFlag;                           /* pending scheduler flag */
+    UINT32            schedFlag;             /* pending scheduler flag */
 #if (LOSCFG_KERNEL_SMP == YES)
-    UINT32 excFlag;                             /* cpu halt or exc flag */
+    UINT32            excFlag;               /* cpu halt or exc flag */
 #endif
 } Percpu;
 

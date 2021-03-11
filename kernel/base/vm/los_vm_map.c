@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -43,6 +43,7 @@
 #include "fs/fs.h"
 #include "los_task.h"
 #include "los_memory_pri.h"
+#include "los_vm_boot.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -96,7 +97,7 @@ VOID *OsRegionRbGetKeyFn(LosRbNode *pstNode)
     return (VOID *)&region->range;
 }
 
-ULONG_T OsRegionRbCmpKeyFn(VOID *pNodeKeyA, VOID *pNodeKeyB)
+ULONG_T OsRegionRbCmpKeyFn(const VOID *pNodeKeyA, const VOID *pNodeKeyB)
 {
     LosVmMapRange rangeA = *(LosVmMapRange *)pNodeKeyA;
     LosVmMapRange rangeB = *(LosVmMapRange *)pNodeKeyB;
@@ -193,6 +194,34 @@ BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)
     return OsVmSpaceInitCommon(vmSpace, virtTtb);
 }
 
+LosVmSpace *OsCreateUserVmSapce(VOID)
+{
+    BOOL retVal = FALSE;
+
+    LosVmSpace *space = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmSpace));
+    if (space == NULL) {
+        return NULL;
+    }
+
+    VADDR_T *ttb = LOS_PhysPagesAllocContiguous(1);
+    if (ttb == NULL) {
+        (VOID)LOS_MemFree(m_aucSysMem0, space);
+        return NULL;
+    }
+
+    (VOID)memset_s(ttb, PAGE_SIZE, 0, PAGE_SIZE);
+    retVal = OsUserVmSpaceInit(space, ttb);
+    LosVmPage *vmPage = OsVmVaddrToPage(ttb);
+    if ((retVal == FALSE) || (vmPage == NULL)) {
+        (VOID)LOS_MemFree(m_aucSysMem0, space);
+        LOS_PhysPagesFreeContiguous(ttb, 1);
+        return NULL;
+    }
+    LOS_ListAdd(&space->archMmu.ptList, &(vmPage->node));
+
+    return space;
+}
+
 VOID OsKSpaceInit(VOID)
 {
     OsVmMapInit();
@@ -270,13 +299,15 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
         if (newRegion == NULL) {
             VM_ERR("dup new region failed");
             ret = LOS_ERRNO_VM_NO_MEMORY;
-            goto ERR_CLONE_ASPACE;
+            break;
         }
 
+#ifdef LOSCFG_KERNEL_SHM
         if (oldRegion->regionFlags & VM_MAP_REGION_FLAG_SHM) {
             OsShmFork(newVmSpace, oldRegion, newRegion);
             continue;
         }
+#endif
 
         if (oldRegion == oldVmSpace->heap) {
             newVmSpace->heap = newRegion;
@@ -312,12 +343,6 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
 #endif
         }
     RB_SCAN_SAFE_END(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)
-    goto OUT_CLONE_ASPACE;
-ERR_CLONE_ASPACE:
-    if (LOS_VmSpaceFree(newVmSpace) != LOS_OK) {
-        VM_ERR("LOS_VmSpaceFree failed");
-    }
-OUT_CLONE_ASPACE:
     (VOID)LOS_MuxRelease(&oldVmSpace->regionMux);
     return ret;
 }
@@ -365,7 +390,7 @@ VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
             if (nextStart < curEnd) {
                 continue;
             }
-            if ((curEnd + len) <= nextStart) {
+            if ((nextStart - curEnd) >= len) {
                 return curEnd;
             } else {
                 curEnd = curRegion->range.base + curRegion->range.size;
@@ -379,7 +404,7 @@ VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
             if (nextStart < curEnd) {
                 continue;
             }
-            if ((curEnd + len) <= nextStart) {
+            if ((nextStart - curEnd) >= len) {
                 return curEnd;
             } else {
                 curEnd = curRegion->range.base + curRegion->range.size;
@@ -388,14 +413,14 @@ VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
     }
 
     nextStart = vmSpace->mapBase + vmSpace->mapSize;
-    if ((curEnd + len) <= nextStart) {
+    if ((nextStart >= curEnd) && ((nextStart - curEnd) >= len)) {
         return curEnd;
     }
 
     return 0;
 }
 
-VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len)
+VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, UINT32 regionFlags)
 {
     STATUS_T status;
 
@@ -406,10 +431,16 @@ VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len)
     if ((LOS_RegionFind(vmSpace, vaddr) != NULL) ||
         (LOS_RegionFind(vmSpace, vaddr + len - 1) != NULL) ||
         (LOS_RegionRangeFind(vmSpace, vaddr, len - 1) != NULL)) {
-        status = LOS_UnMMap(vaddr, len);
-        if (status != LOS_OK) {
-            VM_ERR("unmap specific range va: %#x, len: %#x failed, status: %d", vaddr, len, status);
+        if ((regionFlags & VM_MAP_REGION_FLAG_FIXED_NOREPLACE) != 0) {
             return 0;
+        } else if ((regionFlags & VM_MAP_REGION_FLAG_FIXED) != 0) {
+            status = LOS_UnMMap(vaddr, len);
+            if (status != LOS_OK) {
+                VM_ERR("unmap specific range va: %#x, len: %#x failed, status: %d", vaddr, len, status);
+                return 0;
+            }
+        } else {
+            return OsAllocRange(vmSpace, len);
         }
     }
 
@@ -499,7 +530,7 @@ LosVmMapRegion *LOS_RegionAlloc(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, 
         rstVaddr = OsAllocRange(vmSpace, len);
     } else {
         /* if it is already mmapped here, we unmmap it */
-        rstVaddr = OsAllocSpecificRange(vmSpace, vaddr, len);
+        rstVaddr = OsAllocSpecificRange(vmSpace, vaddr, len, regionFlags);
         if (rstVaddr == 0) {
             VM_ERR("alloc specific range va: %#x, len: %#x failed", vaddr, len);
             goto OUT;
@@ -608,9 +639,14 @@ STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region)
         OsFilePagesRemove(space, region);
     } else
 #endif
+
+#ifdef LOSCFG_KERNEL_SHM
     if (OsIsShmRegion(region)) {
         OsShmRegionFree(space, region);
     } else if (LOS_IsRegionTypeDev(region)) {
+#else
+    if (LOS_IsRegionTypeDev(region)) {
+#endif
         OsDevPagesRemove(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);
     } else {
         OsAnonPagesRemove(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);
@@ -627,17 +663,27 @@ STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region)
 LosVmMapRegion *OsVmRegionDup(LosVmSpace *space, LosVmMapRegion *oldRegion, VADDR_T vaddr, size_t size)
 {
     LosVmMapRegion *newRegion = NULL;
+    UINT32 regionFlags;
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
-    newRegion = LOS_RegionAlloc(space, vaddr, size, oldRegion->regionFlags, oldRegion->pgOff);
+    regionFlags = oldRegion->regionFlags;
+    if (vaddr == 0) {
+        regionFlags &= ~(VM_MAP_REGION_FLAG_FIXED | VM_MAP_REGION_FLAG_FIXED_NOREPLACE);
+    } else {
+        regionFlags |= VM_MAP_REGION_FLAG_FIXED;
+    }
+    newRegion = LOS_RegionAlloc(space, vaddr, size, regionFlags, oldRegion->pgOff);
     if (newRegion == NULL) {
         VM_ERR("LOS_RegionAlloc failed");
         goto REGIONDUPOUT;
     }
     newRegion->regionType = oldRegion->regionType;
+
+#ifdef LOSCFG_KERNEL_SHM
     if (OsIsShmRegion(oldRegion)) {
         newRegion->shmid = oldRegion->shmid;
     }
+#endif
 
 #ifdef LOSCFG_FS_VFS
     if (LOS_IsRegionTypeFile(oldRegion)) {
@@ -697,6 +743,7 @@ STATUS_T OsVmRegionAdjust(LosVmSpace *space, VADDR_T newRegionStart, size_t size
             return LOS_ERRNO_VM_NO_MEMORY;
         }
     }
+
     return LOS_OK;
 }
 
@@ -787,7 +834,7 @@ STATUS_T OsIsRegionCanExpand(LosVmSpace *space, LosVmMapRegion *region, size_t s
 
     nextRegion = (LosVmMapRegion *)LOS_RbSuccessorNode(&space->regionRbTree, &region->rbNode);
     /* if the gap is larger than size, then we can expand */
-    if ((nextRegion != NULL) && ((nextRegion->range.base - region->range.base ) >= size)) {
+    if ((nextRegion != NULL) && ((nextRegion->range.base - region->range.base) >= size)) {
         return LOS_OK;
     }
 
@@ -885,7 +932,7 @@ BOOL LOS_IsRangeInSpace(const LosVmSpace *space, VADDR_T vaddr, size_t size)
 
 STATUS_T LOS_VmSpaceReserve(LosVmSpace *space, size_t size, VADDR_T vaddr)
 {
-    uint regionFlags;
+    UINT32 regionFlags = 0;
 
     if ((space == NULL) || (size == 0) || (!IS_PAGE_ALIGNED(vaddr) || !IS_PAGE_ALIGNED(size))) {
         return LOS_ERRNO_VM_INVALID_ARGS;
@@ -896,10 +943,10 @@ STATUS_T LOS_VmSpaceReserve(LosVmSpace *space, size_t size, VADDR_T vaddr)
     }
 
     /* lookup how it's already mapped */
-    LOS_ArchMmuQuery(&space->archMmu, vaddr, NULL, &regionFlags);
+    (VOID)LOS_ArchMmuQuery(&space->archMmu, vaddr, NULL, &regionFlags);
 
     /* build a new region structure */
-    LosVmMapRegion *region = LOS_RegionAlloc(space, vaddr, size, regionFlags, 0);
+    LosVmMapRegion *region = LOS_RegionAlloc(space, vaddr, size, regionFlags | VM_MAP_REGION_FLAG_FIXED, 0);
 
     return region ? LOS_OK : LOS_ERRNO_VM_NO_MEMORY;
 }
@@ -935,6 +982,11 @@ STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, s
 
     while (len > 0) {
         vmPage = LOS_VmPageGet(paddr);
+        if (vmPage == NULL) {
+            LOS_RegionFree(space, region);
+            VM_ERR("Page is NULL");
+            return LOS_ERRNO_VM_NOT_VALID;
+        }
         LOS_AtomicInc(&vmPage->refCounts);
 
         ret = LOS_ArchMmuMap(&space->archMmu, vaddr, paddr, 1, region->regionFlags);
@@ -1101,14 +1153,15 @@ DONE:
 
 STATIC INLINE BOOL OsMemLargeAlloc(UINT32 size)
 {
-    UINT32 wasteMem;
-
-    if (size < PAGE_SIZE) {
+    if (g_kHeapInited == FALSE) {
         return FALSE;
     }
-    wasteMem = ROUNDUP(size, PAGE_SIZE) - size;
-    /* that is 1K ram wasted, waste too much mem ! */
-    return (wasteMem < VM_MAP_WASTE_MEM_LEVEL);
+
+    if (size < KMALLOC_LARGE_SIZE) {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 VOID *LOS_KernelMalloc(UINT32 size)
