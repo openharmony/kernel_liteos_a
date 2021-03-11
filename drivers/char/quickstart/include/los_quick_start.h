@@ -34,7 +34,7 @@
 
 #include "los_typedef.h"
 
-fdef __cplusplus
+#ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif /* __cplusplus */
