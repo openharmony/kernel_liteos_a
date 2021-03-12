@@ -65,7 +65,9 @@
 
     .equ MPIDR_CPUID_MASK, 0xffU
 
-    .fpu vfpv4
+    .fpu neon-vfpv4
+    .syntax unified
+    .arch armv7-a
     .arm
 
 /* param0 is stack bottom, param1 is stack size, r11 hold cpu id */
@@ -164,8 +166,7 @@ reloc_img_to_bottom_done:
     mov     r0, r4
     mov     r1, #0
     mov     r2, #MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS
-    bl      memset
-
+    bl      memset_optimized                    /* optimized memset since r0 is 64-byte aligned */
 
     PAGE_TABLE_SET SYS_MEM_BASE, KERNEL_VMM_BASE, KERNEL_VMM_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
     PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_NORMAL_NOCACHE
@@ -429,6 +430,18 @@ _bootaddr_setup:
     dsb
     isb
 
+    bx      lr
+
+memset_optimized:
+    mov     r3, r0
+    vdup.8  q0, r1
+    vmov    q1, q0
+    vmov    q2, q0
+    vmov    q3, q0
+memset_optimized_loop:
+    subs    r2, #64
+    vstmia  r3!, {d0 - d7}
+    bge     memset_optimized_loop
     bx      lr
 
 init_done:
