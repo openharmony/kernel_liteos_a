@@ -37,10 +37,10 @@
 #include "los_signal.h"
 #include "los_syscall.h"
 #include "los_vm_map.h"
-#include "lwip/sockets.h"
 #include "user_copy.h"
 
 #ifdef LOSCFG_NET_LWIP_SACK
+#include "lwip/sockets.h"
 
 #define SOCKET_U2K(s) \
     do { \

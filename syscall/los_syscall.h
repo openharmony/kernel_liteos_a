@@ -35,6 +35,7 @@
 #include "los_typedef.h"
 #include "los_task.h"
 #include "los_mux.h"
+#include "los_signal.h"
 #include "fs/fs.h"
 #include "syscall.h"
 #ifdef LOSCFG_KERNEL_DYNLOAD
@@ -52,6 +53,7 @@
 #ifdef LOSCFG_FS_VFS
 #include "sys/socket.h"
 #include "dirent.h"
+#include "fs/fs.h"
 #endif
 
 /* process */

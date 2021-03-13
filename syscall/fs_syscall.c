@@ -43,7 +43,9 @@
 #include "sys/uio.h"
 #include "poll.h"
 #include "sys/prctl.h"
+#ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_exec_elf.h"
+#endif
 #include "los_syscall.h"
 #include "dirent.h"
 #include "user_copy.h"
@@ -380,10 +382,12 @@ OUT:
     return ret;
 }
 
+#ifdef LOSCFG_KERNEL_DYNLOAD
 int SysExecve(const char *fileName, char *const *argv, char *const *envp)
 {
     return LOS_DoExecveFile(fileName, argv, envp);
 }
+#endif
 
 int SysChdir(const char *path)
 {
