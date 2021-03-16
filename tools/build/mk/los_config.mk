@@ -608,9 +608,9 @@ else ifeq ($(LOSCFG_COMPILER_HCC_64), y)
 endif
 
 LITEOS_CXXINCLUDE +=  $(LITEOS_COMPILER_GCC_INCLUDE)
-
+FP = -fno-omit-frame-pointer
 LITEOS_CXXOPTS_BASE  += -std=c++11 -nostdlib -nostdinc -nostdinc++ -fexceptions -fpermissive -fno-use-cxa-atexit \
-                        -fno-builtin -frtti -fno-pic -Winvalid-pch $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS)
+                        -fno-builtin -frtti -fno-pic -Winvalid-pch $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(FP)
 
 
 LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCLUDE) \
@@ -646,9 +646,8 @@ LITEOS_SECURITY_INCLUDE    := $(LITEOS_SECURITY_CAP_INC) $(LITEOS_SECURITY_VID_I
 LOSCFG_TOOLS_DEBUG_INCLUDE := $(LITEOS_SHELL_INCLUDE)  $(LITEOS_UART_INCLUDE) \
                               $(LITEOS_TELNET_INCLUDE)
 
-
-FP = -fno-omit-frame-pointer
-LITEOS_COPTS_BASE  := -fno-pic -fno-builtin -nostdinc -nostdlib $(WARNING_AS_ERROR) $(LITEOS_SSP) $(LLVM_EXTRA_OPTS) -fno-strict-aliasing -fno-common -fsigned-char
+LITEOS_COPTS_BASE  := -fno-pic -fno-builtin -nostdinc -nostdlib $(WARNING_AS_ERROR) $(LITEOS_SSP) $(LLVM_EXTRA_OPTS) \
+                      -fno-strict-aliasing -fno-common -fsigned-char
 ifneq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LITEOS_COPTS_BASE += -fno-aggressive-loop-optimizations
 endif
