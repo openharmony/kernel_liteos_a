@@ -55,7 +55,9 @@
 #include "los_vm_phys.h"
 #include "los_vm_fault.h"
 #include "los_vm_common.h"
+#ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_load_elf.h"
+#endif
 #include "arm.h"
 #include "los_bitmap.h"
 #include "los_process_pri.h"
@@ -283,9 +285,11 @@ STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProc
     } while (!strcmp(curFilep->f_path, lastFilep->f_path));
 
 DONE:
+#ifdef LOSCFG_KERNEL_DYNLOAD
     if (curRegion->range.base == EXEC_MMAP_BASE) {
         return 0;
     }
+#endif
     return curRegion->range.base;
 }
 
