@@ -67,30 +67,32 @@ OpenHarmony LiteOS-A内核是基于Huawei LiteOS内核演进发展的新一代�
 
 ## 使用说明<a name="section741617511812"></a>
 
-OpenHarmony LiteOS-A内核支持Hi3518EV300（[介绍](https://gitee.com/openharmony/docs/blob/master/quick-start/Hi3518%E5%BC%80%E5%8F%91%E6%9D%BF%E4%BB%8B%E7%BB%8D.md)）、Hi3516DV300（[介绍](https://gitee.com/openharmony/docs/blob/master/quick-start/Hi3516%E5%BC%80%E5%8F%91%E6%9D%BF%E4%BB%8B%E7%BB%8D.md)）单板，开发者可基于两种单板开发运行自己的应用程序。
+OpenHarmony LiteOS-A内核支持Hi3518EV300（[介绍](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3518%E5%BC%80%E5%8F%91%E6%9D%BF%E4%BB%8B%E7%BB%8D.md)）、Hi3516DV300（[介绍](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3516%E5%BC%80%E5%8F%91%E6%9D%BF%E4%BB%8B%E7%BB%8D.md)）单板，开发者可基于两种单板开发运行自己的应用程序。
 
 ### 准备<a name="section1579912573329"></a>
 
 开发者需要在Linux上搭建编译环境：
 
--   Hi3518EV300单板：参考[环境搭建](https://gitee.com/openharmony/docs/blob/master/quick-start/Hi3518%E6%90%AD%E5%BB%BA%E7%8E%AF%E5%A2%83.md)；
--   Hi3516DV300单板：参考[环境搭建](https://gitee.com/openharmony/docs/blob/master/quick-start/Hi3516%E6%90%AD%E5%BB%BA%E7%8E%AF%E5%A2%83.md)。
+-   Hi3518EV300单板：参考[环境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E6%90%AD%E5%BB%BA%E7%8E%AF%E5%A2%83.md)；
+-   Hi3516DV300单板：参考[环境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3516%E6%90%AD%E5%BB%BA%E7%8E%AF%E5%A2%83.md)。
 
 ### 获取源码<a name="section11443189655"></a>
 
-在Linux服务器上下载并解压一套源代码，获取源码（[下载链接](https://repo.huaweicloud.com/harmonyos/os/1.0/code-1.0.tar.gz)）。更多源码获取方式，参考[源码获取](https://gitee.com/openharmony/docs/blob/master/get-code/%E6%BA%90%E7%A0%81%E8%8E%B7%E5%8F%96.md)。
+在Linux服务器上下载并解压一套源代码，获取源码（[下载链接](https://repo.huaweicloud.com/harmonyos/os/1.0.1/code-1.0.1.tar.gz)）。更多源码获取方式，参考[源码获取](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/get-code/%E6%BA%90%E7%A0%81%E8%8E%B7%E5%8F%96.md)。
 
 ### 编译构建<a name="section2081013992812"></a>
 
 开发者开发第一个应用程序可参考：
 
--   [helloworld for Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/quick-start/%E5%BC%80%E5%8F%91Hi3518%E7%AC%AC%E4%B8%80%E4%B8%AA%E7%A4%BA%E4%BE%8B%E7%A8%8B%E5%BA%8F.md)；
+-   [helloworld for Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E5%BC%80%E5%8F%91Hi3518%E7%AC%AC%E4%B8%80%E4%B8%AA%E7%A4%BA%E4%BE%8B%E7%A8%8B%E5%BA%8F.md)；
 
--   [helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/quick-start/%E5%BC%80%E5%8F%91Hi3516%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B.md)。
+-   [helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E5%BC%80%E5%8F%91Hi3516%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B.md)。
 
 ## 相关仓<a name="section1371113476307"></a>
 
-[drivers\_liteos](https://gitee.com/openharmony/drivers_liteos)
+[内核子系统](https://gitee.com/openharmony/docs/blob/master/zh-cn/readme/%E5%86%85%E6%A0%B8%E5%AD%90%E7%B3%BB%E7%BB%9F.md)
 
-**[kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a)**
+[drivers\_liteos](https://gitee.com/openharmony/drivers_liteos/blob/master/README_zh.md)
+
+**kernel\_liteos\_a**
 
