@@ -309,7 +309,7 @@ int SysWait(int pid, USER int *status, int options, void *rusage)
 
 int SysFork(void)
 {
-    return OsClone(CLONE_SIGHAND, 0, 0);
+    return OsClone(0, 0, 0);
 }
 
 unsigned int SysGetPPID(void)
