@@ -76,7 +76,12 @@ VOID OsVmPageStartup(VOID)
 
     OsVmPhysAreaSizeAdjust(ROUNDUP((g_vmBootMemBase - KERNEL_ASPACE_BASE), PAGE_SIZE));
 
-    nPage = OsVmPhysPageNumGet();
+    /*
+     * Pages getting from OsVmPhysPageNumGet() interface here contain the memory
+     * struct LosVmPage occupied, which satisfies the equation:
+     * nPage * sizeof(LosVmPage) + nPage * PAGE_SIZE = OsVmPhysPageNumGet() * PAGE_SIZE.
+     */
+    nPage = OsVmPhysPageNumGet() * PAGE_SIZE / (sizeof(LosVmPage) + PAGE_SIZE);
     g_vmPageArraySize = nPage * sizeof(LosVmPage);
     g_vmPageArray = (LosVmPage *)OsVmBootMemAlloc(g_vmPageArraySize);
 

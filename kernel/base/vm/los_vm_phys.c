@@ -108,12 +108,12 @@ VOID OsVmPhysSegAdd(VOID)
 
 VOID OsVmPhysAreaSizeAdjust(size_t size)
 {
-    INT32 i;
-
-    for (i = 0; i < (sizeof(g_physArea) / sizeof(g_physArea[0])); i++) {
-        g_physArea[i].start += size;
-        g_physArea[i].size -= size;
-    }
+    /*
+     * The first physics memory segment is used for kernel image and kernel heap,
+     * so just need to adjust the first one here.
+     */
+    g_physArea[0].start += size;
+    g_physArea[0].size -= size;
 }
 
 UINT32 OsVmPhysPageNumGet(VOID)
