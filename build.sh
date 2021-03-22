@@ -32,6 +32,7 @@ set -e
 
 echo "sh param:$1,$2,$3,$4,$5,$6,$7"
 destination=".config"
+config_file=""
 tee=""
 outdir="../..$3/test_info/gen/kernel/test"
 if [ "$5" = "tee" ]; then
@@ -41,15 +42,19 @@ productName="$(basename $7)"
 source="tools/build/config/${productName}_release.config"
 if [ "$2" = "clang" ]; then
     if [ "$4" = "debug" ]; then
-        source="tools/build/config/debug/${productName}_$2$tee.config"
+        config_file="${productName}_$2$tee.config"
+        source="tools/build/config/debug/$config_file"
     else
-        source="tools/build/config/${productName}_$2_release$tee.config"
+        config_file="${productName}_$2_release$tee.config"
+        source="tools/build/config/$config_file"
     fi
 elif [ "$2" = "gcc" ]; then
     if [ "$4" = "debug" ]; then
-        source="tools/build/config/${productName}_debug_shell$tee.config"
+        config_file="${productName}_debug_shell$tee.config"
+        source="tools/build/config/$config_file"
     else
-        source="tools/build/config/${productName}_release$tee.config"
+        config_file="${productName}_release$tee.config"
+        source="tools/build/config/$config_file"
     fi
 fi
 if [ -d "./out" ]; then
@@ -57,6 +62,9 @@ if [ -d "./out" ]; then
 fi
 if [ -f "$destination" ]; then
     rm -rf $destination
+fi
+if [ ! -f "$source"]; then
+    source="../..$7/config/sys/$config_file"
 fi
 cp $source $destination
 
