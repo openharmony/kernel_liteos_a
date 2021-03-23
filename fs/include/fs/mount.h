@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,62 +28,36 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "disk_pri.h"
-#include "fcntl.h"
-#include "fs/fs.h"
-#include "fs/fs_operation.h"
-#include "linux/spinlock.h"
-#include "los_printf.h"
-#include "fs/mount.h"
-#include "fs/path_cache.h"
-#include "sys/statfs.h"
-#include "unistd.h"
+#ifndef _MOUNT_H_
+#define _MOUNT_H_
+
+#include "los_mux.h"
 #include "fs/vfs_util.h"
 #include "fs/vnode.h"
+#include <sys/stat.h>
 
-void los_vfs_init(void)
-{
-    uint retval;
-    static bool g_vfs_init = false;
-    if (g_vfs_init) {
-        return;
-    }
+struct MountOps;
 
-#ifdef LOSCFG_FS_FAT_DISK
-    spin_lock_init(&g_diskSpinlock);
-    spin_lock_init(&g_diskFatBlockSpinlock);
+struct Mount {
+    LIST_ENTRY mountList;              /* mount list */
+    const struct MountOps *ops;        /* operations of mount */
+    struct Vnode *vnodeBeCovered;      /* vnode we mounted on */
+    struct Vnode *vnodeCovered;        /* syncer vnode */
+    LIST_HEAD vnodeList;               /* list of vnodes */
+    int vnodeSize;                     /* size of vnode list */
+    LIST_HEAD activeVnodeList;         /* list of active vnodes */
+    int activeVnodeSize;               /* szie of active vnodes list */
+    void *data;                        /* private data */
+    uint32_t hashseed;                 /* Random seed for vfshash */
+    unsigned long mountFlags;          /* Flags for mount */
+};
+
+struct MountOps {
+    int (*Mount)(struct Mount *mount, struct Vnode *vnode, const void *data);
+    int (*Unmount)(struct Mount *mount, struct Vnode **blkdriver);
+    int (*Statfs)(struct Mount *mount, struct statfs *sbp);
+};
+
+struct Mount* MountAlloc(struct Vnode* vnode, struct MountOps* mop);
+LIST_HEAD* GetMountList(void);
 #endif
-    files_initialize();
-    files_initlist(&tg_filelist);
-
-    retval = VnodesInit();
-    if (retval != LOS_OK) {
-        PRINT_ERR("los_vfs_init VnodeInit failed error %d\n", retval);
-        return;
-    }
-
-    retval = PathCacheInit();
-    if (retval != LOS_OK) {
-        PRINT_ERR("los_vfs_init PathCacheInit failed error %d\n", retval);
-        return;
-    }
-    retval = VnodeHashInit();
-    if (retval != LOS_OK) {
-        PRINT_ERR("los_vfs_init VnodeHashInit failed error %d\n", retval);
-        return;
-    }
-
-    retval = VnodeDevInit();
-    if (retval != LOS_OK) {
-        PRINT_ERR("los_vfs_init VnodeDevInit failed error %d\n", retval);
-        return;
-    }
-
-    retval = init_file_mapping();
-    if (retval != LOS_OK) {
-        PRINT_ERR("Page cache file map init failed\n");
-        return;
-    }
-
-    g_vfs_init = true;
-}

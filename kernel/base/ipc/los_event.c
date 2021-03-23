@@ -44,7 +44,6 @@
 extern "C" {
 #endif
 #endif /* __cplusplus */
-
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
 {
     UINT32 intSave;
@@ -110,7 +109,6 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadCheck(const PEVENT_CB_S eventCB, UINT3
 {
     UINT32 ret;
     LosTaskCB *runTask = NULL;
-
     ret = OsEventParamCheck(eventCB, eventMask, mode);
     if (ret != LOS_OK) {
         return ret;

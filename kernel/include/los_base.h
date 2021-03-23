@@ -60,6 +60,8 @@ extern "C" {
 
 #define LOS_ASSERT_COND(expression) LOS_ASSERT(expression)
 
+extern VOID PrintExcInfo(const CHAR *fmt, ...);
+
 /**
  * @ingroup los_base
  * Define the timeout interval as LOS_NO_WAIT.

@@ -37,7 +37,6 @@
 #endif
 #include "unistd.h"
 #include "securec.h"
-#include "inode/inode.h"
 #ifdef LOSCFG_SHELL_DMESG
 #include "dmesg_pri.h"
 #endif
@@ -48,7 +47,10 @@
 #include "los_exc_pri.h"
 #include "los_process_pri.h"
 #include "los_sched_pri.h"
+#include "fs/path_cache.h"
+#include "fs/vfs_util.h"
 #include "user_copy.h"
+#include "fs/vnode.h"
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -84,20 +86,24 @@ INT32 GetFilepOps(const struct file *filep, struct file **privFilep, const struc
 {
     INT32 ret;
 
-    if ((filep == NULL) || (filep->f_inode == NULL) || (filep->f_inode->i_private == NULL)) {
+    if ((filep == NULL) || (filep->f_vnode == NULL) || (filep->f_vnode->data == NULL)) {
         ret = EINVAL;
         goto ERROUT;
     }
 
     /* to find console device's filep(now it is *privFilep) throught i_private */
-    *privFilep = (struct file *)filep->f_inode->i_private;
-    if (((*privFilep)->f_inode == NULL) || ((*privFilep)->f_inode->u.i_ops == NULL)) {
+    struct drv_data *drv = (struct drv_data *)filep->f_vnode->data;
+    *privFilep = (struct file *)drv->priv;
+    if (((*privFilep)->f_vnode == NULL) || ((*privFilep)->f_vnode->data == NULL)) {
         ret = EINVAL;
         goto ERROUT;
     }
 
     /* to find uart driver operation function throutht u.i_opss */
-    *filepOps = (*privFilep)->f_inode->u.i_ops;
+
+    drv = (struct drv_data *)(*privFilep)->f_vnode->data;
+
+    *filepOps = (const struct file_operations_vfs *)drv->ops;
 
     return ENOERR;
 ERROUT:
@@ -242,33 +248,21 @@ STATIC INT32 ConsoleCtrlRightsRelease(CONSOLE_CB *consoleCB)
 STATIC CONSOLE_CB *OsGetConsoleByDevice(const CHAR *deviceName)
 {
     INT32 ret;
-    CHAR *fullpath = NULL;
-    struct inode *inode = NULL;
-    struct inode_search_s desc;
+    struct Vnode *vnode = NULL;
 
-    ret = vfs_normalize_path(NULL, deviceName, &fullpath);
-    if (ret < 0) {
-        set_errno(EINVAL);
-        return NULL;
-    }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
+    VnodeHold();
+    ret = VnodeLookup(deviceName, &vnode, 0);
+    VnodeDrop();
     if (ret < 0) {
         set_errno(EACCES);
-        free(fullpath);
         return NULL;
     }
-    inode = desc.node;
-    free(fullpath);
 
-    if (g_console[CONSOLE_SERIAL - 1]->devInode == inode) {
-        inode_release(inode);
+    if (g_console[CONSOLE_SERIAL - 1]->devVnode == vnode) {
         return g_console[CONSOLE_SERIAL - 1];
-    } else if (g_console[CONSOLE_TELNET - 1]->devInode == inode) {
-        inode_release(inode);
+    } else if (g_console[CONSOLE_TELNET - 1]->devVnode == vnode) {
         return g_console[CONSOLE_TELNET - 1];
     } else {
-        inode_release(inode);
         set_errno(ENOENT);
         return NULL;
     }
@@ -937,7 +931,6 @@ STATIC const struct file_operations_vfs g_consoleDevOps = {
 #ifndef CONFIG_DISABLE_POLL
     .poll = ConsolePoll,
 #endif
-    .unlink = NULL,
 };
 
 STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
@@ -970,40 +963,40 @@ STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
 {
     INT32 ret;
-    struct inode *inode = NULL;
+    struct Vnode *vnode = NULL;
     struct file *filep = NULL;
     CHAR *fullpath = NULL;
-    struct inode_search_s desc;
 
     ret = vfs_normalize_path(NULL, consoleCB->name, &fullpath);
     if (ret < 0) {
         return EINVAL;
     }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
+
+    VnodeHold();
+    ret = VnodeLookup(fullpath, &vnode, 0);
+    if (ret != LOS_OK) {
         ret = EACCES;
         goto ERROUT_WITH_FULLPATH;
     }
-    inode = desc.node;
 
-    consoleCB->fd = files_allocate(inode, O_RDWR, (off_t)0, consoleCB, STDERR_FILENO + 1);
+    consoleCB->fd = files_allocate(vnode, O_RDWR, (off_t)0, consoleCB, STDERR_FILENO + 1);
     if (consoleCB->fd < 0) {
         ret = EMFILE;
-        goto ERROUT_WITH_INODE;
+        goto ERROUT_WITH_FULLPATH;
     }
 
     ret = fs_getfilep(consoleCB->fd, &filep);
     if (ret < 0) {
         ret = EPERM;
-        goto ERROUT_WITH_INODE;
+        goto ERROUT_WITH_FULLPATH;
     }
     filep->f_path = fullpath;
+    filep->ops = (struct file_operations_vfs *)((struct drv_data *)vnode->data)->ops;
+    VnodeDrop();
     return LOS_OK;
 
-ERROUT_WITH_INODE:
-    inode_release(inode);
 ERROUT_WITH_FULLPATH:
+    VnodeDrop();
     free(fullpath);
     return ret;
 }
@@ -1015,10 +1008,8 @@ ERROUT_WITH_FULLPATH:
 STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
     INT32 ret;
-    CHAR *fullpath = NULL;
     struct file *filep = NULL;
-    struct inode *inode = NULL;
-    struct inode_search_s desc;
+    struct Vnode *vnode = NULL;
 
     /* allocate memory for filep,in order to unchange the value of filep */
     filep = (struct file *)LOS_MemAlloc(m_aucSysMem0, sizeof(struct file));
@@ -1027,107 +1018,53 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
         goto ERROUT;
     }
 
-    /* Adopt procedure of open function to allocate 'filep' to /dev/console */
-    ret = vfs_normalize_path(NULL, deviceName, &fullpath);
-    if (ret < 0) {
-        ret = EINVAL;
-        goto ERROUT_WITH_FILEP;
-    }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
+    VnodeHold();
+    ret = VnodeLookup(deviceName, &vnode, V_DUMMY);
+    VnodeDrop(); // not correct, but can't fix perfectly here
+    if (ret != LOS_OK) {
         ret = EACCES;
-        goto ERROUT_WITH_FULLPATH;
+        PRINTK("!! can not find %s\n", consoleCB->name);
+        goto ERROUT;
     }
-    inode = desc.node;
 
-    consoleCB->devInode = inode;
+    consoleCB->devVnode = vnode;
 
     /*
      * initialize the console filep which is associated with /dev/console,
-     * assign the uart0 inode of /dev/ttyS0 to console inod of /dev/console,
+     * assign the uart0 vnode of /dev/ttyS0 to console inod of /dev/console,
      * then we can operate console's filep as if we operate uart0 filep of
      * /dev/ttyS0.
      */
     (VOID)memset_s(filep, sizeof(struct file), 0, sizeof(struct file));
     filep->f_oflags = O_RDWR;
     filep->f_pos = 0;
-    filep->f_inode = inode;
+    filep->f_vnode = vnode;
     filep->f_path = NULL;
     filep->f_priv = NULL;
-
-    if (inode->u.i_ops->open != NULL) {
-        (VOID)inode->u.i_ops->open(filep);
-    } else {
-        ret = EFAULT;
-        goto ERROUT_WITH_INODE;
-    }
-
     /*
      * Use filep to connect console and uart, we can find uart driver function throught filep.
      * now we can operate /dev/console to operate /dev/ttyS0 through filep.
      */
+
     ret = register_driver(consoleCB->name, &g_consoleDevOps, DEFFILEMODE, filep);
     if (ret != LOS_OK) {
-        goto ERROUT_WITH_INODE;
+        goto ERROUT;
     }
 
-    inode_release(inode);
-    free(fullpath);
     return LOS_OK;
 
-ERROUT_WITH_INODE:
-    inode_release(inode);
-ERROUT_WITH_FULLPATH:
-    free(fullpath);
-ERROUT_WITH_FILEP:
-    (VOID)LOS_MemFree(m_aucSysMem0, filep);
 ERROUT:
+     if (filep) {
+        (VOID)LOS_MemFree(m_aucSysMem0, filep);
+    }
+
     set_errno(ret);
     return LOS_NOK;
 }
 
 STATIC UINT32 OsConsoleDevDeinit(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-    struct file *filep = NULL;
-    struct inode *inode = NULL;
-    CHAR *fullpath = NULL;
-    struct inode_search_s desc;
-
-    ret = vfs_normalize_path(NULL, consoleCB->name, &fullpath);
-    if (ret < 0) {
-        ret = EINVAL;
-        goto ERROUT;
-    }
-    SETUP_SEARCH(&desc, fullpath, false);
-    ret = inode_find(&desc);
-    if (ret < 0) {
-        ret = EACCES;
-        goto ERROUT_WITH_FULLPATH;
-    }
-    inode = desc.node;
-
-    filep = inode->i_private;
-    if (filep != NULL) {
-        (VOID)LOS_MemFree(m_aucSysMem0, filep); /* free filep what you malloc from console_init */
-        inode->i_private = NULL;
-    } else {
-        ret = EBADF;
-        goto ERROUT_WITH_INODE;
-    }
-    inode_release(inode);
-    free(fullpath);
-    (VOID)unregister_driver(consoleCB->name);
-    return LOS_OK;
-
-ERROUT_WITH_INODE:
-    inode_release(inode);
-ERROUT_WITH_FULLPATH:
-    free(fullpath);
-ERROUT:
-    set_errno(ret);
-    return LOS_NOK;
+    return unregister_driver(consoleCB->name);
 }
 
 STATIC CirBufSendCB *ConsoleCirBufCreate(VOID)
@@ -1260,6 +1197,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 
     ret = (INT32)OsConsoleBufInit(consoleCB);
     if (ret != LOS_OK) {
+        PRINT_ERR("console OsConsoleBufInit error. %d\n", ret);
         goto ERR_WITH_NAME;
     }
 
@@ -1271,11 +1209,13 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 
     ret = OsConsoleDevInit(consoleCB, deviceName);
     if (ret != LOS_OK) {
+        PRINT_ERR("console OsConsoleDevInitlloc error. %d\n", ret);
         goto ERR_WITH_SEM;
     }
 
     ret = OsConsoleFileInit(consoleCB);
     if (ret != LOS_OK) {
+        PRINT_ERR("console OsConsoleFileInit error. %d\n", ret);
         goto ERR_WITH_DEV;
     }
 
@@ -1344,6 +1284,7 @@ INT32 system_console_init(const CHAR *deviceName)
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
 
 #ifdef LOSCFG_SHELL
+
     ret = OsShellInit(consoleID);
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);

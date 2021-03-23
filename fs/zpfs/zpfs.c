@@ -276,8 +276,8 @@ static int IsTargetMounted(const char *target)
         return -EINVAL;
     }
 
-    inode = inode_search((FAR const char **)&target, (FAR struct inode**)NULL,
-        (FAR struct inode**)NULL, (const char **)&path);
+    inode = inode_search((const char **)&target, (struct inode**)NULL,
+        (struct inode**)NULL, (const char **)&path);
     if (inode == NULL || !INODE_IS_MOUNTPT(inode)) {
         PRINT_ERR("Can't to mount to this inode %s\n", target);
         return -EINVAL;

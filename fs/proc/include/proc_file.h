@@ -181,4 +181,7 @@ int LseekDirProcFile(struct ProcDirEntry *pde, off_t *pos, int whence);
  */
 extern int CloseProcFile(struct ProcDirEntry *pde);
 
+extern struct ProcDirEntry *GetProcRootEntry(void);
+extern int ProcOpen(struct ProcFile *procFile);
+
 #endif

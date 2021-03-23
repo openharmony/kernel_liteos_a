@@ -40,7 +40,6 @@
 #include "los_vm_common.h"
 #include "los_vm_fault.h"
 #include "los_process_pri.h"
-#include "inode/inode.h"
 #include "los_vm_lock.h"
 
 #ifdef __cplusplus
@@ -129,6 +128,7 @@ VOID OsDeletePageCacheLru(LosFilePage *page)
     OsPageCacheDel(page);
 }
 
+#if VFS_IMPL_LATER
 STATIC LosFilePage *OsPagecacheGetPageAndFill(struct file *filp, VM_OFFSET_T pgOff, size_t *readSize, VADDR_T *kvaddr)
 {
     LosFilePage *page = NULL;
@@ -151,7 +151,7 @@ STATIC LosFilePage *OsPagecacheGetPageAndFill(struct file *filp, VM_OFFSET_T pgO
 
         file_seek(filp, pgOff << PAGE_SHIFT, SEEK_SET);
         /* "ReadPage" func exists definitely in this procedure */
-        *readSize = filp->f_inode->u.i_mops->readpage(filp, (char *)(UINTPTR)*kvaddr, PAGE_SIZE);
+        *readSize = filp->f_vnode->u.i_mops->readpage(filp, (char *)(UINTPTR)*kvaddr, PAGE_SIZE);
         if (*readSize == 0) {
             VM_ERR("read 0 bytes");
             OsCleanPageLocked(page->vmPage);
@@ -161,6 +161,7 @@ STATIC LosFilePage *OsPagecacheGetPageAndFill(struct file *filp, VM_OFFSET_T pgO
 
     return page;
 }
+
 
 ssize_t OsMappingRead(struct file *filp, char *buf, size_t size)
 {
@@ -217,6 +218,7 @@ ssize_t OsMappingRead(struct file *filp, char *buf, size_t size)
 
     return readTotal;
 }
+#endif
 
 ssize_t OsMappingWrite(struct file *filp, const char *buf, size_t size)
 {
@@ -388,7 +390,7 @@ STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
     char *buff = NULL;
     VM_OFFSET_T oldPos;
     struct file *file = fpage->mapping->host;
-    if ((file == NULL) || (file->f_inode == NULL)) {
+    if ((file == NULL) || (file->f_vnode == NULL)) {
         VM_ERR("page cache file error");
         return LOS_NOK;
     }
@@ -404,11 +406,7 @@ STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
         return LOS_OK;
     }
 
-    if (file->f_inode && file->f_inode->u.i_mops->writepage) {
-        ret = file->f_inode->u.i_mops->writepage(file, (buff + fpage->dirtyOff), len);
-    } else {
-        ret = file_write(file, (VOID *)buff, len);
-    }
+    ret = file_write(file, (VOID *)buff, len);
     if (ret <= 0) {
         VM_ERR("WritePage error ret %d", ret);
     }
@@ -536,11 +534,7 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
     if (newCache) {
         oldPos = file_seek(file, 0, SEEK_CUR);
         file_seek(file, fpage->pgoff << PAGE_SHIFT, SEEK_SET);
-        if (file->f_inode && file->f_inode->u.i_mops->readpage) {
-            ret = file->f_inode->u.i_mops->readpage(file, (char *)kvaddr, PAGE_SIZE);
-        } else {
-            ret = file_read(file, kvaddr, PAGE_SIZE);
-        }
+        ret = file_read(file, kvaddr, PAGE_SIZE);
         file_seek(file, oldPos, SEEK_SET);
         if (ret == 0) {
             VM_ERR("Failed to read from file!");
@@ -646,34 +640,30 @@ INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 
 STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region)
 {
-    struct inode *inodePtr = NULL;
+    struct Vnode *vnode = NULL;
     if (filep == NULL) {
         return LOS_ERRNO_VM_MAP_FAILED;
     }
-    inodePtr = filep->f_inode;
-    if (inodePtr == NULL) {
+    vnode = filep->f_vnode;
+    if (vnode == NULL) {
         return LOS_ERRNO_VM_MAP_FAILED;
     }
-    if (INODE_IS_MOUNTPT(inodePtr)) {
-        if (inodePtr->u.i_mops->mmap) {
-            LOS_SetRegionTypeFile(region);
-            return inodePtr->u.i_mops->mmap(filep, region);
-        } else {
-            VM_ERR("file mmap not support");
-            return LOS_ERRNO_VM_MAP_FAILED;
-        }
-    } else if (INODE_IS_DRIVER(inodePtr)) {
-        if (inodePtr->u.i_ops && inodePtr->u.i_ops->mmap) {
+
+    if (filep->ops != NULL && filep->ops->mmap != NULL) {
+        if (vnode->type == VNODE_TYPE_CHR || vnode->type == VNODE_TYPE_BLK) {
             LOS_SetRegionTypeDev(region);
-            return inodePtr->u.i_ops->mmap(filep, region);
         } else {
-            VM_ERR("dev mmap not support");
+            LOS_SetRegionTypeFile(region);
+        }
+        int ret = filep->ops->mmap(filep, region);
+        if (ret != LOS_OK) {
             return LOS_ERRNO_VM_MAP_FAILED;
         }
     } else {
         VM_ERR("mmap file type unknown");
         return LOS_ERRNO_VM_MAP_FAILED;
     }
+    return LOS_OK;
 }
 
 LosFilePage *OsFindGetEntry(struct page_mapping *mapping, VM_OFFSET_T pgoff)

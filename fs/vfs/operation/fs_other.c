@@ -38,15 +38,13 @@
 #include "sys/select.h"
 #include "sys/stat.h"
 #include "sys/prctl.h"
-#include "fs/dirent_fs.h"
 #include "fs/fd_table.h"
 #include "fs/fs.h"
 #include "linux/spinlock.h"
 #include "los_process_pri.h"
 #include "los_task_pri.h"
-#include "inode/inode.h"
 #include "capability_api.h"
-
+#include "fs/vnode.h"
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -54,7 +52,6 @@ extern "C" {
 #endif /* __cplusplus */
 
 #define MAX_DIR_ENT 1024
-
 int fstat(int fd, struct stat *buf)
 {
     struct file *filep = NULL;
@@ -84,7 +81,14 @@ int lstat(const char *path, struct stat *buffer)
     return stat(path, buffer);
 }
 
-int VfsPermissionCheck(uint fuid, uint fgid, mode_t fileMode, int accMode)
+int VfsVnodePermissionCheck(const struct Vnode *node, int accMode)
+{
+    uint fuid = node->uid;
+    uint fgid = node->gid;
+    uint fileMode = node->mode;
+    return VfsPermissionCheck(fuid, fgid, fileMode, accMode);
+}
+int VfsPermissionCheck(uint fuid, uint fgid, uint fileMode, int accMode)
 {
     uint uid = OsCurrUserGet()->effUserID;
     mode_t tmpMode = fileMode;
@@ -152,6 +156,7 @@ int chdir(const char *path)
     char *fullpath = NULL;
     char *fullpath_bak = NULL;
     struct stat statBuff;
+
 
     if (!path) {
         set_errno(EFAULT);
@@ -281,23 +286,6 @@ int access(const char *path, int amode)
 
     /* no access/permission control for files now, just return OK if stat is okay*/
     return OK;
-}
-
-bool IS_MOUNTPT(const char *dev)
-{
-    struct inode *node = NULL;
-    bool ret = 0;
-    struct inode_search_s desc;
-
-    SETUP_SEARCH(&desc, dev, false);
-    if (inode_find(&desc) < 0) {
-        return 0;
-    }
-    node = desc.node;
-
-    ret = INODE_IS_MOUNTPT(node);
-    inode_release(node);
-    return ret;
 }
 
 static struct dirent **scandir_get_file_list(const char *dir, int *num, int(*filter)(const struct dirent *))
@@ -525,7 +513,6 @@ static void PrintFileInfo(const struct stat *statInfo, const char *name)
     PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
            str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size, statInfo->st_uid, statInfo->st_gid, name);
 }
-
 void ls(const char *pathname)
 {
     struct stat64 stat64_info;
@@ -562,7 +549,6 @@ void ls(const char *pathname)
     }
 
     /* list all directory and file*/
-
     d = opendir(path);
     if (d == NULL) {
         perror("ls error");
@@ -585,13 +571,13 @@ void ls(const char *pathname)
                 }
 
                 fullpath_bak = fullpath;
-
                 if (stat64(fullpath, &stat64_info) == 0) {
                     PrintFileInfo64(&stat64_info, pdirent->d_name);
                 } else if (stat(fullpath, &stat_info) == 0) {
                     PrintFileInfo(&stat_info, pdirent->d_name);
-                } else
+                } else {
                     PRINTK("BAD file: %s\n", pdirent->d_name);
+                }
                 free(fullpath_bak);
             }
         } while (1);
@@ -644,10 +630,10 @@ char *realpath(const char *path, char *resolved_path)
 
 void lsfd(void)
 {
-    FAR struct filelist *f_list = NULL;
+    struct filelist *f_list = NULL;
     unsigned int i = 3; /* file start fd */
     int ret;
-    FAR struct inode *node = NULL;
+    struct Vnode *node = NULL;
 
     f_list = &tg_filelist;
 

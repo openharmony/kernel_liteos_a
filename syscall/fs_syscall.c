@@ -270,49 +270,52 @@ ssize_t SysWrite(int fd, const void *buf, size_t nbytes)
 int SysOpen(const char *path, int oflags, ...)
 {
     int ret;
-    mode_t mode;
+    int procFd;
+    mode_t mode = DEFAULT_FILE_MODE; /* 0666: File read-write properties. */
     char *pathRet = NULL;
-    int procFd = -1;
 
-    if (path != NULL) {
-        ret = UserPathCopy(path, &pathRet);
-        if (ret != 0) {
-            goto OUT;
-        }
+    if (path == NULL && *path == 0) {
+        return -EINVAL;
+    }
+
+    ret = UserPathCopy(path, &pathRet);
+    if (ret != 0) {
+        return ret;
     }
 
     procFd = AllocProcessFd();
-    if (procFd  < 0) {
+    if (procFd < 0) {
         ret = -EMFILE;
-        goto OUT;
+        goto ERROUT;
     }
 
     if ((unsigned int)oflags & O_DIRECTORY) {
         ret = do_opendir(pathRet, oflags);
-        if (ret < 0) {
-            ret = -get_errno();
-        }
-        goto OUT;
-    }
-
+    } else {
 #ifdef LOSCFG_FILE_MODE
-    va_list ap;
-
-    va_start(ap, oflags);
-    mode = va_arg(ap, int);
-    va_end(ap);
-#else
-    mode = 0666; /* 0666: File read-write properties. */
+        va_list ap;
+        va_start(ap, oflags);
+        mode = va_arg(ap, int);
+        va_end(ap);
 #endif
 
-    ret = do_open(AT_FDCWD, (path ? pathRet : NULL), oflags, mode);
-    if (ret < 0) {
-        ret = -get_errno();
+        ret = do_open(AT_FDCWD, pathRet, oflags, mode);
     }
 
-OUT:
+    if (ret < 0) {
+        ret = -get_errno();
+        goto ERROUT;
+    }
+
+    AssociateSystemFd(procFd, ret);
     if (pathRet != NULL) {
-        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+        LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    return procFd;
+
+ERROUT:
+    if (pathRet != NULL) {
+        LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
     }
     if (ret >= 0) {
         AssociateSystemFd(procFd, ret);
@@ -628,7 +631,12 @@ int SysAccess(const char *path, int amode)
     ret = statfs((path ? pathRet : NULL), &fsBuf);
     if (ret != 0) {
         ret = -get_errno();
-        goto OUT;
+        if (ret != -ENOSYS) {
+            goto OUT;
+        } else {
+            /* dev has no statfs ops, need devfs to handle this in feature */
+            ret = LOS_OK;
+        }
     }
 
     if ((fsBuf.f_flags & MS_RDONLY) && ((unsigned int)amode & W_OK)) {

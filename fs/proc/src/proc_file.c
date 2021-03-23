@@ -29,7 +29,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "proc_fs.h"
+#include "proc_file.h"
 #include <stdio.h>
 #include <linux/errno.h>
 #include <linux/module.h>
@@ -57,6 +57,7 @@ static struct ProcDirEntry g_procRootDirEntry = {
     .subdir      = NULL,
     .next        = NULL,
     .pf          = &g_procPf,
+    .type        = VNODE_TYPE_DIR,
 };
 
 int ProcMatch(unsigned int len, const char *name, struct ProcDirEntry *pn)
@@ -212,7 +213,7 @@ static struct ProcDirEntry *ProcAllocNode(struct ProcDirEntry **parent, const ch
         return pn;
     }
 
-    if (strlen(lastName) > MAX_NAMELEN) {
+    if (strlen(lastName) > NAME_MAX) {
         return pn;
     }
 
@@ -326,6 +327,7 @@ static struct ProcDirEntry *ProcCreateDir(struct ProcDirEntry *parent, const cha
         return pn;
     }
     pn->procFileOps = procFileOps;
+    pn->type = VNODE_TYPE_DIR;
     ret = ProcAddNode(parent, pn);
     if (ret != 0) {
         free(pn->pf);
@@ -348,6 +350,7 @@ static struct ProcDirEntry *ProcCreateFile(struct ProcDirEntry *parent, const ch
     }
 
     pn->procFileOps = procFileOps;
+    pn->type = VNODE_TYPE_REG;
     ret = ProcAddNode(parent, pn);
     if (ret != 0) {
         free(pn->pf);
@@ -486,7 +489,8 @@ static int GetNextDir(struct ProcDirEntry *pn, void *buf, size_t len)
         *buff = '\0';
         return -ENOENT;
     }
-    int ret = memcpy_s(buff, len, pn->pdirCurrent->name, pn->pdirCurrent->nameLen);
+    int namelen = pn->pdirCurrent->nameLen;
+    int ret = memcpy_s(buff, len, pn->pdirCurrent->name, namelen);
     if (ret != EOK) {
         return -ENAMETOOLONG;
     }
@@ -496,7 +500,7 @@ static int GetNextDir(struct ProcDirEntry *pn, void *buf, size_t len)
     return ENOERR;
 }
 
-static int ProcOpen(struct ProcFile *procFile)
+int ProcOpen(struct ProcFile *procFile)
 {
     if (procFile == NULL) {
         return PROC_ERROR;
@@ -567,7 +571,7 @@ struct ProcDirEntry *OpenProcFile(const char *fileName, int flags, ...)
         return NULL;
     }
     if (S_ISREG(pn->mode) && (pn->procFileOps != NULL) && (pn->procFileOps->open != NULL)) {
-        (void)pn->procFileOps->open((struct inode *)pn, pn->pf);
+        (void)pn->procFileOps->open((struct Vnode *)pn, pn->pf);
     }
     if (S_ISDIR(pn->mode)) {
         pn->pdirCurrent = pn->subdir;
@@ -584,7 +588,6 @@ int ReadProcFile(struct ProcDirEntry *pde, void *buf, size_t len)
     if (pde == NULL) {
         return result;
     }
-
     if (S_ISREG(pde->mode)) {
         if ((pde->procFileOps != NULL) && (pde->procFileOps->read != NULL)) {
             result = ProcRead(pde, (char *)buf, len);
@@ -592,7 +595,6 @@ int ReadProcFile(struct ProcDirEntry *pde, void *buf, size_t len)
     } else if (S_ISDIR(pde->mode)) {
         result = GetNextDir(pde, buf, len);
     }
-
     return result;
 }
 
@@ -672,7 +674,7 @@ int CloseProcFile(struct ProcDirEntry *pde)
     }
 
     if ((pde->procFileOps != NULL) && (pde->procFileOps->release != NULL)) {
-        result = pde->procFileOps->release((struct inode *)pde, pde->pf);
+        result = pde->procFileOps->release((struct Vnode *)pde, pde->pf);
     }
     LosBufRelease(pde->pf->sbuf);
     pde->pf->sbuf = NULL;
@@ -683,3 +685,7 @@ int CloseProcFile(struct ProcDirEntry *pde)
     return result;
 }
 
+struct ProcDirEntry *GetProcRootEntry(void)
+{
+    return &g_procRootDirEntry;
+}

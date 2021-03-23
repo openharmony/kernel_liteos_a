@@ -35,8 +35,7 @@
 #include "pthread.h"
 #include "linux/rbtree.h"
 #include "los_list.h"
-
-#include "inode/inode.h"
+#include "fs/vnode.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -76,12 +75,12 @@ typedef struct {
     BOOL allDirty;          /* the whole block is dirty */
 } OsBcacheBlock;
 
-typedef INT32 (*BcacheReadFun)(struct inode *, /* private data */
+typedef INT32 (*BcacheReadFun)(struct Vnode *, /* private data */
                                UINT8 *,        /* block buffer */
                                UINT32,         /* number of blocks to read */
                                UINT64);        /* starting block number */
 
-typedef INT32 (*BcacheWriteFun)(struct inode *, /* private data */
+typedef INT32 (*BcacheWriteFun)(struct Vnode *, /* private data */
                                 const UINT8 *,  /* block buffer */
                                 UINT32,         /* number of blocks to write */
                                 UINT64);        /* starting block number */
@@ -225,7 +224,7 @@ INT32 BlockCacheSync(OsBcache *bc);
  * <ul><li>bcache.h</li></ul>
  *
  */
-OsBcache *BlockCacheInit(struct inode *devNode,
+OsBcache *BlockCacheInit(struct Vnode *devNode,
                          UINT32 sectorSize,
                          UINT32 sectorPerBlock,
                          UINT32 blockNum,

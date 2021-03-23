@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <sys/mount.h>
 #include "proc_fs.h"
+#include "sys/stat.h"
 
 #ifdef LOSCFG_FS_PROC
 
@@ -42,7 +43,7 @@ void ProcFsInit(void)
 
     ret = mkdir(PROCFS_MOUNT_POINT, 0);
     if (ret < 0) {
-        PRINT_ERR("failed to reserve inode %s\n", PROCFS_MOUNT_POINT);
+        PRINT_ERR("failed to mkdir %s, errno = %d\n", PROCFS_MOUNT_POINT, get_errno());
         return;
     }
 

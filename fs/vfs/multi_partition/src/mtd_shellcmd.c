@@ -29,11 +29,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "mtd_partition.h"
 #include "stdlib.h"
 #include "stdio.h"
 #include "los_config.h"
-#include "mtd_partition.h"
-#include "inode/inode.h"
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 #include "shcmd.h"

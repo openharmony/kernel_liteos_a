@@ -82,27 +82,20 @@ SPIN_LOCK_INIT(g_ipcSpin);
 #define IPC_LOCK(state)       LOS_SpinLockSave(&g_ipcSpin, &(state))
 #define IPC_UNLOCK(state)     LOS_SpinUnlockRestore(&g_ipcSpin, state)
 
-STATIC int LiteIpcOpen(FAR struct file *filep);
-STATIC int LiteIpcClose(FAR struct file *filep);
-STATIC int LiteIpcIoctl(FAR struct file *filep, int cmd, unsigned long arg);
-STATIC int LiteIpcMmap(FAR struct file* filep, LosVmMapRegion *region);
+STATIC int LiteIpcOpen(struct file *filep);
+STATIC int LiteIpcClose(struct file *filep);
+STATIC int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg);
+STATIC int LiteIpcMmap(struct file* filep, LosVmMapRegion *region);
 STATIC UINT32 LiteIpcWrite(IpcContent *content);
 STATIC UINT32 GetTid(UINT32 serviceHandle, UINT32 *taskID);
 STATIC UINT32 HandleSpecialObjects(UINT32 dstTid, IpcListNode *node, BOOL isRollback);
 
 
 STATIC const struct file_operations_vfs g_liteIpcFops = {
-    LiteIpcOpen,   /* open */
-    LiteIpcClose,  /* close */
-    NULL,          /* read */
-    NULL,          /* write */
-    NULL,          /* seek */
-    LiteIpcIoctl,  /* ioctl */
-    LiteIpcMmap,   /* mmap */
-#ifndef CONFIG_DISABLE_POLL
-    NULL,          /* poll */
-#endif
-    NULL,          /* unlink */
+    .open = LiteIpcOpen,   /* open */
+    .close = LiteIpcClose,  /* close */
+    .ioctl = LiteIpcIoctl,  /* ioctl */
+    .mmap = LiteIpcMmap,   /* mmap */
 };
 
 #if (LOSCFG_KERNEL_TRACE == YES)
@@ -174,12 +167,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 LiteIpcInit(VOID)
     return ret;
 }
 
-LITE_OS_SEC_TEXT STATIC int LiteIpcOpen(FAR struct file *filep)
+LITE_OS_SEC_TEXT STATIC int LiteIpcOpen(struct file *filep)
 {
     return 0;
 }
 
-LITE_OS_SEC_TEXT STATIC int LiteIpcClose(FAR struct file *filep)
+LITE_OS_SEC_TEXT STATIC int LiteIpcClose(struct file *filep)
 {
     return 0;
 }
@@ -237,13 +230,13 @@ LITE_OS_SEC_TEXT STATIC INT32 DoIpcMmap(LosProcessCB *pcb, LosVmMapRegion *regio
     return ret;
 }
 
-LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(FAR struct file* filep, LosVmMapRegion *region)
+LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *region)
 {
     int ret = 0;
     LosVmMapRegion *regionTemp = NULL;
     LosProcessCB *pcb = OsCurrProcessGet();
     if ((region == NULL) || (region->range.size > LITE_IPC_POOL_MAX_SIZE) ||
-            (!LOS_IsRegionPermUserReadOnly(region)) || (!LOS_IsRegionFlagPrivateOnly(region))) {
+        (!LOS_IsRegionPermUserReadOnly(region)) || (!LOS_IsRegionFlagPrivateOnly(region))) {
         ret = -EINVAL;
         goto ERROR_REGION_OUT;
     }
@@ -343,7 +336,7 @@ LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf
     }
 }
 
-LITE_OS_SEC_TEXT STATIC VOID* LiteIpcNodeAlloc(UINT32 processID, UINT32 size)
+LITE_OS_SEC_TEXT STATIC VOID *LiteIpcNodeAlloc(UINT32 processID, UINT32 size)
 {
     VOID *ptr = LOS_MemAlloc(OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, size);
     PRINT_INFO("LiteIpcNodeAlloc pid:%d, pool:%x buf:%x size:%d\n",
@@ -1210,7 +1203,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleCmsCmd(CmsCmdContent *content)
     return ret;
 }
 
-LITE_OS_SEC_TEXT int LiteIpcIoctl(FAR struct file *filep, int cmd, unsigned long arg)
+LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg)
 {
     UINT32 ret = LOS_OK;
     if (IsPoolMapped() == FALSE) {

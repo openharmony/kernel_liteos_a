@@ -31,17 +31,12 @@ include $(LITEOSTOPDIR)/config.mk
 
 MODULE_NAME := $(notdir $(shell pwd))
 
-LOCAL_SRCS := $(wildcard $(LITEOSTHIRDPARTY)/Linux_Kernel/fs/jffs2/*.c) \
-	$(wildcard $(LITEOSTHIRDPARTY)/rt-thread/components/dfs/filesystems/jffs2/*.c) \
-	$(wildcard $(LITEOSTHIRDPARTY)/rt-thread/components/dfs/filesystems/jffs2/src/fs-ecos.c)
+LOCAL_SRCS := $(wildcard src/*.c) \
+		$(wildcard $(LITEOSTHIRDPARTY)/Linux_Kernel/fs/jffs2/*.c)
 LOCAL_INCLUDE := \
-	-I $(LITEOSTHIRDPARTY)/Linux_Kernel/fs/jffs2 \
-	-I $(LITEOSTHIRDPARTY)/Linux_Kernel/fs \
-	-I $(LITEOSTHIRDPARTY)/rt-thread/components/dfs/filesystems/jffs2 \
-	-I $(LITEOSTHIRDPARTY)/rt-thread/components/dfs/filesystems/jffs2/src \
-	-I $(LITEOSTHIRDPARTY)/rt-thread/components/dfs/filesystems/jffs2/include/ \
-	-I $(LITEOSTHIRDPARTY)/rt-thread/components/dfs/filesystems/jffs2/cyg/fileio
-
+		-I $(LITEOSTOPDIR)/fs/jffs2/include \
+		-I $(LITEOSTHIRDPARTY)/Linux_Kernel/fs/jffs2 \
+		-I $(LITEOSTHIRDPARTY)/Linux_Kernel/fs
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 
 include $(MODULE)

@@ -40,7 +40,6 @@
 #include "shell.h"
 #include "unistd.h"
 #include "stdlib.h"
-#include "inode/inode.h"
 #endif
 
 #ifdef __cplusplus

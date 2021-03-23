@@ -41,10 +41,6 @@
 
 #ifdef LOSCFG_FS_FAT_CACHE
 #include "bcache.h"
-#else
-
-#include "inode/inode.h"
-
 #endif
 
 #include "pthread.h"
@@ -178,7 +174,7 @@ typedef struct _los_disk_ {
     UINT32 disk_status : 2; /* status of disk */
     UINT32 part_count : 8;  /* current partition count */
     UINT32 reserved : 14;
-    struct inode *dev;      /* device */
+    struct Vnode *dev;      /* device */
 #ifdef LOSCFG_FS_FAT_CACHE
     OsBcache *bcache;       /* cache of the disk, shared in all partitions */
 #endif
@@ -199,7 +195,7 @@ typedef struct _los_part_ {
     UINT32 reserved : 3;
     UINT8 filesystem_type;   /* filesystem used in the partition */
     UINT8 type;
-    struct inode *dev;      /* dev devices used in the partition */
+    struct Vnode *dev;      /* dev devices used in the partition */
     CHAR *part_name;
     UINT64 sector_start;     /*
                               * offset of a partition to the primary devices
@@ -249,7 +245,7 @@ struct disk_divide_info {
  *
  * @param  diskName  [IN] Type #const CHAR *                      disk driver name.
  * @param  bops      [IN] Type #const struct block_operations *   block driver control sturcture.
- * @param  priv      [IN] Type #VOID *                            private data of inode.
+ * @param  priv      [IN] Type #VOID *                            private data of vnode.
  * @param  diskID    [IN] Type #INT32                             disk id number, less than SYS_MAX_DISK.
  * @param  info      [IN] Type #VOID *                            disk driver partition information.
  *
@@ -537,14 +533,14 @@ INT32 los_part_access(const CHAR *dev, mode_t mode);
  * @brief Find disk partition.
  *
  * @par Description:
- * By driver partition inode to find disk partition.
+ * By driver partition vnode to find disk partition.
  *
  * @attention
  * <ul>
  * None
  * </ul>
  *
- * @param  blkDriver  [IN]  Type #struct inode *    partition driver inode.
+ * @param  blkDriver  [IN]  Type #struct Vnode *    partition driver vnode.
  *
  * @retval #NULL           Can't find chosen disk partition.
  * @retval #los_part *     This is partition structure pointer of chosen disk partition.
@@ -554,7 +550,7 @@ INT32 los_part_access(const CHAR *dev, mode_t mode);
  * @see None
  *
  */
-los_part *los_part_find(struct inode *blkDriver);
+los_part *los_part_find(struct Vnode *blkDriver);
 
 /**
  * @ingroup  disk

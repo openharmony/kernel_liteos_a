@@ -50,7 +50,6 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef unsigned short fmode_t;
-#define MAX_NAMELEN 32
 #define PROC_ERROR (-1)
 
 /* 64bit hashes as llseek() offset (for directories) */
@@ -83,8 +82,8 @@ struct ProcFile;
 struct ProcFileOperations {
     char *name;
     ssize_t (*write)(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos);
-    int (*open)(struct inode *inode, struct ProcFile *pf);
-    int (*release)(struct inode *inode, struct ProcFile *pf);
+    int (*open)(struct Vnode *vnode, struct ProcFile *pf);
+    int (*release)(struct Vnode *vnode, struct ProcFile *pf);
     int (*read)(struct SeqBuf *m, void *v);
 };
 
@@ -100,7 +99,8 @@ struct ProcDirEntry {
 
     int nameLen;
     struct ProcDirEntry *pdirCurrent;
-    char name[MAX_NAMELEN];
+    char name[NAME_MAX];
+    enum VnodeType type;
 };
 
 struct ProcFile {
@@ -111,13 +111,13 @@ struct ProcFile {
     struct ProcDirEntry *pPDE;
     unsigned long long fVersion;
     loff_t fPos;
-    char name[MAX_NAMELEN];
+    char name[NAME_MAX];
 };
 
 struct ProcStat {
     mode_t stMode;
     struct ProcDirEntry *pPDE;
-    char name[MAX_NAMELEN];
+    char name[NAME_MAX];
 };
 
 struct ProcData {
@@ -138,7 +138,7 @@ struct ProcData {
  * @brief create a proc node
  *
  * @par Description:
- * This API is used to create the node by 'name' and parent inode
+ * This API is used to create the node by 'name' and parent vnode
  *
  * @attention
  * <ul>
@@ -165,7 +165,7 @@ extern struct ProcDirEntry *CreateProcEntry(const char *name, mode_t mode, struc
  * @brief remove a proc node
  *
  * @par Description:
- * This API is used to remove the node by 'name' and parent inode
+ * This API is used to remove the node by 'name' and parent vnode
  *
  * @attention
  * <ul>
@@ -188,7 +188,7 @@ extern void RemoveProcEntry(const char *name, struct ProcDirEntry *parent);
  * @brief create a proc directory node
  *
  * @par Description:
- * This API is used to create the directory node by 'name' and parent inode
+ * This API is used to create the directory node by 'name' and parent vnode
  *
  * @attention
  * <ul>
@@ -214,7 +214,7 @@ extern struct ProcDirEntry *ProcMkdir(const char *name, struct ProcDirEntry *par
  * @brief create a proc  node
  *
  * @par Description:
- * This API is used to create the node by 'name' and parent inode,
+ * This API is used to create the node by 'name' and parent vnode,
  * And assignment operation function
  *
  * @attention

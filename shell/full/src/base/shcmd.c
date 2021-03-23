@@ -38,6 +38,7 @@
 #include "securec.h"
 #include "los_mux.h"
 #include "los_memory.h"
+#include "los_typedef.h"
 
 #ifdef  __cplusplus
 #if  __cplusplus
@@ -274,7 +275,6 @@ STATIC VOID strncmp_cut(const CHAR *s1, CHAR *s2, size_t n)
     }
     return;
 }
-
 STATIC INT32 OsExecNameMatch(const CHAR *strPath, const CHAR *nameLooking, CHAR *strObj, UINT32 *maxLen)
 {
     INT32 count = 0;

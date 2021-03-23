@@ -161,7 +161,7 @@ static int VfsZpfsClose(struct file *file)
     return ret;
 }
 
-static ssize_t VfsZpfsRead(struct file *file, FAR char *buffer, size_t bufLen)
+static ssize_t VfsZpfsRead(struct file *file, char *buffer, size_t bufLen)
 {
     struct inode *swapInode = NULL;
     ssize_t sret;
@@ -370,7 +370,7 @@ static int VfsZpfsRewindDir(struct inode *mountpt, struct fs_dirent_s *dir)
     return OK;
 }
 
-static int VfsZpfsBind(struct inode *blkDriver, const void *data, FAR void **handle, const char *relPath)
+static int VfsZpfsBind(struct inode *blkDriver, const void *data, void **handle, const char *relPath)
 {
     if (data == NULL) {
         return -1;

@@ -36,39 +36,6 @@
 
 #ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
 
-#if FF_USE_LFN == 0 /* Non-LFN configuration */
-#define DEF_NAMBUF
-#define INIT_NAMBUF(fs)
-#define FREE_NAMBUF()
-
-#else /* LFN configuration */
-#if (FF_MAX_LFN < 12) || (FF_MAX_LFN > 255)
-#error Wrong _MAX_LFN value
-#endif
-
-#if FF_USE_LFN == 1 /* LFN enabled with static working buffer */
-static WCHAR g_lfnBuf[FF_MAX_LFN + 1]; /* LFN enabled with static working buffer */
-#define DEF_NAMBUF
-#define INIT_NAMBUF(fs)
-#define FREE_NAMBUF()
-
-#elif FF_USE_LFN == 2 /* LFN enabled with dynamic working buffer on the stack */
-#define DEF_NAMBUF      WCHAR lbuf[FF_MAX_LFN + 1];
-#define INIT_NAMBUF(fs) { (fs)->lfnbuf = lbuf; }
-#define FREE_NAMBUF()
-
-#elif FF_USE_LFN == 3 /* LFN enabled with dynamic working buffer on the heap */
-#define DEF_NAMBUF      WCHAR *lfn;
-#define INIT_NAMBUF(fs) { lfn = ff_memalloc((FF_MAX_LFN + 1) * 2); if (!lfn) LEAVE_FF(fs, FR_NOT_ENOUGH_CORE); (fs)->lfnbuf = lfn; }
-#define FREE_NAMBUF()   ff_memfree(lfn)
-
-#else
-#error Wrong FF_USE_LFN setting
-
-#endif
-#endif /* else FF_USE_LFN == 0 */
-
-
 #if FF_FS_REENTRANT
 #if FF_USE_LFN == 1
 #error Static LFN work area cannot be used at thread-safe configuration

@@ -37,7 +37,9 @@ LOCAL_SRCS += $(wildcard $(LITEOSTHIRDPARTY)/FatFs/source/*.c)
 LOCAL_INCLUDE := \
 	-I $(LITEOSTHIRDPARTY)/FatFs/source \
 	-I $(LITEOSTOPDIR)/fs/fat/os_adapt \
-	-I $(LITEOSTOPDIR)/fs/fat/virpart/include
+	-I $(LITEOSTOPDIR)/fs/fat/virpart/include \
+	-I $(LITEOSTOPDIR)/fs/vfs \
+	-I $(LITEOSTHIRDPARTY)/NuttX/include
 
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
 

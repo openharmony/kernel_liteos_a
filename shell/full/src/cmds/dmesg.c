@@ -59,7 +59,6 @@ Case B:
 #include "unistd.h"
 #include "stdlib.h"
 #include "los_task.h"
-#include "inode/inode.h"
 
 #ifdef __cplusplus
 #if __cplusplus
