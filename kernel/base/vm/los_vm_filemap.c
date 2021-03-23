@@ -61,8 +61,6 @@ STATIC VOID OsPageCacheAdd(LosFilePage *page, struct page_mapping *mapping, VM_O
     }
 
     LOS_ListTailInsert(&mapping->page_list, &page->node);
-    //comment out code with no effect
-    //OsSetPageLRU(page->vmPage);
 
 done_add:
     mapping->nrpages++;
