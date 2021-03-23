@@ -64,7 +64,7 @@ if [ -f "$destination" ]; then
     rm -rf $destination
 fi
 if [ ! -f "$source" ]; then
-    source="../..$7/config/sys/$config_file"
+    source="$7/config/sys/$config_file"
 fi
 cp $source $destination
 
