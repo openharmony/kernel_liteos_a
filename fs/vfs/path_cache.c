@@ -93,6 +93,7 @@ struct PathCache *PathCacheAlloc(struct Vnode *parent, struct Vnode *vnode, cons
 {
     struct PathCache *nc = NULL;
     size_t pathCacheSize;
+    int ret;
 
     if (name == NULL || len > NAME_MAX || parent == NULL || vnode == NULL) {
         return NULL;
@@ -105,7 +106,10 @@ struct PathCache *PathCacheAlloc(struct Vnode *parent, struct Vnode *vnode, cons
         return NULL;
     }
 
-    (void)strncpy_s(nc->name, pathCacheSize, name, len);
+    ret = strncpy_s(nc->name, pathCacheSize, name, len);
+    if (ret != LOS_OK) {
+        return NULL;
+    }
 
     nc->parentVnode = parent;
     nc->nameLen = len;

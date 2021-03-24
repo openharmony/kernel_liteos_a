@@ -696,9 +696,13 @@ static INT32 DiskPartitionRecognition(struct Vnode *blkDrv, struct disk_divide_i
     CHAR *mbrBuf = NULL;
     CHAR *ebrBuf = NULL;
 
+    if (blkDrv == NULL) {
+        return -EINVAL;
+    }
+
     struct block_operations *bops = (struct block_operations *)((struct drv_data *)blkDrv->data)->ops;
 
-    if ((blkDrv == NULL) || (bops == NULL) || (bops->read == NULL)) {
+    if ((bops == NULL) || (bops->read == NULL)) {
         return -EINVAL;
     }
 
@@ -832,8 +836,11 @@ INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count)
         }
     } else {
 #endif
+    if (disk->dev == NULL) {
+        goto ERROR_HANDLE;
+    }
     struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
-    if ((disk->dev != NULL) && (bops != NULL) && (bops->read != NULL)) {
+    if ((bops != NULL) && (bops->read != NULL)) {
         result = bops->read(disk->dev, (UINT8 *)buf, sector, count);
         if (result == (INT32)count) {
             result = ENOERR;

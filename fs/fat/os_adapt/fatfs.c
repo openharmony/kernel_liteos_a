@@ -1368,7 +1368,7 @@ int fatfs_readdir(struct Vnode *vp, struct fs_dirent_s *idir)
     }
     DEF_NAMBUF;
     INIT_NAMBUF(fs);
-    for (i = 0; i < DIR_READ_COUNT && i < idir->read_cnt; i++) {
+    for (i = 0; i < idir->read_cnt; i++) {
         result = dir_read(dp, 0);
         if (result == FR_NO_FILE) {
             break;
