@@ -287,9 +287,7 @@ LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
 
     if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {
         UINT32 ret = OsTaskDeleteUnsafe(taskCB, status, intSave);
-        if (ret != LOS_OK) {
-            PRINT_ERR("Task exit delete failed! ERROR : 0x%x\n", ret);
-        }
+        LOS_Panic("Task delete failed! ERROR : 0x%x\n", ret);
     }
 
     OsTaskJoinPostUnsafe(taskCB);
