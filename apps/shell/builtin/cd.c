@@ -53,10 +53,7 @@ int Chdir(const char *tgtDir)
 
     ret = chdir(tgtDir);
     if (ret == 0) {
-        ret = OsShellSetWorkingDirtectory(tgtDir, strlen(tgtDir) + 1); /* 1: the length of '\0' */
-        if (ret != SH_NOK) {
-            return ret;
-        }
+        ret = OsShellSetWorkingDirtectory(tgtDir, strlen(tgtDir) + 1); /* 1: the length of '\0' */        
     }
 
     return ret;
