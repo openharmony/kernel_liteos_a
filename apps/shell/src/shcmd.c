@@ -201,7 +201,7 @@ static int OsSurePrintAll(unsigned int count)
     char readChar = 0;
     printf("\nDisplay all %u possibilities?(y/n)", count);
     while (1) {
-        if (read(0, &readChar, 1) != 1) {
+        if (read(STDIN_FILENO, &readChar, 1) != 1) {
             return (int)SH_ERROR;
         }
         if ((readChar == 'n') || (readChar == 'N') || (readChar == CTRL_C)) {
