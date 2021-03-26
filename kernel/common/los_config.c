@@ -277,7 +277,9 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
         return ret;
     }
 
+#ifdef LOSCFG_KERNEL_SYSCALL
     SyscallHandleInit();
+#endif
 
     /*
      * CPUP should be inited before first task creation which depends on the semaphore

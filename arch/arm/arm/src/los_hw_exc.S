@@ -189,6 +189,7 @@ _osExceptSwiHdl:
     MRS     R3, SPSR
     MOV     R4, LR
 
+#ifdef LOSCFG_KERNEL_SYSCALL
     AND     R1, R3, #CPSR_MASK_MODE                          @ Interrupted mode
     CMP     R1, #CPSR_USER_MODE                              @ User mode
     BNE     OsKernelSVCHandler                               @ Branch if not user mode
@@ -222,6 +223,7 @@ _osExceptSwiHdl:
     LDMFD   SP!, {PC}^                                       @ Return to user
 
 OsKernelSVCHandler:
+#endif
     ADD     R0, SP, #(4 * 16)
     MOV     R5, R0
     STMFD   R0!, {R4}                                        @ Store PC
