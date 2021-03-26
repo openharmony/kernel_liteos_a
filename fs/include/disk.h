@@ -37,7 +37,9 @@
 #ifndef _DISK_H
 #define _DISK_H
 
+#include "fs/fs.h"
 #include "los_base.h"
+#include "pthread.h"
 
 #ifdef LOSCFG_FS_FAT_CACHE
 #include "bcache.h"

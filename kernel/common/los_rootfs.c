@@ -37,7 +37,6 @@
 #ifdef LOSCFG_DRIVERS_MMC
 #include "mmc/block.h"
 #include "disk.h"
-#include "ff.h"
 #endif
 #include "sys/mount.h"
 #ifdef LOSCFG_PLATFORM_ROOTFS
@@ -65,6 +64,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifdef LOSCFG_STORAGE_EMMC
+#include "ff.h"
 #define STORAGE_SIZE 0x3200000
 STATIC los_disk *g_emmcDisk = NULL;
 #endif
