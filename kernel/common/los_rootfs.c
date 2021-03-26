@@ -57,17 +57,17 @@
 #define STORAGE_SIZE 0xa00000
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-
 #ifdef LOSCFG_STORAGE_EMMC
 #include "ff.h"
 #define STORAGE_SIZE 0x3200000
 STATIC los_disk *g_emmcDisk = NULL;
 #endif
+
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+#endif /* __cplusplus */
 
 #ifndef LOSCFG_SECURITY_BOOT
 STATIC INT32 g_alignSize = 0;
