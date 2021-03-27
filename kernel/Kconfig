@@ -33,6 +33,12 @@ config KERNEL_SCHED_STATISTICS
     help
       This option will enable schedulder statistics.
 
+config KERNEL_SYSCALL
+    bool "Enable Syscall"
+    default y
+    help
+      This option will enable syscall.
+
 config KERNEL_EXTKERNEL
     bool "Enable Extend Kernel"
     default y
@@ -65,7 +71,7 @@ config CPUP_INCLUDE_IRQ
 config KERNEL_DYNLOAD
     bool "Enable Dynamic Load Feature"
     default y
-    depends on KERNEL_EXTKERNEL
+    depends on KERNEL_EXTKERNEL && KERNEL_SYSCALL
     help
       If you wish to build LiteOS with support for dynamic load.
 
@@ -79,7 +85,7 @@ config ASLR
 config KERNEL_VDSO
     bool "Enable VDSO Feature"
     default n
-    depends on KERNEL_EXTKERNEL
+    depends on KERNEL_EXTKERNEL && KERNEL_SYSCALL
     help
       If you wish to speed up some system calls.
 

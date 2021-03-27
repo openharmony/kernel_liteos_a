@@ -488,8 +488,10 @@ ifeq ($(LOSCFG_NULL_ADDRESS_PROTECT), y)
     LITEOS_CMACRO += -DLOSCFG_NULL_ADDRESS_PROTECT
 endif
 
+ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
 LITEOS_BASELIB += -lsyscall
 LIB_SUBDIRS += syscall
+endif
 LIB_SUBDIRS += kernel/user
 
 ############################# Tools && Debug Option End #################################

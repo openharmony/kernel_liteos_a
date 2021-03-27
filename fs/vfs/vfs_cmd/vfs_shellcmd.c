@@ -1386,6 +1386,7 @@ int checkNum(const char *arg)
   return 0;
 }
 
+#ifdef LOSCFG_KERNEL_SYSCALL
 int osShellCmdSu(int argc, const char **argv)
 {
   unsigned int su_uid;
@@ -1415,7 +1416,7 @@ int osShellCmdSu(int argc, const char **argv)
   SysSetGroupID(su_gid);
   return 0;
 }
-
+#endif
 
 int osShellCmdChmod(int argc, const char **argv)
 {
@@ -1569,7 +1570,9 @@ SHELLCMD_ENTRY(touch_shellcmd, CMD_TYPE_EX, "touch", XARGS, (CmdCallBackFunc)osS
 #if (defined(LOSCFG_FS_FAT))
 SHELLCMD_ENTRY(sync_shellcmd, CMD_TYPE_EX, "sync", XARGS, (CmdCallBackFunc)osShellCmdSync);
 #endif
+#ifdef LOSCFG_KERNEL_SYSCALL
 SHELLCMD_ENTRY(su_shellcmd, CMD_TYPE_EX, "su", XARGS, (CmdCallBackFunc)osShellCmdSu);
+#endif
 #endif
 SHELLCMD_ENTRY(ls_shellcmd, CMD_TYPE_EX, "ls", XARGS, (CmdCallBackFunc)osShellCmdLs);
 SHELLCMD_ENTRY(pwd_shellcmd, CMD_TYPE_EX, "pwd", XARGS, (CmdCallBackFunc)osShellCmdPwd);
