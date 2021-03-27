@@ -378,7 +378,7 @@ int fatfs_create(struct Vnode *parent, const char *name, int mode, struct Vnode 
     st_dword(dp->dir + DIR_ModTime, time);
     st_word(dp->dir + DIR_LstAccDate, time >> FTIME_DATE_OFFSET);
     dp->dir[DIR_Attr] = AM_ARC;
-    if ((mode & S_IWUSR) == 0) {
+    if (((DWORD)mode & S_IWUSR) == 0) {
         dp->dir[DIR_Attr] |= AM_RDO;
     }
     st_clust(fs, dp->dir, 0);
@@ -894,6 +894,9 @@ static int fat_bind_check(struct Vnode *blk_driver, los_part **partition)
     }
 
     part = los_part_find(blk_driver);
+    if (part == NULL) {
+        return ENODEV;
+    }
     if (part->part_name != NULL) {
         bops->close(blk_driver);
         return EBUSY;
@@ -1180,7 +1183,7 @@ static inline int GET_YEAR(WORD fdate)
 
 static time_t fattime_transfer(WORD fdate, WORD ftime)
 {
-    struct tm time;
+    struct tm time = { 0 };
     time.tm_sec = GET_SECONDS(ftime);
     time.tm_min = GET_MINUTES(ftime);
     time.tm_hour = GET_HOURS(ftime);
@@ -1620,7 +1623,7 @@ int fatfs_mkfs (struct Vnode *device, int sectors, int option)
         return -ENODEV;
     }
 
-    if (sectors < 0 || sectors > FAT32_MAX_CLUSTER_SIZE || (sectors & (sectors - 1))) {
+    if (sectors < 0 || sectors > FAT32_MAX_CLUSTER_SIZE || ((DWORD)sectors & ((DWORD)sectors - 1))) {
         return -EINVAL;
     }
 
