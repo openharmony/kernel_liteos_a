@@ -336,10 +336,6 @@ ssize_t VfsJffs2Write(struct file *filep, const char *buffer, size_t bufLen)
         }
     }
 #endif
-    // If the APPEND mode bit was supplied, force all writes to
-    // the end of the file.
-    if (filep->f_oflags & O_APPEND)
-        pos = node->i_size;
     if (pos < 0) {
         LOS_MuxUnlock(&g_jffs2FsLock);
         return -EINVAL;
@@ -714,8 +710,8 @@ int VfsJffs2Reclaim(struct Vnode *pVnode)
         return LOS_OK;
     }
 
-    ret = jffs2_iput(node);
     node->i_vnode = NULL;
+    ret = jffs2_iput(node);
 
     LOS_MuxUnlock(&g_jffs2FsLock);
 
