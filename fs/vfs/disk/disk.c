@@ -76,12 +76,12 @@ UINT32 g_usbMode = 0;
 
 typedef VOID *(*StorageHookFunction)(VOID *);
 
+#ifdef LOSCFG_FS_FAT_CACHE
 static UINT32 OsReHookFuncAddDiskRef(StorageHookFunction handler,
                                      VOID *param) __attribute__((weakref("osReHookFuncAdd")));
 
 static UINT32 OsReHookFuncDelDiskRef(StorageHookFunction handler) __attribute__((weakref("osReHookFuncDel")));
 
-#ifdef LOSCFG_FS_FAT_CACHE
 UINT32 GetFatBlockNums(VOID)
 {
     return g_uwFatBlockNums;
