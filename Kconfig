@@ -96,6 +96,7 @@ source "../../kernel/liteos_a/fs/jffs2/Kconfig"
 config ENABLE_READ_BUFFER
     bool "Enable read buffer Option"
     default n
+    depends on FS_VFS
     help
       Answer Y to add enable read buffer Option.
 
