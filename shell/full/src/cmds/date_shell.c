@@ -153,7 +153,7 @@ STATIC INT32 OsStrToTm(const CHAR *str, struct tm *tm)
     }
 
     if (tm->tm_year < 70) { /* 70:the year is starting in 1970,tm_year must be greater than 70 */
-        PRINTK("\nUsage: date -s set system time range from 1970.\n");
+        PRINTK("\nUsage: date -s set system time starting from 1970.\n");
         return DATE_ERR;
     }
 
@@ -202,7 +202,7 @@ STATIC INT32 OsDateSetTime(const CHAR *timeStr)
     struct timeval64 setTime = {0};
 
     if (gettimeofday64(&nowTime, NULL)) {
-        PRINTK("settime failed...\n");
+        PRINTK("Setting time failed...\n");
         return DATE_ERR;
     }
 
@@ -217,7 +217,7 @@ STATIC INT32 OsDateSetTime(const CHAR *timeStr)
     setTime.tv_sec = mktime64(&tm);
 
     if (settimeofday64(&setTime, NULL)) {
-        PRINTK("settime failed...\n");
+        PRINTK("setting time failed...\n");
         return DATE_ERR;
     }
 
