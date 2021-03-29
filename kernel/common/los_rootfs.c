@@ -437,11 +437,13 @@ STATIC VOID OsMountUserdata(const CHAR *fsType)
     }
     err = get_errno();
     if (err == ENOENT) {
+#ifdef LOSCFG_FS_FAT
         ret = format(emmcUserdataDev, 0, FM_FAT32);
         if (ret != LOS_OK) {
             PRINT_ERR("Failed to format %s\n", emmcUserdataDev);
             return;
         }
+#endif
         ret = mount(emmcUserdataDev, userdataDir, fsType, 0, "umask=000");
         if (ret != LOS_OK) {
             err = get_errno();
