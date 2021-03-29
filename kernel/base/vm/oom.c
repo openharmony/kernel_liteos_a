@@ -50,6 +50,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 LITE_OS_SEC_BSS OomCB *g_oomCB = NULL;
 static SPIN_LOCK_INIT(g_oomSpinLock);
 
@@ -248,6 +250,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
     return LOS_OK;
 #endif
 }
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

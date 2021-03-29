@@ -54,7 +54,7 @@ void ProcFsInit(void)
     }
     PRINTK("Mount procfs finished.\n");
     ProcMountsInit();
-#ifdef LOSCFG_SHELL_CMD_DEBUG
+#if defined(LOSCFG_SHELL_CMD_DEBUG) && defined(LOSCFG_KERNEL_VM)
     ProcVmmInit();
 #endif
     ProcProcessInit();

@@ -41,6 +41,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 LosVmPage *g_vmPageArray = NULL;
 size_t g_vmPageArraySize;
 
@@ -128,6 +130,7 @@ LosVmPage *LOS_VmPageGet(PADDR_T paddr)
 
     return page;
 }
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

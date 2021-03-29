@@ -30,9 +30,9 @@
  */
 
 #include "los_user_init.h"
-
-#ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_syscall.h"
+
+#ifdef LOSCFG_KERNEL_SYSCALL
 
 #define SYS_CALL_VALUE 0x900001
 
@@ -59,7 +59,6 @@ LITE_USER_SEC_TEXT STATIC UINT32 sys_call3(UINT32 nbr, UINT32 parm1, UINT32 parm
 
     return reg0;
 }
-#endif
 
 LITE_USER_SEC_ENTRY VOID OsUserInit(VOID *args)
 {
@@ -69,3 +68,4 @@ LITE_USER_SEC_ENTRY VOID OsUserInit(VOID *args)
     while (1) {
     }
 }
+#endif

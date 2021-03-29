@@ -217,6 +217,7 @@ STATIC VOID OsShellCmdAllProcessInfoShow(const LosProcessCB *pcbArray, const INT
     }
 }
 
+#ifdef LOSCFG_KERNEL_VM
 STATIC VOID OsProcessMemUsageGet(UINT32 *memArray)
 {
     UINT32 pid;
@@ -242,6 +243,7 @@ STATIC VOID OsProcessMemUsageGet(UINT32 *memArray)
         }
     }
 }
+#endif
 
 STATIC UINT32 OsProcessInfoGet(LosProcessCB **pcbArray, INT32 **group, UINT32 **memArray, UINT16 flag)
 {
@@ -288,11 +290,13 @@ STATIC UINT32 OsProcessInfoGet(LosProcessCB **pcbArray, INT32 **group, UINT32 **
     (VOID)OsGetAllProcessAndTaskCpuUsageUnsafe(CPUP_LAST_ONE_SECONDS, processCpup1s, OS_PROCESS_AND_TASK_CPUP_LEN);
 #endif
 
+#ifdef LOSCFG_KERNEL_VM
     if (flag & OS_PROCESS_MEM_INFO) {
         *memArray = (UINT32 *)((UINTPTR)*pcbArray + OS_PROCESS_ALL_INFO_LEN);
         OsProcessMemUsageGet(*memArray);
         len += OS_PROCESS_MEM_ALL_INFO_LEN;
     }
+#endif
 
     return len;
 }
@@ -567,7 +571,9 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdTskInfoGet(UINT32 taskID, VOID *seqBuf, 
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv)
 {
     UINT32 flag = 0;
+#ifdef LOSCFG_KERNEL_VM
     flag |= OS_PROCESS_MEM_INFO;
+#endif
 
     if (argc >= 2) { /* 2: The task shell name restricts the parameters */
         goto TASK_HELP;

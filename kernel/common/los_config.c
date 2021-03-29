@@ -80,9 +80,6 @@
 #ifdef LOSCFG_ARCH_CORTEX_M7
 #include "los_exc_pri.h"
 #endif
-#ifdef LOSCFG_MEM_RECORDINFO
-#include "los_memrecord_pri.h"
-#endif
 #include "los_hw_tick_pri.h"
 #include "los_hwi_pri.h"
 
@@ -363,6 +360,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     }
 #endif
 
+#ifdef LOSCFG_KERNEL_VM
     ret = OsFutexInit();
     if (ret != LOS_OK) {
         PRINT_ERR("Create futex failed : %d!\n", ret);
@@ -373,6 +371,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     if (ret != LOS_OK) {
         return ret;
     }
+#endif
 
     return LOS_OK;
 }
@@ -402,22 +401,6 @@ UINT32 OsSystemInitStep2(VOID)
 }
 #endif
 
-#ifdef LOSCFG_MEM_RECORDINFO
-STATIC UINT32 OsMemShowTaskCreate(VOID)
-{
-    UINT32 taskID;
-    TSK_INIT_PARAM_S appTask;
-
-    (VOID)memset_s(&appTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-    appTask.pfnTaskEntry = (TSK_ENTRY_FUNC)OsMemRecordShowTask;
-    appTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
-    appTask.pcName = "memshow_Task";
-    appTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;
-    appTask.uwResved = LOS_TASK_STATUS_DETACHED;
-    return LOS_TaskCreate(&taskID, &appTask);
-}
-#endif
-
 UINT32 OsSystemInit(VOID)
 {
     UINT32 ret;
@@ -431,14 +414,6 @@ UINT32 OsSystemInit(VOID)
     if (ret != LOS_OK) {
         return ret;
     }
-#ifdef LOSCFG_MEM_RECORDINFO
-    ret = OsMemShowTaskCreate();
-    if (ret != LOS_OK) {
-        PRINTK("create memshow_Task error %u\n", ret);
-        return ret;
-    }
-    PRINTK("create memshow_Task ok\n");
-#endif
 
     return 0;
 }

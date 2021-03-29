@@ -38,6 +38,8 @@
 #include "los_atomic.h"
 #include "los_vm_filemap.h"
 
+#ifdef LOSCFG_KERNEL_VM
+
 static struct file_map g_file_mapping = {0};
 
 uint init_file_mapping()
@@ -277,3 +279,4 @@ int update_file_path(char *old_path, char *new_path)
     (void)sem_post(&f_list->fl_sem);
     return LOS_OK;
 }
+#endif

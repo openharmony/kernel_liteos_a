@@ -40,10 +40,6 @@ LOCAL_SRCS := 	$(wildcard ipc/*.c) $(wildcard core/*.c) $(wildcard mem/membox/*.
 		$(wildcard sched/sched_sq/*.c) \
 		$(wildcard vm/*.c)
 
-ifeq ($(LOSCFG_MEM_RECORDINFO), y)
-LOCAL_SRCS += $(wildcard mem/common/memrecord/*.c)
-endif
-
 LOCAL_INCLUDE := \
 	-I $(LITEOSTOPDIR)/kernel/base/include \
 	-I $(LITEOSTOPDIR)/kernel/extended/include \

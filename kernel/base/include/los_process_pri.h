@@ -104,7 +104,9 @@ typedef struct ProcessCB {
 #if (LOSCFG_KERNEL_LITEIPC == YES)
     ProcIpcInfo          ipcInfo;      /**< Memory pool for lite ipc */
 #endif
+#ifdef LOSCFG_KERNEL_VM
     LosVmSpace           *vmSpace;     /**< VMM space for processes */
+#endif
 #ifdef LOSCFG_FS_VFS
     struct files_struct  *files;       /**< Files held by the process */
 #endif

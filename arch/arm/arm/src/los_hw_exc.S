@@ -251,9 +251,11 @@ _osExceptPrefetchAbortHdl:
 
     MOV     R0, #OS_EXCEPT_PREFETCH_ABORT                    @ Set exception ID to OS_EXCEPT_PREFETCH_ABORT.
 
+#ifdef LOSCFG_KERNEL_VM
     AND     R4, R1, #CPSR_MASK_MODE                          @ Interrupted mode
     CMP     R4, #CPSR_USER_MODE                              @ User mode
     BEQ     _osExcPageFault                                   @ Branch if user mode
+#endif
 
 _osKernelExceptPrefetchAbortHdl:
     MOV     LR, R5
@@ -273,8 +275,11 @@ _osExceptDataAbortHdl:
     MRS     R1, SPSR
 
     MOV     R0, #OS_EXCEPT_DATA_ABORT                        @ Set exception ID to OS_EXCEPT_DATA_ABORT.
-
+#ifdef LOSCFG_KERNEL_VM
     B     _osExcPageFault
+#else
+    B     _osExceptDispatch
+#endif
 #endif
 
 @ Description: Address abort exception handler
@@ -295,6 +300,7 @@ _osExceptFiqHdl:
 
     B       _osExceptDispatch                                @ Branch to global exception handler.
 
+#ifdef LOSCFG_KERNEL_VM
 _osExcPageFault:
     SUB     R3, SP, #(8 * 4)                                 @ Save the start address of working registers.
     MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)      @ Switch to SVC mode, and disable all interrupts
@@ -336,6 +342,7 @@ _osExcPageFault:
 
     MOV     R0, R5                                           @ exc type
     B       _osExceptionSwi
+#endif
 
 @ Description: Exception handler
 @ Parameter  : R0     Exception Type

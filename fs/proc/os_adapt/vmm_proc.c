@@ -39,6 +39,8 @@
 #include "los_vm_lock.h"
 #include "los_process_pri.h"
 
+#ifdef LOSCFG_KERNEL_VM
+
 STATIC VOID OsVmDumpSeqSpaces(struct SeqBuf *seqBuf)
 {
     LosVmSpace *space = NULL;
@@ -111,4 +113,5 @@ void ProcVmmInit(void)
 
     pde->procFileOps = &VMM_PROC_FOPS;
 }
+#endif
 #endif

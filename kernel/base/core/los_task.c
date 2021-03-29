@@ -475,22 +475,22 @@ LITE_OS_SEC_TEXT VOID OsTaskCBRecyleToFree()
 
 LITE_OS_SEC_TEXT VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
 {
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
     UINT32 syncSignal = LOSCFG_BASE_IPC_SEM_LIMIT;
-    UINT32 mapSize, intSave;
-    UINTPTR mapBase, topOfStack;
-    UINT32 ret;
+    UINT32 intSave;
+    UINTPTR topOfStack;
 
+#ifdef LOSCFG_KERNEL_VM
+    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
     if (OsProcessIsUserMode(processCB) && (taskCB->userMapBase != 0)) {
         SCHEDULER_LOCK(intSave);
-        mapBase = (UINTPTR)taskCB->userMapBase;
-        mapSize = taskCB->userMapSize;
+        UINT32 mapBase = (UINTPTR)taskCB->userMapBase;
+        UINT32 mapSize = taskCB->userMapSize;
         taskCB->userMapBase = 0;
         taskCB->userArea = 0;
         SCHEDULER_UNLOCK(intSave);
 
         LOS_ASSERT(!(processCB->vmSpace == NULL));
-        ret = OsUnMMap(processCB->vmSpace, (UINTPTR)mapBase, mapSize);
+        UINT32 ret = OsUnMMap(processCB->vmSpace, (UINTPTR)mapBase, mapSize);
         if ((ret != LOS_OK) && (mapBase != 0) && !(processCB->processStatus & OS_PROCESS_STATUS_INIT)) {
             PRINT_ERR("process(%u) ummap user task(%u) stack failed! mapbase: 0x%x size :0x%x, error: %d\n",
                       processCB->processID, taskCB->taskID, mapBase, mapSize, ret);
@@ -500,6 +500,7 @@ LITE_OS_SEC_TEXT VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
         LiteIpcRemoveServiceHandle(taskCB);
 #endif
     }
+#endif
 
     if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
         topOfStack = taskCB->topOfStack;
@@ -880,7 +881,9 @@ STATIC INLINE VOID OsTaskReleaseHoldLock(LosProcessCB *processCB, LosTaskCB *tas
 
     if (processCB->processMode == OS_USER_MODE) {
         OsTaskJoinPostUnsafe(taskCB);
+#ifdef LOSCFG_KERNEL_VM
         OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
+#endif
     }
 
     OsTaskSyncWake(taskCB);

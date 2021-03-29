@@ -187,6 +187,7 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
     return ret;
 }
 
+#ifdef LOSCFG_KERNEL_VM
 UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT32 fsr)
 {
     PRINT_INFO("page fault entry!!!\n");
@@ -226,6 +227,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             return LOS_ERRNO_VM_NOT_FOUND;
     }
 }
+#endif
 
 STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
@@ -258,6 +260,7 @@ STATIC const CHAR *g_excTypeString[] = {
     "irq"
 };
 
+#ifdef LOSCFG_KERNEL_VM
 STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProcess)
 {
     struct file *curFilep = NULL;
@@ -292,36 +295,45 @@ DONE:
 #endif
     return curRegion->range.base;
 }
+#endif
 
 STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
     LosProcessCB *runProcess = OsCurrProcessGet();
-    LosVmMapRegion *region = NULL;
 
     PrintExcInfo("excType: %s\n"
                  "processName       = %s\n"
                  "processID         = %u\n"
+#ifdef LOSCFG_KERNEL_VM
                  "process aspace    = 0x%08x -> 0x%08x\n"
+#endif
                  "taskName          = %s\n"
                  "taskID            = %u\n",
                  g_excTypeString[excType],
                  runProcess->processName,
                  runProcess->processID,
+#ifdef LOSCFG_KERNEL_VM
                  runProcess->vmSpace->base,
                  runProcess->vmSpace->base + runProcess->vmSpace->size,
+#endif
                  runTask->taskName,
                  runTask->taskID);
 
+#ifdef LOSCFG_KERNEL_VM
     if (OsProcessIsUserMode(runProcess)) {
         PrintExcInfo("task user stack   = 0x%08x -> 0x%08x\n",
                      runTask->userMapBase, runTask->userMapBase + runTask->userMapSize);
-    } else {
+    } else
+#endif
+    {
         PrintExcInfo("task kernel stack = 0x%08x -> 0x%08x\n",
                      runTask->topOfStack, runTask->topOfStack + runTask->stackSize);
     }
 
     PrintExcInfo("pc    = 0x%x ", excBufAddr->PC);
+#ifdef LOSCFG_KERNEL_VM
+    LosVmMapRegion *region = NULL;
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
         if (LOS_IsUserAddress((vaddr_t)excBufAddr->PC)) {
             region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)excBufAddr->PC);
@@ -338,7 +350,9 @@ STATIC VOID OsExcSysInfo(UINT32 excType, const ExcContext *excBufAddr)
                          (VADDR_T)excBufAddr->ULR - OsGetTextRegionBase(region, runProcess));
         }
         PrintExcInfo("\nusp   = 0x%x", excBufAddr->USP);
-    } else {
+    } else
+#endif
+    {
         PrintExcInfo("\nklr   = 0x%x\n"
                      "ksp   = 0x%x\n",
                      excBufAddr->LR,
@@ -390,6 +404,7 @@ EXC_PROC_FUNC OsExcRegHookGet(VOID)
     return g_excHook;
 }
 
+#ifdef LOSCFG_KERNEL_VM
 STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
 {
     INT32 i, numPages, pageCount;
@@ -475,6 +490,7 @@ STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFalgs)
     OsDumpProcessUsedMemRegion(runProcess, runspace, vmmFalgs);
     return;
 }
+#endif
 
 VOID OsDumpContextMem(const ExcContext *excBufAddr)
 {
@@ -561,18 +577,17 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 /* this function is used to validate fp or validate the checking range start and end. */
 STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t *vaddr)
 {
-    LosProcessCB *runProcess = NULL;
-    LosVmSpace *runspace = NULL;
     VADDR_T kvaddr = regFP;
-    PADDR_T paddr;
 
     if (!((regFP > start) && (regFP < end) && IS_ALIGNED(regFP, sizeof(CHAR *)))) {
         return FALSE;
     }
 
+#ifdef LOSCFG_KERNEL_VM
+    PADDR_T paddr;
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
-        runProcess = OsCurrProcessGet();
-        runspace = runProcess->vmSpace;
+        LosProcessCB *runProcess = OsCurrProcessGet();
+        LosVmSpace *runspace = runProcess->vmSpace;
         if (runspace == NULL) {
             return FALSE;
         }
@@ -583,6 +598,7 @@ STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t 
 
         kvaddr = (PADDR_T)(UINTPTR)LOS_PaddrToKVaddr(paddr);
     }
+#endif
     if (vaddr != NULL) {
         *vaddr = kvaddr;
     }
@@ -651,7 +667,6 @@ VOID BackTraceSub(UINTPTR regFP)
     UINTPTR stackStart, stackEnd;
     UINTPTR backFP = regFP;
     UINT32 count = 0;
-    LosVmMapRegion *region = NULL;
     VADDR_T kvaddr;
 
     if (FindSuitableStack(regFP, &stackStart, &stackEnd, &kvaddr) == FALSE) {
@@ -679,6 +694,8 @@ VOID BackTraceSub(UINTPTR regFP)
             return;
         }
         backFP = *(UINTPTR *)(UINTPTR)kvaddr;
+#ifdef LOSCFG_KERNEL_VM
+        LosVmMapRegion *region = NULL;
         if (LOS_IsUserAddress((VADDR_T)backLR) == TRUE) {
             region = LOS_RegionFind(OsCurrProcessGet()->vmSpace, (VADDR_T)backLR);
         }
@@ -686,7 +703,9 @@ VOID BackTraceSub(UINTPTR regFP)
             PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x lr in %s --> 0x%x\n", count, backLR, backFP,
                          OsGetRegionNameOrFilePath(region), backLR - region->range.base);
             region = NULL;
-        } else {
+        } else
+#endif
+        {
             PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x\n", count, backLR, backFP);
         }
         count++;
@@ -721,8 +740,9 @@ VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 #ifndef LOSCFG_DEBUG_VERSION
     if (g_excFromUserMode[ArchCurrCpuid()] != TRUE) {
 #endif
+#ifdef LOSCFG_KERNEL_VM
         OsDumpProcessUsedMemNode(OS_EXC_VMM_NO_REGION);
-
+#endif
         OsExcStackInfo();
 #ifndef LOSCFG_DEBUG_VERSION
     }
@@ -1021,22 +1041,20 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
 {
-#ifdef LOSCFG_DEBUG_VERSION
-    LosVmSpace *space = NULL;
-    VADDR_T vaddr;
-#endif
-
+#ifdef LOSCFG_KERNEL_VM
     /* You are not allowed to add any other print information before this exception information */
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
 #ifdef LOSCFG_DEBUG_VERSION
-        vaddr = ROUNDDOWN(far, PAGE_SIZE);
-        space = LOS_SpaceGet(vaddr);
+        VADDR_T vaddr = ROUNDDOWN(far, PAGE_SIZE);
+        LosVmSpace *space = LOS_SpaceGet(vaddr);
         if (space != NULL) {
             LOS_DumpMemRegion(vaddr);
         }
 #endif
         PrintExcInfo("##################excFrom: User!####################\n");
-    } else {
+    } else
+#endif
+    {
         PrintExcInfo("##################excFrom: kernel!###################\n");
     }
 }

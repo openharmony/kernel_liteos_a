@@ -51,6 +51,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_MMU
+
 __attribute__((aligned(MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS))) \
     __attribute__((section(".bss.prebss.translation_table"))) UINT8 \
     g_firstPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS];
@@ -68,6 +70,11 @@ STATIC INLINE PTE_T *OsGetPte2BasePtr(PTE_T pte1)
 {
     PADDR_T pa = MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(pte1);
     return LOS_PaddrToKVaddr(pa);
+}
+
+VADDR_T *OsGFirstTableGet(VOID)
+{
+    return (VADDR_T *)g_firstPageTable;
 }
 
 STATIC INLINE UINT32 OsUnmapL1Invalid(vaddr_t *vaddr, UINT32 *count)
@@ -146,7 +153,6 @@ STATIC VOID OsCvtPte2AttsToFlags(PTE_T l1Entry, PTE_T l2Entry, UINT32 *flags)
 
 STATIC VOID OsPutL2Table(const LosArchMmu *archMmu, UINT32 l1Index, paddr_t l2Paddr)
 {
-    LosVmPage *vmPage = NULL;
     UINT32 index;
     PTE_T ttEntry;
     /* check if any l1 entry points to this l2 table */
@@ -156,8 +162,9 @@ STATIC VOID OsPutL2Table(const LosArchMmu *archMmu, UINT32 l1Index, paddr_t l2Pa
             return;
         }
     }
+#ifdef LOSCFG_KERNEL_VM
     /* we can free this l2 table */
-    vmPage = LOS_VmPageGet(l2Paddr);
+    LosVmPage *vmPage = LOS_VmPageGet(l2Paddr);
     if (vmPage == NULL) {
         LOS_Panic("bad page table paddr %#x\n", l2Paddr);
         return;
@@ -165,6 +172,9 @@ STATIC VOID OsPutL2Table(const LosArchMmu *archMmu, UINT32 l1Index, paddr_t l2Pa
 
     LOS_ListDelete(&vmPage->node);
     LOS_PhysPageFree(vmPage);
+#else
+    (VOID)LOS_MemFree(OS_SYS_MEM_ADDR, LOS_PaddrToKVaddr(l2Paddr));
+#endif
 }
 
 STATIC VOID OsTryUnmapL1PTE(const LosArchMmu *archMmu, vaddr_t vaddr, UINT32 scanIndex, UINT32 scanCount)
@@ -370,13 +380,14 @@ STATIC UINT32 OsUnmapSection(LosArchMmu *archMmu, vaddr_t *vaddr, UINT32 *count)
     return MMU_DESCRIPTOR_L2_NUMBERS_PER_L1;
 }
 
-
 BOOL OsArchMmuInit(LosArchMmu *archMmu, VADDR_T *virtTtb)
 {
+#ifdef LOSCFG_KERNEL_VM
     if (OsAllocAsid(&archMmu->asid) != LOS_OK) {
         VM_ERR("alloc arch mmu asid failed");
         return FALSE;
     }
+#endif
 
     status_t retval = LOS_MuxInit(&archMmu->mtx, NULL);
     if (retval != LOS_OK) {
@@ -480,7 +491,6 @@ STATIC STATUS_T OsGetL2Table(LosArchMmu *archMmu, UINT32 l1Index, paddr_t *ppa)
     UINT32 index;
     PTE_T ttEntry;
     VADDR_T *kvaddr = NULL;
-    LosVmPage *vmPage = NULL;
     UINT32 l2Offset = (MMU_DESCRIPTOR_L2_SMALL_SIZE / MMU_DESCRIPTOR_L1_SMALL_L2_TABLES_PER_PAGE) *
         (l1Index & (MMU_DESCRIPTOR_L1_SMALL_L2_TABLES_PER_PAGE - 1));
     /* lookup an existing l2 page table */
@@ -493,14 +503,22 @@ STATIC STATUS_T OsGetL2Table(LosArchMmu *archMmu, UINT32 l1Index, paddr_t *ppa)
         }
     }
 
+#ifdef LOSCFG_KERNEL_VM
     /* not found: allocate one (paddr) */
-    vmPage = LOS_PhysPageAlloc();
+    LosVmPage *vmPage = LOS_PhysPageAlloc();
     if (vmPage == NULL) {
         VM_ERR("have no memory to save l2 page");
         return LOS_ERRNO_VM_NO_MEMORY;
     }
     LOS_ListAdd(&archMmu->ptList, &vmPage->node);
     kvaddr = OsVmPageToVaddr(vmPage);
+#else
+    kvaddr = LOS_MemAlloc(OS_SYS_MEM_ADDR, MMU_DESCRIPTOR_L2_SMALL_SIZE);
+    if (kvaddr == NULL) {
+        VM_ERR("have no memory to save l2 page");
+        return LOS_ERRNO_VM_NO_MEMORY;
+    }
+#endif
     (VOID)memset_s(kvaddr, MMU_DESCRIPTOR_L2_SMALL_SIZE, 0, MMU_DESCRIPTOR_L2_SMALL_SIZE);
 
     /* get physical address */
@@ -751,21 +769,26 @@ VOID LOS_ArchMmuContextSwitch(LosArchMmu *archMmu)
         ttbcr |= MMU_DESCRIPTOR_TTBCR_PD0;
     }
 
+#ifdef LOSCFG_KERNEL_VM
     /* from armv7a arm B3.10.4, we should do synchronization changes of ASID and TTBR. */
     OsArmWriteContextidr(LOS_GetKVmSpace()->archMmu.asid);
     ISB;
+#endif
     OsArmWriteTtbr0(ttbr);
     ISB;
     OsArmWriteTtbcr(ttbcr);
     ISB;
+#ifdef LOSCFG_KERNEL_VM
     if (archMmu) {
         OsArmWriteContextidr(archMmu->asid);
         ISB;
     }
+#endif
 }
 
 STATUS_T LOS_ArchMmuDestroy(LosArchMmu *archMmu)
 {
+#ifdef LOSCFG_KERNEL_VM
     LosVmPage *page = NULL;
     /* free all of the pages allocated in archMmu->ptList */
     while ((page = LOS_ListRemoveHeadType(&archMmu->ptList, LosVmPage, node)) != NULL) {
@@ -774,6 +797,7 @@ STATUS_T LOS_ArchMmuDestroy(LosArchMmu *archMmu)
 
     OsArmWriteTlbiasid(archMmu->asid);
     OsFreeAsid(archMmu->asid);
+#endif
     (VOID)LOS_MuxDestroy(&archMmu->mtx);
     return LOS_OK;
 }
@@ -804,11 +828,6 @@ STATIC VOID OsSwitchTmpTTB(VOID)
     kSpace->archMmu.physTtb = LOS_PaddrQuery(kSpace->archMmu.virtTtb);
     OsArmWriteTtbr0(kSpace->archMmu.physTtb | MMU_TTBRx_FLAGS);
     ISB;
-}
-
-VADDR_T *OsGFirstTableGet()
-{
-    return (VADDR_T *)g_firstPageTable;
 }
 
 STATIC VOID OsSetKSectionAttr(VOID)
@@ -930,6 +949,7 @@ VOID OsInitMappingStartUp(VOID)
 
     OsArchMmuInitPerCPU();
 }
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -63,7 +63,11 @@ static char *pread_buf_and_check(int fd, const struct iovec *iov, int iovcnt, ss
         return NULL;
     }
 
+#ifdef LOSCFG_KERNEL_VM
     buf = (char *)LOS_VMalloc(buflen * sizeof(char));
+#else
+    buf = (char *)malloc(buflen * sizeof(char));
+#endif
     if (buf == NULL) {
         set_errno(ENOMEM);
         *totalbytesread = VFS_ERROR;
@@ -73,7 +77,11 @@ static char *pread_buf_and_check(int fd, const struct iovec *iov, int iovcnt, ss
     *totalbytesread = (offset == NULL) ? read(fd, buf, buflen)
                                        : pread(fd, buf, buflen, *offset);
     if ((*totalbytesread == VFS_ERROR) || (*totalbytesread == 0)) {
+#ifdef LOSCFG_KERNEL_VM
         LOS_VFree(buf);
+#else
+        free(buf);
+#endif
         return NULL;
     }
 
@@ -119,7 +127,11 @@ ssize_t vfs_readv(int fd, const struct iovec *iov, int iovcnt, off_t *offset)
     }
 
 out:
+#ifdef LOSCFG_KERNEL_VM
     LOS_VFree(buf);
+#else
+    free(buf);
+#endif
     if ((i == 0) && (ret == iov[i].iov_len)) {
         /* failed in the first iovec copy, and 0 bytes copied */
         set_errno(EFAULT);

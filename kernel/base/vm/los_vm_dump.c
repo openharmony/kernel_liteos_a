@@ -51,6 +51,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 #define     FLAG_SIZE               4
 #define     FLAG_START              2
 
@@ -549,6 +551,7 @@ VOID OsVmPhysUsedInfoGet(UINT32 *usedCount, UINT32 *totalCount)
         }
     }
 }
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

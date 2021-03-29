@@ -45,6 +45,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 STATIC SPIN_LOCK_INIT(g_cpuAsidLock);
 STATIC UINTPTR g_asidPool[BITMAP_NUM_WORDS(1UL << MMU_ARM_ASID_BITS)];
 
@@ -72,6 +74,7 @@ VOID OsFreeAsid(UINT32 asid)
     LOS_BitmapClrNBits(g_asidPool, asid, 1);
     LOS_SpinUnlockRestore(&g_cpuAsidLock, flags);
 }
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

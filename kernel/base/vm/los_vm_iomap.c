@@ -35,6 +35,7 @@
 #include "los_vm_common.h"
 #include "los_vm_map.h"
 #include "los_vm_lock.h"
+#include "los_memory.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -82,6 +83,7 @@ VOID *ioremap_cached(PADDR_T paddr, unsigned long size)
     return (VOID *)(UINTPTR)paddr;
 }
 
+#ifdef LOSCFG_KERNEL_VM
 int remap_pfn_range(VADDR_T vaddr, unsigned long pfn, unsigned long size, unsigned long prot)
 {
     STATUS_T status = LOS_OK;
@@ -147,6 +149,7 @@ OUT:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return status;
 }
+#endif
 
 VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMemType type)
 {
@@ -161,7 +164,11 @@ VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMe
         return NULL;
     }
 
+#ifdef LOSCFG_KERNEL_VM
     kVaddr = LOS_KernelMallocAlign(size, align);
+#else
+    kVaddr = LOS_MemAllocAlign(OS_SYS_MEM_ADDR, size, align);
+#endif
     if (kVaddr == NULL) {
         VM_ERR("failed, size = %u, align = %u", size, align);
         return NULL;
@@ -189,9 +196,17 @@ VOID LOS_DmaMemFree(VOID *vaddr)
 
     if ((addr >= UNCACHED_VMM_BASE) && (addr < UNCACHED_VMM_BASE + UNCACHED_VMM_SIZE)) {
         addr = UNCACHED_TO_VMM_ADDR(addr);
+#ifdef LOSCFG_KERNEL_VM
         LOS_KernelFree((VOID *)addr);
+#else
+        LOS_MemFree(OS_SYS_MEM_ADDR, (VOID *)addr);
+#endif
     } else if ((addr >= KERNEL_VMM_BASE) && (addr < KERNEL_VMM_BASE + KERNEL_VMM_SIZE)) {
+#ifdef LOSCFG_KERNEL_VM
         LOS_KernelFree((VOID *)addr);
+#else
+        LOS_MemFree(OS_SYS_MEM_ADDR, (VOID *)addr);
+#endif
     } else {
         VM_ERR("addr %#x not in dma area!!!", vaddr);
     }
@@ -200,17 +215,9 @@ VOID LOS_DmaMemFree(VOID *vaddr)
 
 DMA_ADDR_T LOS_DmaVaddrToPaddr(VOID *vaddr)
 {
-    status_t ret;
-    paddr_t pa;
-    LosVmSpace *space = LOS_GetKVmSpace();
-
-    ret = LOS_ArchMmuQuery(&space->archMmu, (VADDR_T)(UINTPTR)vaddr, &pa, NULL);
-    if (ret != LOS_OK) {
-        return (DMA_ADDR_T)NULL;
-    }
-
-    return (DMA_ADDR_T)pa;
+    return (DMA_ADDR_T)LOS_PaddrQuery(vaddr);
 }
+
 #ifdef __cplusplus
 #if __cplusplus
 }
