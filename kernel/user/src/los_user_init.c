@@ -66,6 +66,6 @@ LITE_USER_SEC_ENTRY VOID OsUserInit(VOID *args)
 #ifdef LOSCFG_KERNEL_DYNLOAD
     sys_call3(__NR_execve, (UINTPTR)g_initPath, 0, 0);
 #endif
-    while (1) {
+    while (true) {
     }
 }
