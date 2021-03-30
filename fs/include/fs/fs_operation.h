@@ -113,7 +113,7 @@ extern void dec_mapping_nolock(struct page_mapping *mapping);
  *
  ****************************************************************************/
 
-extern int update_file_path(char *old_path, char *new_path);
+extern int update_file_path(const char *old_path, const char *new_path);
 
 /**
  * @ingroup  fs

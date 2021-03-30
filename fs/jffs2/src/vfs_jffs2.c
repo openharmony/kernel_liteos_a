@@ -470,7 +470,7 @@ int VfsJffs2Readdir(struct Vnode *pVnode, struct fs_dirent_s *dir)
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 
     /* set jffs2_d */
-    while (i < MAX_DIRENT_NUM && i < dir->read_cnt) {
+    while (i < dir->read_cnt) {
         ret = jffs2_readdir((struct jffs2_inode *)pVnode->data, &dir->fd_position,
                             &dir->fd_int_offset, &dir->fd_dir[i]);
         if (ret) {

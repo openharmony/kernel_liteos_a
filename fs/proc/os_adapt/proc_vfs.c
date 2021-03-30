@@ -182,7 +182,7 @@ int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
     }
     pde = VnodeToEntry(node);
 
-    while ((i < MAX_DIRENT_NUM) || (i < dir->read_cnt)) {
+    while (i < dir->read_cnt) {
         buffer = (char *)zalloc(sizeof(char) * NAME_MAX);
         if (buffer == NULL) {
             PRINT_ERR("malloc failed\n");

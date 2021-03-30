@@ -573,6 +573,10 @@ int VnodeDevInit()
     devNode->type = VNODE_TYPE_DIR;
 
     devMount = MountAlloc(devNode, NULL);
+    if (devMount == NULL) {
+        PRINT_ERR("VnodeDevInit failed mount point alloc failed.\n");
+        return -ENOMEM;
+    }
     devMount->vnodeCovered = devNode;
     devMount->vnodeBeCovered->flag |= VNODE_FLAG_MOUNT_NEW;
     return LOS_OK;
