@@ -247,7 +247,6 @@ out:
 
 int update_file_path(const char *old_path, const char *new_path)
 {
-    unsigned int i = 3;
     struct filelist *f_list = NULL;
     struct file *filp = NULL;
     int ret;
@@ -260,12 +259,11 @@ int update_file_path(const char *old_path, const char *new_path)
     }
 
     (VOID)LOS_MuxLock(&g_file_mapping.lock, LOS_WAIT_FOREVER);
-    while (i < CONFIG_NFILE_DESCRIPTORS) {
-        i++;
-        if (!get_bit(i - 1)) {
+    for (int i = 3; i < CONFIG_NFILE_DESCRIPTORS; i++) {
+        if (!get_bit(i)) {
             continue;
         }
-        filp = &tg_filelist.fl_files[i - 1];
+        filp = &tg_filelist.fl_files[i];
         if (filp->f_path == NULL || strcmp(filp->f_path, old_path)) {
             continue;
         }
