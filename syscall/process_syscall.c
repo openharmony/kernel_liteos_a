@@ -312,6 +312,11 @@ int SysFork(void)
     return OsClone(0, 0, 0);
 }
 
+int SysVfork(void)
+{
+    return OsClone(CLONE_VFORK, 0, 0);
+}
+
 unsigned int SysGetPPID(void)
 {
     return OsCurrProcessGet()->parentProcessID;

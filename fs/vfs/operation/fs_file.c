@@ -61,13 +61,18 @@ static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
         return VFS_ERROR;
     }
 
+    if (minFd >= fdt->max_fds) {
+        set_errno(EINVAL);
+        return VFS_ERROR;
+    }
+
     /* search unused fd from table */
     for (int i = minFd; i < fdt->max_fds; i++) {
         if (!FD_ISSET(i, fdt->proc_fds)) {
             return i;
         }
     }
-
+    set_errno(EMFILE);
     return VFS_ERROR;
 }
 

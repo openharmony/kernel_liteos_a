@@ -38,9 +38,11 @@
 #include "los_signal.h"
 #include "fs/fs.h"
 #include "syscall.h"
+#include "sysinfo.h"
 #ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_exec_elf.h"
 #endif
+#include "sys/resource.h"
 #include "sys/times.h"
 #include "sys/utsname.h"
 #include "sys/shm.h"
@@ -73,6 +75,7 @@ extern int SysSchedGetPriorityMax(int policy);
 extern int SysSchedRRGetInterval(int pid, struct timespec *tp);
 extern int SysWait(int pid, USER int *status, int options, void *rusage);
 extern int SysFork(void);
+extern int SysVfork(void);
 extern unsigned int SysGetPID(void);
 extern unsigned int SysGetPPID(void);
 extern int SysSetGroupID(unsigned int gid);
@@ -161,6 +164,7 @@ extern int SysShmDt(const void *shmaddr);
 
 /* misc */
 extern int SysUname(struct utsname *name);
+extern int SysInfo(struct sysinfo *info);
 
 /* time */
 extern int SysNanoSleep(const struct timespec *rqtp, struct timespec *rmtp);
@@ -242,6 +246,7 @@ extern ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt);
 extern int SysPipe(int pipefd[2]); /* 2 : pipe fds for read and write */
 extern int SysFormat(const char *dev, int sectors, int option);
 extern int SysFstat64(int fd, struct stat64 *buf);
+extern int SysFstatat64(int fd, const char *restrict path, struct stat *restrict buf, int flag);
 extern int SysFcntl64(int fd, int cmd, void *arg);
 extern int SysPoll(struct pollfd *fds, nfds_t nfds, int timeout);
 extern int SysPrctl(int option, ...);
@@ -267,5 +272,6 @@ extern char *SysRealpath(const char *path, char *resolvedPath);
 extern int SysUmask(int mask);
 extern int SysShellExec(const char *msgName, const char *cmdString);
 extern int SysReboot(int magic, int magic2, int type);
+extern int SysGetrusage(int what, struct rusage *ru);
 #endif
 #endif /* _LOS_SYSCALL_H */
