@@ -830,33 +830,34 @@ STATIC VOID OsSwitchTmpTTB(VOID)
     ISB;
 }
 
-STATIC VOID OsSetKSectionAttr(VOID)
+STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
 {
+    UINT32 offset = virtAddr - KERNEL_VMM_BASE;
     /* every section should be page aligned */
-    UINTPTR textStart = (UINTPTR)&__text_start;
-    UINTPTR textEnd = (UINTPTR)&__text_end;
-    UINTPTR rodataStart = (UINTPTR)&__rodata_start;
-    UINTPTR rodataEnd = (UINTPTR)&__rodata_end;
-    UINTPTR ramDataStart = (UINTPTR)&__ram_data_start;
-    UINTPTR bssEnd = (UINTPTR)&__bss_end;
+    UINTPTR textStart = (UINTPTR)&__text_start + offset;
+    UINTPTR textEnd = (UINTPTR)&__text_end + offset;
+    UINTPTR rodataStart = (UINTPTR)&__rodata_start + offset;
+    UINTPTR rodataEnd = (UINTPTR)&__rodata_end + offset;
+    UINTPTR ramDataStart = (UINTPTR)&__ram_data_start + offset;
+    UINTPTR bssEnd = (UINTPTR)&__bss_end + offset;
     UINT32 bssEndBoundary = ROUNDUP(bssEnd, MB);
     LosArchMmuInitMapping mmuKernelMappings[] = {
         {
-            .phys = SYS_MEM_BASE + textStart - KERNEL_VMM_BASE,
+            .phys = SYS_MEM_BASE + textStart - virtAddr,
             .virt = textStart,
             .size = ROUNDUP(textEnd - textStart, MMU_DESCRIPTOR_L2_SMALL_SIZE),
             .flags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_EXECUTE,
             .name = "kernel_text"
         },
         {
-            .phys = SYS_MEM_BASE + rodataStart - KERNEL_VMM_BASE,
+            .phys = SYS_MEM_BASE + rodataStart - virtAddr,
             .virt = rodataStart,
             .size = ROUNDUP(rodataEnd - rodataStart, MMU_DESCRIPTOR_L2_SMALL_SIZE),
             .flags = VM_MAP_REGION_FLAG_PERM_READ,
             .name = "kernel_rodata"
         },
         {
-            .phys = SYS_MEM_BASE + ramDataStart - KERNEL_VMM_BASE,
+            .phys = SYS_MEM_BASE + ramDataStart - virtAddr,
             .virt = ramDataStart,
             .size = ROUNDUP(bssEndBoundary - ramDataStart, MMU_DESCRIPTOR_L2_SMALL_SIZE),
             .flags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE,
@@ -866,26 +867,29 @@ STATIC VOID OsSetKSectionAttr(VOID)
     LosVmSpace *kSpace = LOS_GetKVmSpace();
     status_t status;
     UINT32 length;
-    paddr_t oldTtPhyBase;
     int i;
     LosArchMmuInitMapping *kernelMap = NULL;
     UINT32 kmallocLength;
+    UINT32 flags;
 
     /* use second-level mapping of default READ and WRITE */
     kSpace->archMmu.virtTtb = (PTE_T *)g_firstPageTable;
     kSpace->archMmu.physTtb = LOS_PaddrQuery(kSpace->archMmu.virtTtb);
-    status = LOS_ArchMmuUnmap(&kSpace->archMmu, KERNEL_VMM_BASE,
-                               (bssEndBoundary - KERNEL_VMM_BASE) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT);
-    if (status != ((bssEndBoundary - KERNEL_VMM_BASE) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
+    status = LOS_ArchMmuUnmap(&kSpace->archMmu, virtAddr,
+                               (bssEndBoundary - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT);
+    if (status != ((bssEndBoundary - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
         VM_ERR("unmap failed, status: %d", status);
         return;
     }
 
-    status = LOS_ArchMmuMap(&kSpace->archMmu, KERNEL_VMM_BASE, SYS_MEM_BASE,
-                             (textStart - KERNEL_VMM_BASE) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
-                             VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE |
-                             VM_MAP_REGION_FLAG_PERM_EXECUTE);
-    if (status != ((textStart - KERNEL_VMM_BASE) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
+    flags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE | VM_MAP_REGION_FLAG_PERM_EXECUTE;
+    if (uncached) {
+        flags |= VM_MAP_REGION_FLAG_UNCACHED;
+    }
+    status = LOS_ArchMmuMap(&kSpace->archMmu, virtAddr, SYS_MEM_BASE,
+                             (textStart - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
+                             flags);
+    if (status != ((textStart - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
         VM_ERR("mmap failed, status: %d", status);
         return;
     }
@@ -893,6 +897,9 @@ STATIC VOID OsSetKSectionAttr(VOID)
     length = sizeof(mmuKernelMappings) / sizeof(LosArchMmuInitMapping);
     for (i = 0; i < length; i++) {
         kernelMap = &mmuKernelMappings[i];
+	if (uncached) {
+	    flags |= VM_MAP_REGION_FLAG_UNCACHED;
+	}
         status = LOS_ArchMmuMap(&kSpace->archMmu, kernelMap->virt, kernelMap->phys,
                                  kernelMap->size >> MMU_DESCRIPTOR_L2_SMALL_SHIFT, kernelMap->flags);
         if (status != (kernelMap->size >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
@@ -902,16 +909,29 @@ STATIC VOID OsSetKSectionAttr(VOID)
         LOS_VmSpaceReserve(kSpace, kernelMap->size, kernelMap->virt);
     }
 
-    kmallocLength = KERNEL_VMM_BASE + SYS_MEM_SIZE_DEFAULT - bssEndBoundary;
+    kmallocLength = virtAddr + SYS_MEM_SIZE_DEFAULT - bssEndBoundary;
+    flags = VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE;
+    if (uncached) {
+        flags |= VM_MAP_REGION_FLAG_UNCACHED;
+    }
     status = LOS_ArchMmuMap(&kSpace->archMmu, bssEndBoundary,
-                             SYS_MEM_BASE + bssEndBoundary - KERNEL_VMM_BASE,
+                             SYS_MEM_BASE + bssEndBoundary - virtAddr,
                              kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
-                             VM_MAP_REGION_FLAG_PERM_READ | VM_MAP_REGION_FLAG_PERM_WRITE);
+                             flags);
     if (status != (kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
         VM_ERR("mmap failed, status: %d", status);
         return;
     }
     LOS_VmSpaceReserve(kSpace, kmallocLength, bssEndBoundary);
+}
+
+STATIC VOID OsKSectionNewAttrEnable(VOID)
+{
+    LosVmSpace *kSpace = LOS_GetKVmSpace();
+    paddr_t oldTtPhyBase;
+
+    kSpace->archMmu.virtTtb = (PTE_T *)g_firstPageTable;
+    kSpace->archMmu.physTtb = LOS_PaddrQuery(kSpace->archMmu.virtTtb);
 
     /* we need free tmp ttbase */
     oldTtPhyBase = OsArmReadTtbr0();
@@ -945,7 +965,9 @@ VOID OsInitMappingStartUp(VOID)
 
     OsSwitchTmpTTB();
 
-    OsSetKSectionAttr();
+    OsSetKSectionAttr(KERNEL_VMM_BASE, FALSE);
+    OsSetKSectionAttr(UNCACHED_VMM_BASE, TRUE);
+    OsKSectionNewAttrEnable();
 
     OsArchMmuInitPerCPU();
 }
