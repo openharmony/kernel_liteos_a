@@ -39,6 +39,10 @@
 
 #include "mtd_common.h"
 
+#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
+#include "cfiflash.h"
+#endif
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -141,10 +145,9 @@ static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev 
     spinorParam->blockname = SPIBLK_NAME;
     spinorParam->charname = SPICHR_NAME;
 #else
-    extern struct block_operations *GetCfiBlkOps(void);
     spinorParam->flash_ops = GetCfiBlkOps();
     spinorParam->char_ops = NULL;
-    spinorParam->blockname = "/dev/cfiflash";
+    spinorParam->blockname = CFI_DRIVER;
     spinorParam->charname = NULL;
 #endif
     spinorParam->partition_head = g_spinorPartitionHead;
@@ -163,7 +166,6 @@ static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 #ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
     struct MtdDev *spinorMtd = GetMtd("spinor");
 #else
-    extern struct MtdDev *GetCfiMtdDev(void);
     struct MtdDev *spinorMtd = GetCfiMtdDev();
 #endif
     if (spinorMtd == NULL) {

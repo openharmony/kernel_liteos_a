@@ -45,6 +45,13 @@
 #include "mtd_list.h"
 #include "fs/path_cache.h"
 
+#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
+#include "mtd_partition.h"
+#include "cfiflash.h"
+#define DEV_STORAGE_PATH        "/dev/cfiflash1"
+#define SECOND_MTD_PART_NUM 1
+#endif
+
 #ifdef LOSCFG_STORAGE_SPINOR
 #define DEV_STORAGE_PATH       "/dev/spinorblk2"
 #define SECOND_MTD_PART_NUM 2
@@ -189,19 +196,21 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 #endif
 
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-#define CFIFLASH_CAPACITY   64 * 1024 * 1024
-    if (strcmp(rootType, "cfi-flash") == 0) {
+    if (strcmp(rootType, FLASH_TYPE) == 0) {
         INT32 ret;
-        extern INT32 add_mtd_partition(const CHAR *type, UINT32 startAddr, UINT32 length, UINT32 partitionNum);
-        ret = add_mtd_partition("cfi-flash", rootAddr, rootSize, 0);
+        if (rootAddr != CFIFLASH_ROOT_ADDR) {
+            PRINT_ERR("Error rootAddr, must be %#0x!\n", CFIFLASH_ROOT_ADDR);
+            return NULL;
+        }
+        ret = add_mtd_partition(FLASH_TYPE, rootAddr, rootSize, 0);
         if (ret != LOS_OK) {
-            PRINT_ERR("Failed to add cfi-flash root partition!\n");
+            PRINT_ERR("Failed to add %s root partition!\n", FLASH_TYPE);
         } else {
             rootDev = "/dev/cfiflash0";
-            ret = add_mtd_partition("cfi-flash", (rootAddr + rootSize),
-                                CFIFLASH_CAPACITY - rootAddr - rootSize, 1);
+            ret = add_mtd_partition(FLASH_TYPE, (rootAddr + rootSize),
+                                    CFIFLASH_CAPACITY - rootAddr - rootSize, SECOND_MTD_PART_NUM);
             if (ret != LOS_OK) {
-                PRINT_ERR("Failed to add cfi-flash storage partition!\n");
+                PRINT_ERR("Failed to add %s storage partition!\n", FLASH_TYPE);
             }
         }
     } else
@@ -262,13 +271,17 @@ STATIC INT32 GetArgs(CHAR **args)
     }
 #endif
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-    /*
-     * TODO: Implement method of fetching bootargs for
-     *       Qemu ARM virtual platform. If used without
-     *       bootloader it will pass DTB by default.
-     */
-    (void)ret;
-    cmdLine = "bootargs=root=cfi-flash fstype=jffs2 rootaddr=0xA00000 rootsize=27M";
+    struct MtdDev *mtd = GetCfiMtdDev();
+    if (mtd == NULL) {
+        PRINT_ERR("Get CFI mtd failed!\n");
+        goto ERROUT;
+    }
+    g_alignSize = mtd->eraseSize;
+    ret = mtd->read(mtd, CFIFLASH_BOOTARGS_ADDR, COMMAND_LINE_SIZE, cmdLine);
+    if (ret != COMMAND_LINE_SIZE) {
+        PRINT_ERR("Read CFI command line failed!\n");
+        goto ERROUT;
+    }
 #endif
 
     for (i = 0; i < COMMAND_LINE_SIZE; i += len + 1) {
@@ -493,25 +506,12 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
             PRINT_ERR("Failed to mount rootfs,rootDev %s, errno %d: %s\n", rootDev, err, strerror(err));
             return ret;
         }
-#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
+#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND) || defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
         ret = mkdir("/storage", DEFAULT_STORAGE_MOUNT_DIR_MODE);
         if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
             PRINT_ERR("Failed to reserve vnode /storage, errno %d: %s\n", err, strerror(err));
         } else {
             ret = mount(DEV_STORAGE_PATH, "/storage", fsType, 0, NULL);
-            if (ret != LOS_OK) {
-                err = get_errno();
-                PRINT_ERR("Failed to mount /storage, errno %d: %s\n", err, strerror(err));
-            }
-        }
-#endif
-#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-        ret = mkdir("/storage", DEFAULT_STORAGE_MOUNT_DIR_MODE);
-        if (ret != LOS_OK) {
-            err = get_errno();
-            PRINT_ERR("Failed to reserve inode /storage, errno %d: %s\n", err, strerror(err));
-        } else {
-            ret = mount("/dev/cfiflash1", "/storage", fsType, 0, NULL);
             if (ret != LOS_OK) {
                 err = get_errno();
                 PRINT_ERR("Failed to mount /storage, errno %d: %s\n", err, strerror(err));
