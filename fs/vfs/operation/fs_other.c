@@ -513,16 +513,75 @@ static void PrintFileInfo(const struct stat *statInfo, const char *name)
     PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
            str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size, statInfo->st_uid, statInfo->st_gid, name);
 }
-void ls(const char *pathname)
+
+int LsFile(const char *path)
 {
-    struct stat64 stat64_info;
-    struct stat stat_info;
-    struct dirent *pdirent = NULL;
-    char *path = NULL;
+    struct stat64 stat64Info;
+    struct stat statInfo;
+
+    if (stat64(path, &stat64Info) == 0) {
+        PrintFileInfo64(&stat64Info, path);
+    } else if (stat(path, &statInfo) == 0) {
+        PrintFileInfo(&statInfo, path);
+    } else {
+        return -1;
+    }
+
+    return 0;
+}
+
+int LsDir(const char *path)
+{
+    struct stat statInfo = { 0 };
+    struct stat64 stat64Info = { 0 };
+    DIR *d = NULL;
     char *fullpath = NULL;
     char *fullpath_bak = NULL;
+    struct dirent *pdirent = NULL;
+
+    d = opendir(path);
+    if (d == NULL) {
+        return -1;
+    }
+
+    PRINTK("Directory %s:\n", path);
+    do {
+        pdirent = readdir(d);
+        if (pdirent == NULL) {
+            break;
+        } else {
+            if (!strcmp(pdirent->d_name, ".") || !strcmp(pdirent->d_name, "..")) {
+                continue;
+            }
+            (void)memset_s(&statInfo, sizeof(struct stat), 0, sizeof(struct stat));
+            (void)memset_s(&stat64Info, sizeof(struct stat), 0, sizeof(struct stat));
+            fullpath = ls_get_fullpath(path, pdirent);
+            if (fullpath == NULL) {
+                (void)closedir(d);
+                return -1;
+            }
+
+            fullpath_bak = fullpath;
+            if (stat64(fullpath, &stat64Info) == 0) {
+                PrintFileInfo64(&stat64Info, pdirent->d_name);
+            } else if (stat(fullpath, &statInfo) == 0) {
+                PrintFileInfo(&statInfo, pdirent->d_name);
+            } else {
+                PRINTK("BAD file: %s\n", pdirent->d_name);
+            }
+            free(fullpath_bak);
+        }
+    } while (1);
+    (void)closedir(d);
+
+    return 0;
+}
+
+void ls(const char *pathname)
+{
+    struct stat statInfo = { 0 };
+    char *path = NULL;
     int ret;
-    DIR *d = NULL;
 
     if (pathname == NULL) {
 #ifdef VFS_USING_WORKDIR
@@ -548,44 +607,23 @@ void ls(const char *pathname)
         }
     }
 
-    /* list all directory and file*/
-    d = opendir(path);
-    if (d == NULL) {
+    ret = stat(path, &statInfo);
+    if (ret < 0) {
         perror("ls error");
-    } else {
-        PRINTK("Directory %s:\n", path);
-        do {
-            pdirent = readdir(d);
-            if (pdirent == NULL) {
-                break;
-            } else {
-                if (!strcmp(pdirent->d_name, ".") || !strcmp(pdirent->d_name, "..")) {
-                    continue;
-                }
-                (void)memset_s(&stat_info, sizeof(struct stat), 0, sizeof(struct stat));
-                fullpath = ls_get_fullpath(path, pdirent);
-                if (fullpath == NULL) {
-                    free(path);
-                    (void)closedir(d);
-                    return;
-                }
-
-                fullpath_bak = fullpath;
-                if (stat64(fullpath, &stat64_info) == 0) {
-                    PrintFileInfo64(&stat64_info, pdirent->d_name);
-                } else if (stat(fullpath, &stat_info) == 0) {
-                    PrintFileInfo(&stat_info, pdirent->d_name);
-                } else {
-                    PRINTK("BAD file: %s\n", pdirent->d_name);
-                }
-                free(fullpath_bak);
-            }
-        } while (1);
-
-        (void)closedir(d);
+        free(path);
+        return;
     }
-    free(path);
 
+    if (statInfo.st_mode & S_IFDIR) { /* list all directory and file */
+        ret = LsDir((pathname == NULL) ? path : pathname);
+    } else { /* show the file infomation */
+        ret = LsFile(path);
+    }
+    if (ret < 0) {
+        perror("ls error");
+    }
+
+    free(path);
     return;
 }
 
