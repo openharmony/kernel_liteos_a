@@ -137,6 +137,7 @@ config PLATFORM_ADAPT
 config ENABLE_OOM_LOOP_TASK
     bool "Enable Oom loop task"
     default n
+    depends on KERNEL_VM
     help
       Answer Y to enable oom loop kthread to check system out of memory.
 

@@ -48,6 +48,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 STATIC VOID OsPageCacheAdd(LosFilePage *page, struct page_mapping *mapping, VM_OFFSET_T pgoff)
 {
     LosFilePage *fpage = NULL;
@@ -757,6 +759,14 @@ VOID OsVmmFileRegionFree(struct file *filep, LosProcessCB *processCB)
         RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeTmp)
         (VOID)LOS_MuxRelease(&space->regionMux);
     }
+}
+#endif
+#else
+INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
+{
+    UNUSED(filep);
+    UNUSED(region);
+    return ENOERR;
 }
 #endif
 

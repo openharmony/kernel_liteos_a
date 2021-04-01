@@ -62,6 +62,7 @@ VOID *OsVmBootMemAlloc(size_t len)
     return (VOID *)ptr;
 }
 
+#ifdef LOSCFG_KERNEL_VM
 UINT32 OsSysMemInit(VOID)
 {
     STATUS_T ret;
@@ -87,6 +88,20 @@ UINT32 OsSysMemInit(VOID)
 #endif
     return LOS_OK;
 }
+#else
+UINT32 OsSysMemInit(VOID)
+{
+    STATUS_T ret;
+
+    ret = OsKHeapInit(OS_KHEAP_BLOCK_SIZE);
+    if (ret != LOS_OK) {
+        VM_ERR("OsKHeapInit fail");
+        return LOS_NOK;
+    }
+    g_kHeapInited = TRUE;
+    return LOS_OK;
+}
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

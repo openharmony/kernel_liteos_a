@@ -51,6 +51,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 extern char __exc_table_start[];
 extern char __exc_table_end[];
 
@@ -453,6 +455,7 @@ DONE:
     (VOID)LOS_MuxRelease(&space->regionMux);
     return status;
 }
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -50,7 +50,11 @@ extern "C" {
 
 /* Used to cut non-essential functions. */
 #define OS_MEM_FREE_BY_TASKID   0
+#ifdef LOSCFG_KERNEL_VM
 #define OS_MEM_EXPAND_ENABLE    1
+#else
+#define OS_MEM_EXPAND_ENABLE    0
+#endif
 
 /* the dump size of current broken node when memcheck error */
 #define OS_MEM_NODE_DUMP_SIZE   64
@@ -329,6 +333,17 @@ STATIC INLINE struct OsMemNodeHead *PreSentinelNodeGet(const VOID *pool, const s
     }
 
     return NULL;
+}
+
+UINT32 OsMemLargeNodeFree(const VOID *ptr)
+{
+    LosVmPage *page = OsVmVaddrToPage((VOID *)ptr);
+    if ((page == NULL) || (page->nPages == 0)) {
+        return LOS_NOK;
+    }
+    LOS_PhysPagesFreeContiguous((VOID *)ptr, page->nPages);
+
+    return LOS_OK;
 }
 
 STATIC INLINE BOOL TryShrinkPool(const VOID *pool, const struct OsMemNodeHead *node)
@@ -1974,17 +1989,6 @@ BOOL OsMemIsHeapNode(const VOID *ptr)
     MEM_UNLOCK(pool, intSave);
 #endif
     return FALSE;
-}
-
-UINT32 OsMemLargeNodeFree(const VOID *ptr)
-{
-    LosVmPage *page = OsVmVaddrToPage((VOID *)ptr);
-    if ((page == NULL) || (page->nPages == 0)) {
-        return LOS_NOK;
-    }
-    LOS_PhysPagesFreeContiguous((VOID *)ptr, page->nPages);
-
-    return LOS_OK;
 }
 
 #ifdef __cplusplus

@@ -31,9 +31,6 @@
 
 #include "stdlib.h"
 #include "los_memory_pri.h"
-#ifdef LOSCFG_MEM_RECORDINFO
-#include "los_memrecord_pri.h"
-#endif
 #ifdef LOSCFG_SHELL_EXCINFO
 #include "los_excinfo_pri.h"
 #endif
@@ -154,14 +151,21 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OsShellCmdFreeInfo(INT32 argc, const CHAR *
     UINT32 memUsed = LOS_MemTotalUsedGet(m_aucSysMem1);
     UINT32 totalMem = LOS_MemPoolSizeGet(m_aucSysMem1);
     UINT32 freeMem = totalMem - memUsed;
-    UINT32 usedCount, totalCount;
     UINT32 memUsedHeap = memUsed;
 
+#ifdef LOSCFG_KERNEL_VM
+    UINT32 usedCount, totalCount;
     OsVmPhysUsedInfoGet(&usedCount, &totalCount);
     totalMem = SYS_MEM_SIZE_DEFAULT;
     memUsed = SYS_MEM_SIZE_DEFAULT - (totalCount << PAGE_SHIFT);
     memUsed += (usedCount << PAGE_SHIFT) - freeMem;
     freeMem = totalMem - memUsed;
+#else
+    totalMem = SYS_MEM_SIZE_DEFAULT;
+    memUsed = g_vmBootMemBase - KERNEL_ASPACE_BASE;
+    memUsed -= freeMem;
+    freeMem -= totalMem - memUsed;
+#endif
 
     if ((argc == 0) ||
         ((argc == 1) && (strcmp(argv[0], "-k") == 0)) ||

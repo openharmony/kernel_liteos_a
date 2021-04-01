@@ -184,6 +184,7 @@ reloc_img_to_bottom_loop:
     sub     r11, r11, r12                       /* r11: eventual address offset */
 
 reloc_img_to_bottom_done:
+#ifdef LOSCFG_KERNEL_MMU
     ldr     r4, =g_firstPageTable               /* r4: physical address of translation table and clear it */
     add     r4, r4, r11
     mov     r0, r4
@@ -212,11 +213,11 @@ reloc_img_to_bottom_done:
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[paIndex] = pt entry */
     rsb     r7, r11, r6, lsl #20                /* r7: va */
     str     r12, [r4, r7, lsr #(20 - 2)]        /* jumpTable[vaIndex] = pt entry */
-
+#endif
     bl      _bootaddr_setup
-
+#ifdef LOSCFG_KERNEL_MMU
     bl      mmu_setup                           /* set up the mmu */
-
+#endif
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
     ldr     r0, =__undef_stack
     ldr     r1, =__exc_stack_top
@@ -294,7 +295,7 @@ clear_bss:
 
 _start_hang:
     b      _start_hang
-
+#ifdef LOSCFG_KERNEL_MMU
 mmu_setup:
     mov     r12, #0
     mcr     p15, 0, r12, c8, c7, 0              /* Set c8 to control the TLB and set the mapping to invalid */
@@ -330,7 +331,7 @@ mmu_setup:
     isb
     sub     lr,  r11                            /* adjust lr with delta of physical address and virtual address */
     bx      lr
-
+#endif
     .code  32
 
     .global reset_platform
@@ -346,6 +347,7 @@ reset_platform:
     mov    pc, r0   // Jump to reset vector
 #endif
 cpu_start:
+#ifdef LOSCFG_KERNEL_MMU
     ldr     r4, =g_firstPageTable               /* r4 = physical address of translation table and clear it */
     add     r4, r4, r11
     orr     r8, r4, #MMU_TTBRx_FLAGS
@@ -356,6 +358,7 @@ cpu_start:
     add     r4, r4, r11                         /* r4 = tt_trampoline paddr */
 
     bl     mmu_setup
+#endif
     bl     secondary_cpu_start
     b      .
 
@@ -394,6 +397,7 @@ sp_set:
  * r10: flags
  * r9 and r12 will be used as variable
  */
+#ifdef LOSCFG_KERNEL_MMU
 page_table_build:
     mov     r9, r6
     bfc     r9, #20, #12                        /* r9: pa % MB */
@@ -412,7 +416,7 @@ page_table_build_loop:
     subs    r8, #1                              /* sizes-- */
     bne     page_table_build_loop
     bx      lr
-
+#endif
 /*
  * init stack to initial value
  * r0 is stack mem start, r1 is stack mem end
@@ -465,6 +469,7 @@ _bootaddr_setup:
 
     bx      lr
 
+#ifdef LOSCFG_KERNEL_MMU
 memset_optimized:
     mov     r3, r0
     vdup.8  q0, r1
@@ -476,7 +481,7 @@ memset_optimized_loop:
     vstmia  r3!, {d0 - d7}
     bge     memset_optimized_loop
     bx      lr
-
+#endif
 init_done:
     .long  0xDEADB00B
 

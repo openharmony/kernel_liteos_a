@@ -50,6 +50,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 #define ARGC_2             2
 #define ARGC_1             1
 #define ARGC_0             0
@@ -259,6 +261,7 @@ SHELLCMD_ENTRY(v2p_shellcmd, CMD_TYPE_SHOW, VMM_PMM_CMD, 1, (CmdCallBackFunc)OsS
 
 #ifdef LOSCFG_SHELL
 SHELLCMD_ENTRY(pmm_shellcmd, CMD_TYPE_SHOW, "pmm", 0, (CmdCallBackFunc)OsShellCmdDumpPmm);
+#endif
 #endif
 
 #ifdef __cplusplus

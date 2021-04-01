@@ -77,7 +77,9 @@ LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
 #if (LOSCFG_KERNEL_SMP == YES)
     UINT32 cpuid = ArchCurrCpuid();
 
+#ifdef LOSCFG_KERNEL_MMU
     OsArchMmuInitPerCPU();
+#endif
 
     OsCurrTaskSet(OsGetMainTask());
 

@@ -463,7 +463,6 @@ STATIC UINT32 OsProcessInit(VOID)
 LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
 {
     UINT32 intSave;
-    LosVmSpace *space = NULL;
     LosProcessCB *processCB = NULL;
 
     SCHEDULER_LOCK(intSave);
@@ -478,10 +477,13 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
 
         SCHEDULER_LOCK(intSave);
         processCB->processStatus &= ~OS_PROCESS_FLAG_EXIT;
+#ifdef LOSCFG_KERNEL_VM
+        LosVmSpace *space = NULL;
         if (OsProcessIsUserMode(processCB)) {
             space = processCB->vmSpace;
         }
         processCB->vmSpace = NULL;
+#endif
         /* OS_PROCESS_FLAG_GROUP_LEADER: The lead process group cannot be recycled without destroying the PCB.
          * !OS_PROCESS_FLAG_UNUSED: Parent process does not reclaim child process resources.
          */
@@ -494,32 +496,13 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
             OsInsertPCBToFreeList(processCB);
         }
         SCHEDULER_UNLOCK(intSave);
-
+#ifdef LOSCFG_KERNEL_VM
         (VOID)LOS_VmSpaceFree(space);
-
+#endif
         SCHEDULER_LOCK(intSave);
     }
 
     SCHEDULER_UNLOCK(intSave);
-}
-
-STATIC LosProcessCB *OsGetFreePCB(VOID)
-{
-    LosProcessCB *processCB = NULL;
-    UINT32 intSave;
-
-    SCHEDULER_LOCK(intSave);
-    if (LOS_ListEmpty(&g_freeProcess)) {
-        SCHEDULER_UNLOCK(intSave);
-        PRINT_ERR("No idle PCB in the system!\n");
-        return NULL;
-    }
-
-    processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_freeProcess));
-    LOS_ListDelete(&processCB->pendList);
-    SCHEDULER_UNLOCK(intSave);
-
-    return processCB;
 }
 
 STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
@@ -600,6 +583,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, c
     LOS_ListInit(&processCB->exitChildList);
     LOS_ListInit(&(processCB->waitList));
 
+#ifdef LOSCFG_KERNEL_VM
     if (OsProcessIsUserMode(processCB)) {
         processCB->vmSpace = OsCreateUserVmSapce();
         if (processCB->vmSpace == NULL) {
@@ -609,6 +593,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, c
     } else {
         processCB->vmSpace = LOS_GetKVmSpace();
     }
+#endif
 
 #ifdef LOSCFG_SECURITY_VID
     status_t status = VidMapListInit(processCB);
@@ -1276,6 +1261,26 @@ LITE_OS_SEC_TEXT INT32 LOS_GetCurrProcessGroupID(VOID)
     return LOS_GetProcessGroupID(OsCurrProcessGet()->processID);
 }
 
+#ifdef LOSCFG_KERNEL_VM
+STATIC LosProcessCB *OsGetFreePCB(VOID)
+{
+    LosProcessCB *processCB = NULL;
+    UINT32 intSave;
+
+    SCHEDULER_LOCK(intSave);
+    if (LOS_ListEmpty(&g_freeProcess)) {
+        SCHEDULER_UNLOCK(intSave);
+        PRINT_ERR("No idle PCB in the system!\n");
+        return NULL;
+    }
+
+    processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_freeProcess));
+    LOS_ListDelete(&processCB->pendList);
+    SCHEDULER_UNLOCK(intSave);
+
+    return processCB;
+}
+
 STATIC VOID *OsUserInitStackAlloc(LosProcessCB *processCB, UINT32 *size)
 {
     LosVmMapRegion *region = NULL;
@@ -1793,6 +1798,18 @@ LITE_OS_SEC_TEXT INT32 LOS_Fork(UINT32 flags, const CHAR *name, const TSK_ENTRY_
     flags |= CLONE_FILES;
     return OsCopyProcess(cloneFlag & flags, name, (UINTPTR)entry, stackSize);
 }
+#else
+LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
+{
+    return 0;
+}
+#endif
+
+LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
+{
+    OsTaskExitGroup((UINT32)status);
+    OsProcessExit(OsCurrTaskGet(), (UINT32)status);
+}
 
 LITE_OS_SEC_TEXT UINT32 LOS_GetCurrProcessID(VOID)
 {
@@ -1810,12 +1827,6 @@ LITE_OS_SEC_TEXT VOID OsProcessExit(LosTaskCB *runTask, INT32 status)
     SCHEDULER_LOCK(intSave);
     OsProcessNaturalExit(runTask, status);
     SCHEDULER_UNLOCK(intSave);
-}
-
-LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
-{
-    OsTaskExitGroup((UINT32)status);
-    OsProcessExit(OsCurrTaskGet(), (UINT32)status);
 }
 
 LITE_OS_SEC_TEXT UINT32 LOS_GetSystemProcessMaximum(VOID)
@@ -1847,6 +1858,7 @@ LITE_OS_SEC_TEXT UINTPTR OsGetSigHandler(VOID)
 {
     return OsCurrProcessGet()->sigHandler;
 }
+
 #ifdef __cplusplus
 #if __cplusplus
 }

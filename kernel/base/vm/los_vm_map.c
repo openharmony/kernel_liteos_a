@@ -51,6 +51,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 #define VM_MAP_WASTE_MEM_LEVEL          (PAGE_SIZE >> 2)
 LosMux g_vmSpaceListMux;
 LOS_DL_LIST_HEAD(g_vmSpaceList);
@@ -178,6 +180,13 @@ BOOL OsVMallocSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)
     return OsVmSpaceInitCommon(vmSpace, virtTtb);
 }
 
+VOID OsKSpaceInit(VOID)
+{
+    OsVmMapInit();
+    OsKernVmSpaceInit(&g_kVmSpace, OsGFirstTableGet());
+    OsVMallocSpaceInit(&g_vMallocSpace, OsGFirstTableGet());
+}
+
 BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)
 {
     vmSpace->base = USER_ASPACE_BASE;
@@ -220,13 +229,6 @@ LosVmSpace *OsCreateUserVmSapce(VOID)
     LOS_ListAdd(&space->archMmu.ptList, &(vmPage->node));
 
     return space;
-}
-
-VOID OsKSpaceInit(VOID)
-{
-    OsVmMapInit();
-    OsKernVmSpaceInit(&g_kVmSpace, OsGFirstTableGet());
-    OsVMallocSpaceInit(&g_vMallocSpace, OsGFirstTableGet());
 }
 
 STATIC BOOL OsVmSpaceParamCheck(LosVmSpace *vmSpace)
@@ -1151,6 +1153,11 @@ DONE:
     (VOID)LOS_MuxRelease(&space->regionMux);
 }
 
+LosMux *OsGVmSpaceMuxGet(VOID)
+{
+	    return &g_vmSpaceListMux;
+}
+
 STATIC INLINE BOOL OsMemLargeAlloc(UINT32 size)
 {
     if (g_kHeapInited == FALSE) {
@@ -1163,14 +1170,27 @@ STATIC INLINE BOOL OsMemLargeAlloc(UINT32 size)
 
     return TRUE;
 }
+#else
+PADDR_T LOS_PaddrQuery(VOID *vaddr)
+{
+    if (!LOS_IsKernelAddress((VADDR_T)vaddr)) {
+        return 0;
+    }
+
+    return (PADDR_T)VMM_TO_DMA_ADDR((VADDR_T)vaddr);
+}
+#endif
 
 VOID *LOS_KernelMalloc(UINT32 size)
 {
     VOID *ptr = NULL;
 
+#ifdef LOSCFG_KERNEL_VM
     if (OsMemLargeAlloc(size)) {
         ptr = LOS_PhysPagesAllocContiguous(ROUNDUP(size, PAGE_SIZE) >> PAGE_SHIFT);
-    } else {
+    } else
+#endif
+    {
         ptr = LOS_MemAlloc(OS_SYS_MEM_ADDR, size);
     }
 
@@ -1181,9 +1201,12 @@ VOID *LOS_KernelMallocAlign(UINT32 size, UINT32 boundary)
 {
     VOID *ptr = NULL;
 
+#ifdef LOSCFG_KERNEL_VM
     if (OsMemLargeAlloc(size) && IS_ALIGNED(PAGE_SIZE, boundary)) {
         ptr = LOS_PhysPagesAllocContiguous(ROUNDUP(size, PAGE_SIZE) >> PAGE_SHIFT);
-    } else {
+    } else
+#endif
+    {
         ptr = LOS_MemAllocAlign(OS_SYS_MEM_ADDR, size, boundary);
     }
 
@@ -1193,9 +1216,10 @@ VOID *LOS_KernelMallocAlign(UINT32 size, UINT32 boundary)
 VOID *LOS_KernelRealloc(VOID *ptr, UINT32 size)
 {
     VOID *tmpPtr = NULL;
+
+#ifdef LOSCFG_KERNEL_VM
     LosVmPage *page = NULL;
     errno_t ret;
-
     if (ptr == NULL) {
         tmpPtr = LOS_KernelMalloc(size);
     } else {
@@ -1221,28 +1245,28 @@ VOID *LOS_KernelRealloc(VOID *ptr, UINT32 size)
             tmpPtr = LOS_MemRealloc(OS_SYS_MEM_ADDR, ptr, size);
         }
     }
+#else
+    tmpPtr = LOS_MemRealloc(OS_SYS_MEM_ADDR, ptr, size);
+#endif
 
     return tmpPtr;
 }
 
 VOID LOS_KernelFree(VOID *ptr)
 {
+#ifdef LOSCFG_KERNEL_VM
     UINT32 ret;
-
     if (OsMemIsHeapNode(ptr) == FALSE) {
         ret = OsMemLargeNodeFree(ptr);
         if (ret != LOS_OK) {
             VM_ERR("KernelFree %p failed", ptr);
             return;
         }
-    } else {
+    } else
+#endif
+    {
         (VOID)LOS_MemFree(OS_SYS_MEM_ADDR, ptr);
     }
-}
-
-LosMux *OsGVmSpaceMuxGet(VOID)
-{
-    return &g_vmSpaceListMux;
 }
 
 #ifdef __cplusplus

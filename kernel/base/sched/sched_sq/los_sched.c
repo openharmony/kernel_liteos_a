@@ -942,9 +942,11 @@ STATIC INLINE VOID OsSchedSwitchProcess(LosProcessCB *runProcess, LosProcessCB *
     LOS_ASSERT(!(newProcess->processStatus & OS_PROCESS_STATUS_PENDING));
     newProcess->processStatus |= OS_PROCESS_STATUS_RUNNING;
 
+#ifdef LOSCFG_KERNEL_VM
     if (OsProcessIsUserMode(newProcess)) {
         LOS_ArchMmuContextSwitch(&newProcess->vmSpace->archMmu);
     }
+#endif
 
     OsCurrProcessSet(newProcess);
 }

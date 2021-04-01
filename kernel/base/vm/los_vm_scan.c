@@ -35,6 +35,8 @@
 #include "fs/file.h"
 #include "los_vm_filemap.h"
 
+#ifdef LOSCFG_KERNEL_VM
+
 /* unmap a lru page by map record info caller need lru lock */
 VOID OsUnmapPageLocked(LosFilePage *page, LosMapInfo *info)
 {
@@ -341,6 +343,7 @@ int OsTryShrinkMemory(size_t nPage)
 {
     return 0;
 }
+#endif
 #endif
 
 #endif

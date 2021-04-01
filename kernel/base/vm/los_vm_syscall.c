@@ -50,6 +50,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 STATUS_T OsCheckMMapParams(VADDR_T *vaddr, unsigned long flags, size_t len, unsigned long pgoff)
 {
     if ((len == 0) || (len > USER_ASPACE_SIZE)) {
@@ -494,6 +496,7 @@ VOID LOS_DumpMemRegion(VADDR_T vaddr)
     OsDumpPte(vaddr);
     OsDumpAspace(space);
 }
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

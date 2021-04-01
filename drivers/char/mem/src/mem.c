@@ -60,6 +60,7 @@ static ssize_t MemWrite(FAR struct file *filep, FAR const char *buffer, size_t b
 
 static ssize_t MemMap(FAR struct file *filep, FAR LosVmMapRegion *region)
 {
+#ifdef LOSCFG_KERNEL_VM
     size_t size = region->range.size;
     PADDR_T paddr = region->pgOff << PAGE_SHIFT;
     VADDR_T vaddr = region->range.base;
@@ -78,7 +79,10 @@ static ssize_t MemMap(FAR struct file *filep, FAR LosVmMapRegion *region)
     if (LOS_ArchMmuMap(&space->archMmu, vaddr, paddr, size >> PAGE_SHIFT, region->regionFlags) <= 0) {
         return -EAGAIN;
     }
-
+#else
+    UNUSED(filep);
+    UNUSED(region);
+#endif
     return 0;
 }
 

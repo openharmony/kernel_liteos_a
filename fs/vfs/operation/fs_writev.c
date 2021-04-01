@@ -103,21 +103,33 @@ ssize_t vfs_writev(int fd, const struct iovec *iov, int iovcnt, off_t *offset)
     }
 
     totallen = buflen * sizeof(char);
+#ifdef LOSCFG_KERNEL_VM
     buf = (char *)LOS_VMalloc(totallen);
+#else
+    buf = (char *)malloc(totallen);
+#endif
     if (buf == NULL) {
         return VFS_ERROR;
     }
 
     ret = iov_trans_to_buf(buf, totallen, iov, iovcnt);
     if (ret <= 0) {
+#ifdef LOSCFG_KERNEL_VM
         LOS_VFree(buf);
+#else
+        free(buf);
+#endif
         return VFS_ERROR;
     }
 
     bytestowrite = (ssize_t)ret;
     totalbyteswritten = (offset == NULL) ? write(fd, buf, bytestowrite)
                                          : pwrite(fd, buf, bytestowrite, *offset);
+#ifdef LOSCFG_KERNEL_VM
     LOS_VFree(buf);
+#else
+    free(buf);
+#endif
     return totalbyteswritten;
 }
 

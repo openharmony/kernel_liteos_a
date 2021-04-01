@@ -45,6 +45,8 @@ extern "C" {
 #endif
 #endif /* __cplusplus */
 
+#ifdef LOSCFG_KERNEL_VM
+
 #define OS_FUTEX_FROM_FUTEXLIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, futexList)
 #define OS_FUTEX_FROM_QUEUELIST(ptr) LOS_DL_LIST_ENTRY(ptr, FutexNode, queueList)
 #define OS_FUTEX_KEY_BASE USER_ASPACE_BASE
@@ -1003,6 +1005,7 @@ EXIT:
 
     return ret;
 }
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
