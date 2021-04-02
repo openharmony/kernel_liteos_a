@@ -1606,19 +1606,16 @@ STATIC UINT32 OsCopyParent(UINT32 flags, LosProcessCB *childProcessCB, LosProces
     childProcessCB->priority = runProcessCB->priority;
 
     if (flags & CLONE_PARENT) {
-        parentProcessCB = OS_PCB_FROM_PID(runProcessCB->parentProcessID);
-        childProcessCB->parentProcessID = parentProcessCB->processID;
-        LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);
-        childProcessCB->group = parentProcessCB->group;
-        LOS_ListTailInsert(&parentProcessCB->group->processList, &childProcessCB->subordinateGroupList);
-        ret = OsCopyUser(childProcessCB, parentProcessCB);
+        parentProcessCB = OS_PCB_FROM_PID(runProcessCB->parentProcessID);        
     } else {
-        childProcessCB->parentProcessID = runProcessCB->processID;
-        LOS_ListTailInsert(&runProcessCB->childrenList, &childProcessCB->siblingList);
-        childProcessCB->group = runProcessCB->group;
-        LOS_ListTailInsert(&runProcessCB->group->processList, &childProcessCB->subordinateGroupList);
-        ret = OsCopyUser(childProcessCB, runProcessCB);
+        parentProcessCB = runProcessCB;         
     }
+    childProcessCB->parentProcessID = parentProcessCB->processID;
+    LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);
+    childProcessCB->group = parentProcessCB->group;
+    LOS_ListTailInsert(&parentProcessCB->group->processList, &childProcessCB->subordinateGroupList);
+    ret = OsCopyUser(childProcessCB, parentProcessCB);
+
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
