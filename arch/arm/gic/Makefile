@@ -29,43 +29,20 @@
 
 include $(LITEOSTOPDIR)/config.mk
 
-MODULE_NAME := bsp
+MODULE_NAME := $(notdir $(shell pwd))
 
-LOCAL_SRCS = $(wildcard ./main.c)
+# LOCAL_SRCS := $(wildcard *.c)
 
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/compat/posix/src \
-                 -I $(LITEOSTOPDIR)/bsd/dev/random
-
-LOCAL_SRCS += $(wildcard ../kernel/common/*.c)
-LOCAL_SRCS := $(filter-out ../kernel/common/los_rootfs.c, $(LOCAL_SRCS))
-ifneq ($(LOSCFG_FS_VFS), y)
-LOCAL_SRCS := $(filter-out ../kernel/common/console.c ../kernel/common/virtual_serial.c, $(LOCAL_SRCS))
-endif
-ifneq ($(LOSCFG_BASE_CORE_HILOG), y)
-LOCAL_SRCS := $(filter-out ../kernel/common/los_hilog.c, $(LOCAL_SRCS))
+ifeq ($(LOSCFG_PLATFORM_BSP_GIC_V2), y)
+LOCAL_SRCS := gic_v2.c
+else ifeq ($(LOSCFG_PLATFORM_BSP_GIC_V3), y)
+LOCAL_SRCS := gic_v3.c
 endif
 
-ifeq ($(LOSCFG_KERNEL_TICKLESS), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/include
-endif
+LOCAL_INCLUDE := \
+	-I $(LITEOSTOPDIR)/kernel/base/include \
+	-I $(LITEOSTOPDIR)/arch/arm/include \
+	-I $(LITEOSTOPDIR)/arch/arm/arm/src/include \
 
-ifeq ($(LOSCFG_KERNEL_TRACE), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/include
-endif
-
-ifeq ($(LOSCFG_KERNEL_CPUP), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/include
-endif
-
-ifeq ($(LOSCFG_KERNEL_VDSO), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/kernel/extended/vdso/include
-endif
-
-ALL_ASSRCS := $(wildcard *.S)
-ASSRCS := $(subst board.ld.S,,$(ALL_ASSRCS))
-
-LOCAL_SRCS += $(ASSRCS)
-
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
-
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 include $(MODULE)

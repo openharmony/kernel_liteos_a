@@ -42,7 +42,10 @@ LITEOS_ARCH_ARM         :=
 endif
 
 LITEOS_BASELIB          += -l$(LOSCFG_ARCH_CPU)
+LITEOS_BASELIB          += -lgic
+
 LIB_SUBDIRS             += arch/arm/$(LITEOS_ARCH_ARM)
+LIB_SUBDIRS             += arch/arm/gic
 
 # CPU compile options
 ifeq ($(LOSCFG_ARCH_ARM_AARCH64), y)
