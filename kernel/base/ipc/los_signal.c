@@ -510,7 +510,6 @@ int OsSigSuspend(const sigset_t *set)
 {
     unsigned int intSave;
     LosTaskCB *rtcb = NULL;
-    unsigned int sigTempProcMask;
     sigset_t setSuspend;
     int ret;
 
@@ -519,7 +518,6 @@ int OsSigSuspend(const sigset_t *set)
     }
     SCHEDULER_LOCK(intSave);
     rtcb = OsCurrTaskGet();
-    sigTempProcMask = rtcb->sig.sigprocmask;
 
     /* Wait signal calc */
     setSuspend = FULL_SIGNAL_SET & (~(*set));
@@ -530,8 +528,6 @@ int OsSigSuspend(const sigset_t *set)
     if (ret < 0) {
         PRINT_ERR("FUNC %s LINE = %d, ret = %x\n", __FUNCTION__, __LINE__, ret);
     }
-    /* Restore old sigprocmask */
-    OsSigMaskSwitch(rtcb, sigTempProcMask);
 
     SCHEDULER_UNLOCK(intSave);
     return -EINTR;
