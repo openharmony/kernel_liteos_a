@@ -30,6 +30,7 @@
  */
 
 #include "gic_common.h"
+#include "los_hwi.h"
 #include "los_hwi_pri.h"
 #include "los_mp.h"
 

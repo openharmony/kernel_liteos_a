@@ -32,6 +32,7 @@
 #include "gic_common.h"
 #include "gic_v3.h"
 #include "los_typedef.h"
+#include "los_hwi.h"
 #include "los_hwi_pri.h"
 #include "los_mp.h"
 
