@@ -257,9 +257,18 @@ int VfsProcfsClose(struct file *filep)
     return result;
 }
 
+int VfsProcfsStatfs(struct Mount *mnt, struct statfs *buf)
+{
+    (void)memset_s(buf, sizeof(struct statfs), 0, sizeof(struct statfs));
+    buf->f_type = PROCFS_MAGIC;
+
+    return LOS_OK;
+}
+
 const struct MountOps procfs_operations = {
     .Mount = VfsProcfsMount,
     .Unmount = NULL,
+    .Statfs = VfsProcStatfs,
 };
 
 static struct VnodeOps g_procfsVops = {
