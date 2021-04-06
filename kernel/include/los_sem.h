@@ -185,7 +185,7 @@ extern "C" {
  * <li>None.</li>
  * </ul>
  *
- * @param count       [IN] Initial number of available semaphores. The value range is [0, OS_SEM_COUNT_MAX).
+ * @param count       [IN] Initial number of available semaphores. The value range is [0, OS_SEM_COUNT_MAX].
  * @param semHandle   [OUT] ID of the semaphore control structure that is initialized.
  *
  * @retval #LOS_ERRNO_SEM_PTR_NULL  The passed-in semHandle value is NULL.

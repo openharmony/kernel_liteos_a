@@ -153,8 +153,8 @@ extern UINT32 __heap_end;
  * @ingroup los_config
  * Minimum stack size.
  *
- * 0x600 bytes, aligned on a boundary of 8.
- * 0x600 bytes, aligned on a boundary of 4.
+ * 0x800 bytes, aligned on a boundary of 8.
+ * 0x800 bytes, aligned on a boundary of 4.
  */
 #ifndef LOS_TASK_MIN_STACK_SIZE
 #ifdef __LP64__
