@@ -35,6 +35,7 @@
 #include "fs/vfs_util.h"
 #include "fs/vnode.h"
 #include <sys/stat.h>
+#include <limits.h>
 
 struct MountOps;
 
