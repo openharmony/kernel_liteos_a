@@ -268,7 +268,7 @@ int VfsProcfsStatfs(struct Mount *mnt, struct statfs *buf)
 const struct MountOps procfs_operations = {
     .Mount = VfsProcfsMount,
     .Unmount = NULL,
-    .Statfs = VfsProcStatfs,
+    .Statfs = VfsProcfsStatfs,
 };
 
 static struct VnodeOps g_procfsVops = {
