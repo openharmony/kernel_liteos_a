@@ -688,12 +688,21 @@ VOID BackTraceSub(UINTPTR regFP)
 
     while (IsValidFP(backFP, stackStart, stackEnd, &kvaddr) == TRUE) {
         tmpFP = backFP;
+#ifdef LOSCFG_COMPILER_CLANG_LLVM
+	backFP = *(UINTPTR *)(UINTPTR)kvaddr;
+        if (IsValidFP(tmpFP + POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
+            PrintExcInfo("traceback backLR check failed, backLP: 0x%x\n", tmpFP + POINTER_SIZE);
+            return;
+        }
         backLR = *(UINTPTR *)(UINTPTR)kvaddr;
+#else
+	backLR = *(UINTPTR *)(UINTPTR)kvaddr;
         if (IsValidFP(tmpFP - POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
             PrintExcInfo("traceback backFP check failed, backFP: 0x%x\n", tmpFP - POINTER_SIZE);
             return;
         }
         backFP = *(UINTPTR *)(UINTPTR)kvaddr;
+#endif
 #ifdef LOSCFG_KERNEL_VM
         LosVmMapRegion *region = NULL;
         if (LOS_IsUserAddress((VADDR_T)backLR) == TRUE) {
