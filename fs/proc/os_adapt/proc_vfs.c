@@ -265,6 +265,11 @@ int VfsProcfsStatfs(struct Mount *mnt, struct statfs *buf)
     return LOS_OK;
 }
 
+int VfsProcfsClosedir(struct Vnode *vp, struct fs_dirent_s *dir)
+{
+    return LOS_OK;
+}
+
 const struct MountOps procfs_operations = {
     .Mount = VfsProcfsMount,
     .Unmount = NULL,
@@ -276,6 +281,7 @@ static struct VnodeOps g_procfsVops = {
     .Getattr = VfsProcfsStat,
     .Readdir = VfsProcfsReaddir,
     .Opendir = VfsProcfsOpendir,
+    .Closedir = VfsProcfsClosedir
 };
 
 static struct file_operations_vfs g_procfsFops = {
