@@ -36,7 +36,7 @@
 
 STATIC_ASSERT(OS_USER_HWI_MAX <= 1020, "hwi max is too large!");
 
-#ifdef LOSCFG_PLATFORM_BSP_GIC_V2
+#ifdef LOSCFG_ARCH_GIC_V2
 
 STATIC UINT32 g_curIrqNum = 0;
 

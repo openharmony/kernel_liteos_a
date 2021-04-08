@@ -33,9 +33,9 @@ MODULE_NAME := $(notdir $(shell pwd))
 
 # LOCAL_SRCS := $(wildcard *.c)
 
-ifeq ($(LOSCFG_PLATFORM_BSP_GIC_V2), y)
+ifeq ($(LOSCFG_ARCH_GIC_V2), y)
 LOCAL_SRCS := gic_v2.c
-else ifeq ($(LOSCFG_PLATFORM_BSP_GIC_V3), y)
+else ifeq ($(LOSCFG_ARCH_GIC_V3), y)
 LOCAL_SRCS := gic_v3.c
 endif
 
