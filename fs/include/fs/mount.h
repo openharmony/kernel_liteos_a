@@ -35,6 +35,7 @@
 #include "fs/vfs_util.h"
 #include "fs/vnode.h"
 #include <sys/stat.h>
+#include <limits.h>
 
 struct MountOps;
 
@@ -50,6 +51,7 @@ struct Mount {
     void *data;                        /* private data */
     uint32_t hashseed;                 /* Random seed for vfshash */
     unsigned long mountFlags;          /* Flags for mount */
+    char pathName[PATH_MAX];           /* path name of mount point */
 };
 
 struct MountOps {
