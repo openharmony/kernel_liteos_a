@@ -65,10 +65,8 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_GetCpuCycle(UINT32 *highCnt, UINT32 *lowCnt)
 
 LITE_OS_SEC_TEXT_MINOR UINT64 LOS_CurrNanosec(VOID)
 {
-    DOUBLE nanos;
-
-    nanos = (DOUBLE)HalClockGetCycles() * OS_SYS_NS_PER_SECOND / g_sysClock;
-    return (UINT64)nanos;
+    UINT64 cycle = HalClockGetCycles();
+    return (cycle / g_sysClock) * OS_SYS_NS_PER_SECOND + (cycle % g_sysClock) * OS_SYS_NS_PER_SECOND / g_sysClock;
 }
 
 LITE_OS_SEC_TEXT_MINOR VOID LOS_Udelay(UINT32 usecs)
