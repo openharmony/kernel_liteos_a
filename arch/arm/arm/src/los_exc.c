@@ -574,8 +574,12 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
     PrintExcInfo("User mode exception ends unscheduled!\n");
 }
 
-/* this function is used to validate fp or validate the checking range start and end. */
-STATIC INLINE BOOL IsValidFP(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t *vaddr)
+/*
+ * This function is used to determine whether the first input parameter is a valid virtual address.
+ * If it is, it is converted into a kernel virtual address and the converted kernel virtual address
+ * is used as an output parameter.
+ */
+STATIC INLINE BOOL IsValidVaddr(UINTPTR regFP, UINTPTR start, UINTPTR end, vaddr_t *vaddr)
 {
     VADDR_T kvaddr = regFP;
 
@@ -618,7 +622,7 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
         taskCB = OsCurrTaskGet();
         stackStart = taskCB->userMapBase;
         stackEnd = taskCB->userMapBase + taskCB->userMapSize;
-        if (IsValidFP(regFP, stackStart, stackEnd, &kvaddr) == TRUE) {
+        if (IsValidVaddr(regFP, stackStart, stackEnd, &kvaddr) == TRUE) {
             found = TRUE;
             goto FOUND;
         }
@@ -634,7 +638,7 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
 
         stackStart = taskCB->topOfStack;
         stackEnd = taskCB->topOfStack + taskCB->stackSize;
-        if (IsValidFP(regFP, stackStart, stackEnd, &kvaddr) == TRUE) {
+        if (IsValidVaddr(regFP, stackStart, stackEnd, &kvaddr) == TRUE) {
             found = TRUE;
             goto FOUND;
         }
@@ -645,7 +649,7 @@ STATIC INLINE BOOL FindSuitableStack(UINTPTR regFP, UINTPTR *start, UINTPTR *end
         stack = &g_excStack[index];
         stackStart = (UINTPTR)stack->stackTop;
         stackEnd = stackStart + LOSCFG_KERNEL_CORE_NUM * stack->stackSize;
-        if (IsValidFP(regFP, stackStart, stackEnd, &kvaddr) == TRUE) {
+        if (IsValidVaddr(regFP, stackStart, stackEnd, &kvaddr) == TRUE) {
             found = TRUE;
             goto FOUND;
         }
@@ -681,23 +685,23 @@ VOID BackTraceSub(UINTPTR regFP)
      * will still be stored and updated. In that case we needs to find the right position of frame pointer.
      */
     tmpFP = *(UINTPTR *)(UINTPTR)kvaddr;
-    if (IsValidFP(tmpFP, stackStart, stackEnd, NULL) == TRUE) {
+    if (IsValidVaddr(tmpFP, stackStart, stackEnd, NULL) == TRUE) {
         backFP = tmpFP;
         PrintExcInfo("traceback fp fixed, trace using   fp = 0x%x\n", backFP);
     }
 
-    while (IsValidFP(backFP, stackStart, stackEnd, &kvaddr) == TRUE) {
+    while (IsValidVaddr(backFP, stackStart, stackEnd, &kvaddr) == TRUE) {
         tmpFP = backFP;
 #ifdef LOSCFG_COMPILER_CLANG_LLVM
 	backFP = *(UINTPTR *)(UINTPTR)kvaddr;
-        if (IsValidFP(tmpFP + POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
+        if (IsValidVaddr(tmpFP + POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
             PrintExcInfo("traceback backLR check failed, backLP: 0x%x\n", tmpFP + POINTER_SIZE);
             return;
         }
         backLR = *(UINTPTR *)(UINTPTR)kvaddr;
 #else
 	backLR = *(UINTPTR *)(UINTPTR)kvaddr;
-        if (IsValidFP(tmpFP - POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
+        if (IsValidVaddr(tmpFP - POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
             PrintExcInfo("traceback backFP check failed, backFP: 0x%x\n", tmpFP - POINTER_SIZE);
             return;
         }
