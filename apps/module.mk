@@ -29,7 +29,7 @@
 
 APP_SUBDIRS :=
 
-##compile modules config##
+##build modules config##
 
 ifeq ($(LOSCFG_SHELL), y)
 APP_SUBDIRS += shell
@@ -41,4 +41,10 @@ endif
 
 ifeq ($(LOSCFG_NET_LWIP_SACK_TFTP), y)
 APP_SUBDIRS += tftp
+endif
+
+#only enable for qemu now
+ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
+APP_SUBDIRS += mksh
+APP_SUBDIRS += toybox
 endif

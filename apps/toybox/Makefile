@@ -27,34 +27,33 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# common dir config
-include $(LITEOSTOPDIR)/config.mk
+TOYBOX:= toybox
 
-# output dir config
-OBJOUT := $(APPSTOPDIR)/out
-APPSOUT := $(OBJOUT)/apps
-LIBSOUT := $(OBJOUT)/libs
-IMGOUT  := $(OUT)
+TOYBOX_DIR := $(shell pwd)
+LITEOSTOPDIR = $(TOYBOX_DIR)/../../
+include $(TOYBOX_DIR)/../config.mk
 
-# common flags config
-BASE_OPTS := -ffunction-sections -fdata-sections -fno-omit-frame-pointer -D_GNU_SOURCE \
-             $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(LITEOS_GCOV_OPTS)
+APPS_OUT := $(OUT)/bin
+BUILD_DIR := $(TOYBOX_DIR)/build
+BUILD_LOG := $(TOYBOX_DIR)/build.log
+OUTNAME := $(TOYBOX)
 
-CFLAGS := -std=c99 -fno-exceptions $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-CXXFLAGS := -std=c++11 -fexceptions -fpermissive -frtti $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-LDCFLAGS  := -lc
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LLVM_SYSROOT := --sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/
-LDCXXFLGS := -lc++ -lc++abi -lc
+$(TOYBOX):
+ifneq ($(wildcard $(BUILD_DIR)),)
+	$(HIDE)echo "not clean, rebuilding now";
 else
-BASE_OPTS += -Wl,-z,relro,-z,now
-LDCXXFLGS := -lstdc++ -lsupc++ -lc
+	$(HIDE)mkdir $(BUILD_DIR)
+	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/$(TOYBOX)/. $(BUILD_DIR)
 endif
-COMMON_INCLUDE := -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
+	$(HIDE)CFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong --target=arm-liteos \
+	--sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/" CC="$(CC)" OUTNAME=$(OUTNAME) \
+	make -C $(BUILD_DIR) toybox -j> $(BUILD_LOG) 2>&1
+	$(HIDE)$(CP) $(BUILD_DIR)/$(TOYBOX) .
+	$(HIDE)$(STRIP) $(TOYBOX)
+	$(HIDE)mkdir -p $(APPS_OUT)
+	$(HIDE)$(CP) $(TOYBOX) $(APPS_OUT)
 
-# alias variable config
-HIDE := @
-MAKE := make
-RM := rm -rf
-CP := cp -rf
-MV := mv -f
+clean:
+	$(HIDE)$(RM) $(TOYBOX) $(BUILD_DIR) $(BUILD_LOG)
+
+.PHONY: all $(TOYBOX) clean

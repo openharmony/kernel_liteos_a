@@ -27,34 +27,41 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# common dir config
-include $(LITEOSTOPDIR)/config.mk
+MKSH := mksh
 
-# output dir config
-OBJOUT := $(APPSTOPDIR)/out
-APPSOUT := $(OBJOUT)/apps
-LIBSOUT := $(OBJOUT)/libs
-IMGOUT  := $(OUT)
+MKSH_DIR := $(shell pwd)/
+LITEOSTOPDIR = $(MKSH_DIR)/../../
+include $(MKSH_DIR)/../config.mk
 
-# common flags config
-BASE_OPTS := -ffunction-sections -fdata-sections -fno-omit-frame-pointer -D_GNU_SOURCE \
-             $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(LITEOS_GCOV_OPTS)
+APPS_OUT := $(OUT)/bin
+BUILD_DIR := $(MKSH_DIR)/build
+BUILD_LOG := $(MKSH_DIR)/build.log
+TARGET_OS := OpenHarmony
 
-CFLAGS := -std=c99 -fno-exceptions $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-CXXFLAGS := -std=c++11 -fexceptions -fpermissive -frtti $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-LDCFLAGS  := -lc
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LLVM_SYSROOT := --sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/
-LDCXXFLGS := -lc++ -lc++abi -lc
+LOCAL_CFLAGS := -flto -fdata-sections -ffunction-sections -Oz -fstack-protector-strong -D_FORTIFY_SOURCE=2 -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4
+LOCAL_CFLAGS += --target=arm-liteos --sysroot=$(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/
+LOCAL_CFLAGS += -DMKSH_DISABLE_TTY_WARNING -DMKSH_SMALL=1 -DMKSH_ASSUME_UTF8=1 -DMKSH_SMALL_BUT_FAST=0 -DMKSH_S_NOVI=1 -DHAVE_CAN_FSTACKPROTECTORSTRONG=1
+LOCAL_CFLAGS += -DMKSH_LESS_CMDLINE_EDITING -DMKSH_LESS_BUILDINS -DMKSH_NO_INITCOMS -DADAPT_FOR_LITEOS_A
+
+all:$(MKSH)
+
+$(MKSH):
+ifneq ($(wildcard $(BUILD_DIR)),)
+	$(HIDE)echo "not clean, rebuilding now"
+	$(HIDE)chmod +x $(BUILD_DIR)/Rebuild.sh
+	$(HIDE)cd $(BUILD_DIR) && ./Rebuild.sh > $(BUILD_LOG) 2>&1
 else
-BASE_OPTS += -Wl,-z,relro,-z,now
-LDCXXFLGS := -lstdc++ -lsupc++ -lc
+	$(HIDE)mkdir $(BUILD_DIR)
+	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/$(MKSH)/. $(BUILD_DIR)
+	$(HIDE)chmod +x $(BUILD_DIR)/Build.sh
+	$(HIDE)cd $(BUILD_DIR) && CC=$(CC) TARGET_OS=$(TARGET_OS) CFLAGS="$(LOCAL_CFLAGS)" LDFLAGS="$(LDFLAGS)" ./Build.sh -r > $(BUILD_LOG) 2>&1
 endif
-COMMON_INCLUDE := -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
+	$(HIDE)$(CP) -rf $(BUILD_DIR)/$(MKSH) .
+	$(HIDE)$(STRIP) $(MKSH)
+	$(HIDE)mkdir -p $(APPS_OUT)
+	$(HIDE)$(CP) $(MKSH) $(APPS_OUT)
 
-# alias variable config
-HIDE := @
-MAKE := make
-RM := rm -rf
-CP := cp -rf
-MV := mv -f
+clean:
+	$(HIDE)$(RM) $(MKSH) $(BUILD_DIR) $(BUILD_LOG)
+
+.PHONY: all $(MKSH) clean
