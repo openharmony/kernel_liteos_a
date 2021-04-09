@@ -161,13 +161,6 @@ extern "C" {
 
 /**
  * @ingroup los_sem
- * Maximum number of semaphores.
- *
- */
-#define OS_SEM_COUNT_MAX                        0xFFFE
-
-/**
- * @ingroup los_sem
  * Maximum number of binary semaphores.
  *
  */

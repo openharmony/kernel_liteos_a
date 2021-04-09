@@ -249,6 +249,12 @@ extern UINT32 __heap_end;
 #define LOSCFG_BASE_IPC_SEM_LIMIT 1024
 #endif
 
+/**
+ * @ingroup los_config
+ * Maximum number of semaphores.
+ */
+#define OS_SEM_COUNT_MAX 0xFFFE
+
 /****************************** mutex module configuration ******************************/
 /**
  * @ingroup los_config
