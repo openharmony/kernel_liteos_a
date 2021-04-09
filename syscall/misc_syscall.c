@@ -30,17 +30,21 @@
  */
 
 #include "errno.h"
+#include "sysinfo.h"
+#include "sys/reboot.h"
+#include "sys/resource.h"
+#include "sys/times.h"
+#include "sys/utsname.h"
+#include "time.h"
+#include "capability_type.h"
+#include "capability_api.h"
 #include "los_process_pri.h"
+#include "los_strncpy_from_user.h"
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #include "shmsg.h"
 #endif
-#include "sys/utsname.h"
-#include "sys/reboot.h"
 #include "user_copy.h"
-#include "los_strncpy_from_user.h"
-#include "capability_type.h"
-#include "capability_api.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -65,6 +69,25 @@ int SysUname(struct utsname *name)
         return -EFAULT;
     }
     return ret;
+}
+
+int SysInfo(struct sysinfo *info)
+{
+    int ret;
+    struct sysinfo tmpInfo = { 0 };
+
+    tmpInfo.totalram = LOS_MemPoolSizeGet(m_aucSysMem1);
+    tmpInfo.freeram = LOS_MemPoolSizeGet(m_aucSysMem1) - LOS_MemTotalUsedGet(m_aucSysMem1);
+    tmpInfo.sharedram = 0;
+    tmpInfo.bufferram = 0;
+    tmpInfo.totalswap = 0;
+    tmpInfo.freeswap = 0;
+
+    ret = LOS_ArchCopyToUser(info, &tmpInfo, sizeof(struct sysinfo));
+    if (ret != 0) {
+        return -EFAULT;
+    }
+    return 0;
 }
 
 int SysReboot(int magic, int magic2, int type)
@@ -126,6 +149,54 @@ int SysShellExec(const char *msgName, const char *cmdString)
     return 0;
 }
 #endif
+
+#define USEC_PER_SEC 1000000
+
+static void ConvertClocks(struct timeval *time, clock_t clk)
+{
+    time->tv_usec = (clk % CLOCKS_PER_SEC) * USEC_PER_SEC / CLOCKS_PER_SEC;
+    time->tv_sec = (clk) / CLOCKS_PER_SEC;
+}
+
+int SysGetrusage(int what, struct rusage *ru)
+{
+    int ret;
+    struct tms time;
+    clock_t usec, sec;
+    struct rusage kru;
+
+    ret = LOS_ArchCopyFromUser(&kru, ru, sizeof(struct rusage));
+    if (ret != 0) {
+        return -EFAULT;
+    }
+
+    if (times(&time) == -1) {
+        return -EFAULT;
+    }
+
+    switch (what) {
+        case RUSAGE_SELF: {
+            usec = time.tms_utime;
+            sec = time.tms_stime;
+            break;
+        }
+        case RUSAGE_CHILDREN: {
+            usec = time.tms_cutime;
+            sec = time.tms_cstime;
+            break;
+        }
+        default:
+            return -EINVAL;
+    }
+    ConvertClocks(&kru.ru_utime, usec);
+    ConvertClocks(&kru.ru_stime, sec);
+
+    ret = LOS_ArchCopyToUser(ru, &kru, sizeof(struct rusage));
+    if (ret != 0) {
+        return -EFAULT;
+    }
+    return 0;
+}
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -181,30 +181,27 @@ static int UserPoll(struct pollfd *fds, nfds_t nfds, int timeout)
     return ret;
 }
 
-static int FcntlDupFd(int fd, void *arg, int (*fcntl)(int, int, ...))
+static int FcntlDupFd(int sysfd, void *arg)
 {
-    int ret;
-    int minFd = MIN_START_FD;
     int leastFd = (intptr_t)arg;
+
+    if ((sysfd < 0) || (sysfd >= CONFIG_NFILE_DESCRIPTORS)) {
+        return -EBADF;
+    }
 
     if (CheckProcessFd(leastFd) != OK) {
         return -EINVAL;
     }
+
     int procFd = AllocLowestProcessFd(leastFd);
     if (procFd < 0) {
         return -EMFILE;
     }
-    arg = (void *)(UINTPTR)minFd;
 
-    ret = fcntl(fd, F_DUPFD, arg);
-    if (ret < 0) {
-        FreeProcessFd(procFd);
-        return -get_errno();
-    }
-    AssociateSystemFd(procFd, ret);
-    ret = procFd;
+    files_refer(sysfd);
+    AssociateSystemFd(procFd, sysfd);
 
-    return ret;
+    return procFd;
 }
 
 int SysClose(int fd)
@@ -748,25 +745,20 @@ OUT:
 
 int SysDup(int fd)
 {
-    int ret = -1;
+    int sysfd = GetAssociatedSystemFd(fd);
+    /* Check if the param is valid, note that: socket fd is not support dup2 */
+    if ((sysfd < 0) || (sysfd >= CONFIG_NFILE_DESCRIPTORS)) {
+        return -EBADF;
+    }
 
-    int procFd = AllocProcessFd();
-    if (procFd  < 0) {
+    int dupfd = AllocProcessFd();
+    if (dupfd < 0) {
         return -EMFILE;
     }
 
-    /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
-
-    ret = dup(fd);
-    if (ret < 0) {
-        FreeProcessFd(procFd);
-        return -get_errno();
-    }
-
-    AssociateSystemFd(procFd, ret);
-
-    return procFd;
+    files_refer(sysfd);
+    AssociateSystemFd(dupfd, sysfd);
+    return dupfd;
 }
 
 void SysSync(void)
@@ -817,8 +809,9 @@ int SysFcntl(int fd, int cmd, void *arg)
     fd = GetAssociatedSystemFd(fd);
 
     if (cmd == F_DUPFD) {
-        return FcntlDupFd(fd, arg, fcntl);
+        return FcntlDupFd(fd, arg);
     }
+
     int ret = fcntl(fd, cmd, arg);
     if (ret < 0) {
         return -get_errno();
@@ -1859,8 +1852,9 @@ int SysFcntl64(int fd, int cmd, void *arg)
     fd = GetAssociatedSystemFd(fd);
 
     if (cmd == F_DUPFD) {
-        return FcntlDupFd(fd, arg, fcntl64);
+        return FcntlDupFd(fd, arg);
     }
+
     int ret = fcntl64(fd, cmd, arg);
     if (ret < 0) {
         return -get_errno();
@@ -1992,6 +1986,53 @@ int SysChown(const char *pathname, uid_t owner, gid_t group)
 OUT:
     if (pathRet != NULL) {
         (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    return ret;
+}
+
+int SysFstatat64(int dirfd, const char *restrict path, struct stat *restrict buf, int flag)
+{
+    int ret;
+    struct stat bufRet = {0};
+    char *pathRet = NULL;
+    char *fullpath = NULL;
+
+    if (path != NULL) {
+        ret = UserPathCopy(path, &pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    if (dirfd != AT_FDCWD) {
+        /* Process fd convert to system global fd */
+        dirfd = GetAssociatedSystemFd(dirfd);
+    }
+
+    ret = vfs_normalize_pathat(dirfd, pathRet, &fullpath);
+    if (ret < 0) {
+        goto OUT;
+    }
+
+    ret = stat(fullpath, &bufRet);
+    if (ret < 0) {
+        ret = -get_errno();
+        goto OUT;
+    }
+
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct stat));
+    if (ret != 0) {
+        ret = -EFAULT;
+        goto OUT;
+    }
+
+OUT:
+    if (pathRet != NULL) {
+        LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+
+    if (fullpath != NULL) {
+        free(fullpath);
     }
     return ret;
 }

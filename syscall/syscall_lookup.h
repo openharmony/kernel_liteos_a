@@ -43,6 +43,7 @@ SYSCALL_HAND_DEF(__NR_unlink, SysUnlink, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_execve, SysExecve, int, ARG_NUM_3)
 #endif
 
+SYSCALL_HAND_DEF(__NR_sysinfo, SysInfo, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_chdir, SysChdir, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_chmod, SysChmod, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_lseek, SysLseek, off_t, ARG_NUM_7) /* current only support 32bit max 4G file */
@@ -67,6 +68,7 @@ SYSCALL_HAND_DEF(__NR_statfs, SysStatfs, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_stat, SysStat, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_lstat, SysLstat, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_fstat, SysFstat, int, ARG_NUM_2)
+SYSCALL_HAND_DEF(__NR_fstatat64, SysFstatat64, int, ARG_NUM_4)
 SYSCALL_HAND_DEF(__NR_fsync, SysFsync, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR__llseek, SysLseek64, off64_t, ARG_NUM_5) /* current only support 32bit max 4G file */
 SYSCALL_HAND_DEF(__NR__newselect, SysSelect, int, ARG_NUM_5)
@@ -115,6 +117,7 @@ SYSCALL_HAND_DEF(__NR_shellexec, SysShellExec, UINT32, ARG_NUM_2)
 
 SYSCALL_HAND_DEF(__NR_exit, SysThreadExit, void, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_fork, SysFork, int, ARG_NUM_0)
+SYSCALL_HAND_DEF(__NR_vfork, SysVfork, int, ARG_NUM_0)
 SYSCALL_HAND_DEF(__NR_getpid, SysGetPID, unsigned int, ARG_NUM_0)
 SYSCALL_HAND_DEF(__NR_pause, SysPause, int, ARG_NUM_0)
 
@@ -236,3 +239,4 @@ SYSCALL_HAND_DEF(__NR_pthread_set_detach, SysUserThreadSetDeatch, int, ARG_NUM_1
 SYSCALL_HAND_DEF(__NR_pthread_join, SysThreadJoin, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_pthread_deatch, SysUserThreadDetach, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_creat_user_thread, SysCreateUserThread, unsigned int, ARG_NUM_3)
+SYSCALL_HAND_DEF(__NR_getrusage, SysGetrusage, int, ARG_NUM_2)
