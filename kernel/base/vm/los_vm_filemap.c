@@ -428,11 +428,6 @@ LosFilePage *OsDumpDirtyPage(LosFilePage *oldFPage)
     }
 
     OsCleanPageDirty(oldFPage->vmPage);
-    LOS_AtomicInc(&oldFPage->vmPage->refCounts);
-    /* no map page cache */
-    if (LOS_AtomicRead(&oldFPage->vmPage->refCounts) == 1) {
-        LOS_AtomicInc(&oldFPage->vmPage->refCounts);
-    }
     (VOID)memcpy_s(newFPage, sizeof(LosFilePage), oldFPage, sizeof(LosFilePage));
 
     return newFPage;
@@ -444,7 +439,6 @@ VOID OsDoFlushDirtyPage(LosFilePage *fpage)
         return;
     }
     (VOID)OsFlushDirtyPage(fpage);
-    LOS_PhysPageFree(fpage->vmPage);
     LOS_MemFree(m_aucSysMem0, fpage);
 }
 
