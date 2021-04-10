@@ -30,13 +30,18 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 set -e
 
-if [ $# -ne 2 ];then
+if [ $# -ne 3 ];then
     exit 1
 fi
 
 VERSION=$1
 ROOTFS_DIR=$2
+OUT_DIR=$3
 RELEASE_TIME=$(date "+%Y-%m-%d %H:%M:%S")
 
 echo VERSION=\"${VERSION}\" > ${ROOTFS_DIR}/etc/os-release
 echo RELEASE_TIME=\"${RELEASE_TIME}\" >> ${ROOTFS_DIR}/etc/os-release
+if [ ! -d ${OUT_DIR}etc ]; then
+    mkdir -p ${OUT_DIR}etc
+fi
+cp ${ROOTFS_DIR}/etc/os-release ${OUT_DIR}etc

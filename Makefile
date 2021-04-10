@@ -182,18 +182,14 @@ endif
 
 $(ROOTFSDIR): prepare $(APPS)
 	$(HIDE)$(MAKE) clean -C apps
-	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsdir.sh $(OUT)/bin $(OUT)/musl $(ROOTFS_DIR)
+	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsdir.sh $(OUT)/bin $(OUT)/musl $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)
 ifneq ($(VERSION),)
-	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/releaseinfo.sh "$(VERSION)" $(ROOTFS_DIR)
+	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/releaseinfo.sh "$(VERSION)" $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)
 endif
 
 $(ROOTFS): $(ROOTFSDIR)
 	$(HIDE)$(LITEOSTOPDIR)/tools/scripts/make_rootfs/rootfsimg.sh $(ROOTFS_DIR) $(FSTYPE)
 	$(HIDE)cd $(ROOTFS_DIR)/.. && zip -r $(ROOTFS_ZIP) $(ROOTFS)
-ifneq ($(OUT), $(LITEOS_TARGET_DIR))
-	rm -rf $(LITEOS_TARGET_DIR)rootfs
-	$(HIDE)mv $(ROOTFS_DIR) $(LITEOS_TARGET_DIR)rootfs
-endif
 
 clean:
 	$(HIDE)for dir in $(LITEOS_SUBDIRS); \
