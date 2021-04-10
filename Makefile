@@ -141,7 +141,7 @@ menuconfig:$(MENUCONFIG_MCONF)
 	$< $(KCONFIG_FILE_PATH)
 
 genconfig:$(MENUCONFIG_CONF)
-	$(HIDE)mkdir -p include/config include/generated
+	$(HIDE)mkdir -p include/config include/generated platform/include
 	$< --olddefconfig $(KCONFIG_FILE_PATH)
 	$< --silentoldconfig $(KCONFIG_FILE_PATH)
 	-mv -f $(LITEOS_MENUCONFIG_H) $(LITEOS_PLATFORM_MENUCONFIG_H)

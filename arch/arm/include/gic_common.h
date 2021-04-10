@@ -47,7 +47,7 @@ enum {
 #define GIC_REV_MASK                    0xF0
 #define GIC_REV_OFFSET                  0x4
 
-#ifdef LOSCFG_PLATFORM_BSP_GIC_V2
+#ifdef LOSCFG_ARCH_GIC_V2
 #define GICC_CTLR                       (GICC_OFFSET + 0x00)            /* CPU Interface Control Register */
 #define GICC_PMR                        (GICC_OFFSET + 0x04)            /* Interrupt Priority Mask Register */
 #define GICC_BPR                        (GICC_OFFSET + 0x08)            /* Binary Point Register */
@@ -76,7 +76,7 @@ enum {
 #define GICD_PIDR2V2                    (GICD_OFFSET + 0xfe8)
 #define GICD_PIDR2V3                    (GICD_OFFSET + 0xffe8)
 
-#ifdef LOSCFG_PLATFORM_BSP_GIC_V3
+#ifdef LOSCFG_ARCH_GIC_V3
 #define GICD_IGRPMODR(n)                (GICD_OFFSET + 0x0d00 + (n) * 4) /* Interrupt Group Mode Reisters */
 #define GICD_IROUTER(n)                 (GICD_OFFSET + 0x6000 + (n) * 8) /* Interrupt Rounter Reisters */
 #endif

@@ -32,10 +32,11 @@
 #include "gic_common.h"
 #include "gic_v3.h"
 #include "los_typedef.h"
+#include "los_hwi.h"
 #include "los_hwi_pri.h"
 #include "los_mp.h"
 
-#ifdef LOSCFG_PLATFORM_BSP_GIC_V3
+#ifdef LOSCFG_ARCH_GIC_V3
 
 STATIC UINT32 g_curIrqNum = 0;
 
