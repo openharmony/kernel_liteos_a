@@ -202,6 +202,9 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
         (void)VfsHashGet(parentVnode->originMount, node->i_ino, &newVnode, NULL, NULL);
         LOS_MuxUnlock(&g_jffs2FsLock);
         if (newVnode) {
+            if (newVnode->data == NULL) {
+                LOS_Panic("#####VfsHashGet error#####\n");
+            }
             *ppVnode = newVnode;
             return 0;
         }
