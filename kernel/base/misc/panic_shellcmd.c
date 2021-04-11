@@ -46,6 +46,12 @@ extern "C" {
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 STATIC BOOL systemExcReset = FALSE;
 
+LITE_OS_SEC_TEXT_MINOR BOOL OsSystemExcIsReset(VOID)
+{
+    return systemExcReset;
+}
+#ifdef LOSCFG_DRIVERS_HDF_PLATFORM_WATCHDOG
+
 #define WATCHDOG_TIMER_INTERVAL 5 // 5 seconds
 #define WATCHDOG_TIMER_INTERVAL_HALF (WATCHDOG_TIMER_INTERVAL / 2)
 
@@ -91,11 +97,6 @@ STATIC void StopWatchdog(void)
     g_wdStarted = FALSE;
 }
 
-LITE_OS_SEC_TEXT_MINOR BOOL OsSystemExcIsReset(VOID)
-{
-    return systemExcReset;
-}
-
 LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdSystemExcReset(INT32 argc, const CHAR **argv)
 {
     if (argc != 1) {
@@ -122,6 +123,7 @@ EXC_RESET_HELP:
 }
 
 SHELLCMD_ENTRY(panic_reset_shellcmd, CMD_TYPE_EX, "panicreset", 1, (CmdCallBackFunc)OsShellCmdSystemExcReset);
+#endif
 #endif
 
 #ifdef __cplusplus
