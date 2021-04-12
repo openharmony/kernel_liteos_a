@@ -32,7 +32,6 @@
 #ifndef _LWIP_PORTING_LWIPOPTS_H_
 #define _LWIP_PORTING_LWIPOPTS_H_
 
-#include "menuconfig.h"
 
 // lwIP debug options, comment the ones you don't want
 #if LWIP_DEBUG

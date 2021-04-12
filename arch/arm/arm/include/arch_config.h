@@ -32,7 +32,6 @@
 #ifndef _ARCH_CONFIG_H
 #define _ARCH_CONFIG_H
 
-#include "menuconfig.h"
 
 #define CPSR_INT_DISABLE         0xC0 /* Disable both FIQ and IRQ */
 #define CPSR_IRQ_DISABLE         0x80 /* IRQ disabled when =1 */

@@ -37,7 +37,6 @@
 #include "compiler.h"
 #include "los_base.h"
 #include "los_typedef.h"
-#include "menuconfig.h"
 
 #ifdef LOSCFG_FS_ZPFS
 

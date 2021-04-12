@@ -32,7 +32,6 @@
 #ifndef _SYS_CONFIG_H
 #define _SYS_CONFIG_H
 
-#include "menuconfig.h"
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -37,7 +37,6 @@
 #define __LOS_TLB_V6_H__
 
 #include "los_typedef.h"
-#include "menuconfig.h"
 #include "arm.h"
 
 #ifdef __cplusplus

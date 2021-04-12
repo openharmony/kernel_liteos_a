@@ -31,7 +31,6 @@
 #ifndef _LOS_PARTITION_UTILS_H
 #define _LOS_PARTITION_UTILS_H
 
-#include "menuconfig.h"
 #include "los_typedef.h"
 #include "los_base.h"
 

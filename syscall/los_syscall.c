@@ -30,7 +30,6 @@
  */
 
 #define _GNU_SOURCE
-#include "menuconfig.h"
 #ifdef LOSCFG_FS_VFS
 #include "fs/fs.h"
 #include "fs/file.h"

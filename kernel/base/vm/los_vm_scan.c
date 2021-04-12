@@ -29,7 +29,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "menuconfig.h"
 #ifdef LOSCFG_FS_VFS
 
 #include "fs/file.h"
