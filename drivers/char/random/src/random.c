@@ -96,7 +96,7 @@ ssize_t RanRead(struct file *filep, char *buffer, size_t buflen)
     return (buflen - len); /* return a successful len */
 }
 
-static ssize_t RanMap(FAR struct file* filep, FAR LosVmMapRegion *region)
+static ssize_t RanMap(FAR struct file *filep, FAR LosVmMapRegion *region)
 {
     PRINTK("%s %d, mmap is not support\n", __FUNCTION__, __LINE__);
     return 0;
