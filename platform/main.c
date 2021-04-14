@@ -156,11 +156,9 @@ LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
     OsSetMainTask();
     OsCurrTaskSet(OsGetMainTask());
 
-    /* set smp system counter freq */
-#if (LOSCFG_KERNEL_SMP == YES)
+    /* set system counter freq */
 #ifndef LOSCFG_TEE_ENABLE
     HalClockFreqWrite(OS_SYS_CLOCK);
-#endif
 #endif
 
     /* system and chip info */
