@@ -1372,7 +1372,8 @@ int fatfs_readdir(struct Vnode *vp, struct fs_dirent_s *idir)
     DEF_NAMBUF;
     INIT_NAMBUF(fs);
     for (i = 0; i < idir->read_cnt; i++) {
-        result = dir_read(dp, 0);
+        /* using dir_read_massive to promote performance */
+        result = dir_read_massive(dp, 0);
         if (result == FR_NO_FILE) {
             break;
         } else if (result != FR_OK) {
@@ -1596,7 +1597,7 @@ static int fatfs_set_part_info(los_part *part)
             return -ENOMEM;
         }
         (void)memset_s(buf, disk->sector_size, 0, disk->sector_size);
-        ret = los_disk_read(part->disk_id, buf, 0, 1);
+        ret = los_disk_read(part->disk_id, buf, 0, 1, TRUE); /* TRUE when not reading large data */
         if (ret < 0) {
             free(buf);
             return -EIO;

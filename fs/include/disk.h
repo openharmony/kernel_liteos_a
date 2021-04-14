@@ -303,6 +303,7 @@ INT32 los_disk_deinit(INT32 diskID);
  * @param  buf     [OUT] Type #VOID *        memory which used to store read data.
  * @param  sector  [IN]  Type #UINT64        expected start sector number to read.
  * @param  count   [IN]  Type #UINT32        expected sector count to read.
+ * @param  useRead [IN]  Type #BOOL          set FALSE to use the write block for optimization
  *
  * @retval #0      Read success.
  * @retval #-1     Read failed.
@@ -312,7 +313,7 @@ INT32 los_disk_deinit(INT32 diskID);
  * @see los_disk_write
  *
  */
-INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count);
+INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead);
 
 /**
  * @ingroup  disk
@@ -438,6 +439,7 @@ INT32 los_disk_set_bcache(INT32 drvID, UINT32 sectorPerBlock, UINT32 blockNum);
  * @param  buf     [OUT] Type #VOID *       memory which used to store the data to be read.
  * @param  sector  [IN]  Type #UINT64       start sector number of chosen partition.
  * @param  count   [IN]  Type #UINT32       the expected sector count for reading.
+ * @param  useRead [IN]  Type #BOOL         FALSE when reading large contiguous data, TRUE for other situations
  *
  * @retval #0      Read success.
  * @retval #-1     Read failed.
@@ -447,7 +449,7 @@ INT32 los_disk_set_bcache(INT32 drvID, UINT32 sectorPerBlock, UINT32 blockNum);
  * @see los_part_read
  *
  */
-INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count);
+INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead);
 
 /**
  * @ingroup  disk
@@ -476,6 +478,30 @@ INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count);
  *
  */
 INT32 los_part_write(INT32 pt, const VOID *buf, UINT64 sector, UINT32 count);
+
+/**
+ * @ingroup  disk
+ * @brief Clear the bcache data
+ *
+ * @par Description:
+ * Flush the data and mark the block as unused.
+ *
+ * @attention
+ * <ul>
+ * None
+ * </ul>
+ *
+ * @param  drvID      [IN] Type #INT32        disk id
+ *
+ * @retval #0      Write success.
+ * @retval #-1     Write failed.
+ *
+ * @par Dependency:
+ * <ul><li>disk.h</li></ul>
+ * @see los_part_read
+ *
+ */
+INT32 los_disk_cache_clear(INT32 drvID);
 
 /**
  * @ingroup  disk

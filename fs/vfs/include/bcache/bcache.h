@@ -131,6 +131,7 @@ typedef struct tagOsBcache {
  * @param  len   [IN]  number of bytes to read
  * @param  num   [IN]  starting block number
  * @param  pos   [IN]  starting position inside starting block
+ * @param  useRead [IN]  whether use the read block or write block
  *
  * @attention
  * <ul>
@@ -147,7 +148,8 @@ typedef struct tagOsBcache {
 INT32 BlockCacheRead(OsBcache *bc,
                      UINT8 *buf,
                      UINT32 *len,
-                     UINT64 pos);
+                     UINT64 pos,
+                     BOOL useRead);
 
 /**
  * @ingroup  bcache
@@ -251,6 +253,7 @@ OsBcache *BlockCacheInit(struct Vnode *devNode,
  */
 VOID BlockCacheDeinit(OsBcache *bc);
 
+INT32 BcacheClearCache(OsBcache *bc);
 INT32 OsSdSync(INT32 id);
 
 #ifdef LOSCFG_FS_FAT_CACHE_SYNC_THREAD

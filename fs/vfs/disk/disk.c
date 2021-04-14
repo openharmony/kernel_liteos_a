@@ -798,7 +798,7 @@ INT32 DiskPartitionRegister(los_disk *disk)
     return ENOERR;
 }
 
-INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count)
+INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead)
 {
 #ifdef LOSCFG_FS_FAT_CACHE
     UINT32 len;
@@ -830,7 +830,8 @@ INT32 los_disk_read(INT32 drvID, VOID *buf, UINT64 sector, UINT32 count)
             goto ERROR_HANDLE;
         }
         len = disk->bcache->sectorSize * count;
-        result = BlockCacheRead(disk->bcache, (UINT8 *)buf, &len, sector);
+        /* useRead should be FALSE when reading large contiguous data */
+        result = BlockCacheRead(disk->bcache, (UINT8 *)buf, &len, sector, useRead);
         if (result != ENOERR) {
             PRINT_ERR("los_disk_read read err = %d, sector = %llu, len = %u\n", result, sector, len);
         }
@@ -975,7 +976,7 @@ ERROR_HANDLE:
     return VFS_ERROR;
 }
 
-INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count)
+INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count, BOOL useRead)
 {
     const los_part *part = get_part(pt);
     los_disk *disk = NULL;
@@ -1017,7 +1018,8 @@ INT32 los_part_read(INT32 pt, VOID *buf, UINT64 sector, UINT32 count)
         goto ERROR_HANDLE;
     }
 
-    ret = los_disk_read((INT32)part->disk_id, buf, sector, count);
+    /* useRead should be FALSE when reading large contiguous data */
+    ret = los_disk_read((INT32)part->disk_id, buf, sector, count, useRead);
     if (ret < 0) {
         goto ERROR_HANDLE;
     }
@@ -1146,6 +1148,29 @@ INT32 los_part_ioctl(INT32 pt, INT32 cmd, VOID *buf)
 ERROR_HANDLE:
     DISK_UNLOCK(&disk->disk_mutex);
     return VFS_ERROR;
+}
+
+INT32 los_disk_cache_clear(INT32 drvID)
+{
+    INT32 result;
+    los_disk *disk = NULL;
+
+    result = OsSdSync(drvID);
+    if (result != 0) {
+        PRINTK("[ERROR]disk cache clear failed!n");
+        return result;
+    }
+
+    disk = get_disk(drvID);
+    if (disk == NULL) {
+        return -1;
+    }
+
+    DISK_LOCK(&disk->disk_mutex);
+    result = BcacheClearCache(disk->bcache);
+    DISK_UNLOCK(&disk->disk_mutex);
+
+    return result;
 }
 
 #ifdef LOSCFG_FS_FAT_CACHE

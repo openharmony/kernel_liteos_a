@@ -45,10 +45,37 @@
 #define ASYNC_EVENT_BIT    0x01
 
 #ifdef DEBUG
-#define D(args) printf(args)
+#define D(args) printf args
 #else
 #define D(args)
 #endif
+
+#ifdef BCACHE_ANALYSE
+UINT32 g_memSize;
+volatile UINT32 g_blockNum;
+volatile UINT32 g_dataSize;
+volatile UINT8 *g_memStart;
+volatile UINT32 g_switchTimes[CONFIG_FS_FAT_BLOCK_NUMS] = { 0 };
+volatile UINT32 g_hitTimes[CONFIG_FS_FAT_BLOCK_NUMS] = { 0 };
+#endif
+
+VOID BcacheAnalyse(UINT32 level)
+{
+    (VOID)level;
+#ifdef BCACHE_ANALYSE
+    int i;
+
+    PRINTK("Bcache information:\n");
+    PRINTK("    mem: %u\n", g_memSize);
+    PRINTK("    block number: %u\n", g_blockNum);
+    PRINTK("index, switch, hit\n");
+    for (i = 0; i < g_blockNum; i++) {
+        PRINTK("%5d, %6d, %3d\n", i, g_switchTimes[i], g_hitTimes[i]);
+    }
+#else
+    PRINTK("Bcache hasn't started\n");
+#endif
+}
 
 #ifdef LOSCFG_FS_FAT_CACHE_SYNC_THREAD
 
@@ -623,6 +650,11 @@ static INT32 BcacheGetBlock(OsBcache *bc, UINT64 num, BOOL readData, OsBcacheBlo
 
     if (block != NULL) {
         D(("bcache block = %llu found in cache\n", num));
+#ifdef BCACHE_ANALYSE
+        UINT32 index = ((UINT32)(block->data - g_memStart)) / g_dataSize;
+        PRINTK(", [HIT], %llu, %u\n", num, index);
+        g_hitTimes[index]++;
+#endif
 
         if (first != block) {
             ListMoveBlockToHead(bc, block);
@@ -647,6 +679,11 @@ static INT32 BcacheGetBlock(OsBcache *bc, UINT64 num, BOOL readData, OsBcacheBlo
     if (block == NULL) {
         return -ENOMEM;
     }
+#ifdef BCACHE_ANALYSE
+    UINT32 index = ((UINT32)(block->data - g_memStart)) / g_dataSize;
+    PRINTK(", [MISS], %llu, %u\n", num, index);
+    g_switchTimes[index]++;
+#endif
     BlockInit(bc, block, num);
 
     if (readData == TRUE) {
@@ -665,6 +702,16 @@ static INT32 BcacheGetBlock(OsBcache *bc, UINT64 num, BOOL readData, OsBcacheBlo
 
     *dblock = block;
     return ENOERR;
+}
+
+INT32 BcacheClearCache(OsBcache *bc)
+{
+    OsBcacheBlock *block = NULL;
+    OsBcacheBlock *next = NULL;
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(block, next, &bc->listHead, OsBcacheBlock, listNode) {
+        DelBlock(bc, block);
+    }
+    return 0;
 }
 
 static INT32 BcacheInitCache(OsBcache *bc,
@@ -701,6 +748,13 @@ static INT32 BcacheInitCache(OsBcache *bc,
     dataMem = blockMem + (sizeof(OsBcacheBlock) * blockNum);
     dataMem += ALIGN_DISP((UINTPTR)dataMem);
 
+#ifdef BCACHE_ANALYSE
+    g_memSize = memSize;
+    g_blockNum = blockNum;
+    g_dataSize = bc->blockSize;
+    g_memStart = dataMem;
+#endif
+
     for (i = 0; i < blockNum; i++) {
         block = (OsBcacheBlock *)(VOID *)blockMem;
         block->data = dataMem;
@@ -710,7 +764,7 @@ static INT32 BcacheInitCache(OsBcache *bc,
             bc->wStart = block;
         }
 
-        LOS_ListAdd(&bc->freeListHead, &block->listNode);
+        LOS_ListTailInsert(&bc->freeListHead, &block->listNode);
 
         blockMem += sizeof(OsBcacheBlock);
         dataMem += bc->blockSize;
@@ -768,7 +822,7 @@ INT32 BlockCacheDrvCreate(VOID *handle,
     return ENOERR;
 }
 
-INT32 BlockCacheRead(OsBcache *bc, UINT8 *buf, UINT32 *len, UINT64 sector)
+INT32 BlockCacheRead(OsBcache *bc, UINT8 *buf, UINT32 *len, UINT64 sector, BOOL useRead)
 {
     OsBcacheBlock *block = NULL;
     UINT8 *tempBuf = buf;
@@ -777,6 +831,9 @@ INT32 BlockCacheRead(OsBcache *bc, UINT8 *buf, UINT32 *len, UINT64 sector)
     INT32 ret = ENOERR;
     UINT64 pos;
     UINT64 num;
+#ifdef BCACHE_ANALYSE
+    PRINTK("bcache read:\n");
+#endif
 
     if (bc == NULL || buf == NULL || len == NULL) {
         return -EPERM;
@@ -796,7 +853,8 @@ INT32 BlockCacheRead(OsBcache *bc, UINT8 *buf, UINT32 *len, UINT64 sector)
 
         (VOID)pthread_mutex_lock(&bc->bcacheMutex);
 
-        ret = BcacheGetBlock(bc, num, TRUE, &block);
+        /* useRead should be FALSE when reading large contiguous data */
+        ret = BcacheGetBlock(bc, num, useRead, &block);
         if (ret != ENOERR) {
             (VOID)pthread_mutex_unlock(&bc->bcacheMutex);
             break;
@@ -841,6 +899,9 @@ INT32 BlockCacheWrite(OsBcache *bc, const UINT8 *buf, UINT32 *len, UINT64 sector
     UINT32 currentSize;
     UINT64 pos;
     UINT64 num;
+#ifdef BCACHE_ANALYSE
+    PRINTK("bcache write:\n");
+#endif
 
     pos = sector * bc->sectorSize;
     num = pos >> bc->blockSizeLog2;

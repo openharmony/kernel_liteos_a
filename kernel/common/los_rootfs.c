@@ -248,8 +248,9 @@ STATIC INT32 GetArgs(CHAR **args)
         PRINT_ERR("Get EMMC disk failed!\n");
         goto ERROUT;
     }
+    /* param4 is TRUE for not reading large contiguous data */
     ret = los_disk_read(g_emmcDisk->disk_id, cmdLine, COMMAND_LINE_ADDR / EMMC_SEC_SIZE,
-                        COMMAND_LINE_SIZE / EMMC_SEC_SIZE);
+                        COMMAND_LINE_SIZE / EMMC_SEC_SIZE, TRUE);
     if (ret != 0) {
         PRINT_ERR("Read EMMC command line failed!\n");
         goto ERROUT;
