@@ -49,7 +49,6 @@ LITEOS_TARGET = liteos
 LITEOS_LIBS_TARGET = libs_target
 LITEOS_MENUCONFIG_H = $(LITEOSTOPDIR)/include/generated/autoconf.h
 LITEOS_PLATFORM_BASE = $(LITEOSTOPDIR)/platform
-LITEOS_PLATFORM_MENUCONFIG_H = $(LITEOS_PLATFORM_BASE)/include/menuconfig.h
 
 export CONFIG_=LOSCFG_
 MENUCONFIG_PATH = $(LITEOSTOPDIR)/tools/menuconfig
@@ -124,7 +123,7 @@ $(__LIBS): $(OUT) $(CXX_INCLUDE)
 $(OUT): $(LITEOS_MENUCONFIG_H)
 	$(HIDE)mkdir -p $(OUT)/lib
 	$(HIDE)$(CC) -I$(LITEOSTOPDIR)/kernel/base/include -I$(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
-		-I$(LITEOS_PLATFORM_BASE)/include -E $(LITEOS_PLATFORM_BASE)/board.ld.S \
+		-I$(LITEOS_PLATFORM_BASE)/include -imacros $< -E $(LITEOS_PLATFORM_BASE)/board.ld.S \
 		-o $(LITEOS_PLATFORM_BASE)/board.ld -P
 
 $(BUILD):
@@ -141,14 +140,13 @@ menuconfig:$(MENUCONFIG_MCONF)
 	$< $(KCONFIG_FILE_PATH)
 
 genconfig:$(MENUCONFIG_CONF)
-	$(HIDE)mkdir -p include/config include/generated platform/include
+	$(HIDE)mkdir -p include/config include/generated
 	$< --olddefconfig $(KCONFIG_FILE_PATH)
 	$< --silentoldconfig $(KCONFIG_FILE_PATH)
-	-mv -f $(LITEOS_MENUCONFIG_H) $(LITEOS_PLATFORM_MENUCONFIG_H)
 ##### menuconfig end #######
 
 $(LITEOS_MENUCONFIG_H):
-ifneq ($(LITEOS_PLATFORM_MENUCONFIG_H), $(wildcard $(LITEOS_PLATFORM_MENUCONFIG_H)))
+ifneq ($(LITEOS_MENUCONFIG_H), $(wildcard $(LITEOS_MENUCONFIG_H)))
 	$(HIDE)$(MAKE) genconfig
 endif
 $(LITEOS_TARGET): $(__LIBS)
@@ -197,16 +195,13 @@ clean:
 	done
 	$(HIDE)$(MAKE) -C apps clean
 	$(HIDE)$(RM) $(__OBJS) $(LITEOS_TARGET) $(BUILD) $(LITEOS_MENUCONFIG_H) *.bak *~
-	$(HIDE)$(RM) $(LITEOS_PLATFORM_MENUCONFIG_H)
-	$(HIDE)$(RM) include
+	$(HIDE)$(RM) include/config include/generated
 	$(HIDE)$(MAKE) cleanrootfs
 	$(HIDE)echo "clean $(LITEOS_PLATFORM) finish"
 
-cleanall:
-	$(HIDE)$(RM) $(LITEOSTOPDIR)/out
-	$(HIDE)find $(LITEOS_PLATFORM_BASE)/ -name board.ld -exec rm -rf {} \;
-	$(HIDE)cd sample/sample_osdrv;make clean;cd ../..;
-	$(HIDE)echo "clean all"
+cleanall: clean
+	$(HIDE)$(RM) $(LITEOSTOPDIR)/out $(LITEOS_PLATFORM_BASE)/board.ld
+	$(HIDE)echo "clean all done"
 
 cleanrootfs:
 	$(HIDE)$(RM) $(OUT)/rootfs
