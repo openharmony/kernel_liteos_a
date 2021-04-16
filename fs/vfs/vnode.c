@@ -50,6 +50,7 @@ extern struct Vnode *g_coveredVnodeList[100];
 #define ENTRY_TO_VNODE(ptr)  LOS_DL_LIST_ENTRY(ptr, struct Vnode, actFreeEntry)
 #define VNODE_LRU_COUNT      10
 #define DEV_VNODE_MODE       0755
+#define MAX_ITER_TIMES       10
 
 int VnodesInit(void)
 {
@@ -249,12 +250,29 @@ int VnodeFreeAll(struct Mount *mnt)
     return 0;
 }
 
+static VOID VnodeIterDump(struct Vnode *vnode, int increase)
+{
+    static int count = 0;
+    LIST_ENTRY *list = &vnode->parentPathCaches;
+    struct PathCache *pathCache = LOS_DL_LIST_ENTRY(list->pstNext, struct PathCache, parentEntry);
+    count += increase;
+    if (count >= MAX_ITER_TIMES) {
+        PRINTK("########## Vnode In Use Iteration ##########\n");
+        PRINTK("Iteration times: %d\n", count);
+        PRINTK("%p -- %s --> %p\n", vnode->parent, pathCache->name, vnode);
+        PathCacheDump();
+    }
+}
+
 BOOL VnodeInUseIter(struct Vnode *vnode)
 {
     struct Vnode *vp = NULL;
     struct PathCache *item = NULL;
     struct PathCache *nextItem = NULL;
+
+    VnodeIterDump(vnode, 1);
     if (vnode->useCount > 0) {
+        VnodeIterDump(vnode, -1);
         return TRUE;
     }
     LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &vnode->childPathCaches, struct PathCache, childEntry) {
@@ -263,9 +281,11 @@ BOOL VnodeInUseIter(struct Vnode *vnode)
             continue;
         }
         if (VnodeInUseIter(vp) == TRUE) {
+            VnodeIterDump(vnode, -1);
             return TRUE;
         }
     }
+    VnodeIterDump(vnode, -1);
     return FALSE;
 }
 

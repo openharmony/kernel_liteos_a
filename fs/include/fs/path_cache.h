@@ -52,5 +52,6 @@ int PathCacheAllocDummy(struct Vnode *parent, struct Vnode **vnode, const char *
 int PathCacheLookup(struct Vnode *parent, const char *name, int len, struct Vnode **vnode);
 void VnodePathCacheFree(struct Vnode *vnode);
 void PathCacheMemoryDump(void);
+void PathCacheDump(void);
 
 #endif /* _PATH_CACHE_H */
