@@ -188,7 +188,7 @@ static INT FatfsScanFat(void *handle)
 {
     FATFS *fat = (FATFS *)handle;
     UINT i;
-    INT ret;
+    INT ret = FR_OK;
 
     for (i = 0; i < fat->vir_amount; i++) {
         /* Assert error will not abort the scanning process */
