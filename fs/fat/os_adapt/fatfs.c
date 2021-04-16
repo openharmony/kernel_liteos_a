@@ -399,6 +399,7 @@ int fatfs_create(struct Vnode *parent, const char *name, int mode, struct Vnode 
         ret = fatfs_2_vfs(result);
         goto ERROR_UNLOCK;
     }
+    dp->blk_ofs = dir_ofs(dp);
     get_fileinfo(dp, finfo);
     dp->obj.objsize = 0;
 
@@ -1539,6 +1540,7 @@ int fatfs_rename(struct Vnode *old_vnode, struct Vnode *new_parent, const char *
     if (result != FR_OK) {
         goto ERROR_FREE;
     }
+    dp_new->blk_ofs = dir_ofs(dp_new);
     get_fileinfo(dp_new, finfo_new);
 
     dfp_new->fno.fp_list.pstNext = dfp_old->fno.fp_list.pstNext;
@@ -1770,6 +1772,7 @@ int fatfs_mkdir(struct Vnode *parent, const char *name, mode_t mode, struct Vnod
     if (result != FR_OK) {
         goto ERROR_REMOVE_CHAIN;
     }
+    dfp_new->f_dir.blk_ofs = dir_ofs(&(dfp_new->f_dir));
     get_fileinfo(&(dfp_new->f_dir), &(dfp_new->fno));
 
     ret = VnodeAlloc(&fatfs_vops, &vp);
