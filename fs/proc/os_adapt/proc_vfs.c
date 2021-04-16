@@ -235,6 +235,13 @@ int VfsProcfsOpen(struct file *filep)
     if (ProcOpen(pde->pf) != OK) {
         return -ENOMEM;
     }
+    if (S_ISREG(pde->mode) && (pde->procFileOps != NULL) && (pde->procFileOps->open != NULL)) {
+        (void)pde->procFileOps->open((struct Vnode *)pde, pde->pf);
+    }
+    if (S_ISDIR(pde->mode)) {
+        pde->pdirCurrent = pde->subdir;
+        pde->pf->fPos = 0;
+    }
     filep->f_priv = (void *)pde;
     return LOS_OK;
 }
