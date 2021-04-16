@@ -44,6 +44,9 @@ static LosMux g_vnodeMux;
 static struct Vnode *g_rootVnode = NULL;
 static struct VnodeOps g_devfsOps;
 
+extern int g_coveredVnodeTop;
+extern struct Vnode *g_coveredVnodeList[100];
+
 #define ENTRY_TO_VNODE(ptr)  LOS_DL_LIST_ENTRY(ptr, struct Vnode, actFreeEntry)
 #define VNODE_LRU_COUNT      10
 #define DEV_VNODE_MODE       0755
@@ -103,6 +106,11 @@ struct Vnode *VnodeReclaimLru(void)
         }
 
         if (VnodeFree(item) == LOS_OK) {
+            for (int i = 0; i < g_coveredVnodeTop; i++) {
+                if (item == g_coveredVnodeList[i]) {
+                    PRINT_ERR("%s-%d: reclaim mounted vnode. item=%p\n", __FUNCTION__, __LINE__, item);
+                }
+            }
             releaseCount++;
         }
         if (releaseCount >= VNODE_LRU_COUNT) {
