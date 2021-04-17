@@ -59,12 +59,17 @@ LOS_DL_LIST_HEAD(g_vmSpaceList);
 LosVmSpace g_kVmSpace;
 LosVmSpace g_vMallocSpace;
 
+LosVmSpace *LOS_CurrSpaceGet(VOID)
+{
+    return OsCurrProcessGet()->vmSpace;
+}
+
 LosVmSpace *LOS_SpaceGet(VADDR_T vaddr)
 {
     if (LOS_IsKernelAddress(vaddr)) {
         return LOS_GetKVmSpace();
     } else if (LOS_IsUserAddress(vaddr)) {
-        return OsCurrProcessGet()->vmSpace;
+        return LOS_CurrSpaceGet();
     } else if (LOS_IsVmallocAddress(vaddr)) {
         return LOS_GetVmallocSpace();
     } else {

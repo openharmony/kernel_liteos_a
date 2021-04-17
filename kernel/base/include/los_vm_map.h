@@ -273,6 +273,7 @@ VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, UIN
 LosVmMapRegion *OsCreateRegion(VADDR_T vaddr, size_t len, UINT32 regionFlags, unsigned long offset);
 BOOL OsInsertRegion(LosRbTree *regionRbTree, LosVmMapRegion *region);
 LosVmSpace *LOS_SpaceGet(VADDR_T vaddr);
+LosVmSpace *LOS_CurrSpaceGet(VOID);
 BOOL LOS_IsRegionFileValid(LosVmMapRegion *region);
 LosVmMapRegion *LOS_RegionRangeFind(LosVmSpace *vmSpace, VADDR_T addr, size_t len);
 LosVmMapRegion *LOS_RegionFind(LosVmSpace *vmSpace, VADDR_T addr);
