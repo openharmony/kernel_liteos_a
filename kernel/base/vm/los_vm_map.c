@@ -365,12 +365,24 @@ LosVmMapRegion *OsFindRegion(LosRbTree *regionRbTree, VADDR_T vaddr, size_t len)
 
 LosVmMapRegion *LOS_RegionFind(LosVmSpace *vmSpace, VADDR_T addr)
 {
-    return OsFindRegion(&vmSpace->regionRbTree, addr, 1);
+    LosVmMapRegion *region = NULL;
+
+    (VOID)LOS_MuxAcquire(&vmSpace->regionMux);
+    region = OsFindRegion(&vmSpace->regionRbTree, addr, 1);
+    (VOID)LOS_MuxRelease(&vmSpace->regionMux);
+
+    return region;
 }
 
 LosVmMapRegion *LOS_RegionRangeFind(LosVmSpace *vmSpace, VADDR_T addr, size_t len)
 {
-    return OsFindRegion(&vmSpace->regionRbTree, addr, len);
+    LosVmMapRegion *region = NULL;
+
+    (VOID)LOS_MuxAcquire(&vmSpace->regionMux);
+    region = OsFindRegion(&vmSpace->regionRbTree, addr, len);
+    (VOID)LOS_MuxRelease(&vmSpace->regionMux);
+
+    return region;
 }
 
 VADDR_T OsAllocRange(LosVmSpace *vmSpace, size_t len)
