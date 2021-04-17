@@ -107,20 +107,21 @@ int VfsPermissionCheck(uint fuid, uint fgid, uint fileMode, int accMode)
 
     tmpMode = 0;
     if (S_ISDIR(fileMode)) {
-        if (((uint)accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_READ_SEARCH))) {
+        if (IsCapPermit(CAP_DAC_EXECUTE)
+            || (!((uint)accMode & WRITE_OP) && IsCapPermit(CAP_DAC_READ_SEARCH))) {
             tmpMode |= EXEC_OP;
         }
     } else {
-        if (((uint)accMode & EXEC_OP) && (IsCapPermit(CAP_DAC_EXECUTE)) && (fileMode & MODE_IXUGO)) {
+        if (IsCapPermit(CAP_DAC_EXECUTE) && (fileMode & MODE_IXUGO)) {
             tmpMode |= EXEC_OP;
         }
     }
 
-    if (((uint)accMode & WRITE_OP) && IsCapPermit(CAP_DAC_WRITE)) {
+    if (IsCapPermit(CAP_DAC_WRITE)) {
         tmpMode |= WRITE_OP;
     }
 
-    if (((uint)accMode & READ_OP) && IsCapPermit(CAP_DAC_READ_SEARCH)) {
+    if (IsCapPermit(CAP_DAC_READ_SEARCH)) {
         tmpMode |= READ_OP;
     }
 
