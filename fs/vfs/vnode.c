@@ -92,6 +92,8 @@ static struct Vnode *GetFromFreeList(void)
     return vnode;
 }
 
+extern struct Vnode *g_parentOfCoveredVnode;
+
 struct Vnode *VnodeReclaimLru(void)
 {
     struct Vnode *item = NULL;
@@ -106,11 +108,6 @@ struct Vnode *VnodeReclaimLru(void)
         }
 
         if (VnodeFree(item) == LOS_OK) {
-            for (int i = 0; i < g_coveredVnodeTop; i++) {
-                if (item == g_coveredVnodeList[i]) {
-                    PRINT_ERR("%s-%d: reclaim mounted vnode. item=%p\n", __FUNCTION__, __LINE__, item);
-                }
-            }
             releaseCount++;
         }
         if (releaseCount >= VNODE_LRU_COUNT) {
@@ -180,6 +177,14 @@ int VnodeFree(struct Vnode *vnode)
     struct PathCache *nextItem = NULL;
 
     VnodeHold();
+    for (int i = 0; i < g_coveredVnodeTop; i++) {
+        if (vnode == g_coveredVnodeList[i]) {
+            PRINT_ERR("%s-%d: reclaim mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
+        }
+    }
+    if (g_parentOfCoveredVnode == vnode) {
+        PRINT_ERR("%s-%d: reclaim parent of mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
+    }
     if (vnode->useCount > 0) {
         VnodeDrop();
         return -EBUSY;

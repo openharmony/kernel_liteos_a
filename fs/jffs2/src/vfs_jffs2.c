@@ -593,6 +593,8 @@ int VfsJffs2Chattr(struct Vnode *pVnode, struct IATTR *attr)
     return ret;
 }
 
+extern struct Vnode *g_parentOfCoveredVnode;
+
 int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, char *path)
 {
     int ret;
@@ -603,6 +605,10 @@ int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, char *pa
 
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 
+    if (parentVnode->data == NULL) {
+        PRINT_ERR("%s-%d: rmdir parent of mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, parentVnode, parentVnode->useCount, parentVnode->data);
+        PRINT_ERR("%s-%d: global rmdir parent of mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, g_parentOfCoveredVnode, g_parentOfCoveredVnode->useCount, g_parentOfCoveredVnode->data);
+    }
     ret = jffs2_rmdir((struct jffs2_inode *)parentVnode->data, (struct jffs2_inode *)targetVnode->data,
                       (const unsigned char *)path);
 
