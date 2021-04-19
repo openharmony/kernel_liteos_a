@@ -31,11 +31,6 @@
 
 #include "los_err.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 LITE_OS_SEC_BSS STATIC LOS_ERRORHANDLE_FUNC g_errHandleHook = NULL;
 
@@ -54,8 +49,3 @@ LITE_OS_SEC_TEXT_INIT VOID LOS_SetErrHandleHook(LOS_ERRORHANDLE_FUNC fun)
     g_errHandleHook = fun;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

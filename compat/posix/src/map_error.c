@@ -34,11 +34,6 @@
 #include "los_sem.h"
 #include "los_task.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int map_errno(UINT32 err)
 {
@@ -115,8 +110,3 @@ int map_errno(UINT32 err)
     return errno;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

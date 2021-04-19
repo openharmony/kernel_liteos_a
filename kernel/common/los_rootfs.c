@@ -70,11 +70,6 @@
 STATIC los_disk *g_emmcDisk = NULL;
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifndef LOSCFG_SECURITY_BOOT
 STATIC INT32 g_alignSize = 0;

@@ -37,11 +37,6 @@
 #include "los_rbtree.h"
 #include "los_memory.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 STATIC VOID OsRbLeftRotateNode(LosRbTree *pstTree, LosRbNode *pstX);
 STATIC VOID OsRbRightRotateNode(LosRbTree *pstTree, LosRbNode *pstY);
@@ -764,9 +759,4 @@ ULONG_T LOS_RbAddNode(LosRbTree *pstTree, LosRbNode *pstNew)
     return TRUE;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 

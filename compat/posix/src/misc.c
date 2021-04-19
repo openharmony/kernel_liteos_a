@@ -37,11 +37,6 @@
 #include "mqueue.h"
 #include "semaphore.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /*
  * Supply some suitable values for constants that may not be present
@@ -145,8 +140,3 @@ pid_t getpid(void)
     return ((LosTaskCB *)(OsCurrTaskGet()))->taskID;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

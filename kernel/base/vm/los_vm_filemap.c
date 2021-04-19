@@ -42,11 +42,6 @@
 #include "los_process_pri.h"
 #include "los_vm_lock.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -764,8 +759,3 @@ INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

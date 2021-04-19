@@ -36,11 +36,6 @@
 #include "shcmd.h"
 #endif /* LOSCFG_SHELL */
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_DEBUG_QUEUE
 
@@ -201,8 +196,3 @@ SHELLCMD_ENTRY(queue_shellcmd, CMD_TYPE_EX, "queue", 0, (CmdCallBackFunc)OsShell
 #endif /* LOSCFG_SHELL */
 #endif /* LOSCFG_DEBUG_QUEUE */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

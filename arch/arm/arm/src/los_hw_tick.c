@@ -32,11 +32,6 @@
 #include "los_sys_pri.h"
 #include "los_hwi.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 LITE_OS_SEC_TEXT_INIT UINT32 OsTickInit(UINT32 systemClock, UINT32 tickPerSecond)
 {
@@ -79,8 +74,3 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_Mdelay(UINT32 msecs)
     HalDelayUs(msecs * 1000); /* 1000 : 1ms = 1000us */
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

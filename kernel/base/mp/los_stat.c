@@ -31,11 +31,6 @@
 
 #include "los_task_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #if (LOSCFG_KERNEL_SCHED_STATISTICS == YES)
 #define HIGHTASKPRI           16
@@ -326,8 +321,3 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellMpStaticStop(VOID)
 
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

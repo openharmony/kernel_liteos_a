@@ -31,11 +31,6 @@
 
 #include "los_crc32.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define COUNT1    val = crc32_tab[(val ^ (*src++)) & 0xff] ^ (val >> 8)
 #define COUNT2    COUNT1; COUNT1
@@ -75,8 +70,3 @@ UINT32 LOS_Crc32Accumulate(UINT32 val, UINT8 *src, INT32 len)
     return val;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

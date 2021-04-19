@@ -45,11 +45,6 @@
 #include "los_vm_lock.h"
 #include "los_memory_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -553,8 +548,3 @@ VOID OsVmPhysUsedInfoGet(UINT32 *usedCount, UINT32 *totalCount)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

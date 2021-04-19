@@ -33,11 +33,6 @@
 #if (LOSCFG_KERNEL_SMP == YES)
 #include "los_sched_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 VOID LOS_SpinInit(SPIN_LOCK_S *lock)
 {
@@ -108,8 +103,3 @@ VOID LOS_SpinUnlockRestore(SPIN_LOCK_S *lock, UINT32 intSave)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

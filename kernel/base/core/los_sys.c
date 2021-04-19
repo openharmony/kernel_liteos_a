@@ -32,11 +32,6 @@
 #include "los_sys_pri.h"
 #include "los_sched_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define OS_MAX_VALUE    0xFFFFFFFFUL
 
@@ -75,8 +70,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsUS2Tick(UINT64 microsec)
     return (UINT32)ticks;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

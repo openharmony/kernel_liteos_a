@@ -32,11 +32,6 @@
 #include "los_typedef.h"
 #include "los_memory.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int posix_memalign(void **memAddr, size_t alignment, size_t size)
 {
@@ -52,8 +47,3 @@ int posix_memalign(void **memAddr, size_t alignment, size_t size)
     return ENOERR;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

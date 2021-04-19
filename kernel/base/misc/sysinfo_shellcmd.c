@@ -40,11 +40,6 @@
 #include "shell.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #define SYSINFO_ENABLED(x) (((x) == YES) ? "YES" : "NO")
 UINT32 OsShellCmdTaskCntGet(VOID)
@@ -163,8 +158,3 @@ INT32 OsShellCmdSystemInfo(INT32 argc, const CHAR **argv)
 SHELLCMD_ENTRY(systeminfo_shellcmd, CMD_TYPE_EX, "systeminfo", 1, (CmdCallBackFunc)OsShellCmdSystemInfo);
 #endif /* LOSCFG_SHELL */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

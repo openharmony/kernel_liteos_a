@@ -37,11 +37,6 @@
 #include "los_exc.h"
 #include "los_sched_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #if (LOSCFG_BASE_IPC_MUX == YES)
 #define MUTEXATTR_TYPE_MASK 0x0FU
@@ -567,8 +562,3 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxUnlock(LosMux *mutex)
 
 #endif /* (LOSCFG_BASE_IPC_MUX == YES) */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

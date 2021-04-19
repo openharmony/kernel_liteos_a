@@ -37,11 +37,6 @@
 #include "los_vm_lock.h"
 #include "los_memory.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 VOID *ioremap(PADDR_T paddr, unsigned long size)
 {
@@ -218,8 +213,3 @@ DMA_ADDR_T LOS_DmaVaddrToPaddr(VOID *vaddr)
     return (DMA_ADDR_T)LOS_PaddrQuery(vaddr);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

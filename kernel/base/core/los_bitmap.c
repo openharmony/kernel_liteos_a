@@ -33,11 +33,6 @@
 #include "los_printf.h"
 #include "los_toolchain.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define OS_BITMAP_MASK 0x1FU
 #define OS_BITMAP_WORD_MASK ~0UL
@@ -141,8 +136,3 @@ INT32 LOS_BitmapFfz(UINTPTR *bitmap, UINT32 numBits)
     return -1;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

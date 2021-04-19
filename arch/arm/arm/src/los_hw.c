@@ -32,11 +32,6 @@
 #include "los_hw_pri.h"
 #include "los_task_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /* support cpu vendors */
 CpuVendor g_cpuTable[] = {
@@ -192,8 +187,3 @@ VOID DCacheInvRange(UINT32 start, UINT32 end)
     arm_inv_cache_range(start, end);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

@@ -36,11 +36,6 @@
 #include "los_sched_pri.h"
 #include "los_mp.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader)
 {
@@ -252,8 +247,3 @@ UINT32 OsSortLinkGetNextExpireTime(const SortLinkAttribute *sortLinkHeader)
     return OsSortLinkGetTargetExpireTime(listSorted);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

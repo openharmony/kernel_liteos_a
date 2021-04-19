@@ -34,11 +34,6 @@
 #include "shcmd.h"
 #include "console.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 STATIC BOOL g_shellSourceFlag = FALSE;
 
@@ -178,8 +173,3 @@ CHAR *OsShellGetWorkingDirtectory(VOID)
     return shellCB->shellWorkingDirectory;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

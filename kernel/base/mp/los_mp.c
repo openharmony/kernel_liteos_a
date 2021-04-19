@@ -35,11 +35,6 @@
 #include "los_sched_pri.h"
 #include "los_swtmr.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #if (LOSCFG_KERNEL_SMP == YES)
 
@@ -112,8 +107,3 @@ UINT32 OsMpInit(VOID)
 
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

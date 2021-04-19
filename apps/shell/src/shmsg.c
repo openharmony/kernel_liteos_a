@@ -42,11 +42,6 @@
 #include "shell_pri.h"
 #include "shcmd.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 
 char *GetCmdline(ShellCB *shellCB)
@@ -640,8 +635,3 @@ int ShellEntryInit(ShellCB *shellCB)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

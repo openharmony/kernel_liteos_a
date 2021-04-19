@@ -32,11 +32,6 @@
 #include "los_memstat_pri.h"
 #include "los_task_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 LITE_OS_SEC_BSS_MINOR STATIC TskMemUsedInfo g_tskMemUsedInfo[LOSCFG_BASE_CORE_TSK_LIMIT];
 
@@ -119,8 +114,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsTaskSlabUsage(UINT32 taskID)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

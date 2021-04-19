@@ -37,11 +37,6 @@
 #include "los_exc.h"
 #include "los_sched_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_BASE_IPC_RWLOCK
 #define RWLOCK_COUNT_MASK 0x00FFFFFFU
@@ -467,8 +462,3 @@ UINT32 LOS_RwlockUnLock(LosRwlock *rwlock)
 
 #endif /* LOSCFG_BASE_IPC_RWLOCK */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

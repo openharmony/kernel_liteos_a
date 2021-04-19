@@ -36,11 +36,6 @@
 #include "los_vm_syscall.h"
 #include "fs_file.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 void *SysMmap(void *addr, size_t size, int prot, int flags, int fd, size_t offset)
 {
@@ -120,8 +115,3 @@ int SysShmDt(const void *shmaddr)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

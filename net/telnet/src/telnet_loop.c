@@ -53,11 +53,6 @@
 #include "telnet_pri.h"
 #include "telnet_dev.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /* TELNET commands in RFC854 */
 #define TELNET_SB   250 /* Indicates that what follows is subnegotiation of the indicated option */
@@ -587,8 +582,3 @@ SHELLCMD_ENTRY(telnet_shellcmd, CMD_TYPE_EX, "telnet", 1, (CmdCallBackFunc)Telne
 #endif /* LOSCFG_SHELL_CMD_DEBUG */
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

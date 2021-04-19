@@ -66,11 +66,6 @@
 #include "console.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define INVALID_CPUID  0xFFFF
 #define OS_EXC_VMM_NO_REGION  0x0U
@@ -1191,8 +1186,3 @@ VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCou
     }
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

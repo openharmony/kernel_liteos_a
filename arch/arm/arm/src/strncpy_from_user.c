@@ -33,11 +33,6 @@
 #include "los_user_get.h"
 #include "los_vm_map.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 INT32 LOS_StrncpyFromUser(CHAR *dst, const CHAR *src, INT32 count)
 {
@@ -67,8 +62,3 @@ INT32 LOS_StrncpyFromUser(CHAR *dst, const CHAR *src, INT32 count)
     return offset;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

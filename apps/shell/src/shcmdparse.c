@@ -32,11 +32,6 @@
 #include "shcmd.h"
 #include "sherr.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /*
  * Filter out double quote or single-quoted strings at both ends
@@ -157,8 +152,3 @@ unsigned int OsCmdParse(char *cmdStr, CmdParsed *cmdParsed)
     return OsCmdTokenSplit(cmdStr, ' ', cmdParsed);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

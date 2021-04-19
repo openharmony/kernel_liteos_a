@@ -37,11 +37,6 @@
 #endif
 #include "los_sched_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /* spinlock for hwi module, only available on SMP mode */
 LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_hwiSpin);
@@ -352,8 +347,3 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiDelete(HWI_HANDLE_T hwiNum, HwiIrqParam *irq
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

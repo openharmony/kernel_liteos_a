@@ -44,11 +44,6 @@
 #include "los_vm_filemap.h"
 #include "los_process_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -498,8 +493,3 @@ VOID LOS_DumpMemRegion(VADDR_T vaddr)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

@@ -32,11 +32,6 @@
 #include "shcmd.h"
 #include "los_memory.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /*
  * Filter out double quote or single-quoted strings at both ends
@@ -158,8 +153,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdParse(CHAR *cmdStr, CmdParsed *cmdParsed)
     return OsCmdTokenSplit(cmdStr, ' ', cmdParsed);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

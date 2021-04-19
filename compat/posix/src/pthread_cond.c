@@ -36,11 +36,6 @@
 #include "los_atomic.h"
 #include "los_event_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define BROADCAST_EVENT     1
 #define COND_COUNTER_STEP   0x0004U
@@ -351,8 +346,3 @@ int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

@@ -62,11 +62,6 @@
 #endif
 #include "los_vm_map.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #if (LOSCFG_BASE_CORE_TSK_LIMIT <= 0)
 #error "task maxnum cannot be zero"
@@ -1695,8 +1690,3 @@ LITE_OS_SEC_TEXT UINT32 OsCreateResourceFreeTask(VOID)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

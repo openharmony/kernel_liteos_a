@@ -42,11 +42,6 @@
 #include "shell.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_SHELL
 #define TEMP_PATH_MAX (PATH_MAX + SHOW_MAX_LEN)
@@ -336,8 +331,3 @@ int vfs_normalize_pathat(int dirfd, const char *filename, char **pathname)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

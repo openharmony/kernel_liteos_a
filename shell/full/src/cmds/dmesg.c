@@ -60,11 +60,6 @@ Case B:
 #include "stdlib.h"
 #include "los_task.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define BUF_MAX_INDEX (g_logBufSize - 1)
 
@@ -772,9 +767,4 @@ ERR_OUT:
 
 SHELLCMD_ENTRY(dmesg_shellcmd, CMD_TYPE_STD, "dmesg", XARGS, (CmdCallBackFunc)OsShellCmdDmesg);
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 #endif

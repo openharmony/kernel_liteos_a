@@ -40,11 +40,6 @@
 
 #include "fs/path_cache.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 STATIC volatile UINT32 g_serialType = 0;
 STATIC struct file g_serialFilep;
@@ -261,8 +256,3 @@ INT32 virtual_serial_deinit(VOID)
     return unregister_driver(SERIAL);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

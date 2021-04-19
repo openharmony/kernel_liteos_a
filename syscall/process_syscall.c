@@ -42,11 +42,6 @@
 #include "capability_api.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 static int OsPermissionToCheck(unsigned int pid, unsigned int who)
 {
@@ -1108,8 +1103,3 @@ int SysSchedSetAffinity(int id, const unsigned short cpuset, int flag)
     return LOS_OK;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

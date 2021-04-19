@@ -31,16 +31,6 @@
 
 #include "los_percpu_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 Percpu g_percpu[LOSCFG_KERNEL_CORE_NUM];
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

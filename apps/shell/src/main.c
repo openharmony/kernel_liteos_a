@@ -36,11 +36,6 @@
 #include "securec.h"
 #include "unistd.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 ShellCB *g_shellCB = NULL;
 
@@ -139,8 +134,3 @@ ERR_OUT1:
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

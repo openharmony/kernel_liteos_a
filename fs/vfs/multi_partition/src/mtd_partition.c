@@ -43,11 +43,6 @@
 #include "cfiflash.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define DRIVER_NAME_ADD_SIZE    3
 pthread_mutex_t g_mtdPartitionLock = PTHREAD_MUTEX_INITIALIZER;
@@ -557,8 +552,3 @@ INT32 delete_mtd_partition(UINT32 partitionNum, const CHAR *type)
     return ENOERR;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

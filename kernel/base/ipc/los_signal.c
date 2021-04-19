@@ -39,11 +39,6 @@
 #include "capability_api.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int raise(int sig)
 {
@@ -685,8 +680,3 @@ void OsRestorSignalContext(unsigned int *sp)
     SCHEDULER_UNLOCK(intSave);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

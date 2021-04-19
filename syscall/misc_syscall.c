@@ -46,11 +46,6 @@
 #endif
 #include "user_copy.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int SysUname(struct utsname *name)
 {
@@ -198,8 +193,3 @@ int SysGetrusage(int what, struct rusage *ru)
     return 0;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

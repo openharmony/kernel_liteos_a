@@ -36,11 +36,6 @@
 #include "los_atomic.h"
 #include "los_exc.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
 
@@ -344,8 +339,3 @@ VOID OsLockdepClearSpinlocks(VOID)
 
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

@@ -51,11 +51,6 @@
 #include "fs/vfs_util.h"
 #include "user_copy.h"
 #include "fs/vnode.h"
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define EACH_CHAR 1
 #define UART_IOC_MAGIC   'u'
@@ -1620,8 +1615,3 @@ VOID OsWakeConsoleSendTask(VOID)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
