@@ -39,10 +39,10 @@ ${ROOTFS_DIR}/app ${ROOTFS_DIR}/data ${ROOTFS_DIR}/proc ${ROOTFS_DIR}/dev ${ROOT
 ${ROOTFS_DIR}/system ${ROOTFS_DIR}/system/internal ${ROOTFS_DIR}/system/external
 if [ -d "${BIN_DIR}" ] && [ "$(ls -A "${BIN_DIR}")" != "" ]; then
     cp -f ${BIN_DIR}/* ${ROOTFS_DIR}/bin
-    if [ -e ${BIN_DIR}/shell ]; then
+    if [ -e ${BIN_DIR}/shell ] && [ "${BIN_DIR}/shell" != "${OUT_DIR}/bin/shell" ]; then
         cp -f ${BIN_DIR}/shell ${OUT_DIR}/bin/shell
     fi
-    if [ -e ${BIN_DIR}/tftp ]; then
+    if [ -e ${BIN_DIR}/tftp ] && [ "${BIN_DIR}/tftp" != "${OUT_DIR}/bin/tftp" ]; then
         cp -f ${BIN_DIR}/tftp ${OUT_DIR}/bin/tftp
     fi
 fi
