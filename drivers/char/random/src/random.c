@@ -58,7 +58,7 @@ static unsigned long g_seed = 1;
 
 int RanOpen(struct file *filep)
 {
-    g_seed = (unsigned long)(hi_sched_clock() & 0xffffffff);
+    g_seed = (unsigned long)(LOS_CurrNanosec() & 0xffffffff);
     return 0;
 }
 

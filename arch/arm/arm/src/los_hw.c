@@ -143,32 +143,17 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_F
     context->PC = (UINTPTR)taskEntry;
 }
 
-VOID Sev(VOID)
-{
-    __asm__ __volatile__ ("sev" : : : "memory");
-}
-
-VOID Wfe(VOID)
-{
-    __asm__ __volatile__ ("wfe" : : : "memory");
-}
-
-VOID Wfi(VOID)
-{
-    __asm__ __volatile__ ("wfi" : : : "memory");
-}
-
-VOID Dmb(VOID)
+DEPRECATED VOID Dmb(VOID)
 {
     __asm__ __volatile__ ("dmb" : : : "memory");
 }
 
-VOID Dsb(VOID)
+DEPRECATED VOID Dsb(VOID)
 {
     __asm__ __volatile__("dsb" : : : "memory");
 }
 
-VOID Isb(VOID)
+DEPRECATED VOID Isb(VOID)
 {
     __asm__ __volatile__("isb" : : : "memory");
 }

@@ -108,12 +108,12 @@ LOCK_RELEASE:
 STATIC VOID OsLockVdso(VdsoDataPage *vdsoDataPage)
 {
     vdsoDataPage->lockCount = 1;
-    Dmb();
+    DMB;
 }
 
 STATIC VOID OsUnlockVdso(VdsoDataPage *vdsoDataPage)
 {
-    Dmb();
+    DMB;
     vdsoDataPage->lockCount = 0;
 }
 

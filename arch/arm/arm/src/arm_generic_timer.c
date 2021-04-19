@@ -162,7 +162,7 @@ VOID HalDelayUs(UINT32 usecs)
     }
 }
 
-UINT64 hi_sched_clock(VOID)
+DEPRECATED UINT64 hi_sched_clock(VOID)
 {
     return LOS_CurrNanosec();
 }

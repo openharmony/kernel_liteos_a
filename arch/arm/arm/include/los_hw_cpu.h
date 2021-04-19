@@ -51,6 +51,7 @@ extern "C" {
 #define DSB     __asm__ volatile("dsb" ::: "memory")
 #define DMB     __asm__ volatile("dmb" ::: "memory")
 #define ISB     __asm__ volatile("isb" ::: "memory")
+#define WFI     __asm__ volatile("wfi" ::: "memory")
 #define BARRIER __asm__ volatile("":::"memory")
 
 #define ARM_SYSREG_READ(REG)                    \
