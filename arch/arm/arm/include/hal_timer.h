@@ -45,7 +45,6 @@ extern VOID HalClockIrqClear(VOID);
 extern VOID HalClockInit(VOID);
 extern UINT64 HalClockGetCycles(VOID);
 extern VOID HalDelayUs(UINT32 usecs);
-extern UINT64 hi_sched_clock(VOID);
 extern UINT32 HalClockGetTickTimerCycles(VOID);
 extern VOID HalClockTickTimerReload(UINT64 cycles);
 

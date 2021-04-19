@@ -46,11 +46,6 @@ enum DmaMemType {
     DMA_NOCACHE
 };
 
-#define IS_PERIPH_ADDR(addr) \
-    (((addr) >= U32_C(PERIPH_PMM_BASE)) && ((addr) <= U32_C(PERIPH_PMM_BASE) + U32_C(PERIPH_PMM_SIZE)))
-#define IS_MEMORY_ADDR(addr) \
-    (((addr) >= U32_C(DDR_MEM_ADDR)) && ((addr) <= U32_C(DDR_MEM_ADDR) + U32_C(DDR_MEM_SIZE)))
-
 /* thread safety */
 VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMemType type);
 VOID LOS_DmaMemFree(VOID *vaddr);

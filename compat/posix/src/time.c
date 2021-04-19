@@ -280,7 +280,7 @@ STATIC VOID OsGetHwTime(struct timespec64 *hwTime)
 {
     UINT64 nowNsec;
 
-    nowNsec = hi_sched_clock();
+    nowNsec = LOS_CurrNanosec();
     hwTime->tv_sec = nowNsec / OS_SYS_NS_PER_SECOND;
     hwTime->tv_nsec = nowNsec - hwTime->tv_sec * OS_SYS_NS_PER_SECOND;
 }
@@ -865,8 +865,8 @@ clock_t clock(VOID)
     clock_t clockMsec;
     UINT64 nowNsec;
 
-    nowNsec = hi_sched_clock();
-    clockMsec = (clock_t)(nowNsec / OS_SYS_NS_PER_MS);
+    nowNsec = LOS_CurrNanosec();
+    clockMsec = (clock_t)(nowNsec / (OS_SYS_NS_PER_SECOND / CLOCKS_PER_SEC));
 
     return clockMsec;
 }

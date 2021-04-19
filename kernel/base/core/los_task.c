@@ -117,7 +117,7 @@ VOID OsSetMainTask()
 LITE_OS_SEC_TEXT WEAK VOID OsIdleTask(VOID)
 {
     while (1) {
-        Wfi();
+        WFI;
     }
 }
 

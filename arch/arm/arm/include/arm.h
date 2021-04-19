@@ -36,10 +36,6 @@
 #define CPSR_MODE_USR  0x10
 #define CPSR_MODE_MASK 0x1f
 
-#define DSB __asm__ volatile("dsb" ::: "memory")
-#define ISB __asm__ volatile("isb" ::: "memory")
-#define DMB __asm__ volatile("dmb" ::: "memory")
-
 STATIC INLINE UINT32 OsArmReadSctlr(VOID)
 {
     UINT32 val;
