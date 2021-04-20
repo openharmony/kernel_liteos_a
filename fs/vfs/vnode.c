@@ -398,6 +398,7 @@ static int Step(char **currentDir, struct Vnode **currentVnode, uint32_t flags)
         goto STEP_FINISH;
     }
 
+    (*currentVnode)->useCount++;
     if (flags & V_DUMMY) {
         ret = ProcessVirtualVnode(*currentVnode, flags, &nextVnode);
     } else {
@@ -407,6 +408,7 @@ static int Step(char **currentDir, struct Vnode **currentVnode, uint32_t flags)
             ret = -ENOSYS;
         }
     }
+    (*currentVnode)->useCount--;
 
     if (ret == LOS_OK) {
         (void)PathCacheAlloc((*currentVnode), nextVnode, nextDir, len);
