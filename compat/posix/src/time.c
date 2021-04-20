@@ -586,6 +586,7 @@ typedef struct {
 
 static VOID SwtmrProc(UINTPTR tmrArg)
 {
+    unsigned int intSave;
     int sig;
     pid_t pid;
     siginfo_t info;
@@ -610,7 +611,10 @@ static VOID SwtmrProc(UINTPTR tmrArg)
     info.si_value.sival_ptr = arg->sigev_value.sival_ptr;
 
     /* Send the signal */
+    SCHEDULER_LOCK(intSave);
     OsDispatch(pid, &info, OS_USER_KILL_PERMISSION);
+    SCHEDULER_UNLOCK(intSave);
+
     return;
 }
 
@@ -883,8 +887,10 @@ clock_t times(struct tms *buf)
 
 int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue)
 {
+    UINT32 intSave;
     LosTaskCB *taskCB = OS_TCB_FROM_TID(LOS_CurTaskIDGet());
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+    timer_t timerID = 0;
     struct itimerspec spec;
     struct itimerspec ospec;
     int ret = LOS_OK;
@@ -894,15 +900,27 @@ int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue
         set_errno(EINVAL);
         return -1;
     }
-    LOS_TaskLock();
+
     if (processCB->timerID == (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID) {
-        ret = timer_create(CLOCK_REALTIME, NULL, &processCB->timerID);
+        ret = timer_create(CLOCK_REALTIME, NULL, &timerID);
         if (ret != LOS_OK) {
-            LOS_TaskUnlock();
             return ret;
         }
     }
-    LOS_TaskUnlock();
+
+    /* The initialization of this global timer must be in spinlock
+     * timer_create cannot be located in spinlock.
+     */
+    SCHEDULER_LOCK(intSave);
+    if (processCB->timerID == (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID) {
+        processCB->timerID = timerID;
+        SCHEDULER_UNLOCK(intSave);
+    } else {
+        SCHEDULER_UNLOCK(intSave);
+        if (timerID) {
+            timer_delete(timerID);
+        }
+    }
 
     if (!ValidTimeval(&value->it_value) || !ValidTimeval(&value->it_interval)) {
         set_errno(EINVAL);
