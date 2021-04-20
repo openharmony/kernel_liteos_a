@@ -37,7 +37,6 @@
 LIST_HEAD g_vnodeHashEntrys[VNODE_HASH_BUCKETS];
 uint32_t g_vnodeHashMask = VNODE_HASH_BUCKETS - 1;
 uint32_t g_vnodeHashSize = VNODE_HASH_BUCKETS;
-uint32_t g_curVnodeSize = 0;
 
 static LosMux g_vnodeHashMux;
 
