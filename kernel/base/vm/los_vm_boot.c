@@ -38,11 +38,6 @@
 #include "los_vm_page.h"
 #include "los_arch_mmu.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 UINTPTR g_vmBootMemBase = (UINTPTR)&__bss_end;
 BOOL g_kHeapInited = FALSE;
@@ -103,8 +98,3 @@ UINT32 OsSysMemInit(VOID)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

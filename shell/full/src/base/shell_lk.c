@@ -41,11 +41,6 @@
 #include "securec.h"
 
 #ifdef LOSCFG_SHELL_LK
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 typedef enum {
     MODULE0 = 0,
@@ -228,9 +223,4 @@ VOID OsLkLoggerInit(const CHAR *str)
 SHELLCMD_ENTRY(log_shellcmd, CMD_TYPE_EX, "log", 1, (CmdCallBackFunc)CmdLog);
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 #endif

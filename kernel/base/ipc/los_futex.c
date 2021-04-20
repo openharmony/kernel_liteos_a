@@ -39,11 +39,6 @@
 #include "los_mux_pri.h"
 #include "user_copy.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -1007,8 +1002,3 @@ EXIT:
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

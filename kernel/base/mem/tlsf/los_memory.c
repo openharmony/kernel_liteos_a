@@ -42,11 +42,6 @@
 #include "los_trace.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /* Used to cut non-essential functions. */
 #define OS_MEM_FREE_BY_TASKID   0
@@ -1993,9 +1988,4 @@ BOOL OsMemIsHeapNode(const VOID *ptr)
     return FALSE;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 

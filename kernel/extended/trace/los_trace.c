@@ -42,11 +42,6 @@
 #include "stdlib.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifndef LOSCFG_KERNEL_TRACE
 VOID LOS_TraceInit(VOID)
@@ -514,8 +509,3 @@ SHELLCMD_ENTRY(trace_shellcmd, CMD_TYPE_EX, "trace", 1, (CmdCallBackFunc)OsShell
 
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

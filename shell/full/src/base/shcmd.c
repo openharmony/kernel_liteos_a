@@ -40,11 +40,6 @@
 #include "los_memory.h"
 #include "los_typedef.h"
 
-#ifdef  __cplusplus
-#if  __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define SHELL_INIT_MAGIC_FLAG 0xABABABAB
 #define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
@@ -869,8 +864,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 osCmdReg(CmdType cmdType, const CHAR *cmdKey, UINT
     return OsCmdItemCreate(cmdType, cmdKey, paraNum, cmdProc);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

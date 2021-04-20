@@ -40,11 +40,6 @@
 #include "fs_file.h"
 #include "user_copy.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define FNONBLOCK   O_NONBLOCK
 
@@ -842,8 +837,3 @@ ssize_t mq_receive(mqd_t personal, char *msg_ptr, size_t msg_len, unsigned int *
     return mq_timedreceive(personal, msg_ptr, msg_len, msg_prio, NULL);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

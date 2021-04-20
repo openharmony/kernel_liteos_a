@@ -37,11 +37,6 @@
 #include "los_swtmr_pri.h"
 #include "watchdog_if.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
 STATIC BOOL systemExcReset = FALSE;
@@ -126,8 +121,3 @@ SHELLCMD_ENTRY(panic_reset_shellcmd, CMD_TYPE_EX, "panicreset", 1, (CmdCallBackF
 #endif
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

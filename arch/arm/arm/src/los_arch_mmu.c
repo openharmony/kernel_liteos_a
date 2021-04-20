@@ -45,11 +45,6 @@
 #include "los_vm_boot.h"
 #include "los_mmu_descriptor_v6.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_MMU
 
@@ -973,9 +968,4 @@ VOID OsInitMappingStartUp(VOID)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 

@@ -37,11 +37,6 @@
 #include "los_vm_lock.h"
 #include "los_memory.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 VOID *LOS_DmaMemAlloc(DMA_ADDR_T *dmaAddr, size_t size, size_t align, enum DmaMemType type)
 {
@@ -110,8 +105,3 @@ DMA_ADDR_T LOS_DmaVaddrToPaddr(VOID *vaddr)
     return (DMA_ADDR_T)LOS_PaddrQuery(vaddr);
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

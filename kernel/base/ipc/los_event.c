@@ -39,11 +39,6 @@
 #include "los_exc.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
 {
     UINT32 intSave;
@@ -341,8 +336,3 @@ OUT:
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

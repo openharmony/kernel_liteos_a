@@ -44,11 +44,6 @@
 #include "los_process_pri.h"
 #include "fs/path_cache.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -264,8 +259,3 @@ SHELLCMD_ENTRY(pmm_shellcmd, CMD_TYPE_SHOW, "pmm", 0, (CmdCallBackFunc)OsShellCm
 #endif
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

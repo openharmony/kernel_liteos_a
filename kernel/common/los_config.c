@@ -121,11 +121,6 @@
 #include "los_quick_start_pri.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 STATIC SystemRebootFunc g_rebootHook = NULL;
 
@@ -418,8 +413,3 @@ UINT32 OsSystemInit(VOID)
     return 0;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

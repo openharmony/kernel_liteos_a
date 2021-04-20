@@ -42,11 +42,6 @@
 #include "mmc/block.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 los_disk g_sysDisk[SYS_MAX_DISK];
 los_part g_sysPart[SYS_MAX_PART];
@@ -1699,8 +1694,3 @@ INT32 EraseDiskByID(UINT32 diskID, size_t startSector, UINT32 sectors)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

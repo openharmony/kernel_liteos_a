@@ -35,11 +35,6 @@
 #include "unistd.h"
 #include "los_task_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int sched_get_priority_min(int policy)
 {
@@ -143,8 +138,3 @@ int __sched_cpucount(size_t set_size, const cpu_set_t* set)
     return count;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

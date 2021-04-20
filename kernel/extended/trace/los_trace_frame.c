@@ -30,11 +30,6 @@
  */
 #include "los_trace_frame.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_TRACE
 
@@ -125,8 +120,3 @@ INT32 OsMemInfoTrace(UINT8 *inputBuffer, UINT32 bufLen, va_list ap)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

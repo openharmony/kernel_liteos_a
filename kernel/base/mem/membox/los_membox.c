@@ -33,11 +33,6 @@
 #include "los_hwi.h"
 #include "los_spinlock.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_AARCH64
 #define OS_MEMBOX_MAGIC 0xa55a5aa5a55a5aa5
@@ -230,8 +225,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_MemboxStatisticsGet(const VOID *boxMem, UINT32
     return LOS_OK;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

@@ -36,11 +36,6 @@
 #include "los_vm_dump.h"
 #include "los_process_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -639,8 +634,3 @@ VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

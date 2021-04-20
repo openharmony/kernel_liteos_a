@@ -50,11 +50,6 @@
 #include "los_swtmr_pri.h"
 #include "los_sys_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /*
  * Do a time package defined return. This requires the error code
@@ -991,8 +986,3 @@ VOID OsGetVdsoTime(VdsoDataPage *vdsoDataPage)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

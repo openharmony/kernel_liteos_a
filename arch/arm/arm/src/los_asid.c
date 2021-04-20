@@ -39,11 +39,6 @@
 #include "los_spinlock.h"
 #include "los_mmu_descriptor_v6.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -76,8 +71,3 @@ VOID OsFreeAsid(UINT32 asid)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

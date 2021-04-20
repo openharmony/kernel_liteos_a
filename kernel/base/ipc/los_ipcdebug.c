@@ -31,11 +31,6 @@
 
 #include "los_ipcdebug_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #if defined(LOSCFG_DEBUG_SEMAPHORE) || defined(LOSCFG_DEBUG_QUEUE)
 
@@ -83,8 +78,3 @@ VOID OsArraySortByTime(UINT32 *sortArray, UINT32 start, UINT32 end, const IpcSor
 
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

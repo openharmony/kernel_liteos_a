@@ -48,11 +48,6 @@
 #include "telnet_pri.h"
 
 #include "fs/vnode.h"
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /* event: there are more commands left in the FIFO to run */
 #define TELNET_EVENT_MORE_CMD   0x01
@@ -412,8 +407,3 @@ INT32 TelnetDevDeinit(VOID)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

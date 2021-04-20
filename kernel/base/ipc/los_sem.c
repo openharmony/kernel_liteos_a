@@ -39,11 +39,6 @@
 #include "los_mp.h"
 #include "los_percpu_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #if (LOSCFG_BASE_IPC_SEM == YES)
 
@@ -290,8 +285,3 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)
 }
 #endif /* (LOSCFG_BASE_IPC_SEM == YES) */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

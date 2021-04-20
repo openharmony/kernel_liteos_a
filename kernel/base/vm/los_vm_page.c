@@ -35,11 +35,6 @@
 #include "los_vm_boot.h"
 #include "los_vm_filemap.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -132,8 +127,3 @@ LosVmPage *LOS_VmPageGet(PADDR_T paddr)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

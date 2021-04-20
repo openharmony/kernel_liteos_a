@@ -53,11 +53,6 @@
 #endif
 #include "los_sched_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif
-#endif /* __cplusplus */
 
 #define OS_PROCESS_MEM_INFO 0x2U
 #define OS_PROCESS_INFO_LEN          (g_processMaxNum * (sizeof(LosProcessCB)))
@@ -609,8 +604,3 @@ TASK_HELP:
 SHELLCMD_ENTRY(task_shellcmd, CMD_TYPE_EX, "task", 1, (CmdCallBackFunc)OsShellCmdDumpTask);
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif /* __cplusplus */

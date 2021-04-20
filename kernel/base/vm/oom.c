@@ -44,11 +44,6 @@
 #include "console.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -252,8 +247,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OomTaskInit(VOID)
 }
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

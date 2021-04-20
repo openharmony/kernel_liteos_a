@@ -37,11 +37,6 @@
 #include "shcmd.h"
 #include "shell.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 VOID OsCmdCpupOperateOneParam(UINT32 mode)
 {
@@ -141,9 +136,4 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdCpup(INT32 argc, const CHAR **argv)
 }
 
 SHELLCMD_ENTRY(cpup_shellcmd, CMD_TYPE_EX, "cpup", XARGS, (CmdCallBackFunc)OsShellCmdCpup);
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 #endif /* LOSCFG_SHELL */

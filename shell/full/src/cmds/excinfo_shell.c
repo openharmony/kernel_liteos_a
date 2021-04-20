@@ -34,11 +34,6 @@
 #ifdef LOSCFG_SHELL_EXCINFO
 #include "los_excinfo_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 INT32 osShellCmdReadExcInfo(INT32 argc, CHAR **argv)
 {
@@ -63,9 +58,4 @@ INT32 osShellCmdReadExcInfo(INT32 argc, CHAR **argv)
     return LOS_OK;
 }
 SHELLCMD_ENTRY(readExcInfo_shellcmd, CMD_TYPE_EX, "excInfo", 0, (CmdCallBackFunc)osShellCmdReadExcInfo);
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 #endif

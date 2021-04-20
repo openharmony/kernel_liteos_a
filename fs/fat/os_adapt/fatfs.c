@@ -56,11 +56,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 struct VnodeOps fatfs_vops; /* forward define */
 struct file_operations_vfs fatfs_fops;
@@ -2082,9 +2077,4 @@ struct file_operations_vfs fatfs_fops = {
 
 FSMAP_ENTRY(fat_fsmap, "vfat", fatfs_mops, FALSE, TRUE);
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 #endif /* LOSCFG_FS_FAT */

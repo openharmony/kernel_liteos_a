@@ -33,11 +33,6 @@
 #include "fcntl.h"
 #include "linux/kernel.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 static unsigned long g_randomMax =  0x7FFFFFFF;
 
@@ -121,8 +116,3 @@ int DevRandomRegister(void)
     return register_driver("/dev/random", &g_ranDevOps, 0666, 0); /* 0666: file mode */
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

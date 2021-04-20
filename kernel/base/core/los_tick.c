@@ -36,11 +36,6 @@
 #include "los_vdso.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 LITE_OS_SEC_DATA_INIT UINT32 g_sysClock;
 LITE_OS_SEC_DATA_INIT UINT32 g_tickPerSecond;
@@ -69,8 +64,3 @@ LITE_OS_SEC_TEXT VOID OsTickHandler(VOID)
     OsSchedTick();
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

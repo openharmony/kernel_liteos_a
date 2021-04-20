@@ -32,11 +32,6 @@
 #include "pthread.h"
 #include "pprivate.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int pthread_attr_init(pthread_attr_t *attr)
 {
@@ -280,8 +275,3 @@ int pthread_attr_getaffinity_np(const pthread_attr_t* attr, size_t cpusetsize, c
     return ENOERR;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

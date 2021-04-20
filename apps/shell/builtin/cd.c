@@ -37,11 +37,6 @@
 #include "shcmd.h"
 #include "sherr.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 int Chdir(const char *tgtDir)
 {
@@ -59,8 +54,3 @@ int Chdir(const char *tgtDir)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

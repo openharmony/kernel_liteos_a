@@ -37,11 +37,6 @@
 #include "los_hwi_pri.h"
 #include "shcmd.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
 STATIC CPUP_INFO_S hwiCpupAll[OS_HWI_MAX_NUM];
@@ -120,9 +115,4 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)
 
 SHELLCMD_ENTRY(hwi_shellcmd, CMD_TYPE_EX, "hwi", 0, (CmdCallBackFunc)OsShellCmdHwi);
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 #endif /* LOSCFG_SHELL */

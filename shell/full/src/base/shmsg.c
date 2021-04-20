@@ -46,11 +46,6 @@
 #include "console.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 CHAR *ShellGetInputBuf(ShellCB *shellCB)
 {
@@ -465,8 +460,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 ShellEntryInit(ShellCB *shellCB)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

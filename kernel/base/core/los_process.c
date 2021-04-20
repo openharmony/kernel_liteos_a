@@ -54,11 +54,6 @@
 #include "los_vm_phys.h"
 #include "los_vm_syscall.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL;
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;
@@ -1856,8 +1851,3 @@ LITE_OS_SEC_TEXT UINTPTR OsGetSigHandler(VOID)
     return OsCurrProcessGet()->sigHandler;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif

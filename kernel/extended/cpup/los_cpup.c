@@ -34,11 +34,6 @@
 #include "los_base.h"
 #include "los_swtmr.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_CPUP
 
@@ -576,8 +571,3 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_GetAllIrqCpuUsage(UINT16 mode, CPUP_INFO_S *cp
 #endif
 
 #endif /* LOSCFG_KERNEL_CPUP */
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

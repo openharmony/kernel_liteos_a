@@ -45,11 +45,6 @@
 #include "los_memory_pri.h"
 #include "los_vm_boot.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -1286,9 +1281,4 @@ VOID LOS_KernelFree(VOID *ptr)
     }
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 

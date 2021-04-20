@@ -45,11 +45,6 @@
 #include "los_task_pri.h"
 #include "capability_api.h"
 #include "fs/vnode.h"
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #define MAX_DIR_ENT 1024
 int fstat(int fd, struct stat *buf)
@@ -711,8 +706,3 @@ mode_t SysUmask(mode_t mask)
     return oldUmask;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

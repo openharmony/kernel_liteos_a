@@ -35,11 +35,6 @@
 #include "los_memory.h"
 #include "los_vm_map.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 size_t arch_copy_from_user(void *dst, const void *src, size_t len)
 {
@@ -114,9 +109,4 @@ INT32 LOS_UserMemClear(unsigned char *buf, UINT32 len)
     return ret;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 

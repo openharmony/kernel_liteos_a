@@ -47,11 +47,6 @@
 #include "los_stat_pri.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 
 #define OS_32BIT_MAX               0xFFFFFFFFUL
@@ -1137,8 +1132,3 @@ LOS_DL_LIST *OsSchedLockPendFindPos(const LosTaskCB *runTask, LOS_DL_LIST *lockL
     return node;
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

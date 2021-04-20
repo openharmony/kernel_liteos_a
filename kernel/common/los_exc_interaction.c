@@ -124,10 +124,5 @@ VOID OsExcInteractionTaskKeep(VOID)
     (VOID)LOS_TaskDelete(OsCurrTaskGet()->taskID);
     /* unreachable */
 }
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #endif

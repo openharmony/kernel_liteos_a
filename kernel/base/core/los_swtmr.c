@@ -36,11 +36,6 @@
 #include "los_process_pri.h"
 #include "los_sched_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
 #if (LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0)
@@ -529,8 +524,3 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
 
 #endif /* (LOSCFG_BASE_CORE_SWTMR == YES) */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif
-#endif

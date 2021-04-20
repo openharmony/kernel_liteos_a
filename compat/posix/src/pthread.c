@@ -38,11 +38,6 @@
 #include "los_process_pri.h"
 #include "los_sched_pri.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 /*
  * Array of pthread control structures. A pthread_t object is
@@ -809,8 +804,3 @@ int pthread_getaffinity_np(pthread_t thread, size_t cpusetsize, cpu_set_t* cpuse
     }
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */

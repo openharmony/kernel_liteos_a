@@ -39,11 +39,6 @@
 #define QUICKSTART_UNREGISTER   _IO(QUICKSTART_IOC_MAGIC, 1)
 #define QUICKSTART_NODE         "/dev/quickstart"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
 static int QuickstartOpen(struct file *filep)
 {
@@ -110,8 +105,3 @@ int DevQuickStartRegister(void)
     return register_driver(QUICKSTART_NODE, &g_quickstartDevOps, 0666, 0); /* 0666: file mode */
 }
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
