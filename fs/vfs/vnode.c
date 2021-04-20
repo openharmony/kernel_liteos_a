@@ -165,6 +165,7 @@ int VnodeAlloc(struct VnodeOps *vop, struct Vnode **newVnode)
     VnodeDrop();
 
     *newVnode = vnode;
+    PRINTK("%s-%d: vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
 
     return LOS_OK;
 }
@@ -180,11 +181,11 @@ int VnodeFree(struct Vnode *vnode)
     VnodeHold();
     for (int i = 0; i < g_coveredVnodeTop; i++) {
         if (vnode == g_coveredVnodeList[i]) {
-            PRINT_ERR("%s-%d: reclaim mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
+            PRINTK("%s-%d: reclaim mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
         }
     }
     if (g_parentOfCoveredVnode == vnode) {
-        PRINT_ERR("%s-%d: reclaim parent of mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
+        PRINTK("%s-%d: reclaim parent of mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
     }
     if (vnode->useCount > 0) {
         VnodeDrop();
@@ -204,6 +205,7 @@ int VnodeFree(struct Vnode *vnode)
         vnode->vop->Reclaim(vnode);
     }
 
+    PRINTK("%s-%d: vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, vnode, vnode->useCount, vnode->data);
     LOS_ListDelete(&vnode->actFreeEntry);
     memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
     LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);
