@@ -586,6 +586,7 @@ typedef struct {
 
 static VOID SwtmrProc(UINTPTR tmrArg)
 {
+    unsigned int intSave;
     int sig;
     pid_t pid;
     siginfo_t info;
@@ -610,7 +611,10 @@ static VOID SwtmrProc(UINTPTR tmrArg)
     info.si_value.sival_ptr = arg->sigev_value.sival_ptr;
 
     /* Send the signal */
+    SCHEDULER_LOCK(intSave);
     OsDispatch(pid, &info, OS_USER_KILL_PERMISSION);
+    SCHEDULER_UNLOCK(intSave);
+
     return;
 }
 
