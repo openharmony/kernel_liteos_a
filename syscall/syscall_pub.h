@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include "los_memory.h"
+#include "los_vm_lock.h"
 #include "los_vm_map.h"
 #include "user_copy.h"
 
@@ -47,11 +48,15 @@ extern void *DupUserMem(const void *ptr, size_t len, int needCopy);
                 __VA_ARGS__; \
                 return -get_errno(); \
             } \
-            if (CheckRegion(OsCurrProcessGet()->vmSpace, (VADDR_T)(UINTPTR)ptr, len) == -1) { \
+            LosVmSpace *__aspace = OsCurrProcessGet()->vmSpace; \
+            (VOID)LOS_MuxAcquire(&__aspace->regionMux); \
+            if (CheckRegion(__aspace, (VADDR_T)(UINTPTR)ptr, len) == -1) { \
+                (VOID)LOS_MuxRelease(&__aspace->regionMux); \
                 set_errno(EFAULT); \
                 __VA_ARGS__; \
                 return -get_errno(); \
             } \
+            (VOID)LOS_MuxRelease(&__aspace->regionMux); \
         } \
     } while (0)
 
