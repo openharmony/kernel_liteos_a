@@ -312,11 +312,11 @@ extern UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 events);
 
 /**
  * @ingroup los_event
- * @brief Destroy a event.
+ * @brief Destroy an event.
  *
  * @par Description:
  * <ul>
- * <li>This API is used to Destroy a event.</li>
+ * <li>This API is used to Destroy an event.</li>
  * </ul>
  * @attention
  * <ul>
