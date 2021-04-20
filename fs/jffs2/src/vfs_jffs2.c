@@ -145,6 +145,7 @@ int VfsJffs2Bind(struct Mount *mnt, struct Vnode *blkDriver, const void *data)
 
     g_jffs2PartList[partNo] = blkDriver;
 
+    PRINTK("%s-%d: vnode=%p, inode=%p, i_nlink=%d\n", __FUNCTION__, __LINE__, pv, rootNode, rootNode->i_nlink);
     LOS_MuxUnlock(&g_jffs2FsLock);
 
     return 0;
@@ -231,6 +232,7 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
     (void)VfsHashInsert(newVnode, node->i_ino);
 
     *ppVnode = newVnode;
+    PRINTK("%s-%d: vnode=%p, inode=%p, i_nlink=%d path=%s\n", __FUNCTION__, __LINE__, newVnode, node, node->i_nlink, path);
 
     LOS_MuxUnlock(&g_jffs2FsLock);
     return 0;
@@ -269,6 +271,7 @@ int VfsJffs2Create(struct Vnode *parentVnode, const char *path, int mode, struct
     (void)VfsHashInsert(newVnode, newNode->i_ino);
 
     *ppVnode = newVnode;
+    PRINTK("%s-%d: vnode=%p, inode=%p, i_nlink=%d path=%s\n", __FUNCTION__, __LINE__, newVnode, newNode, newNode->i_nlink, path);
 
     LOS_MuxUnlock(&g_jffs2FsLock);
     return 0;
@@ -539,6 +542,7 @@ int VfsJffs2Mkdir(struct Vnode *parentNode, const char *dirName, mode_t mode, st
     *ppVnode = newVnode;
 
     (void)VfsHashInsert(newVnode, node->i_ino);
+    PRINTK("%s-%d: vnode=%p, inode=%p, i_nlink=%d path=%s\n", __FUNCTION__, __LINE__, newVnode, node, node->i_nlink, dirName);
 
     LOS_MuxUnlock(&g_jffs2FsLock);
 
