@@ -479,6 +479,7 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
         ret = mkdir("/storage", VFAT_STORAGE_MOUNT_DIR_MODE);
         if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
             PRINT_ERR("Failed to mkdir /storage, errno %d: %s\n", err, strerror(err));
+            return ret;
         } else {
             CHAR emmcStorageDev[DISK_NAME] = {0};
             if (snprintf_s(emmcStorageDev, sizeof(emmcStorageDev), sizeof(emmcStorageDev) - 1,
@@ -505,6 +506,7 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
         ret = mkdir("/storage", DEFAULT_STORAGE_MOUNT_DIR_MODE);
         if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
             PRINT_ERR("Failed to mkdir /storage, errno %d: %s\n", err, strerror(err));
+            return ret;
         } else {
             ret = mount(DEV_STORAGE_PATH, "/storage", fsType, 0, NULL);
             if (ret != LOS_OK) {
