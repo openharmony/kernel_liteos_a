@@ -145,7 +145,6 @@ int VfsJffs2Bind(struct Mount *mnt, struct Vnode *blkDriver, const void *data)
 
     g_jffs2PartList[partNo] = blkDriver;
 
-    PRINTK("%s-%d: vnode=%p, inode=%p, i_nlink=%d\n", __FUNCTION__, __LINE__, pv, rootNode, rootNode->i_nlink);
     LOS_MuxUnlock(&g_jffs2FsLock);
 
     return 0;
@@ -220,6 +219,9 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
 
     Jffs2SetVtype(node, newVnode);
     node->i_vnode = newVnode;
+    if (&g_jffs2Vops != parentVnode->vop) {
+        LOS_Panic("jffs2 vop failed");
+    }
     newVnode->vop = parentVnode->vop;
     newVnode->fop = parentVnode->fop;
     newVnode->data = node;
@@ -232,7 +234,6 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
     (void)VfsHashInsert(newVnode, node->i_ino);
 
     *ppVnode = newVnode;
-    PRINTK("%s-%d: vnode=%p, inode=%p, i_nlink=%d path=%s\n", __FUNCTION__, __LINE__, newVnode, node, node->i_nlink, path);
 
     LOS_MuxUnlock(&g_jffs2FsLock);
     return 0;
@@ -260,6 +261,9 @@ int VfsJffs2Create(struct Vnode *parentVnode, const char *path, int mode, struct
     newVnode->type = VNODE_TYPE_REG;
     newNode->i_vnode = newVnode;
     newVnode->vop = parentVnode->vop;
+    if (&g_jffs2Vops != parentVnode->vop) {
+        LOS_Panic("jffs2 vop failed");
+    }
     newVnode->fop = parentVnode->fop;
     newVnode->data = newNode;
     newVnode->parent = parentVnode;
@@ -271,7 +275,6 @@ int VfsJffs2Create(struct Vnode *parentVnode, const char *path, int mode, struct
     (void)VfsHashInsert(newVnode, newNode->i_ino);
 
     *ppVnode = newVnode;
-    PRINTK("%s-%d: vnode=%p, inode=%p, i_nlink=%d path=%s\n", __FUNCTION__, __LINE__, newVnode, newNode, newNode->i_nlink, path);
 
     LOS_MuxUnlock(&g_jffs2FsLock);
     return 0;
@@ -531,6 +534,9 @@ int VfsJffs2Mkdir(struct Vnode *parentNode, const char *dirName, mode_t mode, st
     newVnode->type = VNODE_TYPE_DIR;
     node->i_vnode = newVnode;
     newVnode->vop = parentNode->vop;
+    if (&g_jffs2Vops != parentVnode->vop) {
+        LOS_Panic("jffs2 vop failed");
+    }
     newVnode->fop = parentNode->fop;
     newVnode->data = node;
     newVnode->parent = parentNode;
@@ -542,7 +548,6 @@ int VfsJffs2Mkdir(struct Vnode *parentNode, const char *dirName, mode_t mode, st
     *ppVnode = newVnode;
 
     (void)VfsHashInsert(newVnode, node->i_ino);
-    PRINTK("%s-%d: vnode=%p, inode=%p, i_nlink=%d path=%s\n", __FUNCTION__, __LINE__, newVnode, node, node->i_nlink, dirName);
 
     LOS_MuxUnlock(&g_jffs2FsLock);
 
@@ -597,8 +602,6 @@ int VfsJffs2Chattr(struct Vnode *pVnode, struct IATTR *attr)
     return ret;
 }
 
-extern struct Vnode *g_parentOfCoveredVnode;
-
 int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, char *path)
 {
     int ret;
@@ -609,10 +612,6 @@ int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, char *pa
 
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 
-    if (parentVnode->data == NULL) {
-        PRINT_ERR("%s-%d: rmdir parent of mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, parentVnode, parentVnode->useCount, parentVnode->data);
-        PRINT_ERR("%s-%d: global rmdir parent of mounted vnode. vnode=%p userCount=%d inode=%p\n", __FUNCTION__, __LINE__, g_parentOfCoveredVnode, g_parentOfCoveredVnode->useCount, g_parentOfCoveredVnode->data);
-    }
     ret = jffs2_rmdir((struct jffs2_inode *)parentVnode->data, (struct jffs2_inode *)targetVnode->data,
                       (const unsigned char *)path);
 
