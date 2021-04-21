@@ -183,7 +183,7 @@ extern UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook);
  * los_exc.h: the header file that contains the API declaration.
  * @see None.
  */
-VOID LOS_Panic(const CHAR *fmt, ...) NORETURN;
+NORETURN VOID LOS_Panic(const CHAR *fmt, ...);
 
 /**
  * @ingroup los_exc
