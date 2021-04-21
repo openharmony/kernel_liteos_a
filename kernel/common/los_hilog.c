@@ -39,7 +39,7 @@
 #include "los_vm_lock.h"
 #include "user_copy.h"
 
-#define HILOG_BUFFER 1024
+#define HILOG_BUFFER 4096
 #define DRIVER_MODE 0666
 #define HILOG_DRIVER "/dev/hilog"
 
