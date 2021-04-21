@@ -429,9 +429,8 @@ STATIC VOID OsMountUserdata(const CHAR *fsType)
     INT32 err;
     const CHAR *userdataDir = "/userdata";
     ret = mkdir(userdataDir, VFAT_STORAGE_MOUNT_DIR_MODE);
-    if (ret != LOS_OK) {
-        err = get_errno();
-        PRINT_ERR("Failed to reserve vnode /userdata, errno %d: %s\n", err, strerror(err));
+    if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
+        PRINT_ERR("Failed to mkdir /userdata, errno %d: %s\n", err, strerror(err));
         return;
     }
     CHAR emmcUserdataDev[DISK_NAME] = {0};
@@ -479,7 +478,7 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
 #ifdef LOSCFG_STORAGE_EMMC
         ret = mkdir("/storage", VFAT_STORAGE_MOUNT_DIR_MODE);
         if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
-            PRINT_ERR("Failed to reserve vnode /storage, errno %d: %s\n", err, strerror(err));
+            PRINT_ERR("Failed to mkdir /storage, errno %d: %s\n", err, strerror(err));
         } else {
             CHAR emmcStorageDev[DISK_NAME] = {0};
             if (snprintf_s(emmcStorageDev, sizeof(emmcStorageDev), sizeof(emmcStorageDev) - 1,
@@ -505,7 +504,7 @@ STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
 #if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND) || defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
         ret = mkdir("/storage", DEFAULT_STORAGE_MOUNT_DIR_MODE);
         if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
-            PRINT_ERR("Failed to reserve vnode /storage, errno %d: %s\n", err, strerror(err));
+            PRINT_ERR("Failed to mkdir /storage, errno %d: %s\n", err, strerror(err));
         } else {
             ret = mount(DEV_STORAGE_PATH, "/storage", fsType, 0, NULL);
             if (ret != LOS_OK) {
