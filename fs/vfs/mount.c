@@ -29,7 +29,6 @@
  */
 
 #include "fs/mount.h"
-#include "los_mux.h"
 #include "fs/vfs_util.h"
 #include "fs/path_cache.h"
 #include "fs/vnode.h"
