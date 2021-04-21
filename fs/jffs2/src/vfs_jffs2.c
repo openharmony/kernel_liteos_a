@@ -534,7 +534,7 @@ int VfsJffs2Mkdir(struct Vnode *parentNode, const char *dirName, mode_t mode, st
     newVnode->type = VNODE_TYPE_DIR;
     node->i_vnode = newVnode;
     newVnode->vop = parentNode->vop;
-    if (&g_jffs2Vops != parentVnode->vop) {
+    if (&g_jffs2Vops != parentNode->vop) {
         LOS_Panic("jffs2 vop failed");
     }
     newVnode->fop = parentNode->fop;
