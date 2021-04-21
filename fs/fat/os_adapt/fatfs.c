@@ -806,7 +806,10 @@ static FRESULT realloc_cluster(FILINFO *finfo, FFOBJID *obj, FSIZE_t size)
     if ((cclust == BAD_CLUSTER) || (cclust == DISK_ERROR)) {
         return FR_DISK_ERR;
     }
-    if (cclust != END_OF_FILE) { /* Remove extra cluster if existing */
+    if ((obj->fs->fs_type == FS_FAT12 && cclust != FAT12_END_OF_FILE) ||
+        (obj->fs->fs_type == FS_FAT16 && cclust != FAT16_END_OF_FILE) ||
+        (obj->fs->fs_type == FS_FAT32 && cclust != FAT32_END_OF_FILE)) {
+        /* Remove extra cluster if existing */
         result = remove_chain(obj, cclust, pclust);
         if (result != FR_OK) {
             return result;
