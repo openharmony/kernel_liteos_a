@@ -205,6 +205,7 @@ int VfsJffs2Lookup(struct Vnode *parentVnode, const char *path, int len, struct 
             if (newVnode->data == NULL) {
                 LOS_Panic("#####VfsHashGet error#####\n");
             }
+            newVnode->parent = parentVnode;
             *ppVnode = newVnode;
             return 0;
         }
