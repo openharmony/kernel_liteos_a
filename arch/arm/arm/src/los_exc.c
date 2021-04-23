@@ -663,6 +663,7 @@ VOID BackTraceSub(UINTPTR regFP)
     UINTPTR backFP = regFP;
     UINT32 count = 0;
     VADDR_T kvaddr;
+    LosProcessCB *runProcess = OsCurrProcessGet();
 
     if (FindSuitableStack(regFP, &stackStart, &stackEnd, &kvaddr) == FALSE) {
         PrintExcInfo("traceback error fp = 0x%x\n", regFP);
@@ -701,11 +702,12 @@ VOID BackTraceSub(UINTPTR regFP)
 #ifdef LOSCFG_KERNEL_VM
         LosVmMapRegion *region = NULL;
         if (LOS_IsUserAddress((VADDR_T)backLR) == TRUE) {
-            region = LOS_RegionFind(OsCurrProcessGet()->vmSpace, (VADDR_T)backLR);
+            region = LOS_RegionFind(runProcess->vmSpace, (VADDR_T)backLR);
         }
         if (region != NULL) {
             PrintExcInfo("traceback %u -- lr = 0x%x    fp = 0x%x lr in %s --> 0x%x\n", count, backLR, backFP,
-                         OsGetRegionNameOrFilePath(region), backLR - region->range.base);
+                         OsGetRegionNameOrFilePath(region),
+                         backLR - OsGetTextRegionBase(region, runProcess));
             region = NULL;
         } else
 #endif
