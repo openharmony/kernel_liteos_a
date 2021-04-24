@@ -1152,7 +1152,7 @@ INT32 los_disk_cache_clear(INT32 drvID)
 
     result = OsSdSync(drvID);
     if (result != 0) {
-        PRINTK("[ERROR]disk cache clear failed!n");
+        PRINTK("[ERROR]disk_cache_clear SD sync failed!\n");
         return result;
     }
 
