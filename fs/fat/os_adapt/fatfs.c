@@ -313,6 +313,7 @@ int fatfs_lookup(struct Vnode *parent, const char *path, int len, struct Vnode *
             goto ERROR_UNLOCK;
         }
     } else {
+        vp->parent = parent;
         free(dfp); /* hash hit dfp is no needed */
     }
 
