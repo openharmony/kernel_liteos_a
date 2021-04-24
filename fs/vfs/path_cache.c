@@ -134,7 +134,6 @@ int PathCacheFree(struct PathCache *nc)
     LOS_ListDelete(&nc->hashEntry);
     LOS_ListDelete(&nc->parentEntry);
     LOS_ListDelete(&nc->childEntry);
-    free(nc->name);
     free(nc);
 
     return LOS_OK;
