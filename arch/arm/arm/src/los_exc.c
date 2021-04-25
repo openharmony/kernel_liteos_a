@@ -185,18 +185,32 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
 #ifdef LOSCFG_KERNEL_VM
 UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT32 fsr)
 {
-    PRINT_INFO("page fault entry!!!\n");
-    BOOL instruction_fault = FALSE;
+    BOOL instructionFault = FALSE;
     UINT32 pfFlags = 0;
     UINT32 fsrFlag;
     BOOL write = FALSE;
+    UINT32 ret;
+#ifdef LOSCFG_KERNEL_SMP
+    BOOL irqEnable = TRUE;
+#endif
 
+    PRINT_INFO("page fault entry!!!\n");
     if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
         return LOS_ERRNO_VM_NOT_FOUND;
     }
-
+#ifdef LOSCFG_KERNEL_SMP
+    irqEnable = !(LOS_SpinHeld(&g_taskSpin) && (OsPercpuGet()->taskLockCnt != 0));
+    if (irqEnable) {
+        ArchIrqEnable();
+    } else {
+        PrintExcInfo("[ERR][%s] may be held scheduler lock when entering [%s]\n",
+                     OsCurrTaskGet()->taskName, __FUNCTION__);
+    }
+#else
+    ArchIrqEnable();
+#endif
     if (excType == OS_EXCEPT_PREFETCH_ABORT) {
-        instruction_fault = TRUE;
+        instructionFault = TRUE;
     } else {
         write = !!BIT_GET(fsr, WNR_BIT);
     }
@@ -214,13 +228,23 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             BOOL user = (frame->regCPSR & CPSR_MODE_MASK) == CPSR_MODE_USR;
             pfFlags |= write ? VM_MAP_PF_FLAG_WRITE : 0;
             pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
-            pfFlags |= instruction_fault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
+            pfFlags |= instructionFault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
             pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT;
-            return OsVmPageFaultHandler(far, pfFlags, frame);
+            ret = OsVmPageFaultHandler(far, pfFlags, frame);
+            break;
         }
         default:
-            return LOS_ERRNO_VM_NOT_FOUND;
+            ret = LOS_ERRNO_VM_NOT_FOUND;
+            break;
     }
+#ifdef LOSCFG_KERNEL_SMP
+    if (irqEnable) {
+        ArchIrqDisable();
+    }
+#else
+    ArchIrqDisable();
+#endif
+    return ret;
 }
 #endif
 

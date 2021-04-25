@@ -205,9 +205,7 @@ _osExceptSwiHdl:
     PUSH_FPU_REGS R1
 
     MOV     FP, #0                                           @ Init frame pointer
-    CPSIE   I
     BLX     OsArmA32SyscallHandle
-    CPSID   I
 
     POP_FPU_REGS R1
     ADD     SP, SP,#4
