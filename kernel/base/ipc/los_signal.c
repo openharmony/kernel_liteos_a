@@ -270,8 +270,12 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
         .receivedTcb = NULL
     };
 
+    if (info.sigInfo == NULL){
+        return -EFAULT;
+    }
+
     /* visit all taskcb and dispatch signal */
-    if ((info.sigInfo != NULL) && (info.sigInfo->si_signo == SIGKILL)) {
+    if (info.sigInfo->si_signo == SIGKILL) {
         (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);
         OsSigAddSet(&spcb->sigShare, info.sigInfo->si_signo);
         OsWaitSignalToWakeProcess(spcb);
