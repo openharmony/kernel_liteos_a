@@ -93,8 +93,11 @@ int fatfs_2_vfs(int result)
 
         case FR_NO_FILE:
         case FR_NO_PATH:
-        case FR_NO_FILESYSTEM:
             status = ENOENT;
+            break;
+
+        case FR_NO_FILESYSTEM:
+            status = ENOTSUP;
             break;
 
         case FR_INVALID_NAME:
