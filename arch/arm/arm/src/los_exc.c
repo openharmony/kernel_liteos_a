@@ -190,16 +190,13 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
     UINT32 fsrFlag;
     BOOL write = FALSE;
     UINT32 ret;
-#ifdef LOSCFG_KERNEL_SMP
-    BOOL irqEnable = TRUE;
-#endif
 
     PRINT_INFO("page fault entry!!!\n");
     if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
         return LOS_ERRNO_VM_NOT_FOUND;
     }
-#ifdef LOSCFG_KERNEL_SMP
-    irqEnable = !(LOS_SpinHeld(&g_taskSpin) && (OsPercpuGet()->taskLockCnt != 0));
+#if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
+    BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && (OsPercpuGet()->taskLockCnt != 0));
     if (irqEnable) {
         ArchIrqEnable();
     } else {
@@ -237,7 +234,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             ret = LOS_ERRNO_VM_NOT_FOUND;
             break;
     }
-#ifdef LOSCFG_KERNEL_SMP
+#if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
     if (irqEnable) {
         ArchIrqDisable();
     }
