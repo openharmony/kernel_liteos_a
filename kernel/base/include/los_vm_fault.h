@@ -38,13 +38,15 @@
 #define __LOS_VM_FAULT_H__
 
 #include "los_typedef.h"
-#include "los_exc.h"
+#include "los_hw_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+
+typedef IrqContext PageFaultContext;
 
 typedef struct {
     VADDR_T excAddr;
@@ -56,7 +58,7 @@ typedef struct {
 #define     VM_MAP_PF_FLAG_INSTRUCTION      (1U << 2)
 #define     VM_MAP_PF_FLAG_NOT_PRESENT      (1U << 3)
 
-STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame);
+STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, PageFaultContext *frame);
 #ifdef __cplusplus
 #if __cplusplus
 }

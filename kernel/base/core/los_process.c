@@ -1349,8 +1349,6 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
 
 LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize)
 {
-    LosTaskCB *taskCB = NULL;
-    TaskContext *taskContext = NULL;
     UINT32 intSave;
 
     if (entry == NULL) {
@@ -1366,14 +1364,17 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
     }
 
     SCHEDULER_LOCK(intSave);
-    taskCB = OsCurrTaskGet();
+    LosTaskCB *taskCB = OsCurrTaskGet();
 
     taskCB->userMapBase = mapBase;
     taskCB->userMapSize = mapSize;
     taskCB->taskEntry = (TSK_ENTRY_FUNC)entry;
 
-    taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize, (VOID *)taskCB->topOfStack, FALSE);
-    OsUserTaskStackInit(taskContext, taskCB->taskEntry, sp);
+    TaskContext *taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize,
+                                                              (VOID *)taskCB->topOfStack, FALSE);
+    OsUserTaskStackInit(taskContext, (UINTPTR)taskCB->taskEntry, sp);
+    taskCB->stackPointer = (VOID *)taskContext;
+    OsTaskContextLoad(taskCB);
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
@@ -1555,7 +1556,7 @@ STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, 
 
 STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR *name, UINTPTR entry, UINT32 size)
 {
-    LosTaskCB *childTaskCB = NULL;
+    LosTaskCB *runTask = OsCurrTaskGet();
     TSK_INIT_PARAM_S childPara = { 0 };
     UINT32 ret;
     UINT32 intSave;
@@ -1571,8 +1572,8 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
         return LOS_ENOMEM;
     }
 
-    childTaskCB = OS_TCB_FROM_TID(taskID);
-    childTaskCB->taskStatus = OsCurrTaskGet()->taskStatus;
+    LosTaskCB *childTaskCB = OS_TCB_FROM_TID(taskID);
+    childTaskCB->taskStatus = runTask->taskStatus;
     if (childTaskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
         childTaskCB->taskStatus &= ~OS_TASK_STATUS_RUNNING;
     } else {
@@ -1585,7 +1586,7 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
 
     if (OsProcessIsUserMode(childProcessCB)) {
         SCHEDULER_LOCK(intSave);
-        OsUserCloneParentStack(childTaskCB, OsCurrTaskGet());
+        OsUserCloneParentStack(childTaskCB->stackPointer, runTask->topOfStack, runTask->stackSize);
         SCHEDULER_UNLOCK(intSave);
     }
     return LOS_OK;

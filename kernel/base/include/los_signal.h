@@ -48,9 +48,6 @@ extern "C" {
 #define LOS_BIT_CLR(val, bit) ((val) = (val) & ~(1ULL << (UINT32)(bit)))
 #define LOS_IS_BIT_SET(val, bit) (bool)((((val) >> (UINT32)(bit)) & 1ULL))
 
-#define OS_SYSCALL_SET_CPSR(regs, cpsr) (*((unsigned long *)((UINTPTR)(regs) - 4)) = (cpsr))
-#define OS_SYSCALL_SET_SR(regs, cpsr) (*((unsigned long *)((UINTPTR)(regs))) = (cpsr))
-#define OS_SYSCALL_GET_CPSR(regs) (*((unsigned long *)((UINTPTR)(regs) - 4)))
 #define SIG_STOP_VISIT 1
 
 #define OS_KERNEL_KILL_PERMISSION 0U
@@ -135,27 +132,6 @@ struct sq_queue_s {
 };
 typedef struct sq_queue_s sq_queue_t;
 
-#define TASK_IRQ_CONTEXT \
-        unsigned int R0;     \
-        unsigned int R1;     \
-        unsigned int R2;     \
-        unsigned int R3;     \
-        unsigned int R12;    \
-        unsigned int USP;    \
-        unsigned int ULR;    \
-        unsigned int CPSR;   \
-        unsigned int PC;
-
-typedef struct {
-    TASK_IRQ_CONTEXT
-} TaskIrqDataSize;
-
-typedef struct {
-    TASK_IRQ_CONTEXT
-    unsigned int R7;
-    unsigned int count;
-} sig_switch_context;
-
 typedef struct {
     sigset_t sigFlag;
     sigset_t sigPendFlag;
@@ -164,7 +140,8 @@ typedef struct {
     LOS_DL_LIST waitList;
     sigset_t sigwaitmask; /* Waiting for pending signals         */
     siginfo_t sigunbinfo; /* Signal info when task unblocked     */
-    sig_switch_context context;
+    void *sigContext;
+    unsigned int count;
 } sig_cb;
 
 #define SIGEV_THREAD_ID 4
@@ -180,8 +157,6 @@ int OsPthreadKill(UINT32 tid, int signo);
 int OsSigEmptySet(sigset_t *);
 int OsSigAddSet(sigset_t *, int);
 int OsSigIsMember(const sigset_t *, int);
-void OsSaveSignalContext(unsigned int *sp);
-void OsRestorSignalContext(unsigned int *sp);
 int OsKill(pid_t pid, int sig, int permission);
 int OsDispatch(pid_t pid, siginfo_t *info, int permission);
 int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout);

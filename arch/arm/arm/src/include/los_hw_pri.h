@@ -34,8 +34,7 @@
 
 #include "los_base.h"
 #include "los_hw.h"
-#include "los_process_pri.h"
-#include "los_signal.h"
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -56,23 +55,43 @@ typedef struct {
     UINT32 regFPSCR;       /* FPSCR */
     UINT32 regFPEXC;       /* FPEXC */
 #endif
-    UINT32 resved;          /* It's stack 8 aligned */
-    UINT32 regPSR;
-    UINT32 R[GEN_REGS_NUM]; /* R0-R12 */
-    UINT32 SP;              /* R13 */
-    UINT32 LR;              /* R14 */
-    UINT32 PC;              /* R15 */
+    UINT32 R4;
+    UINT32 R5;
+    UINT32 R6;
+    UINT32 R7;
+    UINT32 R8;
+    UINT32 R9;
+    UINT32 R10;
+    UINT32 R11;
+
+    UINT32 resved2;
+    UINT32 resved1;
+    UINT32 USP;
+    UINT32 ULR;
+    UINT32 R0;
+    UINT32 R1;
+    UINT32 R2;
+    UINT32 R3;
+    UINT32 R12;
+    UINT32 LR;
+    UINT32 PC;
+    UINT32 CPSR;
 } TaskContext;
 
 typedef struct {
-#if !defined(LOSCFG_ARCH_FPU_DISABLE)
-    UINT64 D[FP_REGS_NUM]; /* D0-D31 */
-    UINT32 regFPSCR;       /* FPSCR */
-    UINT32 regFPEXC;       /* FPEXC */
-#endif
-    UINT32 resved;
-    TASK_IRQ_CONTEXT
-} TaskIrqContext;
+    UINT32 resved2;
+    UINT32 resved1;
+    UINT32 USP;
+    UINT32 ULR;
+    UINT32 R0;
+    UINT32 R1;
+    UINT32 R2;
+    UINT32 R3;
+    UINT32 R12;
+    UINT32 LR;
+    UINT32 PC;
+    UINT32 CPSR;
+} IrqContext;
 
 /*
  * Description : task stack initialization
@@ -82,8 +101,9 @@ typedef struct {
  * Return      : pointer to the task context
  */
 extern VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag);
-extern VOID OsUserCloneParentStack(LosTaskCB *childTaskCB, LosTaskCB *parentTaskCB);
-extern VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_FUNC taskEntry, UINTPTR stack);
+extern VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStask, UINT32 parentStackSize);
+extern VOID OsUserTaskStackInit(TaskContext *context, UINTPTR taskEntry, UINTPTR stack);
+extern VOID *OsInitSignalContext(VOID *sp, UINTPTR sigHandler, UINT32 signo, UINT32 param);
 extern void arm_clean_cache_range(UINTPTR start, UINTPTR end);
 extern void arm_inv_cache_range(UINTPTR start, UINTPTR end);
 

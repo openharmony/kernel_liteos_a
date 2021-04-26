@@ -75,12 +75,12 @@ STATIC STATUS_T OsVmRegionRightCheck(LosVmMapRegion *region, UINT32 flags)
     return LOS_OK;
 }
 
-STATIC VOID OsFaultTryFixup(ExcContext *frame, VADDR_T excVaddr, STATUS_T *status)
+STATIC VOID OsFaultTryFixup(PageFaultContext *frame, VADDR_T excVaddr, STATUS_T *status)
 {
     INT32 tableNum = (__exc_table_end - __exc_table_start) / sizeof(LosExcTable);
     LosExcTable *excTable = (LosExcTable *)__exc_table_start;
 
-    if ((frame->regCPSR & CPSR_MODE_MASK) != CPSR_MODE_USR) {
+    if ((frame->CPSR & CPSR_MODE_MASK) != CPSR_MODE_USR) {
         for (int i = 0; i < tableNum; ++i, ++excTable) {
             if (frame->PC == (UINTPTR)excTable->excAddr) {
                 frame->PC = (UINTPTR)excTable->fixAddr;
@@ -332,7 +332,7 @@ STATIC STATUS_T OsDoFileFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault, U
     return ret;
 }
 
-STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
+STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, PageFaultContext *frame)
 {
     LosVmSpace *space = LOS_SpaceGet(vaddr);
     LosVmMapRegion *region = NULL;

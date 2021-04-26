@@ -556,131 +556,64 @@ int OsSigAction(int sig, const sigaction_t *act, sigaction_t *oact)
     return LOS_OK;
 }
 
-void OsSaveSignalContext(unsigned int *sp)
+VOID *OsSaveSignalContext(VOID *sp)
 {
     UINTPTR sigHandler;
     UINT32 intSave;
-    LosTaskCB *task = NULL;
-    LosProcessCB *process = NULL;
-    sig_cb *sigcb = NULL;
-    unsigned long cpsr;
 
-    OS_RETURN_IF_VOID(sp == NULL);
-    cpsr = OS_SYSCALL_GET_CPSR(sp);
-
-    OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));
     SCHEDULER_LOCK(intSave);
-    task = OsCurrTaskGet();
-    process = OsCurrProcessGet();
-    sigcb = &task->sig;
-
-    if ((sigcb->context.count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {
+    LosTaskCB *task = OsCurrTaskGet();
+    LosProcessCB *process = OsCurrProcessGet();
+    sig_cb *sigcb = &task->sig;
+    if ((sigcb->count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {
         sigHandler = OsGetSigHandler();
         if (sigHandler == 0) {
             sigcb->sigFlag = 0;
             process->sigShare = 0;
             SCHEDULER_UNLOCK(intSave);
             PRINT_ERR("The signal processing function for the current process pid =%d is NULL!\n", task->processID);
-            return;
+            return sp;
         }
         /* One pthread do the share signal */
         sigcb->sigFlag |= process->sigShare;
-        unsigned int signo = (unsigned int)FindFirstSetedBit(sigcb->sigFlag) + 1;
+        UINT32 signo = (UINT32)FindFirstSetedBit(sigcb->sigFlag) + 1;
+        UINT32 sigVal = (UINT32)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr);
         OsProcessExitCodeSignalSet(process, signo);
-        sigcb->context.CPSR = cpsr;
-        sigcb->context.PC = sp[REG_PC];
-        sigcb->context.USP = sp[REG_SP];
-        sigcb->context.ULR = sp[REG_LR];
-        sigcb->context.R0 = sp[REG_R0];
-        sigcb->context.R1 = sp[REG_R1];
-        sigcb->context.R2 = sp[REG_R2];
-        sigcb->context.R3 = sp[REG_R3];
-        sigcb->context.R7 = sp[REG_R7];
-        sigcb->context.R12 = sp[REG_R12];
-        sp[REG_PC] = sigHandler;
-        sp[REG_R0] = signo;
-        sp[REG_R1] = (unsigned int)(UINTPTR)(sigcb->sigunbinfo.si_value.sival_ptr);
+        sigcb->sigContext = sp;
+
+        VOID *newSp = OsInitSignalContext(sp, sigHandler, signo, sigVal);
+
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
         sigcb->sigFlag ^= 1ULL << (signo - 1);
-        sigcb->context.count++;
-    }
-
-    SCHEDULER_UNLOCK(intSave);
-}
-
-void OsSaveSignalContextIrq(unsigned int *sp, unsigned int r7)
-{
-    UINTPTR sigHandler;
-    LosTaskCB *task = NULL;
-    LosProcessCB *process = NULL;
-    sig_cb *sigcb = NULL;
-    unsigned long cpsr;
-    UINT32 intSave;
-    TaskIrqContext *context = (TaskIrqContext *)(sp);
-
-    OS_RETURN_IF_VOID(sp == NULL);
-    cpsr = context->CPSR;
-    OS_RETURN_IF_VOID(((cpsr & CPSR_MASK_MODE) != CPSR_USER_MODE));
-
-    SCHEDULER_LOCK(intSave);
-    task = OsCurrTaskGet();
-    process = OsCurrProcessGet();
-    sigcb = &task->sig;
-    if ((sigcb->context.count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {
-        sigHandler = OsGetSigHandler();
-        if (sigHandler == 0) {
-            sigcb->sigFlag = 0;
-            process->sigShare = 0;
-            SCHEDULER_UNLOCK(intSave);
-            PRINT_ERR("The current process pid =%d starts fail!\n", task->processID);
-            return;
-        }
-        sigcb->sigFlag |= process->sigShare;
-        unsigned int signo = (unsigned int)FindFirstSetedBit(sigcb->sigFlag) + 1;
-        OsProcessExitCodeSignalSet(process, signo);
-        (VOID)memcpy_s(&sigcb->context.R0, sizeof(TaskIrqDataSize), &context->R0, sizeof(TaskIrqDataSize));
-        sigcb->context.R7 = r7;
-        context->PC = sigHandler;
-        context->R0 = signo;
-        context->R1 = (UINT32)(UINTPTR)sigcb->sigunbinfo.si_value.sival_ptr;
-        /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
-        sigcb->sigFlag ^= 1ULL << (signo - 1);
-        sigcb->context.count++;
-    }
-    SCHEDULER_UNLOCK(intSave);
-}
-
-void OsRestorSignalContext(unsigned int *sp)
-{
-    LosTaskCB *task = NULL; /* Do not adjust this statement */
-    LosProcessCB *process = NULL;
-    sig_cb *sigcb = NULL;
-    UINT32 intSave;
-
-    SCHEDULER_LOCK(intSave);
-    task = OsCurrTaskGet();
-    sigcb = &task->sig;
-
-    if (sigcb->context.count != 1) {
+        sigcb->count++;
         SCHEDULER_UNLOCK(intSave);
-        PRINT_ERR("sig error count : %d\n", sigcb->context.count);
-        return;
+        return newSp;
     }
 
-    process = OsCurrProcessGet();
-    sp[REG_PC] = sigcb->context.PC;
-    OS_SYSCALL_SET_CPSR(sp, sigcb->context.CPSR);
-    sp[REG_SP] = sigcb->context.USP;
-    sp[REG_LR] = sigcb->context.ULR;
-    sp[REG_R0] = sigcb->context.R0;
-    sp[REG_R1] = sigcb->context.R1;
-    sp[REG_R2] = sigcb->context.R2;
-    sp[REG_R3] = sigcb->context.R3;
-    sp[REG_R7] = sigcb->context.R7;
-    sp[REG_R12] = sigcb->context.R12;
-    sigcb->context.count--;
+    SCHEDULER_UNLOCK(intSave);
+    return sp;
+}
+
+VOID *OsRestorSignalContext(VOID *sp)
+{
+    UINT32 intSave;
+
+    SCHEDULER_LOCK(intSave);
+    LosTaskCB *task = OsCurrTaskGet();
+    sig_cb *sigcb = &task->sig;
+
+    if (sigcb->count != 1) {
+        SCHEDULER_UNLOCK(intSave);
+        PRINT_ERR("sig error count : %d\n", sigcb->count);
+        return sp;
+    }
+
+    LosProcessCB *process = OsCurrProcessGet();
+    VOID *saveContext = sigcb->sigContext;
+    sigcb->count--;
     process->sigShare = 0;
     OsProcessExitCodeSignalClear(process);
     SCHEDULER_UNLOCK(intSave);
+    return saveContext;
 }
 

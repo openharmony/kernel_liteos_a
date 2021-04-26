@@ -32,6 +32,7 @@
 #include "asm.h"
 #include "arch_config.h"
 
+    .extern   OsSaveSignalContext
     .extern   OsSchedToUserReleaseLock
     .global   OsTaskSchedule
     .global   OsTaskContextLoad
@@ -85,17 +86,16 @@
  */
 OsTaskSchedule:
     MRS      R2, CPSR
-    STMFD    SP!, {LR}
-    STMFD    SP!, {LR}
-    /* jump sp */
-    SUB      SP, SP, #4
-
-    /* push r0-r12*/
-    STMFD    SP!, {R0-R12}
     STMFD    SP!, {R2}
+    STMFD    SP!, {LR}
+    STMFD    SP!, {LR}
+    STMFD    SP!, {R12}
 
-    /* 8 bytes stack align */
-    SUB      SP, SP, #4
+    /* jump R0 - R3 USP, ULR resved */
+    SUB      SP, SP, #(8 * 4)
+
+    /* push R4 - R11*/
+    STMFD    SP!, {R4-R11}
 
     /* save fpu registers */
     PUSH_FPU_REGS   R2
@@ -113,131 +113,81 @@ OsTaskContextLoad:
     /* restore fpu registers */
     POP_FPU_REGS    R2
 
-    /* 8 bytes stack align */
-    ADD     SP, SP, #4
-
-    LDMFD   SP!, {R0}
-    MOV     R4, R0
-    AND     R0, R0, #CPSR_MASK_MODE
+    LDMFD   SP!, {R4-R11}
+    LDR     R3, [SP, #(11 * 4)]
+    AND     R0, R3, #CPSR_MASK_MODE
     CMP     R0, #CPSR_USER_MODE
     BNE     OsKernelTaskLoad
 
+    MVN     R2, #CPSR_INT_DISABLE
+    AND     R3, R3, R2
+    STR     R3, [SP, #(11 * 4)]
+
 #ifdef LOSCFG_KERNEL_SMP
-    /* 8 bytes stack align */
-    SUB     SP, SP, #4
     BL      OsSchedToUserReleaseLock
-    ADD     SP, SP, #4
 #endif
 
-    MVN     R3, #CPSR_INT_DISABLE
-    AND     R4, R4, R3
-    MSR     SPSR_cxsf, R4
-
-    /* restore r0-r12, lr */
-    LDMFD   SP!, {R0-R12}
+    /* jump sp, resved */
+    ADD     SP, SP, #(2 * 4)
     LDMFD   SP, {R13, R14}^
     ADD     SP, SP, #(2 * 4)
-    LDMFD   SP!, {PC}^
+    LDMFD   SP!, {R0-R3, R12, LR}
+    RFEIA   SP!
 
 OsKernelTaskLoad:
-    MSR     SPSR_cxsf, R4
-    /* restore r0-r12, lr */
-    LDMFD   SP!, {R0-R12}
-    ADD     SP, SP, #4
-    LDMFD   SP!, {LR, PC}^
+    ADD     SP, SP, #(4 * 4)
+    LDMFD   SP!, {R0-R3, R12, LR}
+    RFEIA   SP!
 
 OsIrqHandler:
     SUB     LR, LR, #4
 
-    /* push r0-r3 to irq stack */
-    STMFD   SP, {R0-R3}
-    SUB     R0, SP, #(4 * 4)
-    MRS     R1, SPSR
-    MOV     R2, LR
+    SRSFD   #0x13!                 @ save spsr and pc to the svc stack
 
-    /* disable irq, switch to svc mode */
-    CPSID   i, #0x13
+    CPSID   i, #0x13              @ disable irq, switch to svc mode
 
-    /* push spsr and pc in svc stack */
-    STMFD   SP!, {R1, R2}
-    STMFD   SP, {LR}
-
-    AND     R3, R1, #CPSR_MASK_MODE
-    CMP     R3, #CPSR_USER_MODE
-    BNE     OsIrqFromKernel
-
-    /* push user sp, lr in svc stack */
+    STMFD   SP!, {R0-R3, R12, LR}
     STMFD   SP, {R13, R14}^
-
-OsIrqFromKernel:
-    /* from svc not need save sp and lr */
-    SUB     SP, SP, #(2 * 4)
-
-    /* pop r0-r3 form irq stack*/
-    LDMFD   R0, {R0-R3}
-
-    /* push caller saved regs as trashed regs in svc stack */
-    STMFD   SP!, {R0-R3, R12}
-
-    /* 8 bytes stack align */
-    SUB     SP, SP, #4
+    SUB     SP, SP, #(4 * 4)
+    STMIA   SP, {R4}
 
     /*
      * save fpu regs in case in case those been
      * altered in interrupt handlers.
      */
     PUSH_FPU_REGS   R0
-#ifdef LOSCFG_IRQ_USE_STANDALONE_STACK
-    PUSH    {R4}
+
     MOV     R4, SP
     EXC_SP_SET __svc_stack_top, OS_EXC_SVC_STACK_SIZE, R1, R2
-#endif
 
     BLX     HalIrqHandler
 
-#ifdef LOSCFG_IRQ_USE_STANDALONE_STACK
     MOV     SP, R4
-    POP     {R4}
-#endif
 
     /* process pending signals */
-    BL      OsTaskProcSignal
-
-    BL      OsSchedIrqEndCheckNeedSched
-
-    MOV     R0,SP
-    MOV     R1,R7
-    BL      OsSaveSignalContextIrq
+    BLX     OsTaskProcSignal
+    BLX     OsSchedIrqEndCheckNeedSched
 
     /* restore fpu regs */
     POP_FPU_REGS    R0
+    LDMFD   SP, {R4}
 
-    ADD     SP, SP, #4
+    LDR     R3, [SP, #(11 * 4)]
+    AND     R1, R3, #CPSR_MASK_MODE
+    CMP     R1, #CPSR_USER_MODE
+    BNE     1f
 
-OsIrqContextRestore:
-    LDR     R0, [SP, #(4 * 7)]
-    MSR     SPSR_cxsf, R0
-    AND     R0, R0, #CPSR_MASK_MODE
-    CMP     R0, #CPSR_USER_MODE
-
-    LDMFD   SP!, {R0-R3, R12}
-
-    BNE     OsIrqContextRestoreToKernel
-
+    MOV     R0, SP
+    STMIA   SP, {R7}
+    BLX     OsSaveSignalContext
+    MOV     SP, R0
+1:
+    ADD     SP, SP, #(2 * 4)
     /* load user sp and lr, and jump cpsr */
     LDMFD   SP, {R13, R14}^
-    ADD     SP, SP, #(3 * 4)
-
-    /* return to user mode */
-    LDMFD   SP!, {PC}^
-
-OsIrqContextRestoreToKernel:
-    /* svc mode not load sp */
-    ADD     SP, SP, #4
-    LDMFD   SP!, {LR}
-    /* jump cpsr and return to svc mode */
-    ADD     SP, SP, #4
-    LDMFD   SP!, {PC}^
+    ADD     SP, SP, #(2 * 4)
+    LDMFD   SP!, {R0-R3, R12, LR}
+    RFEIA   SP!
 
 FUNCTION(ArchSpinLock)
     mov     r1, #1

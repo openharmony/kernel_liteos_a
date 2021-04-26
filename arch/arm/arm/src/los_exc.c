@@ -104,11 +104,7 @@ STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
                             (IS_ALIGNED((ptr), sizeof(CHAR *))))
 
 STATIC const StackInfo g_excStack[] = {
-    { &__undef_stack, OS_EXC_UNDEF_STACK_SIZE, "udf_stack" },
-    { &__abt_stack,   OS_EXC_ABT_STACK_SIZE,   "abt_stack" },
-    { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },
     { &__svc_stack,   OS_EXC_SVC_STACK_SIZE,   "svc_stack" },
-    { &__irq_stack,   OS_EXC_IRQ_STACK_SIZE,   "irq_stack" },
     { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }
 };
 
@@ -183,7 +179,7 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
 }
 
 #ifdef LOSCFG_KERNEL_VM
-UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT32 fsr)
+UINT32 OsArmSharedPageFault(UINT32 excType, PageFaultContext *frame, UINT32 far, UINT32 fsr)
 {
     PRINT_INFO("page fault entry!!!\n");
     BOOL instruction_fault = FALSE;
@@ -211,7 +207,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
         /* permission fault */
         case 0b01111: {
         /* permission fault */
-            BOOL user = (frame->regCPSR & CPSR_MODE_MASK) == CPSR_MODE_USR;
+            BOOL user = (frame->CPSR & CPSR_MODE_MASK) == CPSR_MODE_USR;
             pfFlags |= write ? VM_MAP_PF_FLAG_WRITE : 0;
             pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
             pfFlags |= instruction_fault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
@@ -228,9 +224,9 @@ STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32
 {
     /* undefinited exception handling or software interrupt */
     if ((excType == OS_EXCEPT_UNDEF_INSTR) || (excType == OS_EXCEPT_SWI)) {
-        if ((excBufAddr->regCPSR & INSTR_SET_MASK) == 0) { /* work status: ARM */
+        if ((excBufAddr->CPSR & INSTR_SET_MASK) == 0) { /* work status: ARM */
             excBufAddr->PC = excBufAddr->PC - ARM_INSTR_LEN;
-        } else if ((excBufAddr->regCPSR & INSTR_SET_MASK) == 0x20) { /* work status: Thumb */
+        } else if ((excBufAddr->CPSR & INSTR_SET_MASK) == 0x20) { /* work status: Thumb */
             excBufAddr->PC = excBufAddr->PC - THUMB_INSTR_LEN;
         }
     }
@@ -380,7 +376,7 @@ STATIC VOID OsExcRegsInfo(const ExcContext *excBufAddr)
                  "R12   = 0x%x\n"
                  "CPSR  = 0x%x\n",
                  excBufAddr->R7, excBufAddr->R8, excBufAddr->R9, excBufAddr->R10,
-                 excBufAddr->R11, excBufAddr->R12, excBufAddr->regCPSR);
+                 excBufAddr->R11, excBufAddr->R12, excBufAddr->CPSR);
 }
 
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_ExcRegHook(EXC_PROC_FUNC excHook)
@@ -808,7 +804,7 @@ VOID OsTaskBackTrace(UINT32 taskID)
     }
     PRINTK("TaskName = %s\n", taskCB->taskName);
     PRINTK("TaskID = 0x%x\n", taskCB->taskID);
-    BackTrace(((TaskContext *)(taskCB->stackPointer))->R[11]); /* R11 : FP */
+    BackTrace(((TaskContext *)(taskCB->stackPointer))->R11); /* R11 : FP */
 }
 
 VOID OsBackTrace(VOID)
@@ -1009,7 +1005,7 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
     UINT16 runCount;
 #endif
 
-    if ((excBufAddr->regCPSR & CPSR_MASK_MODE) == CPSR_USER_MODE) {
+    if ((excBufAddr->CPSR & CPSR_MASK_MODE) == CPSR_USER_MODE) {
         g_minAddr = USER_ASPACE_BASE;
         g_maxAddr = USER_ASPACE_BASE + USER_ASPACE_SIZE;
         g_excFromUserMode[ArchCurrCpuid()] = TRUE;
