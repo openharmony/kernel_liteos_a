@@ -219,7 +219,7 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 #ifndef LOSCFG_SECURITY_BOOT
 STATIC INT32 GetArgs(CHAR **args)
 {
-#ifdef LOSCFG_QUICK_START
+#ifdef LOSCFG_BOOTENV_RAM
     *args = OsGetArgsAddr();
     return LOS_OK;
 
@@ -387,7 +387,7 @@ STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 
         PRINT_ERR("Cannot get bootargs!\n");
         return LOS_NOK;
     }
-#ifndef LOSCFG_QUICK_START
+#ifndef LOSCFG_BOOTENV_RAM
     CHAR *argsBak = NULL;
     argsBak = args;
 #endif
@@ -399,7 +399,7 @@ STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 
         p = strsep(&args, " ");
     }
     if ((*fsType != NULL) && (*rootType != NULL)) {
-#ifndef LOSCFG_QUICK_START
+#ifndef LOSCFG_BOOTENV_RAM
         free(argsBak);
 #endif
         return LOS_OK;
@@ -415,7 +415,7 @@ ERROUT:
         free(*fsType);
         *fsType = NULL;
     }
-#ifndef LOSCFG_QUICK_START
+#ifndef LOSCFG_BOOTENV_RAM
     free(argsBak);
 #endif
     return LOS_NOK;
