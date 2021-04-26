@@ -35,7 +35,7 @@ config BOOTENV_ADDR
       Boot command line addr, range from 0 to 1MB.
 
 config BOOTENV_RAM
-    bool "Storage bootenv in RAM"
+    bool "Read bootenv from RAM"
     default n
     depends on PLATFORM_ROOTFS
     help
