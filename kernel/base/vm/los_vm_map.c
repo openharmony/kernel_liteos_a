@@ -132,7 +132,6 @@ STATIC BOOL OsVmSpaceInitCommon(LosVmSpace *vmSpace, VADDR_T *virtTtb)
 {
     LOS_RbInitTree(&vmSpace->regionRbTree, OsRegionRbCmpKeyFn, OsRegionRbFreeFn, OsRegionRbGetKeyFn);
 
-    LOS_ListInit(&vmSpace->regions);
     status_t retval = LOS_MuxInit(&vmSpace->regionMux, NULL);
     if (retval != LOS_OK) {
         VM_ERR("Create mutex for vm space failed, status: %d", retval);
