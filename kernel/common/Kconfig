@@ -35,16 +35,16 @@ config BOOTENV_ADDR
       Boot command line addr, range from 0 to 1MB.
 
 config BOOTENV_RAM
-	bool "Storage bootenv in RAM"
-	default n
-	depends on PLATFORM_ROOTFS
-	help
-		Answer Y to read bootenv from ram. Need boot copy to RAM.
+    bool "Storage bootenv in RAM"
+    default n
+    depends on PLATFORM_ROOTFS
+    help
+      Answer Y to read bootenv from ram. Need boot copy to RAM.
 
 config BOOTENV_RAMSIZE
-	int "Size of boot environment in RAM (Byte)"
-	depends on PLATFORM_ROOTFS && BOOTENV_RAM
-	range 128 1024
-	default 512
-	help
-	  Boot environment in Ram space size, range from 128 to 1024 byte.
+    int "Size of boot environment in RAM (Byte)"
+    depends on PLATFORM_ROOTFS && BOOTENV_RAM
+    range 128 1024
+    default 512
+    help
+      Boot environment in Ram space size, range from 128 to 1024 byte.
