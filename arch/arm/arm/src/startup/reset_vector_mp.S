@@ -115,9 +115,9 @@ __exception_handlers:
     .global reset_vector
     .type   reset_vector,function
 
-#ifdef LOSCFG_QUICK_START
+#ifdef LOSCFG_BOOTENV_RAM
 __quickstart_args_start:
-    .fill 512,1,0
+    .fill LOSCFG_BOOTENV_RAMSIZE,1,0
 __quickstart_args_end:
 
 .global OsGetArgsAddr
