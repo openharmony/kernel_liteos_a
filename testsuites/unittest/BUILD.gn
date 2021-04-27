@@ -1,0 +1,155 @@
+# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+#    conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list
+#    of conditions and the following disclaimer in the documentation and/or other materials
+#    provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors may be used
+#    to endorse or promote products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import("config.gni")
+
+local_flags = []
+if (board_name == "hispark_taurus") {
+  local_flags += [ "-DLOSCFG_USER_TEST_SMP" ]
+}
+if (LOSCFG_USER_TEST_SMOKE == true) {
+  local_flags += [ "-DLOSCFG_USER_TEST_SMOKE" ]
+}
+if (LOSCFG_USER_TEST_FULL == true) {
+  local_flags += [ "-DLOSCFG_USER_TEST_FULL" ]
+}
+if (LOSCFG_USER_TEST_PRESSURE == true) {
+  local_flags += [ "-DLOSCFG_USER_TEST_PRESSURE" ]
+}
+if (LOSCFG_USER_TEST_LLT == true) {
+  local_flags += [ "-DLOSCFG_USER_TEST_LLT" ]
+}
+
+config("public_config") {
+  cflags = [ "-fpermissive" ]
+  cflags += [
+    "-O2",
+    "-fbuiltin",
+    "-Wno-narrowing",
+  ]
+  cflags += local_flags
+  cflags_cc = cflags
+}
+
+group("unittest") {
+  deps = []
+  if (LOSCFG_USER_TEST_UTIL == true) {
+    deps += [ "util:liteos_a_util_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_TIME_TIMER == true) {
+    deps += [ "time/timer:liteos_a_time_timer_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_TIME_CLOCK == true) {
+    deps += [ "time/clock:liteos_a_time_clock_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_SYS == true) {
+    deps += [ "sys:liteos_a_sys_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_SIGNAL == true) {
+    deps += [ "signal:liteos_a_signal_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_SECURITY_REUGID == true) {
+    deps += [ "security/reugid:liteos_a_security_reugid_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_SECURITY_CAPABILITY == true) {
+    deps += [ "security/capability:liteos_a_security_capability_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_SECURITY_VID == true) {
+    deps += [ "security/vid:liteos_a_security_vid_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_MUTEX == true) {
+    deps += [ "process/mutex:liteos_a_mutex_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_PROCESS == true) {
+    deps += [ "process/process:liteos_a_process_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_PTHREAD == true) {
+    deps += [ "process/pthread:liteos_a_pthread_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_RWLOCK == true) {
+    deps += [ "process/rwlock:liteos_a_rwlock_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_SPINLOCK == true) {
+    deps += [ "process/spinlock:liteos_a_spinlock_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_POSIX_MEM == true) {
+    deps += [ "posix/mem:liteos_a_posix_mem_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_POSIX_MQUEUE == true) {
+    deps += [ "posix/mqueue:liteos_a_posix_mqueue_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_POSIX_PTHREAD == true) {
+    deps += [ "posix/pthread:liteos_a_posix_pthread_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_MISC == true) {
+    deps += [ "misc:liteos_a_misc_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_MEM_SHM == true) {
+    deps += [ "mem/shm:liteos_a_mem_shm_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_MEM_VM == true) {
+    deps += [ "mem/vm:liteos_a_mem_vm_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_IO == true) {
+    deps += [ "IO:liteos_a_io_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_EXC == true) {
+    deps += [ "exc:liteos_a_exc_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_DYNLOAD == true) {
+    deps += [ "dynload:liteos_a_dynload_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_DRIVERS_HID == true) {
+    deps += [ "drivers/hid:liteos_a_drivers_hid_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_DRIVERS_STORAGE == true) {
+    deps += [ "drivers/storage:liteos_a_drivers_storage_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_NET_NETDB == true) {
+    deps += [ "net/netdb:liteos_a_net_netdb_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_NET_RESOLV == true) {
+    deps += [ "net/resolv:liteos_a_net_resolv_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_NET_SOCKET == true) {
+    deps += [ "net/socket:liteos_a_net_socket_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_IPC == true) {
+    deps += [ "IPC:liteos_a_ipc_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_LITEIPC == true) {
+    deps += [ "liteipc:liteos_a_liteipc_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_FS_JFFS == true) {
+    deps += [ "fs:liteos_a_fs_unittest" ]
+  }
+  if (LOSCFG_USER_TEST_FS_VFAT == true) {
+    deps += [ "fs/vfat2:liteos_a_fs_vfat_unittest" ]
+  }
+}
