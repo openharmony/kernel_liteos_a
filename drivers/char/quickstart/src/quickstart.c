@@ -29,16 +29,15 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "los_quick_start_pri.h"
-#include "bits/ioctl.h"
+#include "los_dev_quickstart.h"
 #include "fcntl.h"
 #include "linux/kernel.h"
+#include "los_process_pri.h"
 
-#define QUICKSTART_IOC_MAGIC    'T'
-#define QUICKSTART_INITSTEP2    _IO(QUICKSTART_IOC_MAGIC, 0)
-#define QUICKSTART_UNREGISTER   _IO(QUICKSTART_IOC_MAGIC, 1)
-#define QUICKSTART_NODE         "/dev/quickstart"
 
+EVENT_CB_S g_qsEvent;
+static SysteminitHook g_systemInitFunc[QS_STAGE_CNT] = {0};
+static char g_callOnce[QS_STAGE_CNT] = {0};
 
 static int QuickstartOpen(struct file *filep)
 {
@@ -50,18 +49,30 @@ static int QuickstartClose(struct file *filep)
     return 0;
 }
 
-static void SystemInitStep2(void)
+static void QuickstartNotify(unsigned int events)
 {
-    static int once = 0;
-    /* Only one call is allowed */
-    if (once != 0) {
-        return;
-    }
-    once = 1;
+    LOS_EventWrite((PEVENT_CB_S)&g_qsEvent, events);
+}
 
-    unsigned int ret = OsSystemInitStep2();
-    if (ret != LOS_OK) {
-        PRINT_ERR("systemInitStep2 failed\n");
+static void QuickstartListen(unsigned int eventMask)
+{
+    LOS_EventRead((PEVENT_CB_S)&g_qsEvent, eventMask, LOS_WAITMODE_AND | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
+}
+
+void QuickStartHookRegister(LosSysteminitHook hooks)
+{
+    for (int i = 0; i < QS_STAGE_CNT; i++) {
+        g_systemInitFunc[i] = hooks.func[i];
+    }
+}
+
+static void QuickStartStageWorking(unsigned int level)
+{
+    if ((level < QS_STAGE_CNT) && (g_callOnce[level] == 0) && (g_systemInitFunc[level] != NULL)) {
+        g_callOnce[level] = 1;    /* 1: Already called */
+        g_systemInitFunc[level]();
+    } else {
+        PRINT_WARN("Trigger quickstart,but doing nothing!!\n");
     }
 }
 
@@ -72,15 +83,27 @@ static int QuickstartDevUnregister(void)
 
 static ssize_t QuickstartIoctl(struct file *filep, int cmd, unsigned long arg)
 {
+    if (cmd == QUICKSTART_NOTIFY) {
+        QuickstartNotify(arg);
+        return 0;
+    }
+
+    if (OsGetUserInitProcessID() != LOS_GetCurrProcessID()) {
+        PRINT_ERR("Permission denios!\n");
+        return -1;
+    }
     switch (cmd) {
-        case QUICKSTART_INITSTEP2:
-            SystemInitStep2();
-            break;
         case QUICKSTART_UNREGISTER:
             QuickstartDevUnregister();
             break;
+        case QUICKSTART_LISTEN:
+            QuickstartListen(arg);
+            break;
+
+
 
         default:
+            QuickStartStageWorking(cmd - QUICKSTART_STAGE(1));  /* ioctl cmd converted to stage level */
             break;
     }
     return 0;
@@ -100,8 +123,9 @@ static const struct file_operations_vfs g_quickstartDevOps = {
     NULL,      /* unlink */
 };
 
-int DevQuickStartRegister(void)
+int QuickStartDevRegister(void)
 {
+    LOS_EventInit(&g_qsEvent);
     return register_driver(QUICKSTART_NODE, &g_quickstartDevOps, 0666, 0); /* 0666: file mode */
 }
 

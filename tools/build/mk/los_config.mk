@@ -398,10 +398,10 @@ ifeq ($(LOSCFG_DRIVERS_MEM), y)
     LITEOS_DEV_MEM_INCLUDE = -I $(LITEOSTOPDIR)/drivers/char/mem/include
 endif
 
-ifeq ($(LOSCFG_QUICK_START), y)
+ifeq ($(LOSCFG_DRIVERS_QUICKSTART), y)
     LITEOS_BASELIB += -lquickstart
     LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/quickstart
-    LITEOS_QUICK_START_INCLUDE = -I $(LITEOSTOPDIR)/drivers/char/quickstart/include
+    LITEOS_DEV_QUICKSTART_INCLUDE = -I $(LITEOSTOPDIR)/drivers/char/quickstart/include
 endif
 
 ifeq ($(LOSCFG_DRIVERS_RANDOM), y)
@@ -642,7 +642,7 @@ LITEOS_DRIVERS_INCLUDE     := $(LITEOS_CELLWISE_INCLUDE)   $(LITEOS_GPIO_INCLUDE
                               $(LITEOS_REGULATOR_INCLUDE)  $(LITEOS_VIDEO_INCLUDE) \
                               $(LITEOS_DRIVERS_HDF_INCLUDE) $(LITEOS_TZDRIVER_INCLUDE) \
                               $(LITEOS_HIEVENT_INCLUDE)    $(LITEOS_DEV_MEM_INCLUDE) \
-                              $(LITEOS_QUICK_START_INCLUDE)
+                              $(LITEOS_DEV_QUICKSTART_INCLUDE)
 LITEOS_DFX_INCLUDE    := $(LITEOS_HILOG_INCLUDE)
 
 LITEOS_SECURITY_INCLUDE    := $(LITEOS_SECURITY_CAP_INC) $(LITEOS_SECURITY_VID_INC)
