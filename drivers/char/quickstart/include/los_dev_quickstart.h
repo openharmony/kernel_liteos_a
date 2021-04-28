@@ -29,8 +29,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __LOS_QUICK_START_H__
-#define __LOS_QUICK_START_H__
+#ifndef __LOS_DEV_QUICKSTART_H__
+#define __LOS_DEV_QUICKSTART_H__
 
 #include "los_typedef.h"
 #include "sys/ioctl.h"
@@ -46,14 +46,14 @@ typedef enum {
     QS_STAGE2,       /* system init stage No 2 */
     QS_STAGE3,       /* system init stage No 3 */
     QS_STAGE_LIMIT
-} QS_STAGE;
+} QuickstartStage;
 
 typedef enum {
     QS_UNREGISTER = QS_STAGE_LIMIT,  /* quickstart dev unregister */
     QS_NOTIFY,          /* quickstart notify */
     QS_LISTEN,          /* quickstart listen */
     QS_CTL_LIMIT
-} QS_CTL;
+} QuickstartConctrl;
 
 #define QS_STAGE_CNT            (QS_STAGE_LIMIT - QS_STAGE1)
 
@@ -73,9 +73,9 @@ typedef struct {
     SysteminitHook func[QS_STAGE_CNT];
 } LosSysteminitHook;
 
-extern void QuickStartHookRegister(LosSysteminitHook hooks);
+extern void QuickstartHookRegister(LosSysteminitHook hooks);
 
-extern int QuickStartDevRegister(void);
+extern int QuickstartDevRegister(void);
 
 #ifdef __cplusplus
 #if __cplusplus

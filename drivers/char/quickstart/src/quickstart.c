@@ -59,14 +59,14 @@ static void QuickstartListen(unsigned int eventMask)
     LOS_EventRead((PEVENT_CB_S)&g_qsEvent, eventMask, LOS_WAITMODE_AND | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
 }
 
-void QuickStartHookRegister(LosSysteminitHook hooks)
+void QuickstartHookRegister(LosSysteminitHook hooks)
 {
     for (int i = 0; i < QS_STAGE_CNT; i++) {
         g_systemInitFunc[i] = hooks.func[i];
     }
 }
 
-static void QuickStartStageWorking(unsigned int level)
+static void QuickstartStageWorking(unsigned int level)
 {
     if ((level < QS_STAGE_CNT) && (g_callOnce[level] == 0) && (g_systemInitFunc[level] != NULL)) {
         g_callOnce[level] = 1;    /* 1: Already called */
@@ -99,11 +99,8 @@ static ssize_t QuickstartIoctl(struct file *filep, int cmd, unsigned long arg)
         case QUICKSTART_LISTEN:
             QuickstartListen(arg);
             break;
-
-
-
         default:
-            QuickStartStageWorking(cmd - QUICKSTART_STAGE(1));  /* ioctl cmd converted to stage level */
+            QuickstartStageWorking(cmd - QUICKSTART_STAGE(1));  /* ioctl cmd converted to stage level */
             break;
     }
     return 0;
@@ -123,7 +120,7 @@ static const struct file_operations_vfs g_quickstartDevOps = {
     NULL,      /* unlink */
 };
 
-int QuickStartDevRegister(void)
+int QuickstartDevRegister(void)
 {
     LOS_EventInit(&g_qsEvent);
     return register_driver(QUICKSTART_NODE, &g_quickstartDevOps, 0666, 0); /* 0666: file mode */
