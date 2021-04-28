@@ -331,9 +331,7 @@ _osExcPageFault:
     MOV     R5, R0
     MOV     R8, R2
     MOV     R9, R3
-    CPSIE   I
     BLX     OsArmSharedPageFault
-    CPSID   I
 
     POP_FPU_REGS R1
     MOV     SP, R4
