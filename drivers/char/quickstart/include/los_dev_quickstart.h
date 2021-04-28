@@ -29,10 +29,11 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __LOS_QUICK_START_PRI_H__
-#define __LOS_QUICK_START_PRI_H__
+#ifndef __LOS_QUICK_START_H__
+#define __LOS_QUICK_START_H__
 
 #include "los_typedef.h"
+#include "sys/ioctl.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -40,8 +41,41 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-unsigned int OsSystemInitStep2(void);
-extern VOID SystemInit2(VOID);
+typedef enum {
+    QS_STAGE1 = 1,   /* 1: start from stage1, 0 is already called in kernel process */
+    QS_STAGE2,       /* system init stage No 2 */
+    QS_STAGE3,       /* system init stage No 3 */
+    QS_STAGE_LIMIT
+} QS_STAGE;
+
+typedef enum {
+    QS_UNREGISTER = QS_STAGE_LIMIT,  /* quickstart dev unregister */
+    QS_NOTIFY,          /* quickstart notify */
+    QS_LISTEN,          /* quickstart listen */
+    QS_CTL_LIMIT
+} QS_CTL;
+
+#define QS_STAGE_CNT            (QS_STAGE_LIMIT - QS_STAGE1)
+
+#define QS_STAGE_NO(x)            QS_STAGE##x
+
+#define QUICKSTART_IOC_MAGIC    'T'
+#define QUICKSTART_UNREGISTER   _IO(QUICKSTART_IOC_MAGIC, QS_UNREGISTER)
+#define QUICKSTART_NOTIFY       _IO(QUICKSTART_IOC_MAGIC, QS_NOTIFY)
+#define QUICKSTART_LISTEN       _IO(QUICKSTART_IOC_MAGIC, QS_LISTEN)
+#define QUICKSTART_STAGE(x)     _IO(QUICKSTART_IOC_MAGIC, QS_STAGE_NO(x))
+
+#define QUICKSTART_NODE         "/dev/quickstart"
+
+typedef void (*SysteminitHook)(void);
+
+typedef struct {
+    SysteminitHook func[QS_STAGE_CNT];
+} LosSysteminitHook;
+
+extern void QuickStartHookRegister(LosSysteminitHook hooks);
+
+extern int QuickStartDevRegister(void);
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -49,4 +83,4 @@ extern VOID SystemInit2(VOID);
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#endif /* __LOS_QUICK_START_PRI_H__ */
+#endif
