@@ -371,6 +371,58 @@ static int TestAccess(const char *path)
     return 0;
 }
 
+static int SetReadAndSearch()
+{
+    int capNum = 2;
+    struct __user_cap_header_struct capheader;
+    struct __user_cap_data_struct capdata[capNum];
+    int ret;
+
+    memset(&capheader, 0, sizeof(struct __user_cap_header_struct));
+    memset(capdata, 0, capNum * sizeof(struct __user_cap_data_struct));
+    capdata[0].permitted = 0xffffffff;
+    capdata[1].permitted = 0xffffffff;
+    capheader.version = _LINUX_CAPABILITY_VERSION_3;
+    capdata[CAP_TO_INDEX(CAP_SETPCAP)].effective |= CAP_TO_MASK(CAP_SETPCAP);
+    capdata[CAP_TO_INDEX(CAP_SETUID)].effective |= CAP_TO_MASK(CAP_SETUID);
+    capdata[CAP_TO_INDEX(CAP_SETGID)].effective |= CAP_TO_MASK(CAP_SETGID);
+    capdata[CAP_TO_INDEX(CAP_CHOWN)].effective |= CAP_TO_MASK(CAP_CHOWN);
+    capdata[CAP_TO_INDEX(CAP_DAC_READ_SEARCH)].effective |= CAP_TO_MASK(CAP_DAC_READ_SEARCH);
+    ret = capset(&capheader, &capdata[0]);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    return 0;
+}
+
+static int TestCapReadSearch()
+{
+    int ret;
+    char filenameParent[64] = {0};
+    char filenameChild[64] = {0};
+
+    ret = setuid(0);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ret = setgid(0);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    ret = mkdir("/storage/test_jffs2", 0757); // mode 0757
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    sprintf(filenameParent, "%s/%s", "/storage/test_jffs2", "testParent");
+    sprintf(filenameChild, "%s/%s", filenameParent, "testChild");
+    ret = mkdir(filenameParent, 0222); // mode 0222
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    SetReadAndSearch();
+    ret = mkdir(filenameChild, 0777); // mode 0777
+    ICUNIT_ASSERT_NOT_EQUAL(ret, 0, ret);
+
+    ret = rmdir(filenameParent);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    ret = rmdir("/storage/test_jffs2");
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+
+    return 0;
+}
+
 /* execve */
 /* access */
 
@@ -433,9 +485,6 @@ static int ChildFunc(VOID)
     ret = setgid(2); // gid: 2
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    capdata[0].effective = 0xffffffff;
-    capdata[1].effective = 0xffffffff;
-    (void)capset(&capheader, capdata);
     return 0;
 }
 
@@ -444,9 +493,20 @@ static int testcase(VOID)
     int ret;
     int status = 0;
     pid_t pid = fork();
-    ICUNIT_GOTO_WITHIN_EQUAL(pid, 0, 100000, pid, EXIT);
+    ICUNIT_GOTO_WITHIN_EQUAL(pid, 0, 100000, pid, EXIT); // pid must in range 0 - 100000
     if (pid == 0) {
         ret = ChildFunc();
+        printf("err line :%d error code: %d\n", 0, 0);
+        exit(0);
+    }
+
+    ret = waitpid(pid, &status, 0);
+    ICUNIT_GOTO_EQUAL(ret, pid, ret, EXIT);
+
+    pid = fork();
+    ICUNIT_GOTO_WITHIN_EQUAL(pid, 0, 100000, pid, EXIT); // pid must in range 0 - 100000
+    if (pid == 0) {
+        ret = TestCapReadSearch();
         printf("err line :%d error code: %d\n", 0, 0);
         exit(0);
     }
