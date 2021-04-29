@@ -41,7 +41,11 @@ static int TestUmask(const char *path)
     mode_t mode;
     int ret;
     struct stat buf = { 0 };
+    struct stat buf1 = { 0 };
+    struct stat buf2 = { 0 };
     char filename[128] = {0};
+    char filename1[128] = {0};
+    char filename2[128] = {0};
 
     printf("%s, %d\n", __FUNCTION__, __LINE__);
 
@@ -54,8 +58,29 @@ static int TestUmask(const char *path)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ret = stat(filename, &buf);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(buf.st_mode, 040755, buf.st_mode);
+    ICUNIT_ASSERT_EQUAL(buf.st_mode, 040755, buf.st_mode); // mode: 040755
     rmdir(filename);
+
+    sprintf(filename1, "%s/%s", path, "file");
+    ret = open(filename1, O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
+    ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
+    ret = close(ret);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ret = stat(filename1, &buf1);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(buf1.st_mode, 0100755, buf1.st_mode); // mode: 0100755
+    unlink(filename1);
+
+    sprintf(filename2, "%s/%s", path, "file1");
+    ret = creat(filename2, HIGHEST_AUTHORITY);
+    ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
+    ret = close(ret);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ret = stat(filename2, &buf2);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(buf2.st_mode, 0100755, buf2.st_mode); // mode: 0100755
+    unlink(filename2);
+
     return 0;
 }
 
