@@ -55,17 +55,15 @@ typedef enum {
     QS_CTL_LIMIT
 } QuickstartConctrl;
 
-#define QS_STAGE_CNT            (QS_STAGE_LIMIT - QS_STAGE1)
-
-#define QS_STAGE_NO(x)            QS_STAGE##x
-
 #define QUICKSTART_IOC_MAGIC    'T'
 #define QUICKSTART_UNREGISTER   _IO(QUICKSTART_IOC_MAGIC, QS_UNREGISTER)
 #define QUICKSTART_NOTIFY       _IO(QUICKSTART_IOC_MAGIC, QS_NOTIFY)
 #define QUICKSTART_LISTEN       _IO(QUICKSTART_IOC_MAGIC, QS_LISTEN)
-#define QUICKSTART_STAGE(x)     _IO(QUICKSTART_IOC_MAGIC, QS_STAGE_NO(x))
+#define QUICKSTART_STAGE(x)     _IO(QUICKSTART_IOC_MAGIC, (x))
 
 #define QUICKSTART_NODE         "/dev/quickstart"
+
+#define QS_STAGE_CNT            (QS_STAGE_LIMIT - QS_STAGE1)
 
 typedef void (*SysteminitHook)(void);
 
