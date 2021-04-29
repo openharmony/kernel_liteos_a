@@ -133,7 +133,9 @@ HWTEST_F(TimeClockTest, ClockTest009, TestSize.Level0)
 {
     ClockTest009();
 }
+#endif
 
+#if defined(LOSCFG_USER_TEST_FULL)
 /* *
  * @tc.name: ClockTest010
  * @tc.desc: function for TimeClockTest
@@ -143,6 +145,28 @@ HWTEST_F(TimeClockTest, ClockTest009, TestSize.Level0)
 HWTEST_F(TimeClockTest, ClockTest010, TestSize.Level0)
 {
     ClockTest010();
+}
+
+/* *
+ * @tc.name: ClockTest011
+ * @tc.desc: test pthread_getcpuclockid:get pthread time
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(TimeClockTest, ClockTest011, TestSize.Level0)
+{
+    ClockTest011();
+}
+
+/* *
+ * @tc.name: ClockTest012
+ * @tc.desc: test clock_getcpuclockid:get process time
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(TimeClockTest, ClockTest012, TestSize.Level0)
+{
+    ClockTest012();
 }
 
 #endif
