@@ -58,7 +58,7 @@ static int TestUmask(const char *path)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ret = stat(filename, &buf);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(buf.st_mode, 040755, buf.st_mode);
+    ICUNIT_ASSERT_EQUAL(buf.st_mode, 040755, buf.st_mode); // mode: 040755
     rmdir(filename);
 
     sprintf(filename1, "%s/%s", path, "file");
@@ -68,8 +68,7 @@ static int TestUmask(const char *path)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ret = stat(filename1, &buf1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(buf.st_mode, 100755, buf.st_mode);
-    ICUNIT_ASSERT_EQUAL(buf1.st_mode, 0100755, buf1.st_mode);
+    ICUNIT_ASSERT_EQUAL(buf1.st_mode, 0100755, buf1.st_mode); // mode: 0100755
     unlink(filename1);
 
     sprintf(filename2, "%s/%s", path, "file1");
@@ -79,7 +78,7 @@ static int TestUmask(const char *path)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     ret = stat(filename2, &buf2);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    ICUNIT_ASSERT_EQUAL(buf2.st_mode, 0100755, buf2.st_mode);
+    ICUNIT_ASSERT_EQUAL(buf2.st_mode, 0100755, buf2.st_mode); // mode: 0100755
     unlink(filename2);
 
     return 0;
