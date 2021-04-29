@@ -100,7 +100,7 @@ static ssize_t QuickstartIoctl(struct file *filep, int cmd, unsigned long arg)
             QuickstartListen(arg);
             break;
         default:
-            QuickstartStageWorking(cmd - QUICKSTART_STAGE(1));  /* ioctl cmd converted to stage level */
+            QuickstartStageWorking(cmd - QUICKSTART_STAGE(QS_STAGE1));  /* ioctl cmd converted to stage level */
             break;
     }
     return 0;
