@@ -444,7 +444,7 @@ STATIC VOID OsMountUserdata(const CHAR *fsType)
         return;
     }
     err = get_errno();
-    if (err == ENOENT) {
+    if (err == ENOTSUP) {
 #ifdef LOSCFG_FS_FAT
         ret = format(emmcUserdataDev, 0, FM_FAT32);
         if (ret != LOS_OK) {
