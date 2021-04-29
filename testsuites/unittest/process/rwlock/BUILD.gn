@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
 unittest("liteos_a_rwlock_unittest") {
   output_extension = "bin"
@@ -39,9 +40,14 @@ unittest("liteos_a_rwlock_unittest") {
   sources = [
     "../../common/osTest.cpp",
     "process_rwlock_test.cpp",
-    "smoke/pthread_rwlock_test_001.cpp",
-    "smoke/pthread_rwlock_test_002.cpp",
   ]
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/pthread_rwlock_test_001.cpp",
+      "smoke/pthread_rwlock_test_002.cpp",
+    ]
+    sources += sources_smoke
+  }
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "../..:public_config" ]
 }

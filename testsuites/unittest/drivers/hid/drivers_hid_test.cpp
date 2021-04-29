@@ -40,6 +40,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_hid_001
  * @tc.desc: function for drivers hid
@@ -50,4 +51,5 @@ HWTEST_F(DriversHidTest, ItTestHid001, TestSize.Level0)
 {
     ItTestHid001();
 }
+#endif
 } // namespace OHOS

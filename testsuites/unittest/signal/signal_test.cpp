@@ -40,6 +40,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: IT_POSIX_SIGNAL_001
  * @tc.desc: function for SignalTest
@@ -645,4 +646,5 @@ HWTEST_F(SignalTest, ItIpcSigpromask001, TestSize.Level0)
 {
     ItIpcSigpromask001();
 }
+#endif
 } // namespace OHOS

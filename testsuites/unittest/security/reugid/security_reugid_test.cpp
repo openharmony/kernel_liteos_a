@@ -42,6 +42,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /**
  * @tc.name: ItTestReugid001
  * @tc.desc: function for SecurityReugidTest
@@ -52,4 +53,5 @@ HWTEST_F(SecurityReugidTest, ItTestReugid001, TestSize.Level0)
 {
     ItTestReugid001();
 }
+#endif
 } // namespace OHOS

@@ -42,6 +42,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /**
  * @tc.name: It_Test_Cap_001
  * @tc.desc: function for SecurityCapbilityTest
@@ -52,4 +53,5 @@ HWTEST_F(SecurityCapabilityTest, ItTestCap001, TestSize.Level0)
 {
     ItTestCap001();
 }
+#endif
 } // namespace OHOS

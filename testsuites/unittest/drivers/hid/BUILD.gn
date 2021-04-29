@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
 unittest("liteos_a_drivers_hid_unittest") {
   output_extension = "bin"
@@ -39,8 +40,13 @@ unittest("liteos_a_drivers_hid_unittest") {
   sources = [
     "../../common/osTest.cpp",
     "drivers_hid_test.cpp",
-    "smoke/hid_test_001.cpp",
   ]
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/hid_test_001.cpp",
+    ]
+    sources += sources_smoke
+  }
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "../..:public_config" ]
 }

@@ -42,6 +42,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: IT_TEST_SYS_004
  * @tc.desc: function for SysTest
@@ -217,4 +218,5 @@ HWTEST_F(SysTest, IT_TEST_SYS_031, TestSize.Level0)
 {
     IT_TEST_SYS_031();
 }
+#endif
 } // namespace OHOS

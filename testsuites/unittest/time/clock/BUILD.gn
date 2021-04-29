@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
 unittest("liteos_a_time_clock_unittest") {
   output_extension = "bin"
@@ -36,21 +37,34 @@ unittest("liteos_a_time_clock_unittest") {
     "../../common/include",
     "../../time/clock",
   ]
+
   sources = [
     "../../common/osTest.cpp",
-    "smoke/clock_test_001.cpp",
-    "smoke/clock_test_002.cpp",
-    "smoke/clock_test_003.cpp",
-    "smoke/clock_test_004.cpp",
-    "smoke/clock_test_006.cpp",
-    "smoke/clock_test_007.cpp",
-    "smoke/clock_test_008.cpp",
-    "smoke/clock_test_009.cpp",
-    "smoke/clock_test_010.cpp",
-    "smoke/clock_test_011.cpp",
-    "smoke/clock_test_012.cpp",
     "time_clock_test.cpp",
   ]
+
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/clock_test_001.cpp",
+      "smoke/clock_test_002.cpp",
+      "smoke/clock_test_003.cpp",
+      "smoke/clock_test_004.cpp",
+      "smoke/clock_test_006.cpp",
+      "smoke/clock_test_007.cpp",
+      "smoke/clock_test_008.cpp",
+      "smoke/clock_test_009.cpp",
+      "smoke/clock_test_011.cpp",
+      "smoke/clock_test_012.cpp",
+    ]
+    sources += sources_smoke
+  }
+
+  if (LOSCFG_USER_TEST_FULL == true) {
+    sources_full = [
+      "full/clock_test_010.cpp",
+    ]
+    sources += sources_full
+  }
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "../../../unittest:public_config" ]
 }

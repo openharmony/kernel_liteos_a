@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
 unittest("liteos_a_mem_vm_unittest") {
   output_extension = "bin"
@@ -39,22 +40,27 @@ unittest("liteos_a_mem_vm_unittest") {
   sources = [
     "../../common/osTest.cpp",
     "mem_vm_test.cpp",
-    "smoke/mmap_test_001.cpp",
-    "smoke/mmap_test_002.cpp",
-    "smoke/mmap_test_003.cpp",
-    "smoke/mmap_test_004.cpp",
-    "smoke/mmap_test_005.cpp",
-    "smoke/mmap_test_006.cpp",
-    "smoke/mmap_test_007.cpp",
-    "smoke/mmap_test_008.cpp",
-    "smoke/mmap_test_009.cpp",
-    "smoke/mmap_test_010.cpp",
-    "smoke/mprotect_test_001.cpp",
-    "smoke/mremap_test_001.cpp",
-    "smoke/oom_test_001.cpp",
-    "smoke/open_wmemstream_test_001.cpp",
-    "smoke/user_copy_test_001.cpp",
   ]
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/mmap_test_001.cpp",
+      "smoke/mmap_test_002.cpp",
+      "smoke/mmap_test_003.cpp",
+      "smoke/mmap_test_004.cpp",
+      "smoke/mmap_test_005.cpp",
+      "smoke/mmap_test_006.cpp",
+      "smoke/mmap_test_007.cpp",
+      "smoke/mmap_test_008.cpp",
+      "smoke/mmap_test_009.cpp",
+      "smoke/mmap_test_010.cpp",
+      "smoke/mprotect_test_001.cpp",
+      "smoke/mremap_test_001.cpp",
+      "smoke/oom_test_001.cpp",
+      "smoke/open_wmemstream_test_001.cpp",
+      "smoke/user_copy_test_001.cpp",
+    ]
+    sources += sources_smoke
+  }
   configs = [ "../..:public_config" ]
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

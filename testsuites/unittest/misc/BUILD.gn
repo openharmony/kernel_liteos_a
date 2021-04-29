@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../config.gni")
 
 unittest("liteos_a_misc_unittest") {
   output_extension = "bin"
@@ -36,24 +37,37 @@ unittest("liteos_a_misc_unittest") {
     "../common/include",
     "../misc",
   ]
+
   sources = [
     "../common/osTest.cpp",
-    "full/misc_test_001.cpp",
-    "full/misc_test_002.cpp",
-    "full/misc_test_003.cpp",
-    "full/misc_test_004.cpp",
-    "full/misc_test_005.cpp",
-    "full/misc_test_006.cpp",
-    "full/misc_test_007.cpp",
-    "full/misc_test_008.cpp",
-    "full/misc_test_009.cpp",
-    "full/misc_test_010.cpp",
-    "full/misc_test_011.cpp",
-    "full/misc_test_012.cpp",
-    "full/misc_test_013.cpp",
-    "full/misc_test_014.cpp",
     "misc_test.cpp",
   ]
+
+  if (LOSCFG_USER_TEST_FULL == true) {
+    sources_full = [
+      "full/misc_test_006.cpp",
+      "full/misc_test_007.cpp",
+      "full/misc_test_010.cpp",
+      "full/misc_test_011.cpp",
+      "full/misc_test_012.cpp",
+      "full/misc_test_013.cpp",
+    ]
+    sources += sources_full
+  }
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/misc_test_001.cpp",
+      "smoke/misc_test_002.cpp",
+      "smoke/misc_test_003.cpp",
+      "smoke/misc_test_004.cpp",
+      "smoke/misc_test_005.cpp",
+      "smoke/misc_test_008.cpp",
+      "smoke/misc_test_009.cpp",
+      "smoke/misc_test_014.cpp",
+    ]
+    sources += sources_smoke
+  }
+
   configs = [ "..:public_config" ]
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

@@ -41,6 +41,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_pthread_spinlock_001
  * @tc.desc: function for ProcessSpinlockTest
@@ -51,4 +52,5 @@ HWTEST_F(ProcessSpinlockTest, ItTestPthreadSpinlock001, TestSize.Level0)
 {
     ItTestPthreadSpinlock001();
 }
+#endif
 } // namespace OHOS

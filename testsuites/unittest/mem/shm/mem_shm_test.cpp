@@ -41,6 +41,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_shm_001
  * @tc.desc: function for MemShmTest
@@ -91,10 +92,10 @@ HWTEST_F(MemShmTest, ItTestShm004, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
  */
-/*HWTEST_F(MemShmTest, ItTestShm005, TestSize.Level0)
+HWTEST_F(MemShmTest, ItTestShm005, TestSize.Level0)
 {
-    ItTestShm005();  // bug, errno
-} */
+    ItTestShm005();
+}
 
 /* *
  * @tc.name: it_test_shm_006
@@ -161,6 +162,6 @@ HWTEST_F(MemShmTest, ItTestShm011, TestSize.Level0)
 {
     ItTestShm011();
 }
-
+#endif
 }
 // namespace OHOS

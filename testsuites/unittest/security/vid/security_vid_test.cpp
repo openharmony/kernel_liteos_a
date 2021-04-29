@@ -42,6 +42,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /**
  * @tc.name: It_Sec_Vid_001
  * @tc.desc: function for SecurityVidTest
@@ -52,4 +53,5 @@ HWTEST_F(SecurityVidTest, ItSecVid001, TestSize.Level0)
 {
     ItSecVid001();
 }
+#endif
 } // namespace OHOS

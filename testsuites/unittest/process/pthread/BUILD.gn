@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
 unittest("liteos_a_pthread_unittest") {
   output_extension = "bin"
@@ -39,31 +40,36 @@ unittest("liteos_a_pthread_unittest") {
   sources = [
     "../../common/osTest.cpp",
     "process_pthread_test.cpp",
-    "smoke/pthread_atfork_test_001.cpp",
-    "smoke/pthread_atfork_test_002.cpp",
-    "smoke/pthread_cond_test_001.cpp",
-    "smoke/pthread_cond_test_002.cpp",
-    "smoke/pthread_once_test_001.cpp",
-    "smoke/pthread_test_001.cpp",
-    "smoke/pthread_test_002.cpp",
-    "smoke/pthread_test_003.cpp",
-    "smoke/pthread_test_004.cpp",
-    "smoke/pthread_test_005.cpp",
-    "smoke/pthread_test_006.cpp",
-    "smoke/pthread_test_007.cpp",
-    "smoke/pthread_test_008.cpp",
-    "smoke/pthread_test_009.cpp",
-    "smoke/pthread_test_010.cpp",
-    "smoke/pthread_test_011.cpp",
-    "smoke/pthread_test_012.cpp",
-    "smoke/pthread_test_013.cpp",
-    "smoke/pthread_test_014.cpp",
-    "smoke/pthread_test_015.cpp",
-    "smoke/pthread_test_016.cpp",
-    "smoke/pthread_test_017.cpp",
-    "smoke/pthread_test_018.cpp",
-    "smoke/pthread_test_019.cpp",
   ]
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/pthread_atfork_test_001.cpp",
+      "smoke/pthread_atfork_test_002.cpp",
+      "smoke/pthread_cond_test_001.cpp",
+      "smoke/pthread_cond_test_002.cpp",
+      "smoke/pthread_once_test_001.cpp",
+      "smoke/pthread_test_001.cpp",
+      "smoke/pthread_test_002.cpp",
+      "smoke/pthread_test_003.cpp",
+      "smoke/pthread_test_004.cpp",
+      "smoke/pthread_test_005.cpp",
+      "smoke/pthread_test_006.cpp",
+      "smoke/pthread_test_007.cpp",
+      "smoke/pthread_test_008.cpp",
+      "smoke/pthread_test_009.cpp",
+      "smoke/pthread_test_010.cpp",
+      "smoke/pthread_test_011.cpp",
+      "smoke/pthread_test_012.cpp",
+      "smoke/pthread_test_013.cpp",
+      "smoke/pthread_test_014.cpp",
+      "smoke/pthread_test_015.cpp",
+      "smoke/pthread_test_016.cpp",
+      "smoke/pthread_test_017.cpp",
+      "smoke/pthread_test_018.cpp",
+      "smoke/pthread_test_019.cpp",
+    ]
+    sources += sources_smoke
+  }
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "../..:public_config" ]
 }

@@ -41,6 +41,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_pthread_rwlock_001
  * @tc.desc: function for ProcessRwlockTest
@@ -62,4 +63,5 @@ HWTEST_F(ProcessRwlockTest, ItTestPthreadRwlock002, TestSize.Level0)
 {
     ItTestPthreadRwlock002();
 }
+#endif
 } // namespace OHOS

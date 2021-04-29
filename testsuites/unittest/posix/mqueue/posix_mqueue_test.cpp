@@ -279,7 +279,6 @@ HWTEST_F(PosixMqueueTest, ItPosixQueue113, TestSize.Level0)
 {
     ItPosixQueue113();
 }
-
 #endif
 /**
  * @tc.name: IT_POSIX_QUEUE_018
@@ -1194,10 +1193,10 @@ HWTEST_F(PosixMqueueTest, ItPosixQueue154, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
  */
-/* HWTEST_F(PosixMqueueTest, ItPosixQueue155, TestSize.Level0)
+HWTEST_F(PosixMqueueTest, ItPosixQueue155, TestSize.Level0)
 {
-    ItPosixQueue155();  // bug, errno
-} */
+    ItPosixQueue155();
+}
 
 /**
  * @tc.name: IT_POSIX_QUEUE_156
@@ -1316,10 +1315,10 @@ HWTEST_F(PosixMqueueTest, ItPosixQueue187, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
  */
-/*HWTEST_F(PosixMqueueTest, ItPosixQueue200, TestSize.Level0)
+HWTEST_F(PosixMqueueTest, ItPosixQueue200, TestSize.Level0)
 {
-    ItPosixQueue200();  // bug, errno
-}*/
+    ItPosixQueue200();
+}
 
 /**
  * @tc.name: IT_POSIX_QUEUE_201
@@ -1327,10 +1326,10 @@ HWTEST_F(PosixMqueueTest, ItPosixQueue187, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
  */
-/*HWTEST_F(PosixMqueueTest, ItPosixQueue201, TestSize.Level0)
+HWTEST_F(PosixMqueueTest, ItPosixQueue201, TestSize.Level0)
 {
-    ItPosixQueue201();  // bug, errno
-}*/
+    ItPosixQueue201();
+}
 
 /**
  * @tc.name: IT_POSIX_QUEUE_202

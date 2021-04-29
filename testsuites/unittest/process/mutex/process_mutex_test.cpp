@@ -49,6 +49,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_pthread_mutex_001
  * @tc.desc: function for ProcessMutexTest
@@ -292,5 +293,5 @@ HWTEST_F(ProcessMutexTest, ItTestPthreadMutex022, TestSize.Level0)
 {
     ItTestPthreadMutex022();
 }
-
+#endif
 } // namespace OHOS

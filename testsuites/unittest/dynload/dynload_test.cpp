@@ -41,6 +41,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_dynload_002
  * @tc.desc: function for DynloadTest
@@ -62,4 +63,5 @@ HWTEST_F(DynloadTest, ItTestDynload004, TestSize.Level0)
 {
     ItTestDynload004();
 }
+#endif
 } // namespace OHOS
