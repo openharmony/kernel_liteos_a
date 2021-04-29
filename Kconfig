@@ -165,6 +165,7 @@ config THUMB
     default n
     help
       Answer Y to build thumb version.  This will make LiteOS smaller.
+
 config PLATFORM_DVFS
     bool "Enable Dvfs"
     default n
@@ -172,6 +173,12 @@ config PLATFORM_DVFS
     help
       Answer Y to enable LiteOS support dynamic voltage and frequency scaling feature for
       low power consumption.
+
+config SAVE_EXCINFO
+    bool "Enable Saving Exception Information"
+    default n
+    help
+      Answer Y to enable LiteOS support saving exception information to storage medium.
 
 config DEBUG_VERSION
     bool "Enable a Debug Version"
