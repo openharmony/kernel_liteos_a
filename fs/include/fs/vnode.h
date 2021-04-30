@@ -121,5 +121,6 @@ void ChangeRoot(struct Vnode *newRoot);
 BOOL VnodeInUseIter(const struct Mount *mount);
 struct Vnode *VnodeGetRoot(void);
 void VnodeMemoryDump(void);
+int VnodeDestory(struct Vnode *vnode);
 
 #endif /* !_VNODE_H_ */

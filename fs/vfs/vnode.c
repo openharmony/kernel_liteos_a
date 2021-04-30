@@ -168,29 +168,21 @@ int VnodeFree(struct Vnode *vnode)
     if (vnode == NULL) {
         return LOS_OK;
     }
-    struct PathCache *item = NULL;
-    struct PathCache *nextItem = NULL;
 
     VnodeHold();
     if (vnode->useCount > 0) {
         VnodeDrop();
         return -EBUSY;
     }
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &vnode->childPathCaches, struct PathCache, childEntry) {
-        PathCacheFree(item);
-    }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &vnode->parentPathCaches, struct PathCache, parentEntry) {
-        PathCacheFree(item);
-    }
-
+    VnodePathCacheFree(vnode);
     LOS_ListDelete(&(vnode->hashEntry));
+    LOS_ListDelete(&vnode->actFreeEntry);
 
     if (vnode->vop->Reclaim) {
         vnode->vop->Reclaim(vnode);
     }
 
-    LOS_ListDelete(&vnode->actFreeEntry);
     memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
     LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);
 
@@ -629,4 +621,28 @@ void VnodeMemoryDump(void)
 
     PRINTK("Vnode number = %d\n", vnodeCount);
     PRINTK("Vnode memory size = %d(B)\n", vnodeCount * sizeof(struct Vnode));
+}
+
+int VnodeDestory(struct Vnode *vnode)
+{
+    if (vnode == NULL || vnode->vop != &g_devfsOps) {
+        /* destory only support dev vnode */
+        return -EINVAL;
+    }
+
+    VnodeHold();
+    if (vnode->useCount > 0) {
+        VnodeDrop();
+        return -EBUSY;
+    }
+
+    VnodePathCacheFree(vnode);
+    LOS_ListDelete(&(vnode->hashEntry));
+    LOS_ListDelete(&vnode->actFreeEntry);
+
+    free(vnode->data);
+    free(vnode);
+    VnodeDrop();
+
+    return LOS_OK;
 }
