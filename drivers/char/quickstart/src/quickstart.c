@@ -49,14 +49,34 @@ static int QuickstartClose(struct file *filep)
     return 0;
 }
 
-static void QuickstartNotify(unsigned int events)
+static int QuickstartNotify(unsigned int events)
 {
-    LOS_EventWrite((PEVENT_CB_S)&g_qsEvent, events);
+    unsigned int pid = LOS_GetCurrProcessID();
+    /* 16:low 16 bits for eventMask, high 16 bits for pid */
+    unsigned int notifyEvent = (pid << 16) | events;
+    int ret = LOS_EventWrite((PEVENT_CB_S)&g_qsEvent, notifyEvent);
+    if (ret != 0) {
+        PRINT_ERR("%s,%d:0x%x\n", __FUNCTION__, __LINE__, ret);
+        ret = -EINVAL;
+    }
+    return ret;
 }
 
-static void QuickstartListen(unsigned int eventMask)
+static int QuickstartListen(unsigned long arg)
 {
-    LOS_EventRead((PEVENT_CB_S)&g_qsEvent, eventMask, LOS_WAITMODE_AND | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
+    QuickstartMask listenMask;
+    if (copy_from_user(&listenMask, (struct QuickstartMask __user *)arg, sizeof(QuickstartMask)) != LOS_OK) {
+        PRINT_ERR("%s,%d\n", __FUNCTION__, __LINE__);
+        return -EINVAL;
+    }
+    /* 16:low 16 bits for eventMask, high 16 bits for pid */
+    unsigned int mask = (listenMask.pid << 16) | listenMask.events;
+    int ret = LOS_EventRead((PEVENT_CB_S)&g_qsEvent, mask, LOS_WAITMODE_AND | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
+    if (ret != 0) {
+        PRINT_ERR("%s,%d:0x%x\n", __FUNCTION__, __LINE__, ret);
+        ret = -EINVAL;
+    }
+    return ret;
 }
 
 void QuickstartHookRegister(LosSysteminitHook hooks)
@@ -66,7 +86,7 @@ void QuickstartHookRegister(LosSysteminitHook hooks)
     }
 }
 
-static void QuickstartStageWorking(unsigned int level)
+static int QuickstartStageWorking(unsigned int level)
 {
     if ((level < QS_STAGE_CNT) && (g_callOnce[level] == 0) && (g_systemInitFunc[level] != NULL)) {
         g_callOnce[level] = 1;    /* 1: Already called */
@@ -74,6 +94,7 @@ static void QuickstartStageWorking(unsigned int level)
     } else {
         PRINT_WARN("Trigger quickstart,but doing nothing!!\n");
     }
+    return 0;
 }
 
 static int QuickstartDevUnregister(void)
@@ -83,27 +104,27 @@ static int QuickstartDevUnregister(void)
 
 static ssize_t QuickstartIoctl(struct file *filep, int cmd, unsigned long arg)
 {
+    ssize_t ret;
     if (cmd == QUICKSTART_NOTIFY) {
-        QuickstartNotify(arg);
-        return 0;
+        return QuickstartNotify(arg);
     }
 
     if (OsGetUserInitProcessID() != LOS_GetCurrProcessID()) {
         PRINT_ERR("Permission denios!\n");
-        return -1;
+        return -EACCES;
     }
     switch (cmd) {
         case QUICKSTART_UNREGISTER:
-            QuickstartDevUnregister();
+            ret = QuickstartDevUnregister();
             break;
         case QUICKSTART_LISTEN:
-            QuickstartListen(arg);
+            ret = QuickstartListen(arg);
             break;
         default:
-            QuickstartStageWorking(cmd - QUICKSTART_STAGE(QS_STAGE1));  /* ioctl cmd converted to stage level */
+            ret = QuickstartStageWorking(cmd - QUICKSTART_STAGE(QS_STAGE1));  /* ioctl cmd converted to stage level */
             break;
     }
-    return 0;
+    return ret;
 }
 
 static const struct file_operations_vfs g_quickstartDevOps = {
@@ -123,6 +144,6 @@ static const struct file_operations_vfs g_quickstartDevOps = {
 int QuickstartDevRegister(void)
 {
     LOS_EventInit(&g_qsEvent);
-    return register_driver(QUICKSTART_NODE, &g_quickstartDevOps, 0666, 0); /* 0666: file mode */
+    return register_driver(QUICKSTART_NODE, &g_quickstartDevOps, 0644, 0); /* 0644: file mode */
 }
 

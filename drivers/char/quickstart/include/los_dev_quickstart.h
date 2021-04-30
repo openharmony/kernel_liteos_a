@@ -55,10 +55,15 @@ typedef enum {
     QS_CTL_LIMIT
 } QuickstartConctrl;
 
+typedef struct {
+    unsigned int pid;
+    unsigned int events;
+} QuickstartMask;
+
 #define QUICKSTART_IOC_MAGIC    'T'
 #define QUICKSTART_UNREGISTER   _IO(QUICKSTART_IOC_MAGIC, QS_UNREGISTER)
 #define QUICKSTART_NOTIFY       _IO(QUICKSTART_IOC_MAGIC, QS_NOTIFY)
-#define QUICKSTART_LISTEN       _IO(QUICKSTART_IOC_MAGIC, QS_LISTEN)
+#define QUICKSTART_LISTEN       _IOR(QUICKSTART_IOC_MAGIC, QS_LISTEN, QuickstartMask)
 #define QUICKSTART_STAGE(x)     _IO(QUICKSTART_IOC_MAGIC, (x))
 
 #define QUICKSTART_NODE         "/dev/quickstart"
