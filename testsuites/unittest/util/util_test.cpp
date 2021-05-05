@@ -41,7 +41,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
-#if defined(LOSCFG_USER_TEST_FULL)
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: IT_TEST_UTIL_001
  * @tc.desc: function for UtilTest

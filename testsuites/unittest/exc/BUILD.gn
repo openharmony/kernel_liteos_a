@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../config.gni")
 
 unittest("liteos_a_exc_unittest") {
   output_extension = "bin"
@@ -39,13 +40,18 @@ unittest("liteos_a_exc_unittest") {
   sources = [
     "../common/osTest.cpp",
     "exc_test.cpp",
-    "full/it_test_exc_001.cpp",
-    "full/it_test_exc_002.cpp",
-    "full/it_test_exc_003.cpp",
-    "full/it_test_exc_004.cpp",
-    "full/it_test_exc_005.cpp",
-    "full/it_test_fexecve_001.cpp",
   ]
+  if (LOSCFG_USER_TEST_FULL == true) {
+    sources_full = [
+      "full/it_test_exc_001.cpp",
+      "full/it_test_exc_002.cpp",
+      "full/it_test_exc_003.cpp",
+      "full/it_test_exc_004.cpp",
+      "full/it_test_exc_005.cpp",
+      "full/it_test_fexecve_001.cpp",
+    ]
+    sources += sources_full
+  }
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "..:public_config" ]
 }

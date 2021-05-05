@@ -47,20 +47,25 @@ unittest("liteos_a_net_socket_unittest") {
   sources = [
     "../../common/osTest.cpp",
     "net_socket_test.cpp",
-    "smoke/net_socket_test_001.cpp",
-    "smoke/net_socket_test_002.cpp",
-    "smoke/net_socket_test_003.cpp",
-    "smoke/net_socket_test_004.cpp",
-    "smoke/net_socket_test_005.cpp",
-    "smoke/net_socket_test_006.cpp",
-    "smoke/net_socket_test_007.cpp",
-    "smoke/net_socket_test_008.cpp",
-    "smoke/net_socket_test_009.cpp",
-    "smoke/net_socket_test_010.cpp",
-    "smoke/net_socket_test_011.cpp",
-    "smoke/net_socket_test_012.cpp",
-    "smoke/net_socket_test_013.cpp",
   ]
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/net_socket_test_001.cpp",
+      "smoke/net_socket_test_002.cpp",
+      "smoke/net_socket_test_003.cpp",
+      "smoke/net_socket_test_004.cpp",
+      "smoke/net_socket_test_005.cpp",
+      "smoke/net_socket_test_006.cpp",
+      "smoke/net_socket_test_007.cpp",
+      "smoke/net_socket_test_008.cpp",
+      "smoke/net_socket_test_009.cpp",
+      "smoke/net_socket_test_010.cpp",
+      "smoke/net_socket_test_011.cpp",
+      "smoke/net_socket_test_012.cpp",
+      "smoke/net_socket_test_013.cpp",
+    ]
+    sources += sources_smoke
+  }
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [
     "../../:public_config",

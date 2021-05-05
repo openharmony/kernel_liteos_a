@@ -43,6 +43,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_FULL)
 /* *
  * @tc.name: IT_TEST_IO_005
  * @tc.desc: function for IoTest
@@ -233,5 +234,5 @@ HWTEST_F(IoTest, ItStdioMbrlen001, TestSize.Level0)
 {
     ItStdioMbrlen001();
 }
-
+#endif
 } // namespace OHOS

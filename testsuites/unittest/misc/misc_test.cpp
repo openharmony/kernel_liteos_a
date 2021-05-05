@@ -42,6 +42,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: IT_TEST_MISC_001
  * @tc.desc: function for MiscTest
@@ -98,6 +99,19 @@ HWTEST_F(MiscTest, ItTestMisc005, TestSize.Level0)
 }
 
 /* *
+ * @tc.name: IT_TEST_MISC_014
+ * @tc.desc: function for tmpnam test
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(MiscTest, IT_TEST_MISC_014, TestSize.Level0)
+{
+    IT_TEST_MISC_014();
+}
+#endif
+
+#if defined(LOSCFG_USER_TEST_FULL)
+/* *
  * @tc.name: IT_TEST_MISC_006
  * @tc.desc: function for MiscTest
  * @tc.type: FUNC
@@ -151,16 +165,6 @@ HWTEST_F(MiscTest, ItTestMisc006, TestSize.Level0)
 {
     ItTestMisc013();
 }*/
-
-/* *
- * @tc.name: IT_TEST_MISC_014
- * @tc.desc: function for tmpnam test
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(MiscTest, IT_TEST_MISC_014, TestSize.Level0)
-{
-    IT_TEST_MISC_014();
-}
+#endif
 
 } // namespace OHOS

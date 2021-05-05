@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
 unittest("liteos_a_time_timer_unittest") {
   output_extension = "bin"
@@ -36,16 +37,24 @@ unittest("liteos_a_time_timer_unittest") {
     "../../common/include",
     "../../time/timer",
   ]
+
   sources = [
     "../../common/osTest.cpp",
-    "smoke/timer_test_001.cpp",
-    "smoke/timer_test_002.cpp",
-    "smoke/timer_test_003.cpp",
-    "smoke/timer_test_004.cpp",
-    "smoke/timer_test_tzset_001.cpp",
-    "smoke/timer_test_tzset_002.cpp",
     "time_timer_test.cpp",
   ]
+
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/timer_test_001.cpp",
+      "smoke/timer_test_002.cpp",
+      "smoke/timer_test_003.cpp",
+      "smoke/timer_test_004.cpp",
+      "smoke/timer_test_tzset_001.cpp",
+      "smoke/timer_test_tzset_002.cpp",
+    ]
+    sources += sources_smoke
+  }
+
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "../../../unittest:public_config" ]
 }

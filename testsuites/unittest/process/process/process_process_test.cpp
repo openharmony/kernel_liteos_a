@@ -70,6 +70,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_process_001
  * @tc.desc: function for ProcessProcessTest
@@ -890,6 +891,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcessSmp008, TestSize.Level0)
 {
     ItTestProcessSmp008();
 }
-
+#endif
 #endif
 } // namespace OHOS

@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
 unittest("liteos_a_security_reugid_unittest") {
   output_extension = "bin"
@@ -39,8 +40,13 @@ unittest("liteos_a_security_reugid_unittest") {
   sources = [
     "../../common/osTest.cpp",
     "security_reugid_test.cpp",
-    "smoke/reugid_test_001.cpp",
   ]
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/reugid_test_001.cpp",
+    ]
+    sources += sources_smoke
+  }
   configs = [ "../..:public_config" ]
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

@@ -32,69 +32,74 @@
 
 static VOID *PthreadF01(VOID *argument)
 {
-    INT32 ret;
-    const CHAR *msgptr = MQUEUE_SEND_STRING_TEST;
+    INT32 i, ret;
+    const CHAR *msgptr[] = { "msg test 1", "msg test 2", "msg test 3" };
+    struct mq_attr attr = { 0 };
 
     g_testCount = 1;
 
-    ret = LosTaskDelay(5); // 5, Set the timeout of task delay;
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
-
-    ICUNIT_GOTO_EQUAL(g_testCount, 3, g_testCount, EXIT); // 3, Here, assert the g_testCount.
-
-    ret = mq_send(g_gqueue, msgptr, strlen(msgptr), 0);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+    mq_getattr(g_gqueue, &attr);
+    for (i = 0; i < 3; i++) { // 3, the loop frequency.
+        LosTaskDelay(2); // 2, delay
+        ret = mq_send(g_gqueue, msgptr[i], attr.mq_msgsize, 0);
+        ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+    }
 
     g_testCount = 2; // 2, Init test count value.
 
     return NULL;
 EXIT:
-    mq_close(g_gqueue);
-    mq_unlink(g_gqname);
     g_testCount = 0;
     return NULL;
 }
 
 static VOID *PthreadF02(VOID *argument)
 {
-    INT32 ret = 0;
-    CHAR msgrv[MQUEUE_STANDARD_NAME_LENGTH] = {0};
+    INT32 i, ret;
+    UINT32 uret;
+    const CHAR *msgptr[] = { "msg test 1", "msg test 2", "msg test 3" };
+    CHAR msgrcd[3][MQUEUE_STANDARD_NAME_LENGTH] = {0};
+    struct mq_attr attr = { 0 };
+    UINT32 msgPrio = 1;
 
     g_testCount = 3; // 3, Init test count value.
 
-    ret = mq_receive(g_gqueue, msgrv, MQUEUE_STANDARD_NAME_LENGTH, NULL);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_SHORT_ARRAY_LENGTH, ret, EXIT);
+    mq_getattr(g_gqueue, &attr);
+    for (i = 0; i < 3; i++) { // 3, the loop frequency.
+        uret = LosTaskDelay(2); // 2, delay
+        ICUNIT_GOTO_EQUAL(uret, MQUEUE_NO_ERROR, uret, EXIT);
 
-    ret = LosTaskDelay(1);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
-
-    ret = mq_close(g_gqueue);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
-
-    ret = mq_unlink(g_gqname);
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+        ret = mq_receive(g_gqueue, msgrcd[i], attr.mq_msgsize, &msgPrio);
+        ICUNIT_GOTO_EQUAL(ret, attr.mq_msgsize, ret, EXIT);
+        ICUNIT_GOTO_NOT_EQUAL(ret, strlen(msgptr[i]), ret, EXIT);
+        ICUNIT_GOTO_STRING_EQUAL(msgrcd[i], msgptr[i], msgrcd[i], EXIT);
+    }
 
     g_testCount = 4; // 4, Init test count value.
+
     return NULL;
 EXIT:
-    mq_close(g_gqueue);
-    mq_unlink(g_gqname);
     g_testCount = 0;
     return NULL;
 }
 
 static UINT32 Testcase(VOID)
 {
-    UINT32 ret;
-    struct mq_attr attr = { 0 };
+    INT32 ret;
+    UINT32 uret;
+    CHAR mqname[MQUEUE_STANDARD_NAME_LENGTH] = "";
+    struct mq_attr mqstat, attr;
     pthread_attr_t attr1;
-    pthread_t newTh1, newTh2;
+    pthread_t newTh, newTh2;
 
-    snprintf(g_gqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq053_%d", LosCurTaskIDGet());
+    memset(&mqstat, 0, sizeof(mqstat));
+    mqstat.mq_maxmsg = MQUEUE_SHORT_ARRAY_LENGTH;
+    mqstat.mq_msgsize = MQUEUE_SHORT_ARRAY_LENGTH * 2; // 2, mqueue message size.
+    mqstat.mq_flags = 0;
 
-    attr.mq_msgsize = MQUEUE_STANDARD_NAME_LENGTH;
-    attr.mq_maxmsg = MQUEUE_STANDARD_NAME_LENGTH;
-    g_gqueue = mq_open(g_gqname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attr);
+    snprintf(mqname, MQUEUE_STANDARD_NAME_LENGTH, "/mq144_%d", LosCurTaskIDGet());
+
+    g_gqueue = mq_open(mqname, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO, &mqstat);
     ICUNIT_GOTO_NOT_EQUAL(g_gqueue, (mqd_t)-1, g_gqueue, EXIT);
 
     g_testCount = 0;
@@ -102,7 +107,7 @@ static UINT32 Testcase(VOID)
     ret = PosixPthreadInit(&attr1, MQUEUE_PTHREAD_PRIORITY_TEST1);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
-    ret = pthread_create(&newTh1, &attr1, PthreadF01, NULL);
+    ret = pthread_create(&newTh, &attr1, PthreadF01, NULL);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
 
     LosTaskDelay(1);
@@ -114,58 +119,35 @@ static UINT32 Testcase(VOID)
     ret = pthread_create(&newTh2, &attr1, PthreadF02, NULL);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
-#ifdef TEST3559A_M7
-    ret = LosTaskDelay(50); // 50, Set delay time.
-#else
-    ret = LosTaskDelay(10); // 10, Set delay time.
-#endif
-    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
+    uret = LosTaskDelay(12); // 12, Set delay time.
+    ICUNIT_GOTO_EQUAL(uret, MQUEUE_NO_ERROR, uret, EXIT2);
 
     ICUNIT_GOTO_EQUAL(g_testCount, 4, g_testCount, EXIT2); // 4, Here, assert the g_testCount.
 
     ret = PosixPthreadDestroy(&attr1, newTh2);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT2);
 
-    ret = PosixPthreadDestroy(&attr1, newTh1);
+    ret = PosixPthreadDestroy(&attr1, newTh);
     ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT1);
+
+    ret = mq_close(g_gqueue);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
+
+    ret = mq_unlink(mqname);
+    ICUNIT_GOTO_EQUAL(ret, MQUEUE_NO_ERROR, ret, EXIT);
 
     return MQUEUE_NO_ERROR;
 EXIT2:
     PosixPthreadDestroy(&attr1, newTh2);
 EXIT1:
-    PosixPthreadDestroy(&attr1, newTh1);
+    PosixPthreadDestroy(&attr1, newTh);
 EXIT:
     mq_close(g_gqueue);
-    mq_unlink(g_gqname);
+    mq_unlink(mqname);
     return MQUEUE_NO_ERROR;
 }
 
-/* *
-*-@test IT_POSIX_MQUEUE_053
-*-@tspec The function test for mq_send
-*-@ttitle Mq_send writes the mqueue interrupted by the signal
-*-@tprecon The mqueue,signal and pthread module is open
-*-@tbrief
-1. use the pthread_create to create a legal pthread;
-2. use the mq_send to write the mqueue in the pthread;
-3. use the pthread_create to create another legal pthread;
-4. use the mq_receive to read the mqueue in the second pthread;
-5. use the mq_close to close the mqueue in the second pthread;
-6. use the mq_unlink to delete the mqueue in the second pthread;
-7. delete all the pthreads.
-*-@texpect
-1. Return successed
-2. Return successed
-3. Return successed
-4. Return successed
-5. Return successed
-6. Return successed
-7. Sucessful operation
-*-@tprior 1
-*-@tauto TRUE
-*-@tremark
-*/
-VOID ItPosixQueue053(VOID)
+VOID ItPosixQueue144(VOID) // IT_Layer_ModuleORFeature_No
 {
-    TEST_ADD_CASE("IT_POSIX_QUEUE_053", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
+    TEST_ADD_CASE("ItPosixQueue144", Testcase, TEST_POSIX, TEST_QUE, TEST_LEVEL2, TEST_FUNCTION);
 }

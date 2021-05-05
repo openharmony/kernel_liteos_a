@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../config.gni")
 
 unittest("liteos_a_ipc_unittest") {
   output_extension = "bin"
@@ -38,10 +39,15 @@ unittest("liteos_a_ipc_unittest") {
   ]
   sources = [
     "../common/osTest.cpp",
-    "full/IPC_test_mkfifoat_001.cpp",
-    "full/IPC_test_mkfifoat_002.cpp",
     "ipc_test.cpp",
   ]
+  if (LOSCFG_USER_TEST_FULL == true) {
+    sources_full = [
+      "full/IPC_test_mkfifoat_001.cpp",
+      "full/IPC_test_mkfifoat_002.cpp",
+    ]
+    sources += sources_full
+  }
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "..:public_config" ]
 }

@@ -82,10 +82,10 @@ HWTEST_F(TimeTimerTest, TimerTest003, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
  */
-/* HWTEST_F(TimeTimerTest, TimerTest004, TestSize.Level0)
+/*HWTEST_F(TimeTimerTest, TimerTest004, TestSize.Level0)
 {
-    TimerTest004();
-} */
+    TimerTest004(); // bug: musl sigaction handler have only one param.
+}*/
 
 #endif
 } // namespace OHOS

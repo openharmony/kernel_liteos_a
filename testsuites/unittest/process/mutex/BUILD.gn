@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
 unittest("liteos_a_mutex_unittest") {
   output_extension = "bin"
@@ -39,32 +40,37 @@ unittest("liteos_a_mutex_unittest") {
   sources = [
     "../../common/osTest.cpp",
     "process_mutex_test.cpp",
-    "smoke/pthread_mutex_test_001.cpp",
-    "smoke/pthread_mutex_test_002.cpp",
-    "smoke/pthread_mutex_test_003.cpp",
-    "smoke/pthread_mutex_test_004.cpp",
-    "smoke/pthread_mutex_test_005.cpp",
-    "smoke/pthread_mutex_test_006.cpp",
-    "smoke/pthread_mutex_test_007.cpp",
-    "smoke/pthread_mutex_test_008.cpp",
-    "smoke/pthread_mutex_test_009.cpp",
-    "smoke/pthread_mutex_test_010.cpp",
-    "smoke/pthread_mutex_test_011.cpp",
-    "smoke/pthread_mutex_test_012.cpp",
-    "smoke/pthread_mutex_test_013.cpp",
-    "smoke/pthread_mutex_test_014.cpp",
-    "smoke/pthread_mutex_test_015.cpp",
-    "smoke/pthread_mutex_test_016.cpp",
-    "smoke/pthread_mutex_test_017.cpp",
-    "smoke/pthread_mutex_test_018.cpp",
-    "smoke/pthread_mutex_test_019.cpp",
-    "smoke/pthread_mutex_test_020.cpp",
-    "smoke/pthread_mutex_test_021.cpp",
-    "smoke/pthread_mutex_test_022.cpp",
-    "smoke/pthread_mutex_test_023.cpp",
-    "smoke/pthread_mutex_test_024.cpp",
-    "smoke/pthread_mutex_test_025.cpp",
   ]
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/pthread_mutex_test_001.cpp",
+      "smoke/pthread_mutex_test_002.cpp",
+      "smoke/pthread_mutex_test_003.cpp",
+      "smoke/pthread_mutex_test_004.cpp",
+      "smoke/pthread_mutex_test_005.cpp",
+      "smoke/pthread_mutex_test_006.cpp",
+      "smoke/pthread_mutex_test_007.cpp",
+      "smoke/pthread_mutex_test_008.cpp",
+      "smoke/pthread_mutex_test_009.cpp",
+      "smoke/pthread_mutex_test_010.cpp",
+      "smoke/pthread_mutex_test_011.cpp",
+      "smoke/pthread_mutex_test_012.cpp",
+      "smoke/pthread_mutex_test_013.cpp",
+      "smoke/pthread_mutex_test_014.cpp",
+      "smoke/pthread_mutex_test_015.cpp",
+      "smoke/pthread_mutex_test_016.cpp",
+      "smoke/pthread_mutex_test_017.cpp",
+      "smoke/pthread_mutex_test_018.cpp",
+      "smoke/pthread_mutex_test_019.cpp",
+      "smoke/pthread_mutex_test_020.cpp",
+      "smoke/pthread_mutex_test_021.cpp",
+      "smoke/pthread_mutex_test_022.cpp",
+      "smoke/pthread_mutex_test_023.cpp",
+      "smoke/pthread_mutex_test_024.cpp",
+      "smoke/pthread_mutex_test_025.cpp",
+    ]
+    sources += sources_smoke
+  }
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "../..:public_config" ]
 }

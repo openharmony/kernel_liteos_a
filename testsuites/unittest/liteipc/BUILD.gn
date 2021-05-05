@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../config.gni")
 
 unittest("liteos_a_liteipc_unittest") {
   output_extension = "bin"
@@ -38,11 +39,16 @@ unittest("liteos_a_liteipc_unittest") {
   ]
   sources = [
     "../common/osTest.cpp",
-    "smoke/liteipc_test_001.cpp",
-    "smoke/liteipc_test_002.cpp",
     "smgr_demo.cpp",
     "it_test_liteipc.cpp",
   ]
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/liteipc_test_001.cpp",
+      "smoke/liteipc_test_002.cpp",
+    ]
+    sources += sources_smoke
+  }
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "..:public_config" ]
 }

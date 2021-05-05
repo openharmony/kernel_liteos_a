@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../config.gni")
 
 unittest("liteos_a_sys_unittest") {
   output_extension = "bin"
@@ -38,36 +39,43 @@ unittest("liteos_a_sys_unittest") {
   ]
   sources = [
     "../common/osTest.cpp",
-    "smoke/sys_test_001.cpp",
-    "smoke/sys_test_004.cpp",
-    "smoke/sys_test_005.cpp",
-    "smoke/sys_test_006.cpp",
-    "smoke/sys_test_007.cpp",
-    "smoke/sys_test_008.cpp",
-    "smoke/sys_test_009.cpp",
-    "smoke/sys_test_010.cpp",
-    "smoke/sys_test_012.cpp",
-    "smoke/sys_test_013.cpp",
-    "smoke/sys_test_014.cpp",
-    "smoke/sys_test_015.cpp",
-    "smoke/sys_test_016.cpp",
-    "smoke/sys_test_017.cpp",
-    "smoke/sys_test_018.cpp",
-    "smoke/sys_test_019.cpp",
-    "smoke/sys_test_020.cpp",
-    "smoke/sys_test_021.cpp",
-    "smoke/sys_test_022.cpp",
-    "smoke/sys_test_023.cpp",
-    "smoke/sys_test_024.cpp",
-    "smoke/sys_test_025.cpp",
-    "smoke/sys_test_026.cpp",
-    "smoke/sys_test_027.cpp",
-    "smoke/sys_test_028.cpp",
-    "smoke/sys_test_029.cpp",
-    "smoke/sys_test_030.cpp",
-    "smoke/sys_test_031.cpp",
     "sys_unit_test.cpp",
   ]
+
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/sys_test_001.cpp",
+      "smoke/sys_test_004.cpp",
+      "smoke/sys_test_005.cpp",
+      "smoke/sys_test_006.cpp",
+      "smoke/sys_test_007.cpp",
+      "smoke/sys_test_008.cpp",
+      "smoke/sys_test_009.cpp",
+      "smoke/sys_test_010.cpp",
+      "smoke/sys_test_012.cpp",
+      "smoke/sys_test_013.cpp",
+      "smoke/sys_test_014.cpp",
+      "smoke/sys_test_015.cpp",
+      "smoke/sys_test_016.cpp",
+      "smoke/sys_test_017.cpp",
+      "smoke/sys_test_018.cpp",
+      "smoke/sys_test_019.cpp",
+      "smoke/sys_test_020.cpp",
+      "smoke/sys_test_021.cpp",
+      "smoke/sys_test_022.cpp",
+      "smoke/sys_test_023.cpp",
+      "smoke/sys_test_024.cpp",
+      "smoke/sys_test_025.cpp",
+      "smoke/sys_test_026.cpp",
+      "smoke/sys_test_027.cpp",
+      "smoke/sys_test_028.cpp",
+      "smoke/sys_test_029.cpp",
+      "smoke/sys_test_030.cpp",
+      "smoke/sys_test_031.cpp",
+    ]
+    sources += sources_smoke
+  }
+
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "..:public_config" ]
 }

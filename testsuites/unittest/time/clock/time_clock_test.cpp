@@ -133,7 +133,9 @@ HWTEST_F(TimeClockTest, ClockTest009, TestSize.Level0)
 {
     ClockTest009();
 }
+#endif
 
+#if defined(LOSCFG_USER_TEST_FULL)
 /* *
  * @tc.name: ClockTest010
  * @tc.desc: function for TimeClockTest

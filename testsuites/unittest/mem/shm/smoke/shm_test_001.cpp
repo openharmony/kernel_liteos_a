@@ -159,6 +159,7 @@ static int Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     ICUNIT_ASSERT_EQUAL(g_threadCount, 2, g_threadCount);
+    
     return 0;
 }
 

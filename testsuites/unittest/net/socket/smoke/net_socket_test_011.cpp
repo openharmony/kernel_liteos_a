@@ -38,7 +38,7 @@
 
 #define SERVER_PORT 7777
 #define INVALID_SOCKET -1
-#define CLIENT_NUM 50
+#define CLIENT_NUM 25
 
 static int gFds[FD_SETSIZE];
 static int gBye;
@@ -97,7 +97,7 @@ static int CloseAllFd(void)
 
 static int HandleRecv(int fd)
 {
-    char buf[256];
+    char buf[128];
     int ret = recv(fd, buf, sizeof(buf)-1, 0);
     if (ret < 0) {
         LogPrintln("[%d]Error: %s", fd, strerror(errno));
@@ -151,11 +151,11 @@ static void *ClientsThread(void *param)
     LogPrintln("[%d]<%d>connected to udp://%s:%d successful", fd, thrNo, inet_ntoa(sa.sin_addr), SERVER_PORT);
 
     const char *msg[] = {
-            "hello, ",
             "ohos, ",
+            "hello, ",
             "my name is net_socket_test_011, ",
             "see u next time, ",
-            "Bye!"
+            "Bye!",
     };
 
     for (int i = 0; i < sizeof(msg) / sizeof(msg[0]); ++i) {
@@ -172,15 +172,20 @@ static void *ClientsThread(void *param)
 static int StartClients(pthread_t *cli, int cliNum)
 {
     int ret;
-    pthread_attr_t attr;
+    pthread_attr_t attr = {0};
+    struct sched_param param = { 0 };
+    int policy;
+    ret = pthread_getschedparam(pthread_self(), &policy, &param);
+    ICUNIT_ASSERT_EQUAL(ret, 0, -ret);
 
     for (int i = 0; i < cliNum; ++i) {
         ret = pthread_attr_init(&attr);
-        ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+        param.sched_priority = param.sched_priority + 1;
+        pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+        pthread_attr_setschedparam(&attr, &param);
 
         ret = pthread_create(&cli[i], &attr, ClientsThread, (void *)(intptr_t)i);
         ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
         ret = pthread_attr_destroy(&attr);
         ICUNIT_ASSERT_EQUAL(ret, 0, ret);
     }

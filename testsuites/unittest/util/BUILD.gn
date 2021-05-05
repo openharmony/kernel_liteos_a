@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../config.gni")
 
 unittest("liteos_a_util_unittest") {
   output_extension = "bin"
@@ -37,19 +38,27 @@ unittest("liteos_a_util_unittest") {
     "./",
     "../misc",
   ]
+
   sources = [
     "../common/osTest.cpp",
-    "full/it_test_util_100.cpp",
-    "full/it_test_util_101.cpp",
-    "full/util_test_001.cpp",
-    "full/util_test_002.cpp",
-    "full/util_test_003.cpp",
-    "full/util_test_004.cpp",
-    "full/util_test_005.cpp",
-    "full/util_test_006.cpp",
-    "full/util_test_007.cpp",
     "util_test.cpp",
   ]
+
+  if (LOSCFG_USER_TEST_SMOKE == true) {
+    sources_smoke = [
+      "smoke/it_test_util_100.cpp",
+      "smoke/it_test_util_101.cpp",
+      "smoke/util_test_001.cpp",
+      "smoke/util_test_002.cpp",
+      "smoke/util_test_003.cpp",
+      "smoke/util_test_004.cpp",
+      "smoke/util_test_005.cpp",
+      "smoke/util_test_006.cpp",
+      "smoke/util_test_007.cpp",
+    ]
+    sources += sources_smoke
+  }
+
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   configs = [ "../../unittest:public_config" ]
 }
