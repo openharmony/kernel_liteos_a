@@ -34,7 +34,7 @@
 #include "los_printf_pri.h"
 #include "los_task_pri.h"
 #include "los_hw_pri.h"
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
 #endif
 #ifdef LOSCFG_EXC_INTERACTION
@@ -576,7 +576,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
 #endif
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
     OsProcessExitCodeCoreDumpSet(runProcess);
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
@@ -1086,6 +1086,22 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
     }
 }
 
+#ifdef LOSCFG_SAVE_EXCINFO
+STATIC VOID OsSysStateSave(UINT32 *intCount, UINT32 *lockCount)
+{
+    *intCount = g_intCount[ArchCurrCpuid()];
+    *lockCount = OsPercpuGet()->taskLockCnt;
+    g_intCount[ArchCurrCpuid()] = 0;
+    OsPercpuGet()->taskLockCnt = 0;
+}
+
+STATIC VOID OsSysStateRestore(UINT32 intCount, UINT32 lockCount)
+{
+    g_intCount[ArchCurrCpuid()] = intCount;
+    OsPercpuGet()->taskLockCnt = lockCount;
+}
+#endif
+
 /*
  * Description : EXC handler entry
  * Input       : excType    --- exc type
@@ -1093,6 +1109,11 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
  */
 LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
+#ifdef LOSCFG_SAVE_EXCINFO
+    UINT32 intCount;
+    UINT32 lockCount;
+#endif
+
     /* Task scheduling is not allowed during exception handling */
     OsPercpuGet()->taskLockCnt++;
 
@@ -1106,18 +1127,18 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
     OsAllCpuStatusOutput();
 #endif
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
     log_read_write_fn func = GetExcInfoRW();
 #endif
 
     if (g_excHook != NULL) {
         if (g_curNestCount[ArchCurrCpuid()] == 1) {
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
             if (func != NULL) {
                 SetExcInfoIndex(0);
-                g_intCount[ArchCurrCpuid()] = 0;
+                OsSysStateSave(&intCount, &lockCount);
                 OsRecordExcInfoTime();
-                g_intCount[ArchCurrCpuid()] = 1;
+                OsSysStateRestore(intCount, lockCount);
             }
 #endif
             g_excHook(excType, excBufAddr, far, fsr);
@@ -1125,12 +1146,12 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
             OsCallStackInfo();
         }
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
         if (func != NULL) {
             PrintExcInfo("Be sure flash space bigger than GetExcInfoIndex():0x%x\n", GetExcInfoIndex());
-            g_intCount[ArchCurrCpuid()] = 0;
+            OsSysStateSave(&intCount, &lockCount);
             func(GetRecordAddr(), GetRecordSpace(), 0, GetExcInfoBuf());
-            g_intCount[ArchCurrCpuid()] = 1;
+            OsSysStateRestore(intCount, lockCount);
         }
 #endif
     }

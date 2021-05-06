@@ -398,7 +398,7 @@ extern UINT32 __heap_end;
 #endif
 
 /****************************** exception information  configuration ******************************/
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
 /**
  * @ingroup los_config
  * the size of space for recording exception information
