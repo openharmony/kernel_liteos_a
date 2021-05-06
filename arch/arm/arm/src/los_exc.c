@@ -181,18 +181,29 @@ STATIC INT32 OsDecodeDataFSR(UINT32 regDFSR)
 #ifdef LOSCFG_KERNEL_VM
 UINT32 OsArmSharedPageFault(UINT32 excType, PageFaultContext *frame, UINT32 far, UINT32 fsr)
 {
-    PRINT_INFO("page fault entry!!!\n");
-    BOOL instruction_fault = FALSE;
+    BOOL instructionFault = FALSE;
     UINT32 pfFlags = 0;
     UINT32 fsrFlag;
     BOOL write = FALSE;
+    UINT32 ret;
 
+    PRINT_INFO("page fault entry!!!\n");
     if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
         return LOS_ERRNO_VM_NOT_FOUND;
     }
-
+#if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
+    BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && (OsPercpuGet()->taskLockCnt != 0));
+    if (irqEnable) {
+        ArchIrqEnable();
+    } else {
+        PrintExcInfo("[ERR][%s] may be held scheduler lock when entering [%s]\n",
+                     OsCurrTaskGet()->taskName, __FUNCTION__);
+    }
+#else
+    ArchIrqEnable();
+#endif
     if (excType == OS_EXCEPT_PREFETCH_ABORT) {
-        instruction_fault = TRUE;
+        instructionFault = TRUE;
     } else {
         write = !!BIT_GET(fsr, WNR_BIT);
     }
@@ -210,13 +221,23 @@ UINT32 OsArmSharedPageFault(UINT32 excType, PageFaultContext *frame, UINT32 far,
             BOOL user = (frame->CPSR & CPSR_MODE_MASK) == CPSR_MODE_USR;
             pfFlags |= write ? VM_MAP_PF_FLAG_WRITE : 0;
             pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
-            pfFlags |= instruction_fault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
+            pfFlags |= instructionFault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
             pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT;
-            return OsVmPageFaultHandler(far, pfFlags, frame);
+            ret = OsVmPageFaultHandler(far, pfFlags, frame);
+            break;
         }
         default:
-            return LOS_ERRNO_VM_NOT_FOUND;
+            ret = LOS_ERRNO_VM_NOT_FOUND;
+            break;
     }
+#if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
+    if (irqEnable) {
+        ArchIrqDisable();
+    }
+#else
+    ArchIrqDisable();
+#endif
+    return ret;
 }
 #endif
 

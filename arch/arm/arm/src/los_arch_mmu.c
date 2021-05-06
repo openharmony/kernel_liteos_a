@@ -892,9 +892,9 @@ STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
     length = sizeof(mmuKernelMappings) / sizeof(LosArchMmuInitMapping);
     for (i = 0; i < length; i++) {
         kernelMap = &mmuKernelMappings[i];
-	if (uncached) {
-	    flags |= VM_MAP_REGION_FLAG_UNCACHED;
-	}
+        if (uncached) {
+            kernelMap->flags |= VM_MAP_REGION_FLAG_UNCACHED;
+        }
         status = LOS_ArchMmuMap(&kSpace->archMmu, kernelMap->virt, kernelMap->phys,
                                  kernelMap->size >> MMU_DESCRIPTOR_L2_SMALL_SHIFT, kernelMap->flags);
         if (status != (kernelMap->size >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {

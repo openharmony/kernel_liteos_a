@@ -365,9 +365,6 @@ _osExceptFiqHdl:
     MOV     R3, #0
     STMFD   SP!, {R2-R3}
 
-    MOV     R0, #OS_EXCEPT_FIQ                               @ Set exception ID to OS_EXCEPT_FIQ.
-    B       _osExceptDispatch                                @ Branch to global exception handler.
-
 @ Description: Exception handler
 @ Parameter  : R0     Exception Type
 @ Regs Hold  : R3     Exception`s CPSR

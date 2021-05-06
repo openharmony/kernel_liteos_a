@@ -107,9 +107,8 @@ struct VmMapRegion {
 
 typedef struct VmSpace {
     LOS_DL_LIST         node;           /**< vm space dl list */
-    LOS_DL_LIST         regions;        /**< region dl list */
     LosRbTree           regionRbTree;   /**< region red-black tree root */
-    LosMux              regionMux;      /**< region list mutex lock */
+    LosMux              regionMux;      /**< region red-black tree mutex lock */
     VADDR_T             base;           /**< vm space base addr */
     UINT32              size;           /**< vm space size */
     VADDR_T             heapBase;       /**< vm space heap base address */

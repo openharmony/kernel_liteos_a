@@ -117,10 +117,6 @@
 #include "los_hilog.h"
 #endif
 
-#ifdef LOSCFG_QUICK_START
-#include "los_quick_start_pri.h"
-#endif
-
 
 STATIC SystemRebootFunc g_rebootHook = NULL;
 
@@ -388,13 +384,6 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     return LOS_TaskCreate(&taskID, &sysTask);
 }
 
-#ifdef LOSCFG_QUICK_START
-UINT32 OsSystemInitStep2(VOID)
-{
-    SystemInit2();
-    return 0;
-}
-#endif
 
 UINT32 OsSystemInit(VOID)
 {
