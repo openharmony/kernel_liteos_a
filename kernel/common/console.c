@@ -1005,6 +1005,7 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
     INT32 ret;
     struct file *filep = NULL;
     struct Vnode *vnode = NULL;
+    struct file_operations_vfs *devOps = NULL;
 
     /* allocate memory for filep,in order to unchange the value of filep */
     filep = (struct file *)LOS_MemAlloc(m_aucSysMem0, sizeof(struct file));
@@ -1040,6 +1041,13 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
      * Use filep to connect console and uart, we can find uart driver function throught filep.
      * now we can operate /dev/console to operate /dev/ttyS0 through filep.
      */
+    devOps = (struct file_operations_vfs *)((struct drv_data*)vnode->data)->ops;
+    if (devOps != NULL && devOps->open != NULL) {
+        (VOID)devOps->open(filep);
+    } else {
+        ret = ENOSYS;
+        goto ERROUT;
+    }
 
     ret = register_driver(consoleCB->name, &g_consoleDevOps, DEFFILEMODE, filep);
     if (ret != LOS_OK) {
@@ -1204,7 +1212,7 @@ STATIC CONSOLE_CB *OsConsoleCreate(UINT32 consoleID, const CHAR *deviceName)
 
     ret = OsConsoleDevInit(consoleCB, deviceName);
     if (ret != LOS_OK) {
-        PRINT_ERR("console OsConsoleDevInitlloc error. %d\n", ret);
+        PRINT_ERR("console OsConsoleDevInit error. %d\n", ret);
         goto ERR_WITH_SEM;
     }
 
