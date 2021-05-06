@@ -72,7 +72,7 @@ static int QuickstartListen(unsigned long arg)
     /* 16:low 16 bits for eventMask, high 16 bits for pid */
     unsigned int mask = (listenMask.pid << 16) | listenMask.events;
     int ret = LOS_EventRead((PEVENT_CB_S)&g_qsEvent, mask, LOS_WAITMODE_AND | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
-    if (ret != 0) {
+    if (ret != mask) {
         PRINT_ERR("%s,%d:0x%x\n", __FUNCTION__, __LINE__, ret);
         ret = -EINVAL;
     }
