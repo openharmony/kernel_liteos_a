@@ -1363,9 +1363,9 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
         return LOS_NOK;
     }
 
-    SCHEDULER_LOCK(intSave);
     LosTaskCB *taskCB = OsCurrTaskGet();
 
+    SCHEDULER_LOCK(intSave);
     taskCB->userMapBase = mapBase;
     taskCB->userMapSize = mapSize;
     taskCB->taskEntry = (TSK_ENTRY_FUNC)entry;
@@ -1373,8 +1373,6 @@ LITE_OS_SEC_TEXT UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINT
     TaskContext *taskContext = (TaskContext *)OsTaskStackInit(taskCB->taskID, taskCB->stackSize,
                                                               (VOID *)taskCB->topOfStack, FALSE);
     OsUserTaskStackInit(taskContext, (UINTPTR)taskCB->taskEntry, sp);
-    taskCB->stackPointer = (VOID *)taskContext;
-    OsTaskContextLoad(taskCB);
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }

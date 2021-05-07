@@ -91,7 +91,7 @@ OsTaskSchedule:
     STMFD    SP!, {LR}
     STMFD    SP!, {R12}
 
-    /* jump R0 - R3 USP, ULR resved */
+    /* jump R0 - R3 USP, ULR reserved */
     SUB      SP, SP, #(8 * 4)
 
     /* push R4 - R11*/
@@ -127,7 +127,7 @@ OsTaskContextLoad:
     BL      OsSchedToUserReleaseLock
 #endif
 
-    /* jump sp, resved */
+    /* jump sp, reserved */
     ADD     SP, SP, #(2 * 4)
     LDMFD   SP, {R13, R14}^
     ADD     SP, SP, #(2 * 4)
@@ -142,14 +142,15 @@ OsKernelTaskLoad:
 OsIrqHandler:
     SUB     LR, LR, #4
 
-    SRSFD   #0x13!                 @ save spsr and pc to the svc stack
-
-    CPSID   i, #0x13              @ disable irq, switch to svc mode
+    /* Save pc and cpsr to svc sp, ARMv6 and above support */
+    SRSFD   #0x13!
+    /* disable irq, switch to svc mode */
+    CPSID   i, #0x13
 
     STMFD   SP!, {R0-R3, R12, LR}
     STMFD   SP, {R13, R14}^
     SUB     SP, SP, #(4 * 4)
-    STMIA   SP, {R4}
+    STR     R4, [SP, #0]
 
     /*
      * save fpu regs in case in case those been
@@ -169,16 +170,20 @@ OsIrqHandler:
     BLX     OsSchedIrqEndCheckNeedSched
 
     /* restore fpu regs */
-    POP_FPU_REGS    R0
-    LDMFD   SP, {R4}
+    POP_FPU_REGS R0
+    LDR   R4, [SP, #0]
 
+    /* Obtain the CPSR to determine the mode the system is in when the interrupt is triggered */
     LDR     R3, [SP, #(11 * 4)]
     AND     R1, R3, #CPSR_MASK_MODE
     CMP     R1, #CPSR_USER_MODE
     BNE     1f
 
     MOV     R0, SP
-    STMIA   SP, {R7}
+    STR     R7, [SP, #0]
+    /* sp - sizeof(IrqContext) */
+    SUB     SP, SP, #(12 * 4)
+    MOV     R1, SP
     BLX     OsSaveSignalContext
     MOV     SP, R0
 1:

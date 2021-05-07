@@ -83,12 +83,12 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     taskContext->PC = (UINTPTR)OsTaskEntry;
 #endif
     taskContext->LR = (UINTPTR)OsTaskExit;  /* LR should be kept, to distinguish it's THUMB or ARM instruction */
-    taskContext->R0 = taskID;             /* R0 */
+    taskContext->R0 = taskID;               /* R0 */
 
 #ifdef LOSCFG_INTERWORK_THUMB
-    taskContext->CPSR = PSR_MODE_SVC_THUMB; /* CPSR (Enable IRQ and FIQ interrupts, THUMNB-mode) */
+    taskContext->regCPSR = PSR_MODE_SVC_THUMB; /* CPSR (Enable IRQ and FIQ interrupts, THUMNB-mode) */
 #else
-    taskContext->CPSR = PSR_MODE_SVC_ARM;   /* CPSR (Enable IRQ and FIQ interrupts, ARM-mode) */
+    taskContext->regCPSR = PSR_MODE_SVC_ARM;   /* CPSR (Enable IRQ and FIQ interrupts, ARM-mode) */
 #endif
 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE)
@@ -116,9 +116,9 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR tas
     LOS_ASSERT(context != NULL);
 
 #ifdef LOSCFG_INTERWORK_THUMB
-    context->CPSR = PSR_MODE_USR_THUMB;
+    context->regCPSR = PSR_MODE_USR_THUMB;
 #else
-    context->CPSR = PSR_MODE_USR_ARM;
+    context->regCPSR = PSR_MODE_USR_ARM;
 #endif
     context->R0 = stack;
     context->USP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);
@@ -126,17 +126,13 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR tas
     context->PC = (UINTPTR)taskEntry;
 }
 
-VOID *OsInitSignalContext(VOID *sp, UINTPTR sigHandler, UINT32 signo, UINT32 param)
+VOID OsInitSignalContext(VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param)
 {
-    IrqContext *oldSp = (IrqContext *)sp;
-    IrqContext *newSp = (IrqContext *)((UINTPTR)sp - sizeof(IrqContext));
+    IrqContext *newSp = (IrqContext *)signalContext;
+    (VOID)memcpy_s(signalContext, sizeof(IrqContext), sp, sizeof(IrqContext));
     newSp->PC = sigHandler;
     newSp->R0 = signo;
     newSp->R1 = param;
-    newSp->USP = oldSp->USP;
-    newSp->CPSR = oldSp->CPSR;
-
-    return (VOID *)newSp;
 }
 
 DEPRECATED VOID Dmb(VOID)

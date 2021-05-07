@@ -99,7 +99,7 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
     UINT32 ret;
     UINT8 nArgs;
     UINTPTR handle;
-    UINT32 cmd = regs->resved2;
+    UINT32 cmd = regs->reserved2;
 
     if (cmd >= SYS_CALL_NUM) {
         PRINT_ERR("Syscall ID: error %d !!!\n", cmd);
@@ -134,8 +134,5 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
 
     regs->R0 = ret;
 
-    /* Return the last value of curent_regs.  This supports context switches on return from the exception.
-     * That capability is only used with theSYS_context_switch system call.
-     */
     return;
 }

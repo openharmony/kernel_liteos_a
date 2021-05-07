@@ -64,10 +64,11 @@ typedef struct {
     UINT32 R10;
     UINT32 R11;
 
-    UINT32 resved2;
-    UINT32 resved1;
-    UINT32 USP;
-    UINT32 ULR;
+    /* It has the same structure as IrqContext */
+    UINT32 reserved2; /**< Multiplexing registers, used in interrupts and system calls but with different meanings */
+    UINT32 reserved1; /**< Multiplexing registers, used in interrupts and system calls but with different meanings */
+    UINT32 USP;       /**< User mode sp register */
+    UINT32 ULR;       /**< User mode lr register */
     UINT32 R0;
     UINT32 R1;
     UINT32 R2;
@@ -75,14 +76,14 @@ typedef struct {
     UINT32 R12;
     UINT32 LR;
     UINT32 PC;
-    UINT32 CPSR;
+    UINT32 regCPSR;
 } TaskContext;
 
 typedef struct {
-    UINT32 resved2;
-    UINT32 resved1;
-    UINT32 USP;
-    UINT32 ULR;
+    UINT32 reserved2; /**< Multiplexing registers, used in interrupts and system calls but with different meanings */
+    UINT32 reserved1; /**< Multiplexing registers, used in interrupts and system calls but with different meanings */
+    UINT32 USP;       /**< User mode sp register */
+    UINT32 ULR;       /**< User mode lr register */
     UINT32 R0;
     UINT32 R1;
     UINT32 R2;
@@ -90,7 +91,7 @@ typedef struct {
     UINT32 R12;
     UINT32 LR;
     UINT32 PC;
-    UINT32 CPSR;
+    UINT32 regCPSR;
 } IrqContext;
 
 /*
@@ -103,7 +104,7 @@ typedef struct {
 extern VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag);
 extern VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStask, UINT32 parentStackSize);
 extern VOID OsUserTaskStackInit(TaskContext *context, UINTPTR taskEntry, UINTPTR stack);
-extern VOID *OsInitSignalContext(VOID *sp, UINTPTR sigHandler, UINT32 signo, UINT32 param);
+extern VOID OsInitSignalContext(VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param);
 extern void arm_clean_cache_range(UINTPTR start, UINTPTR end);
 extern void arm_inv_cache_range(UINTPTR start, UINTPTR end);
 

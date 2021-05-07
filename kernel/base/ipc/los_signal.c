@@ -556,15 +556,16 @@ int OsSigAction(int sig, const sigaction_t *act, sigaction_t *oact)
     return LOS_OK;
 }
 
-VOID *OsSaveSignalContext(VOID *sp)
+VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
 {
     UINTPTR sigHandler;
     UINT32 intSave;
 
-    SCHEDULER_LOCK(intSave);
     LosTaskCB *task = OsCurrTaskGet();
     LosProcessCB *process = OsCurrProcessGet();
     sig_cb *sigcb = &task->sig;
+
+    SCHEDULER_LOCK(intSave);
     if ((sigcb->count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {
         sigHandler = OsGetSigHandler();
         if (sigHandler == 0) {
@@ -581,7 +582,7 @@ VOID *OsSaveSignalContext(VOID *sp)
         OsProcessExitCodeSignalSet(process, signo);
         sigcb->sigContext = sp;
 
-        VOID *newSp = OsInitSignalContext(sp, sigHandler, signo, sigVal);
+        OsInitSignalContext(sp, newSp, sigHandler, signo, sigVal);
 
         /* sig No bits 00000100 present sig No 3, but  1<< 3 = 00001000, so signo needs minus 1 */
         sigcb->sigFlag ^= 1ULL << (signo - 1);
@@ -598,10 +599,10 @@ VOID *OsRestorSignalContext(VOID *sp)
 {
     UINT32 intSave;
 
-    SCHEDULER_LOCK(intSave);
     LosTaskCB *task = OsCurrTaskGet();
     sig_cb *sigcb = &task->sig;
 
+    SCHEDULER_LOCK(intSave);
     if (sigcb->count != 1) {
         SCHEDULER_UNLOCK(intSave);
         PRINT_ERR("sig error count : %d\n", sigcb->count);

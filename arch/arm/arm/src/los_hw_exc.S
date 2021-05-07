@@ -173,34 +173,34 @@ _osExceptUndefInstrHdl:
 #ifdef LOSCFG_GDB
     GDB_HANDLE OsUndefIncExcHandleEntry
 #else
-    SRSFD   #0x13!
-    CPSID   i, #0x13
+    SRSFD   #CPSR_SVC_MODE!                                   @ Save pc and cpsr to svc sp, ARMv6 and above support
+    MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)       @ Switch to svc mode, and disable all interrupt
     STMFD   SP!, {R0-R3, R12, LR}
-    SUB     SP, SP, #(4 * 2)
+    STMFD   SP, {R13, R14}^                                   @ push user sp and lr
+    SUB     SP, SP, #(2 * 4)
     MOV     R2, #0
     MOV     R3, #0
-    STMFD   SP!, {R2-R3}
+    STMFD   SP!, {R2-R3}                                      @ far and fsr fields, are 0 under this anomaly
 
     MOV     R0, #OS_EXCEPT_UNDEF_INSTR                        @ Set exception ID to OS_EXCEPT_UNDEF_INSTR.
     B       _osExceptDispatch                                 @ Branch to global exception handler.
-
 #endif
 
 @ Description: Software interrupt exception handler
 _osExceptSwiHdl:
-    SRSFD   #0x13!
+    SRSFD   #CPSR_SVC_MODE!                                   @ Save pc and cpsr to svc sp, ARMv6 and above support
     STMFD   SP!, {R0-R3, R12, LR}
     STMFD   SP, {R13, R14}^
-    SUB     SP, SP, #(4 * 4)
-    STMIA   SP, {R7}
+    SUB     SP, SP, #(4 * 4)                                  @ push user sp and lr and jump reserved field
+    STR     R7, [SP, #0]                                      @ Save system call number to reserved2 filed
 
 #ifdef LOSCFG_KERNEL_SYSCALL
     LDR     R3, [SP, #(11 * 4)]
-    AND     R1, R3, #CPSR_MASK_MODE                          @ Interrupted mode
-    CMP     R1, #CPSR_USER_MODE                              @ User mode
+    AND     R1, R3, #CPSR_MASK_MODE                           @ Interrupted mode
+    CMP     R1, #CPSR_USER_MODE                               @ User mode
     BNE     _osKernelSVCHandler                               @ Branch if not user mode
 
-    CMP     R7, #119                                         @ __NR_sigreturn
+    CMP     R7, #119                                          @ __NR_sigreturn
     BNE     _osIsSyscall
     MOV     R0, SP
     BLX     OsRestorSignalContext
@@ -213,7 +213,7 @@ _osIsSyscall:
     PUSH_FPU_REGS R1
 
     MOV     R0, SP
-    MOV     FP, #0                                           @ Init frame pointer
+    MOV     FP, #0                                            @ Init frame pointer
     CPSIE   I
     BLX     OsArmA32SyscallHandle
     CPSID   I
@@ -221,18 +221,15 @@ _osIsSyscall:
     POP_FPU_REGS R1
     LDMFD   SP!, {R4-R11}
 
-    LDR     R3, [SP, #(11 * 4)]
-    AND     R1, R3, #CPSR_MASK_MODE
-    CMP     R1, #CPSR_USER_MODE
-    BNE     _osSyscallReturn
-
     MOV     R0, SP
+    SUB     SP, SP, #(12 * 4)                                @ sp - sizeof(IrqContext), reserved for signal
+    MOV     R1, SP
     BLX     OsSaveSignalContext
     MOV     SP, R0
 
 _osSyscallReturn:
-    LDMFD   SP, {R7}
-    ADD     SP, SP, #(2 * 4)
+    LDR     R7, [SP, #0]
+    ADD     SP, SP, #(2 * 4)                                 @ jump reserved filed
     LDMFD   SP, {R13, R14}^                                  @ Restore user mode R13/R14
     ADD     SP, SP, #(2 * 4)
     LDMFD   SP!, {R0-R3, R12, LR}
@@ -255,15 +252,15 @@ _osExceptPrefetchAbortHdl:
 #else
     SUB     LR, LR, #4                                       @ LR offset to return from this exception: -4.
 
-    SRSFD   #0x13!
-    CPSID   i, #0x13
+    SRSFD   #CPSR_SVC_MODE!                                  @ Save pc and cpsr to svc sp, ARMv6 and above support
+    MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)      @ Switch to svc mode, and disable all interrupt
     STMFD   SP!, {R0-R3, R12, LR}
     STMFD   SP, {R13, R14}^
     SUB     SP, SP, #(2 * 4)
 
     MRC     P15, 0, R2, C6, C0, 2
     MRC     P15, 0, R3, C5, C0, 1
-    STMFD   SP!, {R2-R3}
+    STMFD   SP!, {R2-R3}                                     @ Save far and fsr
 
 #ifdef LOSCFG_KERNEL_VM
     LDR     R0, [SP, #(11 * 4)]
@@ -275,9 +272,7 @@ _osExceptPrefetchAbortHdl:
     PUSH_FPU_REGS R0
 
     MOV    R0, #OS_EXCEPT_PREFETCH_ABORT
-    CPSIE  I
     BLX    OsArmSharedPageFault
-    CPSID  I
     CMP    R0, #0
 
     POP_FPU_REGS R0
@@ -298,24 +293,22 @@ _osExceptDataAbortHdl:
 #else
     SUB     LR, LR, #8                                       @ LR offset to return from this exception: -8.
 
-    SRSFD   #0x13!
-    CPSID   i, #0x13
+    SRSFD   #CPSR_SVC_MODE!                                  @ Save pc and cpsr to svc sp, ARMv6 and above support
+    MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)      @ Switch to svc mode, and disable all interrupt
     STMFD   SP!, {R0-R3, R12, LR}
     STMFD   SP, {R13, R14}^
     SUB     SP, SP, #(2 * 4)
 
     MRC     P15, 0, R2, C6, C0, 0
     MRC     P15, 0, R3, C5, C0, 0
-    STMFD   SP!, {R2-R3}
+    STMFD   SP!, {R2-R3}                                     @ Save far and fsr
 
 #ifdef LOSCFG_KERNEL_VM
     MOV    R1, SP
     PUSH_FPU_REGS R0
 
-    MOV     R0, #OS_EXCEPT_DATA_ABORT                        @ Set exception ID to OS_EXCEPT_DATA_ABORT.
-    CPSIE  I
+    MOV    R0, #OS_EXCEPT_DATA_ABORT                        @ Set exception ID to OS_EXCEPT_DATA_ABORT.
     BLX    OsArmSharedPageFault
-    CPSID  I
     CMP    R0, #0
     POP_FPU_REGS R0
     BEQ   _osExcPageFaultReturn
@@ -329,7 +322,7 @@ _osExceptDataAbortHdl:
 _osExcPageFaultReturn:
     ADD    SP, SP, #(2 * 4)
     LDMFD  SP, {R13, R14}^
-    ADD    SP, SP, #(2 * 4)
+    ADD    SP, SP, #(2 * 4)                                  @ Jump reserved fileds
     LDMFD  SP!, {R0-R3, R12, LR}
     RFEIA  SP!
 #endif
@@ -338,15 +331,15 @@ _osExcPageFaultReturn:
 _osExceptAddrAbortHdl:
     SUB     LR, LR, #8                                       @ LR offset to return from this exception: -8.
 
-    SRSFD   #0x13!
-    CPSID   i, #0x13
+    SRSFD   #CPSR_SVC_MODE!                                  @ Save pc and cpsr to svc sp, ARMv6 and above support
+    MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)      @ Switch to svc mode, and disable all interrupt
     STMFD   SP!, {R0-R3, R12, LR}
     STMFD   SP, {R13, R14}^
     SUB     SP, SP, #(2 * 4)
 
     MOV     R2, #0
     MOV     R3, #0
-    STMFD   SP!, {R2-R3}
+    STMFD   SP!, {R2-R3}                                     @ far and fsr fields, are 0 under this anomaly
 
     MOV     R0, #OS_EXCEPT_ADDR_ABORT                        @ Set exception ID to OS_EXCEPT_ADDR_ABORT.
     B       _osExceptDispatch                                @ Branch to global exception handler.
@@ -355,23 +348,27 @@ _osExceptAddrAbortHdl:
 _osExceptFiqHdl:
     SUB     LR, LR, #4                                       @ LR offset to return from this exception: -4.
 
-    SRSFD   #0x13!
-    CPSID   i, #0x13
+    SRSFD   #CPSR_SVC_MODE!                                  @ Save pc and cpsr to svc sp, ARMv6 and above support
+    MSR     CPSR_c, #(CPSR_INT_DISABLE | CPSR_SVC_MODE)      @ Switch to svc mode, and disable all interrupt
     STMFD   SP!, {R0-R3, R12, LR}
     STMFD   SP, {R13, R14}^
     SUB     SP, SP, #(2 * 4)
 
     MOV     R2, #0
     MOV     R3, #0
-    STMFD   SP!, {R2-R3}
+    STMFD   SP!, {R2-R3}                                     @ far and fsr fields, are 0 under this anomaly
 
 @ Description: Exception handler
 @ Parameter  : R0     Exception Type
 @ Regs Hold  : R3     Exception`s CPSR
 _osExceptDispatch:
     STMFD   SP!, {R4-R11}
-    LDR     R8, [SP, #(4 * 8)]
-    LDR     R9, [SP, #(4 * 9)]
+    LDR     R8, [SP, #(8 * 4)]                               @ Get far
+    LDR     R9, [SP, #(9 * 4)]                               @ Get fsr
+
+    ADD     R2, SP, #(20 * 4)                                @ sp + sizeof(ExcContext), position of SVC stack before exception
+    STR     R2, [SP, #(8 * 4)]                               @ Save svc sp
+
     MOV     R1, SP
 
     EXC_SP_SET __exc_stack_top, OS_EXC_STACK_SIZE, R6, R7
