@@ -30,13 +30,13 @@
  */
 
 #include "los_magickey.h"
+#include "console.h"
 #include "los_task_pri.h"
 
 
 #ifdef LOSCFG_ENABLE_MAGICKEY
 
 #define MAGIC_KEY_NUM 5
-
 STATIC VOID OsMagicHelp(VOID);
 STATIC VOID OsMagicTaskShow(VOID);
 STATIC VOID OsMagicPanic(VOID);
@@ -66,6 +66,12 @@ STATIC MagicKeyOp g_magicHelpOp = {
     .magicKey = 0x1a /* ctrl + z */
 };
 
+STATIC MagicKeyOp g_magicKillPgrp = {
+    .opHandler = KillPgrp,
+    .helpMsg = "Show all magic op key(ctrl+c) ",
+    .magicKey = 0x03 /* ctrl + c */
+};
+
 /*
  * NOTICE:Suggest don't use
  * ctrl+h/backspace=0x8,
@@ -81,7 +87,7 @@ STATIC MagicKeyOp *g_magicOpTable[MAGIC_KEY_NUM] = {
     &g_magicPanicOp,    /* ctrl + p */
     &g_magicTaskShowOp, /* ctrl + t */
     &g_magicHelpOp,     /* ctrl + z */
-    NULL                /* rserved */
+    &g_magicKillPgrp    /* ctrl + c */
 };
 
 STATIC VOID OsMagicHelp(VOID)
@@ -131,7 +137,11 @@ INT32 CheckMagicKey(CHAR key)
             PRINTK("Magic key off\n");
         }
         return 1;
+    } else if (key == 0x03){ /* ctrl + c */
+        KillPgrp();
+        return 0;
     }
+
     if (magicKeySwitch != 0) {
         for (i = 0; g_magicOpTable[i] != NULL; ++i) {
             if (key == g_magicOpTable[i]->magicKey) {

@@ -109,9 +109,11 @@ endif
 ifeq ($(OUTDIR),)
 OUT  = $(LITEOSTOPDIR)/out/$(LITEOS_PLATFORM)
 LITEOS_TARGET_DIR = $(OUT)
+KERNEL_COMPILE_ONLY = y
 else
 OUT = $(OUTDIR)
 LITEOS_TARGET_DIR = $(OUT)/../../../
+KERNEL_COMPILE_ONLY = n
 endif
 BUILD  = $(OUT)/obj
 MK_PATH  = $(LITEOSTOPDIR)/tools/build/mk
