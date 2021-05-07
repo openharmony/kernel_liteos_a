@@ -85,11 +85,11 @@ typedef struct {
     CHAR *name;
     INT32 fd;
     UINT32 refCount;
+    UINT32 shellEntryId;
+    INT32 pgrpId;
     BOOL isNonBlock;
 #ifdef LOSCFG_SHELL
-    UINT32 shellEntryId;
     VOID *shellHandle;
-    INT32 pgrpId;
 #endif
     UINT32 sendTaskID;
     CirBufSendCB *cirBufSendCB;
