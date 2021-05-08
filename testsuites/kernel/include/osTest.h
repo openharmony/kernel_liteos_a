@@ -94,7 +94,7 @@ extern "C" {
         testTask.pcName = task_name;                               \
         testTask.usTaskPrio = prio;                                \
         testTask.uwResved = LOS_TASK_STATUS_DETACHED;              \
-    } while (0)
+    } while (0);
 
 #if (LOSCFG_KERNEL_SMP == YES)
 #define TEST_TASK_PARAM_INIT_AFFI(testTask, task_name, entry, prio, affi) \

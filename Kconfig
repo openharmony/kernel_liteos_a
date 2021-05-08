@@ -322,6 +322,12 @@ menu "Security"
 source "../../kernel/liteos_a/security/Kconfig"
 endmenu
 
+menu "Test"
+config ENABLE_KERNEL_TEST
+    bool "Enable Kernel Test"
+    default n
+endmenu
+
 menu "Stack Smashing Protector (SSP) Compiler Feature"
 
 choice

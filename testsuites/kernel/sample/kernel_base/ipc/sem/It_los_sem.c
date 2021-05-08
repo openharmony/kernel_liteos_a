@@ -98,11 +98,6 @@ VOID ItSuiteLosSem(void)
     ItLosSem017();
     ItLosSem019();
     ItLosSem020();
-#if (LOSCFG_KERNEL_SMP != YES)
-    ItLosSem018();
-    ItLosSem021();
-    ItLosSem025();
-#endif
     ItLosSem022();
     ItLosSem023();
     ItLosSem026();
