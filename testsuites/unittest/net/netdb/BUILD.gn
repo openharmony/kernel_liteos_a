@@ -37,7 +37,7 @@ config("net_local_config") {
   }
 }
 
-unittest("liteos_a_net_netdb_unittest") {
+unittest("liteos_a_net_netdb_unittest_door") {
   output_extension = "bin"
   output_dir = "$root_out_dir/test/unittest/kernel"
   include_dirs = [

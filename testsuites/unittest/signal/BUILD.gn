@@ -30,7 +30,7 @@
 import("//build/lite/config/test.gni")
 import("../config.gni")
 
-unittest("liteos_a_signal_unittest") {
+unittest("liteos_a_signal_unittest_door") {
   output_extension = "bin"
   output_dir = "$root_out_dir/test/unittest/kernel"
   include_dirs = [
