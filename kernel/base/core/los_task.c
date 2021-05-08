@@ -162,7 +162,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskJoinPendUnsafe(LosTaskCB *taskCB)
     return LOS_EINVAL;
 }
 
-LITE_OS_SEC_TEXT UINT32 OsTaskSetDeatchUnsafe(LosTaskCB *taskCB)
+LITE_OS_SEC_TEXT UINT32 OsTaskSetDetachUnsafe(LosTaskCB *taskCB)
 {
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
     if (!(processCB->processStatus & OS_PROCESS_STATUS_RUNNING)) {
@@ -450,7 +450,7 @@ STATIC VOID OsTaskKernelResourcesToFree(UINT32 syncSignal, UINTPTR topOfStack)
     (VOID)LOS_MemFree(poolTmp, (VOID *)topOfStack);
 }
 
-LITE_OS_SEC_TEXT VOID OsTaskCBRecyleToFree()
+LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree()
 {
     LosTaskCB *taskCB = NULL;
     UINT32 intSave;
@@ -764,7 +764,7 @@ LOS_ERREND:
 /*
  * Check if needs to do the suspend operation on the running task.
  * Return TRUE, if needs to do the suspension.
- * Rerturn FALSE, if meets following circumstances:
+ * Return FALSE, if meets following circumstances:
  * 1. Do the suspension across cores, if SMP is enabled
  * 2. Do the suspension when preemption is disabled
  * 3. Do the suspension in hard-irq
@@ -902,7 +902,7 @@ LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *taskCB)
 /*
  * Check if needs to do the delete operation on the running task.
  * Return TRUE, if needs to do the deletion.
- * Rerturn FALSE, if meets following circumstances:
+ * Return FALSE, if meets following circumstances:
  * 1. Do the deletion across cores, if SMP is enabled
  * 2. Do the deletion when preemption is disabled
  * 3. Do the deletion in hard-irq
@@ -1167,7 +1167,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskYield(VOID)
     }
 
     SCHEDULER_LOCK(intSave);
-    /* reset timeslice of yeilded task */
+    /* reset timeslice of yielded task */
     OsSchedYield();
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
@@ -1327,7 +1327,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsTaskProcSignal(VOID)
     /*
      * private and uninterruptable, no protection needed.
      * while this task is always running when others cores see it,
-     * so it keeps recieving signals while follow code excuting.
+     * so it keeps receiving signals while follow code executing.
      */
     LosTaskCB *runTask = OsCurrTaskGet();
     if (runTask->signal == SIGNAL_NONE) {
@@ -1465,7 +1465,7 @@ LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
 LITE_OS_SEC_TEXT VOID OsExecDestroyTaskGroup(VOID)
 {
     OsTaskExitGroup(OS_PRO_EXIT_OK);
-    OsTaskCBRecyleToFree();
+    OsTaskCBRecycleToFree();
 }
 
 LITE_OS_SEC_TEXT VOID OsProcessSuspendAllTask(VOID)
@@ -1557,7 +1557,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S
         return ret;
     }
 
-    initParam->uwStackSize = OS_USER_TASK_SYSCALL_SATCK_SIZE;
+    initParam->uwStackSize = OS_USER_TASK_SYSCALL_STACK_SIZE;
     initParam->usTaskPrio = OS_TASK_PRIORITY_LOWEST;
     initParam->policy = LOS_SCHED_RR;
     if (processID == OS_INVALID_VALUE) {
@@ -1654,7 +1654,7 @@ STATIC VOID OsResourceRecoveryTask(VOID)
         ret = LOS_EventRead(&g_resourceEvent, OS_RESOURCE_EVENT_MASK,
                             LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
         if (ret & (OS_RESOURCE_EVENT_FREE | OS_RESOURCE_EVENT_OOM)) {
-            OsTaskCBRecyleToFree();
+            OsTaskCBRecycleToFree();
 
             OsProcessCBRecyleToFree();
         }
@@ -1680,7 +1680,7 @@ LITE_OS_SEC_TEXT UINT32 OsCreateResourceFreeTask(VOID)
 
     (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
     taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsResourceRecoveryTask;
-    taskInitParam.uwStackSize = OS_TASK_RESOURCE_STATCI_SIZE;
+    taskInitParam.uwStackSize = OS_TASK_RESOURCE_STATIC_SIZE;
     taskInitParam.pcName = "ResourcesTask";
     taskInitParam.usTaskPrio = OS_TASK_RESOURCE_FREE_PRIORITY;
     ret = LOS_TaskCreate(&taskID, &taskInitParam);
