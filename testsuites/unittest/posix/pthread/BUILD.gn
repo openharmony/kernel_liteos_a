@@ -35,7 +35,7 @@ config("pthread_config") {
   cflags_cc = cflags
 }
 
-unittest("liteos_a_posix_pthread_unittest") {
+unittest("liteos_a_posix_pthread_unittest_door") {
   output_extension = "bin"
   output_dir = "$root_out_dir/test/unittest/kernel"
   include_dirs = [

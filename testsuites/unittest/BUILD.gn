@@ -60,102 +60,102 @@ config("public_config") {
 group("unittest") {
   deps = []
   if (LOSCFG_USER_TEST_UTIL == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "util:liteos_a_util_unittest" ]
+    deps += [ "util:liteos_a_util_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_TIME_TIMER == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "time/timer:liteos_a_time_timer_unittest" ]
+    deps += [ "time/timer:liteos_a_time_timer_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_TIME_CLOCK == true &&
     (LOSCFG_USER_TEST_SMOKE == true || LOSCFG_USER_TEST_FULL == true)) {
-    deps += [ "time/clock:liteos_a_time_clock_unittest" ]
+    deps += [ "time/clock:liteos_a_time_clock_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_SYS == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "sys:liteos_a_sys_unittest" ]
+    deps += [ "sys:liteos_a_sys_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_SIGNAL == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "signal:liteos_a_signal_unittest" ]
+    deps += [ "signal:liteos_a_signal_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_SECURITY_REUGID == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "security/reugid:liteos_a_security_reugid_unittest" ]
+    deps += [ "security/reugid:liteos_a_security_reugid_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_SECURITY_CAPABILITY == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "security/capability:liteos_a_security_capability_unittest" ]
+    deps += [ "security/capability:liteos_a_security_capability_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_SECURITY_VID == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "security/vid:liteos_a_security_vid_unittest" ]
+    deps += [ "security/vid:liteos_a_security_vid_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_MUTEX == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "process/mutex:liteos_a_mutex_unittest" ]
+    deps += [ "process/mutex:liteos_a_mutex_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_PROCESS == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "process/process:liteos_a_process_unittest" ]
+    deps += [ "process/process:liteos_a_process_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_PTHREAD == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "process/pthread:liteos_a_pthread_unittest" ]
+    deps += [ "process/pthread:liteos_a_pthread_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_RWLOCK == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "process/rwlock:liteos_a_rwlock_unittest" ]
+    deps += [ "process/rwlock:liteos_a_rwlock_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_SPINLOCK == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "process/spinlock:liteos_a_spinlock_unittest" ]
+    deps += [ "process/spinlock:liteos_a_spinlock_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_POSIX_MEM == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "posix/mem:liteos_a_posix_mem_unittest" ]
+    deps += [ "posix/mem:liteos_a_posix_mem_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_POSIX_MQUEUE == true &&
     (LOSCFG_USER_TEST_SMOKE == true || LOSCFG_USER_TEST_FULL == true)) {
-    deps += [ "posix/mqueue:liteos_a_posix_mqueue_unittest" ]
+    deps += [ "posix/mqueue:liteos_a_posix_mqueue_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_POSIX_PTHREAD == true &&
     (LOSCFG_USER_TEST_SMOKE == true || LOSCFG_USER_TEST_FULL == true)) {
-    deps += [ "posix/pthread:liteos_a_posix_pthread_unittest" ]
+    deps += [ "posix/pthread:liteos_a_posix_pthread_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_MISC == true &&
     (LOSCFG_USER_TEST_SMOKE == true || LOSCFG_USER_TEST_FULL == true)) {
-    deps += [ "misc:liteos_a_misc_unittest" ]
+    deps += [ "misc:liteos_a_misc_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_MEM_SHM == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "mem/shm:liteos_a_mem_shm_unittest" ]
+    deps += [ "mem/shm:liteos_a_mem_shm_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_MEM_VM == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "mem/vm:liteos_a_mem_vm_unittest" ]
+    deps += [ "mem/vm:liteos_a_mem_vm_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_IO == true && LOSCFG_USER_TEST_FULL == true) {
-    deps += [ "IO:liteos_a_io_unittest" ]
+    deps += [ "IO:liteos_a_io_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_EXC == true && LOSCFG_USER_TEST_FULL == true) {
-    deps += [ "exc:liteos_a_exc_unittest" ]
+    deps += [ "exc:liteos_a_exc_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_DYNLOAD == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "dynload:liteos_a_dynload_unittest" ]
+    deps += [ "dynload:liteos_a_dynload_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_DRIVERS_HID == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "drivers/hid:liteos_a_drivers_hid_unittest" ]
+    deps += [ "drivers/hid:liteos_a_drivers_hid_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_DRIVERS_STORAGE == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "drivers/storage:liteos_a_drivers_storage_unittest" ]
+    deps += [ "drivers/storage:liteos_a_drivers_storage_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_NET_NETDB == true && LOSCFG_USER_TEST_FULL == true) {
-    deps += [ "net/netdb:liteos_a_net_netdb_unittest" ]
+    deps += [ "net/netdb:liteos_a_net_netdb_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_NET_RESOLV == true && LOSCFG_USER_TEST_FULL == true) {
-    deps += [ "net/resolv:liteos_a_net_resolv_unittest" ]
+    deps += [ "net/resolv:liteos_a_net_resolv_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_NET_SOCKET == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "net/socket:liteos_a_net_socket_unittest" ]
+    deps += [ "net/socket:liteos_a_net_socket_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_IPC == true && LOSCFG_USER_TEST_FULL == true) {
-    deps += [ "IPC:liteos_a_ipc_unittest" ]
+    deps += [ "IPC:liteos_a_ipc_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_LITEIPC == true && LOSCFG_USER_TEST_SMOKE == true) {
-    deps += [ "liteipc:liteos_a_liteipc_unittest" ]
+    deps += [ "liteipc:liteos_a_liteipc_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_FS_JFFS == true &&
     (LOSCFG_USER_TEST_SMOKE == true || LOSCFG_USER_TEST_FULL == true || LOSCFG_USER_TEST_PRESSURE == true)) {
-    deps += [ "fs:liteos_a_fs_unittest" ]
+    deps += [ "fs:liteos_a_fs_unittest_door" ]
   }
   if (LOSCFG_USER_TEST_FS_VFAT == true &&
     (LOSCFG_USER_TEST_SMOKE == true || LOSCFG_USER_TEST_FULL == true || LOSCFG_USER_TEST_PRESSURE == true)) {
-    deps += [ "fs/vfat2:liteos_a_fs_vfat_unittest" ]
+    deps += [ "fs/vfat2:liteos_a_fs_vfat_unittest_door" ]
   }
 }
