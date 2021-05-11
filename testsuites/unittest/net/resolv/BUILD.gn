@@ -37,32 +37,62 @@ config("net_local_config") {
   }
 }
 
-unittest("liteos_a_net_resolv_unittest_door") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../../common/include",
-    "./",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "./",
+]
+
+sources_entry = [
+  "../../common/osTest.cpp",
+  "net_resolv_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../../common/osTest.cpp",
-    "net_resolv_test.cpp",
+    "smoke/net_resolv_test_001.cpp",
+    "smoke/net_resolv_test_002.cpp",
+    "smoke/net_resolv_test_003.cpp",
+    "smoke/net_resolv_test_006.cpp",
+    "smoke/net_resolv_test_007.cpp",
   ]
-  if (LOSCFG_USER_TEST_FULL == true) {
-    sources_full = [
-      "full/net_resolv_test_001.cpp",
-      "full/net_resolv_test_002.cpp",
-      "full/net_resolv_test_003.cpp",
-      "full/net_resolv_test_004.cpp",
-      "full/net_resolv_test_005.cpp",
-      "full/net_resolv_test_006.cpp",
-      "full/net_resolv_test_007.cpp",
-      "full/net_resolv_test_008.cpp",
-    ]
-    sources += sources_full
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+source_set("sources_other") {
+  sources = [
+    "full/net_resolv_test_004.cpp",
+    "full/net_resolv_test_005.cpp",
+    "full/net_resolv_test_008.cpp",
+  ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_net_resolv_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    configs += [ ":net_local_config" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
   }
-  configs = [
-    "../..:public_config",
-    ":net_local_config",
-  ]
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_net_resolv_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    configs += [ ":net_local_config" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

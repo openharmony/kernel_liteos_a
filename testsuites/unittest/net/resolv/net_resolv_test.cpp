@@ -52,7 +52,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
-#if defined(LOSCFG_USER_TEST_FULL) && defined(LOSCFG_USER_TEST_NET_RESOLV)
+#if defined(LOSCFG_USER_TEST_SMOKE) && defined(LOSCFG_USER_TEST_NET_RESOLV)
 /* *
  * @tc.name: NetResolvTest001
  * @tc.desc: function for NetResolvTest

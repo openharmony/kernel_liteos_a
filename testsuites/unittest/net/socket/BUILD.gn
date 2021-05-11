@@ -37,38 +37,67 @@ config("net_local_config") {
   }
 }
 
-unittest("liteos_a_net_socket_unittest_door") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../../common/include",
-    "../../net/socket",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "./",
+]
+
+sources_entry = [
+  "../../common/osTest.cpp",
+  "net_socket_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../../common/osTest.cpp",
-    "net_socket_test.cpp",
+    "smoke/net_socket_test_001.cpp",
+    "smoke/net_socket_test_002.cpp",
+    "smoke/net_socket_test_003.cpp",
+    "smoke/net_socket_test_004.cpp",
+    "smoke/net_socket_test_005.cpp",
+    "smoke/net_socket_test_006.cpp",
+    "smoke/net_socket_test_007.cpp",
+    "smoke/net_socket_test_008.cpp",
+    "smoke/net_socket_test_009.cpp",
+    "smoke/net_socket_test_010.cpp",
+    "smoke/net_socket_test_011.cpp",
+    "smoke/net_socket_test_012.cpp",
+    "smoke/net_socket_test_013.cpp",
   ]
-  if (LOSCFG_USER_TEST_SMOKE == true) {
-    sources_smoke = [
-      "smoke/net_socket_test_001.cpp",
-      "smoke/net_socket_test_002.cpp",
-      "smoke/net_socket_test_003.cpp",
-      "smoke/net_socket_test_004.cpp",
-      "smoke/net_socket_test_005.cpp",
-      "smoke/net_socket_test_006.cpp",
-      "smoke/net_socket_test_007.cpp",
-      "smoke/net_socket_test_008.cpp",
-      "smoke/net_socket_test_009.cpp",
-      "smoke/net_socket_test_010.cpp",
-      "smoke/net_socket_test_011.cpp",
-      "smoke/net_socket_test_012.cpp",
-      "smoke/net_socket_test_013.cpp",
-    ]
-    sources += sources_smoke
-  }
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [
-    "../../:public_config",
-    ":net_local_config",
+}
+
+source_set("sources_other") {
+  sources = [
   ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_net_socket_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    configs += [ ":net_local_config" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_net_socket_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    configs += [ ":net_local_config" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

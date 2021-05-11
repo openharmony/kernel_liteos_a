@@ -30,26 +30,54 @@
 import("//build/lite/config/test.gni")
 import("../../config.gni")
 
-unittest("liteos_a_posix_mem_unittest_door") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../../common/include",
-    "../../posix/mem",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "./",
+]
+
+sources_entry = [
+  "../../common/osTest.cpp",
+  "posix_mem_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../../common/osTest.cpp",
-    "posix_mem_test.cpp",
+    "smoke/It_posix_mem_001.cpp",
+    "smoke/It_posix_mem_003.cpp",
   ]
-
-  if (LOSCFG_USER_TEST_SMOKE == true) {
-    sources_smoke = [
-      "smoke/It_posix_mem_001.cpp",
-      "smoke/It_posix_mem_003.cpp",
-    ]
-    sources += sources_smoke
-  }
-
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [ "../..:public_config" ]
+}
+
+source_set("sources_other") {
+  sources = [
+  ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_posix_mem_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_posix_mem_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }
