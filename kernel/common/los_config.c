@@ -117,7 +117,6 @@
 #include "los_hilog.h"
 #endif
 
-
 STATIC SystemRebootFunc g_rebootHook = NULL;
 
 VOID OsSetRebootHook(SystemRebootFunc func)
@@ -373,7 +372,12 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     TSK_INIT_PARAM_S sysTask;
 
     (VOID)memset_s(&sysTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
+#ifndef LOSCFG_ENABLE_KERNEL_TEST
     sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;
+#else
+    extern void TestSystemInit(void);
+    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)TestSystemInit;
+#endif
     sysTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     sysTask.pcName = "SystemInit";
     sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;

@@ -43,7 +43,7 @@ static VOID TaskF01(VOID)
 
     g_testCount++;
 
-    ret = LOS_EventRead(&g_event, 0x11, LOS_WAITMODE_AND, 2); // 2, The timeout period for reading events.
+    ret = LOS_EventRead(&g_event, 0x11, LOS_WAITMODE_AND, 200); // 200, The timeout period for reading events.
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
     ICUNIT_GOTO_EQUAL(g_event.uwEventID, 0, g_event.uwEventID, EXIT);
 
@@ -98,6 +98,7 @@ static UINT32 Testcase(VOID)
 
     LOS_TaskUnlock();
 
+    LOS_TaskDelay(1);
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT); // 2, Here, assert that g_testCount is equal to 2.
 
 EXIT:

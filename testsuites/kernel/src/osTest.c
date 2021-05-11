@@ -294,7 +294,7 @@ VOID TestBusyTaskDelay(UINT32 tick)
         if (runtime <= TestTickCountByCurrCpuid()) {
             break;
         }
-        Wfi();
+        WFI;
     }
 }
 
@@ -307,7 +307,7 @@ VOID TestAssertBusyTaskDelay(UINT32 timeout, UINT32 flag)
         if ((runtime <= TestTickCountGet()) || (g_testCount == flag)) {
             break;
         }
-        Wfi();
+        WFI;
     }
 }
 

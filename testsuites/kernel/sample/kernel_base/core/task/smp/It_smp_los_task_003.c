@@ -40,7 +40,7 @@ extern "C" {
 static void TaskF01(void)
 {
     while (1) {
-        Wfi();
+        WFI;
     };
 }
 

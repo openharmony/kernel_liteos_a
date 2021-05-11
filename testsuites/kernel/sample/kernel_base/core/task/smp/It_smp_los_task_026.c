@@ -42,7 +42,7 @@ static void TaskF01(void)
 {
     LOS_AtomicInc(&g_testCount);
     while (1) {
-        Wfi();
+        WFI;
     }
 }
 
