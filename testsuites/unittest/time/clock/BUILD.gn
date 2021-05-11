@@ -30,41 +30,63 @@
 import("//build/lite/config/test.gni")
 import("../../config.gni")
 
-unittest("liteos_a_time_clock_unittest_door") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../../common/include",
-    "../../time/clock",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "./",
+]
 
+sources_entry = [
+  "../../common/osTest.cpp",
+  "time_clock_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../../common/osTest.cpp",
-    "time_clock_test.cpp",
+    "smoke/clock_test_001.cpp",
+    "smoke/clock_test_002.cpp",
+    "smoke/clock_test_003.cpp",
+    "smoke/clock_test_004.cpp",
+    "smoke/clock_test_006.cpp",
+    "smoke/clock_test_007.cpp",
+    "smoke/clock_test_008.cpp",
+    "smoke/clock_test_009.cpp",
+    "smoke/clock_test_011.cpp",
+    "smoke/clock_test_012.cpp",
   ]
-
-  if (LOSCFG_USER_TEST_SMOKE == true) {
-    sources_smoke = [
-      "smoke/clock_test_001.cpp",
-      "smoke/clock_test_002.cpp",
-      "smoke/clock_test_003.cpp",
-      "smoke/clock_test_004.cpp",
-      "smoke/clock_test_006.cpp",
-      "smoke/clock_test_007.cpp",
-      "smoke/clock_test_008.cpp",
-      "smoke/clock_test_009.cpp",
-      "smoke/clock_test_011.cpp",
-      "smoke/clock_test_012.cpp",
-    ]
-    sources += sources_smoke
-  }
-
-  if (LOSCFG_USER_TEST_FULL == true) {
-    sources_full = [
-      "full/clock_test_010.cpp",
-    ]
-    sources += sources_full
-  }
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [ "../../../unittest:public_config" ]
+}
+
+source_set("sources_other") {
+  sources = [
+    "full/clock_test_010.cpp",
+  ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_time_clock_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_time_clock_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

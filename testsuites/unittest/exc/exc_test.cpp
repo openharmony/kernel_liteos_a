@@ -41,7 +41,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
-#if defined(LOSCFG_USER_TEST_FULL)
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: ItTestExc005
  * @tc.desc: function for ExcTest

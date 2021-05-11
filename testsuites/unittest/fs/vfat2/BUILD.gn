@@ -30,20 +30,29 @@
 import("//build/lite/config/test.gni")
 import("../../config.gni")
 
-unittest("liteos_a_fs_vfat_unittest_door") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "//kernel/liteos_a/testsuites/unittest/common/include",
-    "//kernel/liteos_a/testsuites/unittest/fs/vfs",
-    "//kernel/liteos_a/testsuites/unittest/fs/vfat2",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "//kernel/liteos_a/testsuites/unittest/fs/vfs",
+  "//kernel/liteos_a/testsuites/unittest/fs/vfat2",
+]
+
+sources_entry = [
+  "../../common/osTest.cpp",
+  "VfsFatTest.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "//kernel/liteos_a/testsuites/unittest/common/osTest.cpp",
-    "VfsFatTest.cpp",
+    "smoke/It_vfs_fat_026.cpp",
   ]
-  if (LOSCFG_USER_TEST_PRESSURE == true) {
-    sources_pressure = [
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_PRESSURE == true) {
+  source_set("sources_pressure") {
+    sources = [
       "pressure/It_fs_fat_performance_001.cpp",
       "pressure/It_fs_fat_performance_002.cpp",
       "pressure/It_fs_fat_performance_003.cpp",
@@ -110,85 +119,108 @@ unittest("liteos_a_fs_vfat_unittest_door") {
       "pressure/It_vfs_fat_mutipthread_049.cpp",
       "pressure/It_vfs_fat_mutipthread_050.cpp",
     ]
-    sources += sources_pressure
+    include_dirs = common_include_dirs
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
   }
-  if (LOSCFG_USER_TEST_SMOKE == true) {
-    sources_smoke = [
-      "smoke/It_vfs_fat_026.cpp",
-    ]
-    sources += sources_smoke
-  }
-  if (LOSCFG_USER_TEST_FULL == true) {
-    sources_full = [
-      "full/It_vfs_fat_066.cpp",
-      "full/It_vfs_fat_068.cpp",
-      "full/It_vfs_fat_072.cpp",
-      "full/It_vfs_fat_073.cpp",
-      "full/It_vfs_fat_074.cpp",
-      "full/It_vfs_fat_496.cpp",
-      "full/It_vfs_fat_497.cpp",
-      "full/It_vfs_fat_498.cpp",
-      "full/It_vfs_fat_499.cpp",
-      "full/It_vfs_fat_500.cpp",
-      "full/It_vfs_fat_501.cpp",
-      "full/It_vfs_fat_502.cpp",
-      "full/It_vfs_fat_503.cpp",
-      "full/It_vfs_fat_504.cpp",
-      "full/It_vfs_fat_506.cpp",
-      "full/It_vfs_fat_507.cpp",
-      "full/It_vfs_fat_508.cpp",
-      "full/It_vfs_fat_509.cpp",
-      "full/It_vfs_fat_510.cpp",
-      "full/It_vfs_fat_511.cpp",
-      "full/It_vfs_fat_512.cpp",
-      "full/It_vfs_fat_513.cpp",
-      "full/It_vfs_fat_514.cpp",
-      "full/It_vfs_fat_515.cpp",
-      "full/It_vfs_fat_516.cpp",
-      "full/It_vfs_fat_517.cpp",
-      "full/It_vfs_fat_518.cpp",
-      "full/It_vfs_fat_519.cpp",
-      "full/It_vfs_fat_662.cpp",
-      "full/It_vfs_fat_663.cpp",
-      "full/It_vfs_fat_664.cpp",
-      "full/It_vfs_fat_665.cpp",
-      "full/It_vfs_fat_666.cpp",
-      "full/It_vfs_fat_667.cpp",
-      "full/It_vfs_fat_668.cpp",
-      "full/It_vfs_fat_669.cpp",
-      "full/It_vfs_fat_670.cpp",
-      "full/It_vfs_fat_671.cpp",
-      "full/It_vfs_fat_672.cpp",
-      "full/It_vfs_fat_673.cpp",
-      "full/It_vfs_fat_674.cpp",
-      "full/It_vfs_fat_675.cpp",
-      "full/It_vfs_fat_676.cpp",
-      "full/It_vfs_fat_677.cpp",
-      "full/It_vfs_fat_678.cpp",
-      "full/It_vfs_fat_679.cpp",
-      "full/It_vfs_fat_680.cpp",
-      "full/It_vfs_fat_681.cpp",
-      "full/It_vfs_fat_682.cpp",
-      "full/It_vfs_fat_683.cpp",
-      "full/It_vfs_fat_684.cpp",
-      "full/It_vfs_fat_685.cpp",
-      "full/It_vfs_fat_686.cpp",
-      "full/It_vfs_fat_687.cpp",
-      "full/It_vfs_fat_692.cpp",
-      "full/It_vfs_fat_693.cpp",
-      "full/It_vfs_fat_694.cpp",
-      "full/It_vfs_fat_870.cpp",
-      "full/It_vfs_fat_872.cpp",
-      "full/It_vfs_fat_873.cpp",
-      "full/It_vfs_fat_874.cpp",
-      "full/It_vfs_fat_875.cpp",
-      "full/It_vfs_fat_902.cpp",
-      "full/It_vfs_fat_903.cpp",
-      "full/It_vfs_fat_904.cpp",
-      "full/It_vfs_fat_909.cpp",
-    ]
-    sources += sources_full
-  }
+}
+
+source_set("sources_other") {
+  sources = [
+    "full/It_vfs_fat_066.cpp",
+    "full/It_vfs_fat_068.cpp",
+    "full/It_vfs_fat_072.cpp",
+    "full/It_vfs_fat_073.cpp",
+    "full/It_vfs_fat_074.cpp",
+    "full/It_vfs_fat_496.cpp",
+    "full/It_vfs_fat_497.cpp",
+    "full/It_vfs_fat_498.cpp",
+    "full/It_vfs_fat_499.cpp",
+    "full/It_vfs_fat_500.cpp",
+    "full/It_vfs_fat_501.cpp",
+    "full/It_vfs_fat_502.cpp",
+    "full/It_vfs_fat_503.cpp",
+    "full/It_vfs_fat_504.cpp",
+    "full/It_vfs_fat_506.cpp",
+    "full/It_vfs_fat_507.cpp",
+    "full/It_vfs_fat_508.cpp",
+    "full/It_vfs_fat_509.cpp",
+    "full/It_vfs_fat_510.cpp",
+    "full/It_vfs_fat_511.cpp",
+    "full/It_vfs_fat_512.cpp",
+    "full/It_vfs_fat_513.cpp",
+    "full/It_vfs_fat_514.cpp",
+    "full/It_vfs_fat_515.cpp",
+    "full/It_vfs_fat_516.cpp",
+    "full/It_vfs_fat_517.cpp",
+    "full/It_vfs_fat_518.cpp",
+    "full/It_vfs_fat_519.cpp",
+    "full/It_vfs_fat_662.cpp",
+    "full/It_vfs_fat_663.cpp",
+    "full/It_vfs_fat_664.cpp",
+    "full/It_vfs_fat_665.cpp",
+    "full/It_vfs_fat_666.cpp",
+    "full/It_vfs_fat_667.cpp",
+    "full/It_vfs_fat_668.cpp",
+    "full/It_vfs_fat_669.cpp",
+    "full/It_vfs_fat_670.cpp",
+    "full/It_vfs_fat_671.cpp",
+    "full/It_vfs_fat_672.cpp",
+    "full/It_vfs_fat_673.cpp",
+    "full/It_vfs_fat_674.cpp",
+    "full/It_vfs_fat_675.cpp",
+    "full/It_vfs_fat_676.cpp",
+    "full/It_vfs_fat_677.cpp",
+    "full/It_vfs_fat_678.cpp",
+    "full/It_vfs_fat_679.cpp",
+    "full/It_vfs_fat_680.cpp",
+    "full/It_vfs_fat_681.cpp",
+    "full/It_vfs_fat_682.cpp",
+    "full/It_vfs_fat_683.cpp",
+    "full/It_vfs_fat_684.cpp",
+    "full/It_vfs_fat_685.cpp",
+    "full/It_vfs_fat_686.cpp",
+    "full/It_vfs_fat_687.cpp",
+    "full/It_vfs_fat_692.cpp",
+    "full/It_vfs_fat_693.cpp",
+    "full/It_vfs_fat_694.cpp",
+    "full/It_vfs_fat_870.cpp",
+    "full/It_vfs_fat_872.cpp",
+    "full/It_vfs_fat_873.cpp",
+    "full/It_vfs_fat_874.cpp",
+    "full/It_vfs_fat_875.cpp",
+    "full/It_vfs_fat_902.cpp",
+    "full/It_vfs_fat_903.cpp",
+    "full/It_vfs_fat_904.cpp",
+    "full/It_vfs_fat_909.cpp",
+  ]
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [ "//kernel/liteos_a/testsuites/unittest:public_config" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_fs_vfat_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    if (LOSCFG_USER_TEST_PRESSURE == true) {
+      deps += [ ":sources_pressure" ]
+    }
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_fs_vfat_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

@@ -30,25 +30,55 @@
 import("//build/lite/config/test.gni")
 import("../config.gni")
 
-unittest("liteos_a_liteipc_unittest_door") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../common/include",
-    "../liteipc",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../common/include",
+  "../liteipc",
+]
+
+sources_entry = [
+  "../common/osTest.cpp",
+  "smgr_demo.cpp",
+  "it_test_liteipc.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../common/osTest.cpp",
-    "smgr_demo.cpp",
-    "it_test_liteipc.cpp",
+    "smoke/liteipc_test_001.cpp",
+    "smoke/liteipc_test_002.cpp",
   ]
-  if (LOSCFG_USER_TEST_SMOKE == true) {
-    sources_smoke = [
-      "smoke/liteipc_test_001.cpp",
-      "smoke/liteipc_test_002.cpp",
-    ]
-    sources += sources_smoke
-  }
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [ "..:public_config" ]
+}
+
+source_set("sources_other") {
+  sources = [
+  ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_liteipc_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_liteipc_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }
