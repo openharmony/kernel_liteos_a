@@ -40,11 +40,6 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-STATIC INLINE VOID OsSetCurrCpuSp(UINTPTR regSp)
-{
-    __asm__ __volatile__("mov sp, %0" :: "r"(regSp));
-}
-
 #define OS_SYSTEM_NORMAL        0
 #define OS_SYSTEM_EXC_CURR_CPU  1
 #define OS_SYSTEM_EXC_OTHER_CPU 2
