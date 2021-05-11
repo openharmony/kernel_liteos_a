@@ -571,7 +571,7 @@ STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
         taskCB->userArea = initParam->userParam.userArea;
         taskCB->userMapBase = initParam->userParam.userMapBase;
         taskCB->userMapSize = initParam->userParam.userMapSize;
-        OsUserTaskStackInit(taskCB->stackPointer, taskCB->taskEntry, initParam->userParam.userSP);
+        OsUserTaskStackInit(taskCB->stackPointer, (UINTPTR)taskCB->taskEntry, initParam->userParam.userSP);
     }
 
     if (!processCB->threadNumber) {

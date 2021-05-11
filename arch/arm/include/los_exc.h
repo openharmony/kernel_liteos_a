@@ -63,26 +63,29 @@ typedef struct {
     UINT64 SPSR;
 } ExcContext;
 #else
+/* It has the same structure as TaskContext */
 typedef struct {
-    UINT32 USP;     /**< User mode stack pointer */
-    UINT32 ULR;     /**< User mode program returning address */
-    UINT32 regCPSR; /**< Current program status register (CPSR) */
+    UINT32 R4;
+    UINT32 R5;
+    UINT32 R6;
+    UINT32 R7;
+    UINT32 R8;
+    UINT32 R9;
+    UINT32 R10;
+    UINT32 R11;
+
+    UINT32 SP;       /**< svc sp */
+    UINT32 reserved; /**< Reserved, multiplexing register */
+    UINT32 USP;
+    UINT32 ULR;
     UINT32 R0;      /**< Register R0 */
     UINT32 R1;      /**< Register R1 */
     UINT32 R2;      /**< Register R2 */
     UINT32 R3;      /**< Register R3 */
-    UINT32 R4;      /**< Register R4 */
-    UINT32 R5;      /**< Register R5 */
-    UINT32 R6;      /**< Register R6 */
-    UINT32 R7;      /**< Register R7 */
-    UINT32 R8;      /**< Register R8 */
-    UINT32 R9;      /**< Register R9 */
-    UINT32 R10;     /**< Register R10 */
-    UINT32 R11;     /**< Register R11 */
     UINT32 R12;     /**< Register R12 */
-    UINT32 SP;      /**< Stack pointer */
     UINT32 LR;      /**< Program returning address. */
     UINT32 PC;      /**< PC pointer of the exceptional function */
+    UINT32 regCPSR;
 } ExcContext;
 #endif
 

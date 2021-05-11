@@ -104,11 +104,7 @@ STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
                             (IS_ALIGNED((ptr), sizeof(CHAR *))))
 
 STATIC const StackInfo g_excStack[] = {
-    { &__undef_stack, OS_EXC_UNDEF_STACK_SIZE, "udf_stack" },
-    { &__abt_stack,   OS_EXC_ABT_STACK_SIZE,   "abt_stack" },
-    { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },
     { &__svc_stack,   OS_EXC_SVC_STACK_SIZE,   "svc_stack" },
-    { &__irq_stack,   OS_EXC_IRQ_STACK_SIZE,   "irq_stack" },
     { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }
 };
 
@@ -829,7 +825,7 @@ VOID OsTaskBackTrace(UINT32 taskID)
     }
     PRINTK("TaskName = %s\n", taskCB->taskName);
     PRINTK("TaskID = 0x%x\n", taskCB->taskID);
-    BackTrace(((TaskContext *)(taskCB->stackPointer))->R[11]); /* R11 : FP */
+    BackTrace(((TaskContext *)(taskCB->stackPointer))->R11); /* R11 : FP */
 }
 
 VOID OsBackTrace(VOID)

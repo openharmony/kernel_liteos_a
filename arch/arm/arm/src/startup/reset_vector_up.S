@@ -38,17 +38,9 @@
 
 
     .global __exc_stack_top
-    .global __irq_stack_top
-    .global __fiq_stack_top
     .global __svc_stack_top
-    .global __abt_stack_top
-    .global __undef_stack_top
     .global __exc_stack
-    .global __irq_stack
-    .global __fiq_stack
     .global __svc_stack
-    .global __abt_stack
-    .global __undef_stack
 
     .extern __bss_start
     .extern __bss_end
@@ -201,36 +193,15 @@ reloc_img_to_bottom_done:
 
 excstatck_loop:
     /* clear out the interrupt and exception stack and set magic num to check the overflow */
-    ldr     r0, =__undef_stack
+    ldr     r0, =__svc_stack
     ldr     r1, =__exc_stack_top
     bl      stack_init
 
-    STACK_MAGIC_SET __undef_stack, #OS_EXC_UNDEF_STACK_SIZE, OS_STACK_MAGIC_WORD
-    STACK_MAGIC_SET __abt_stack, #OS_EXC_ABT_STACK_SIZE, OS_STACK_MAGIC_WORD
-    STACK_MAGIC_SET __irq_stack, #OS_EXC_IRQ_STACK_SIZE, OS_STACK_MAGIC_WORD
-    STACK_MAGIC_SET __fiq_stack, #OS_EXC_FIQ_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __svc_stack, #OS_EXC_SVC_STACK_SIZE, OS_STACK_MAGIC_WORD
     STACK_MAGIC_SET __exc_stack, #OS_EXC_STACK_SIZE, OS_STACK_MAGIC_WORD
 
 excstatck_loop_done:
 warm_reset:
-    /* initialize interrupt/exception environments */
-    mov    r0, #(CPSR_IRQ_DISABLE |CPSR_FIQ_DISABLE|CPSR_IRQ_MODE)
-    msr    cpsr, r0
-    EXC_SP_SET __irq_stack_top, #OS_EXC_IRQ_STACK_SIZE
-
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_UNDEF_MODE)
-    msr    cpsr, r0
-    EXC_SP_SET __undef_stack_top, #OS_EXC_UNDEF_STACK_SIZE
-
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_ABT_MODE)
-    msr    cpsr, r0
-    EXC_SP_SET __abt_stack_top, #OS_EXC_ABT_STACK_SIZE
-
-    mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_FIQ_MODE)
-    msr    cpsr, r0
-    EXC_SP_SET __fiq_stack_top, #OS_EXC_FIQ_STACK_SIZE
-
     /* initialize CPSR (machine state register) */
     mov    r0, #(CPSR_IRQ_DISABLE|CPSR_FIQ_DISABLE|CPSR_SVC_MODE)
     msr    cpsr, r0
@@ -463,22 +434,6 @@ init_flag:
     */
     .section ".int_stack", "wa", %nobits
     .align  3
-
-__undef_stack:
-    .space OS_EXC_UNDEF_STACK_SIZE * CORE_NUM
-__undef_stack_top:
-
-__abt_stack:
-    .space OS_EXC_ABT_STACK_SIZE * CORE_NUM
-__abt_stack_top:
-
-__irq_stack:
-    .space OS_EXC_IRQ_STACK_SIZE * CORE_NUM
-__irq_stack_top:
-
-__fiq_stack:
-    .space OS_EXC_FIQ_STACK_SIZE * CORE_NUM
-__fiq_stack_top:
 
 __svc_stack:
     .space OS_EXC_SVC_STACK_SIZE * CORE_NUM
