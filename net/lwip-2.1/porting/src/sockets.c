@@ -1570,6 +1570,8 @@ int socks_close(int sockfd)
         SYS_ARCH_UNPROTECT(lev);
         done_socket(sock);
         return lwip_close(sockfd);
+    } else {
+        PRINTK("no close socket s_refcount = %d\n", sock->s_refcount);
     }
 
     sock->s_refcount--;
