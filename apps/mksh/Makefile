@@ -46,7 +46,7 @@ LOCAL_CFLAGS += -DMKSH_LESS_CMDLINE_EDITING -DMKSH_LESS_BUILDINS -DMKSH_NO_INITC
 all:$(MKSH)
 
 $(MKSH):
-ifneq ($(wildcard $(BUILD_DIR)),)
+ifneq ($(wildcard $(BUILD_DIR)/Rebuild.sh),)
 	$(HIDE)echo "not clean, rebuilding now"
 	$(HIDE)chmod +x $(BUILD_DIR)/Rebuild.sh
 	$(HIDE)cd $(BUILD_DIR) && ./Rebuild.sh > $(BUILD_LOG) 2>&1
