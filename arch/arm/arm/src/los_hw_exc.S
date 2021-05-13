@@ -371,6 +371,13 @@ _osExceptDispatch:
 
     MOV     R1, SP
 
+#ifdef LOSCFG_KERNEL_VM
+    LDR     R2, [SP, #(19 * 4)]                              @ Get CPSR
+    AND     R2, R2, #CPSR_MASK_MODE                          @ Interrupted mode
+    CMP     R2, #CPSR_USER_MODE                              @ User mode
+    BEQ     _osExceptionGetSP
+#endif
+
     EXC_SP_SET __exc_stack_top, OS_EXC_STACK_SIZE, R6, R7
 
     MRC     P15, 0, R4, C0, C0, 5

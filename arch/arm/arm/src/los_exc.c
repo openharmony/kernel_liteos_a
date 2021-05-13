@@ -525,7 +525,7 @@ VOID OsDumpContextMem(const ExcContext *excBufAddr)
     }
 }
 
-STATIC VOID OsExcRestore(UINTPTR taskStackPointer)
+STATIC VOID OsExcRestore(VOID)
 {
     UINT32 currCpuID = ArchCurrCpuid();
 
@@ -536,8 +536,6 @@ STATIC VOID OsExcRestore(UINTPTR taskStackPointer)
     OsPercpuGet()->excFlag = CPU_RUNNING;
 #endif
     OsPercpuGet()->taskLockCnt = 0;
-
-    OsSetCurrCpuSp(taskStackPointer);
 }
 
 STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
@@ -564,8 +562,6 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
     runProcess->processStatus &= ~OS_PROCESS_FLAG_EXIT;
 
-    OsExcRestore(excBufAddr->SP);
-
 #if (LOSCFG_KERNEL_SMP == YES)
 #ifdef LOSCFG_FS_VFS
     OsWakeConsoleSendTask();
@@ -576,6 +572,9 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
     OsProcessExitCodeCoreDumpSet(runProcess);
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
+
+    /* Exception handling All operations should be kept prior to that operation */
+    OsExcRestore();
 
     /* kill user exc process */
     LOS_Exit(OS_PRO_EXIT_OK);
@@ -962,7 +961,7 @@ STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
     }
 }
 
-STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
+STATIC VOID OsCheckAllCpuStatus(VOID)
 {
     UINT32 currCpuID = ArchCurrCpuid();
     UINT32 ret, target;
@@ -982,7 +981,7 @@ STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
     } else if (g_excFromUserMode[currCpuID] == TRUE) {
         if (OsCurrProcessGet()->processID == g_currHandleExcPID) {
             LOS_SpinUnlock(&g_excSerializerSpin);
-            OsExcRestore(taskStackPointer);
+            OsExcRestore();
             while (1) {
                 ret = LOS_TaskSuspend(OsCurrTaskGet()->taskID);
                 PrintExcInfo("%s supend task :%u failed: 0x%x\n", __FUNCTION__, OsCurrTaskGet()->taskID, ret);
@@ -1010,12 +1009,11 @@ STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
 }
 #endif
 
-STATIC VOID OsCheckCpuStatus(UINTPTR taskStackPointer)
+STATIC VOID OsCheckCpuStatus(VOID)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
-    OsCheckAllCpuStatus(taskStackPointer);
+    OsCheckAllCpuStatus();
 #else
-    (VOID)taskStackPointer;
     g_currHandleExcCpuID = ArchCurrCpuid();
 #endif
 }
@@ -1036,7 +1034,7 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
         g_excFromUserMode[ArchCurrCpuid()] = FALSE;
     }
 
-    OsCheckCpuStatus(excBufAddr->SP);
+    OsCheckCpuStatus();
 
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
         while (1) {
