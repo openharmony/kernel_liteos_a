@@ -467,11 +467,9 @@ static int PthreadGetCputime(clockid_t clockID, struct timespec *ats)
         return -EINVAL;
     }
 
-#ifdef LOSCFG_KERNEL_CPUP
     SCHEDULER_LOCK(intSave);
     runtime = task->taskCpup.allTime;
     SCHEDULER_UNLOCK(intSave);
-#endif
 
     ats->tv_sec = runtime / OS_SYS_NS_PER_SECOND;
     ats->tv_nsec = runtime % OS_SYS_NS_PER_SECOND;
@@ -495,11 +493,9 @@ static int ProcessGetCputime(clockid_t clockID, struct timespec *ats)
         return -EINVAL;
     }
 
-#ifdef LOSCFG_KERNEL_CPUP
     SCHEDULER_LOCK(intSave);
     runtime = spcb->processCpup.allTime;
     SCHEDULER_UNLOCK(intSave);
-#endif
 
     ats->tv_sec = runtime / OS_SYS_NS_PER_SECOND;
     ats->tv_nsec = runtime % OS_SYS_NS_PER_SECOND;
@@ -529,6 +525,7 @@ int clock_gettime(clockid_t clockID, struct timespec *tp)
     UINT32 intSave;
     struct timespec64 tmp = {0};
     struct timespec64 hwTime = {0};
+    int ret;
 
     if (clockID > MAX_CLOCKS) {
         goto ERROUT;
@@ -572,8 +569,12 @@ int clock_gettime(clockid_t clockID, struct timespec *tp)
             TIME_RETURN(ENOTSUP);
         default:
             {
-                int ret = GetCputime(clockID, tp);
+#ifdef LOSCFG_KERNEL_CPUP
+                ret = GetCputime(clockID, tp);
                 TIME_RETURN(-ret);
+#else
+                TIME_RETURN(EINVAL);
+#endif
             }
     }
 
@@ -606,6 +607,10 @@ static int CheckClock(const clockid_t clockID)
 
 static int CpuClockGetres(const clockid_t clockID, struct timespec *tp)
 {
+    if (clockID > 0) {
+        return -EINVAL;
+    }
+
     int error = CheckClock(clockID);
     if (!error) {
         error = ProcessGetCputime(clockID, tp);
@@ -616,6 +621,8 @@ static int CpuClockGetres(const clockid_t clockID, struct timespec *tp)
 
 int clock_getres(clockid_t clockID, struct timespec *tp)
 {
+    int ret;
+
     if (tp == NULL) {
         TIME_RETURN(EINVAL);
     }
@@ -644,10 +651,14 @@ int clock_getres(clockid_t clockID, struct timespec *tp)
         case CLOCK_TAI:
             TIME_RETURN(ENOTSUP);
         default:
+#ifdef LOSCFG_KERNEL_CPUP
             {
-                int ret = CpuClockGetres(clockID, tp);
+                ret = CpuClockGetres(clockID, tp);
                 TIME_RETURN(-ret);
             }
+#else
+            TIME_RETURN(EINVAL);
+#endif
     }
 
     TIME_RETURN(0);
