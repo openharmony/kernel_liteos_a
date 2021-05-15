@@ -296,7 +296,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 events)
+LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 eventMask)
 {
     UINT32 intSave;
 
@@ -304,7 +304,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 events)
         return LOS_ERRNO_EVENT_PTR_NULL;
     }
     SCHEDULER_LOCK(intSave);
-    eventCB->uwEventID &= events;
+    eventCB->uwEventID &= eventMask;
     SCHEDULER_UNLOCK(intSave);
 
     return LOS_OK;
