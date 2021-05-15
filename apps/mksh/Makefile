@@ -46,12 +46,12 @@ LOCAL_CFLAGS += -DMKSH_LESS_CMDLINE_EDITING -DMKSH_LESS_BUILDINS -DMKSH_NO_INITC
 all:$(MKSH)
 
 $(MKSH):
-ifneq ($(wildcard $(BUILD_DIR)),)
+ifneq ($(wildcard $(BUILD_DIR)/Rebuild.sh),)
 	$(HIDE)echo "not clean, rebuilding now"
 	$(HIDE)chmod +x $(BUILD_DIR)/Rebuild.sh
 	$(HIDE)cd $(BUILD_DIR) && ./Rebuild.sh > $(BUILD_LOG) 2>&1
 else
-	$(HIDE)mkdir $(BUILD_DIR)
+	$(HIDE)mkdir -p $(BUILD_DIR)
 	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/$(MKSH)/. $(BUILD_DIR)
 	$(HIDE)chmod +x $(BUILD_DIR)/Build.sh
 	$(HIDE)cd $(BUILD_DIR) && CC=$(CC) TARGET_OS=$(TARGET_OS) CFLAGS="$(LOCAL_CFLAGS)" LDFLAGS="$(LDFLAGS)" ./Build.sh -r > $(BUILD_LOG) 2>&1
