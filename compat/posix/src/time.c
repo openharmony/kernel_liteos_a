@@ -426,7 +426,6 @@ int clock_settime(clockid_t clockID, const struct timespec *tp)
         case CLOCK_BOOTTIME:
         case CLOCK_REALTIME_ALARM:
         case CLOCK_BOOTTIME_ALARM:
-        case CLOCK_SGI_CYCLE:
         case CLOCK_TAI:
         case CLOCK_THREAD_CPUTIME_ID:
             TIME_RETURN(ENOTSUP);
@@ -493,7 +492,6 @@ int clock_gettime(clockid_t clockID, struct timespec *tp)
         case CLOCK_BOOTTIME:
         case CLOCK_REALTIME_ALARM:
         case CLOCK_BOOTTIME_ALARM:
-        case CLOCK_SGI_CYCLE:
         case CLOCK_TAI:
             TIME_RETURN(ENOTSUP);
         default:
@@ -532,7 +530,6 @@ int clock_getres(clockid_t clockID, struct timespec *tp)
         case CLOCK_BOOTTIME:
         case CLOCK_REALTIME_ALARM:
         case CLOCK_BOOTTIME_ALARM:
-        case CLOCK_SGI_CYCLE:
         case CLOCK_TAI:
             TIME_RETURN(ENOTSUP);
         default:
@@ -559,7 +556,6 @@ int clock_nanosleep(clockid_t clk, int flags, const struct timespec *req, struct
         case CLOCK_BOOTTIME:
         case CLOCK_REALTIME_ALARM:
         case CLOCK_BOOTTIME_ALARM:
-        case CLOCK_SGI_CYCLE:
         case CLOCK_TAI:
             if (flags == 0 || flags == TIMER_ABSTIME) {
                 TIME_RETURN(ENOTSUP);
