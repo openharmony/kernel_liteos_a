@@ -37,16 +37,29 @@ config("net_local_config") {
   }
 }
 
-unittest("liteos_a_net_netdb_unittest") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../../common/include",
-    "./",
-  ]
-  sources = [
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "./",
+]
+
+sources_entry = [
     "../../common/osTest.cpp",
-    "full/net_netdb_test_001.cpp",
+    "net_netdb_test.cpp",
+]
+
+source_set("sources_smoke") {
+  sources = [
+    "smoke/net_netdb_test_001.cpp",
+    "smoke/net_netdb_test_013.cpp",
+  ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+source_set("sources_other") {
+  sources = [
     "full/net_netdb_test_002.cpp",
     "full/net_netdb_test_003.cpp",
     "full/net_netdb_test_004.cpp",
@@ -58,7 +71,6 @@ unittest("liteos_a_net_netdb_unittest") {
     "full/net_netdb_test_010.cpp",
     "full/net_netdb_test_011.cpp",
     "full/net_netdb_test_012.cpp",
-    "full/net_netdb_test_013.cpp",
     "full/net_netdb_test_014.cpp",
     "full/net_netdb_test_015.cpp",
     "full/net_netdb_test_016.cpp",
@@ -68,10 +80,33 @@ unittest("liteos_a_net_netdb_unittest") {
     "full/net_netdb_test_020.cpp",
     "full/net_netdb_test_021.cpp",
     "full/net_netdb_test_022.cpp",
-    "net_netdb_test.cpp",
   ]
-  configs = [
-    "../..:public_config",
-    ":net_local_config",
-  ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+unittest("liteos_a_net_netdb_unittest") {
+  output_extension = "bin"
+  output_dir = "$root_out_dir/test/unittest/kernel"
+  include_dirs = common_include_dirs
+  sources = sources_entry
+  configs = [ "../..:public_config_full" ]
+  configs += [ ":net_local_config" ]
+  deps = []
+  deps += [ ":sources_smoke" ]
+  deps += [ ":sources_other" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_net_netdb_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    configs += [ ":net_local_config" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

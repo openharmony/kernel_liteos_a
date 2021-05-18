@@ -32,7 +32,6 @@
 #include "los_hw_pri.h"
 #include "los_task_pri.h"
 
-
 /* support cpu vendors */
 CpuVendor g_cpuTable[] = {
     /* armv7-a */
@@ -72,13 +71,10 @@ VOID OsTaskEntrySetupLoopFrame(UINT32 arg0)
 
 LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOID *topStack, BOOL initFlag)
 {
-    UINT32 index = 1;
-    TaskContext *taskContext = NULL;
-
     if (initFlag == TRUE) {
         OsStackInit(topStack, stackSize);
     }
-    taskContext = (TaskContext *)(((UINTPTR)topStack + stackSize) - sizeof(TaskContext));
+    TaskContext *taskContext = (TaskContext *)(((UINTPTR)topStack + stackSize) - sizeof(TaskContext));
 
     /* initialize the task context */
 #ifdef LOSCFG_GDB
@@ -87,22 +83,17 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     taskContext->PC = (UINTPTR)OsTaskEntry;
 #endif
     taskContext->LR = (UINTPTR)OsTaskExit;  /* LR should be kept, to distinguish it's THUMB or ARM instruction */
-    taskContext->resved = 0x0;
-    taskContext->R[0] = taskID;             /* R0 */
-    taskContext->R[index++] = 0x01010101;   /* R1, 0x01010101 : reg initialed magic word */
-    for (; index < GEN_REGS_NUM; index++) {
-        taskContext->R[index] = taskContext->R[index - 1] + taskContext->R[1]; /* R2 - R12 */
-    }
+    taskContext->R0 = taskID;               /* R0 */
 
 #ifdef LOSCFG_INTERWORK_THUMB
-    taskContext->regPSR = PSR_MODE_SVC_THUMB; /* CPSR (Enable IRQ and FIQ interrupts, THUMNB-mode) */
+    taskContext->regCPSR = PSR_MODE_SVC_THUMB; /* CPSR (Enable IRQ and FIQ interrupts, THUMNB-mode) */
 #else
-    taskContext->regPSR = PSR_MODE_SVC_ARM;   /* CPSR (Enable IRQ and FIQ interrupts, ARM-mode) */
+    taskContext->regCPSR = PSR_MODE_SVC_ARM;   /* CPSR (Enable IRQ and FIQ interrupts, ARM-mode) */
 #endif
 
 #if !defined(LOSCFG_ARCH_FPU_DISABLE)
     /* 0xAAA0000000000000LL : float reg initialed magic word */
-    for (index = 0; index < FP_REGS_NUM; index++) {
+    for (UINT32 index = 0; index < FP_REGS_NUM; index++) {
         taskContext->D[index] = 0xAAA0000000000000LL + index; /* D0 - D31 */
     }
     taskContext->regFPSCR = 0;
@@ -112,30 +103,36 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     return (VOID *)taskContext;
 }
 
-LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(LosTaskCB *childTaskCB, LosTaskCB *parentTaskCB)
+LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStack, UINT32 parentStackSize)
 {
-    TaskContext *context = (TaskContext *)childTaskCB->stackPointer;
-    VOID *cloneStack = (VOID *)(((UINTPTR)parentTaskCB->topOfStack + parentTaskCB->stackSize) - sizeof(TaskContext));
+    VOID *cloneStack = (VOID *)(((UINTPTR)parentTopOfStack + parentStackSize) - sizeof(TaskContext));
 
-    LOS_ASSERT(parentTaskCB->taskStatus & OS_TASK_STATUS_RUNNING);
-
-    (VOID)memcpy_s(childTaskCB->stackPointer, sizeof(TaskContext), cloneStack, sizeof(TaskContext));
-    context->R[0] = 0;
+    (VOID)memcpy_s(childStack, sizeof(TaskContext), cloneStack, sizeof(TaskContext));
+    ((TaskContext *)childStack)->R0 = 0;
 }
 
-LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, TSK_ENTRY_FUNC taskEntry, UINTPTR stack)
+LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR taskEntry, UINTPTR stack)
 {
     LOS_ASSERT(context != NULL);
 
 #ifdef LOSCFG_INTERWORK_THUMB
-    context->regPSR = PSR_MODE_USR_THUMB;
+    context->regCPSR = PSR_MODE_USR_THUMB;
 #else
-    context->regPSR = PSR_MODE_USR_ARM;
+    context->regCPSR = PSR_MODE_USR_ARM;
 #endif
-    context->R[0] = stack;
-    context->SP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);
-    context->LR = 0;
+    context->R0 = stack;
+    context->USP = TRUNCATE(stack, LOSCFG_STACK_POINT_ALIGN_SIZE);
+    context->ULR = 0;
     context->PC = (UINTPTR)taskEntry;
+}
+
+VOID OsInitSignalContext(VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param)
+{
+    IrqContext *newSp = (IrqContext *)signalContext;
+    (VOID)memcpy_s(signalContext, sizeof(IrqContext), sp, sizeof(IrqContext));
+    newSp->PC = sigHandler;
+    newSp->R0 = signo;
+    newSp->R1 = param;
 }
 
 DEPRECATED VOID Dmb(VOID)

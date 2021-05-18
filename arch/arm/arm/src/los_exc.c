@@ -34,7 +34,7 @@
 #include "los_printf_pri.h"
 #include "los_task_pri.h"
 #include "los_hw_pri.h"
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
 #endif
 #ifdef LOSCFG_EXC_INTERACTION
@@ -104,11 +104,7 @@ STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
                             (IS_ALIGNED((ptr), sizeof(CHAR *))))
 
 STATIC const StackInfo g_excStack[] = {
-    { &__undef_stack, OS_EXC_UNDEF_STACK_SIZE, "udf_stack" },
-    { &__abt_stack,   OS_EXC_ABT_STACK_SIZE,   "abt_stack" },
-    { &__fiq_stack,   OS_EXC_FIQ_STACK_SIZE,   "fiq_stack" },
     { &__svc_stack,   OS_EXC_SVC_STACK_SIZE,   "svc_stack" },
-    { &__irq_stack,   OS_EXC_IRQ_STACK_SIZE,   "irq_stack" },
     { &__exc_stack,   OS_EXC_STACK_SIZE,       "exc_stack" }
 };
 
@@ -529,7 +525,7 @@ VOID OsDumpContextMem(const ExcContext *excBufAddr)
     }
 }
 
-STATIC VOID OsExcRestore(UINTPTR taskStackPointer)
+STATIC VOID OsExcRestore(VOID)
 {
     UINT32 currCpuID = ArchCurrCpuid();
 
@@ -540,8 +536,6 @@ STATIC VOID OsExcRestore(UINTPTR taskStackPointer)
     OsPercpuGet()->excFlag = CPU_RUNNING;
 #endif
     OsPercpuGet()->taskLockCnt = 0;
-
-    OsSetCurrCpuSp(taskStackPointer);
 }
 
 STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
@@ -568,18 +562,19 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
     runProcess->processStatus &= ~OS_PROCESS_FLAG_EXIT;
 
-    OsExcRestore(excBufAddr->SP);
-
 #if (LOSCFG_KERNEL_SMP == YES)
 #ifdef LOSCFG_FS_VFS
     OsWakeConsoleSendTask();
 #endif
 #endif
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
     OsProcessExitCodeCoreDumpSet(runProcess);
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
+
+    /* Exception handling All operations should be kept prior to that operation */
+    OsExcRestore();
 
     /* kill user exc process */
     LOS_Exit(OS_PRO_EXIT_OK);
@@ -829,7 +824,7 @@ VOID OsTaskBackTrace(UINT32 taskID)
     }
     PRINTK("TaskName = %s\n", taskCB->taskName);
     PRINTK("TaskID = 0x%x\n", taskCB->taskID);
-    BackTrace(((TaskContext *)(taskCB->stackPointer))->R[11]); /* R11 : FP */
+    BackTrace(((TaskContext *)(taskCB->stackPointer))->R11); /* R11 : FP */
 }
 
 VOID OsBackTrace(VOID)
@@ -966,7 +961,7 @@ STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
     }
 }
 
-STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
+STATIC VOID OsCheckAllCpuStatus(VOID)
 {
     UINT32 currCpuID = ArchCurrCpuid();
     UINT32 ret, target;
@@ -986,7 +981,7 @@ STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
     } else if (g_excFromUserMode[currCpuID] == TRUE) {
         if (OsCurrProcessGet()->processID == g_currHandleExcPID) {
             LOS_SpinUnlock(&g_excSerializerSpin);
-            OsExcRestore(taskStackPointer);
+            OsExcRestore();
             while (1) {
                 ret = LOS_TaskSuspend(OsCurrTaskGet()->taskID);
                 PrintExcInfo("%s supend task :%u failed: 0x%x\n", __FUNCTION__, OsCurrTaskGet()->taskID, ret);
@@ -1014,12 +1009,11 @@ STATIC VOID OsCheckAllCpuStatus(UINTPTR taskStackPointer)
 }
 #endif
 
-STATIC VOID OsCheckCpuStatus(UINTPTR taskStackPointer)
+STATIC VOID OsCheckCpuStatus(VOID)
 {
 #if (LOSCFG_KERNEL_SMP == YES)
-    OsCheckAllCpuStatus(taskStackPointer);
+    OsCheckAllCpuStatus();
 #else
-    (VOID)taskStackPointer;
     g_currHandleExcCpuID = ArchCurrCpuid();
 #endif
 }
@@ -1040,7 +1034,7 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
         g_excFromUserMode[ArchCurrCpuid()] = FALSE;
     }
 
-    OsCheckCpuStatus(excBufAddr->SP);
+    OsCheckCpuStatus();
 
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
         while (1) {
@@ -1086,6 +1080,22 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
     }
 }
 
+#ifdef LOSCFG_SAVE_EXCINFO
+STATIC VOID OsSysStateSave(UINT32 *intCount, UINT32 *lockCount)
+{
+    *intCount = g_intCount[ArchCurrCpuid()];
+    *lockCount = OsPercpuGet()->taskLockCnt;
+    g_intCount[ArchCurrCpuid()] = 0;
+    OsPercpuGet()->taskLockCnt = 0;
+}
+
+STATIC VOID OsSysStateRestore(UINT32 intCount, UINT32 lockCount)
+{
+    g_intCount[ArchCurrCpuid()] = intCount;
+    OsPercpuGet()->taskLockCnt = lockCount;
+}
+#endif
+
 /*
  * Description : EXC handler entry
  * Input       : excType    --- exc type
@@ -1093,6 +1103,11 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
  */
 LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
+#ifdef LOSCFG_SAVE_EXCINFO
+    UINT32 intCount;
+    UINT32 lockCount;
+#endif
+
     /* Task scheduling is not allowed during exception handling */
     OsPercpuGet()->taskLockCnt++;
 
@@ -1106,18 +1121,18 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
     OsAllCpuStatusOutput();
 #endif
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
     log_read_write_fn func = GetExcInfoRW();
 #endif
 
     if (g_excHook != NULL) {
         if (g_curNestCount[ArchCurrCpuid()] == 1) {
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
             if (func != NULL) {
                 SetExcInfoIndex(0);
-                g_intCount[ArchCurrCpuid()] = 0;
+                OsSysStateSave(&intCount, &lockCount);
                 OsRecordExcInfoTime();
-                g_intCount[ArchCurrCpuid()] = 1;
+                OsSysStateRestore(intCount, lockCount);
             }
 #endif
             g_excHook(excType, excBufAddr, far, fsr);
@@ -1125,12 +1140,12 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
             OsCallStackInfo();
         }
 
-#ifdef LOSCFG_SHELL_EXCINFO
+#ifdef LOSCFG_SAVE_EXCINFO
         if (func != NULL) {
             PrintExcInfo("Be sure flash space bigger than GetExcInfoIndex():0x%x\n", GetExcInfoIndex());
-            g_intCount[ArchCurrCpuid()] = 0;
+            OsSysStateSave(&intCount, &lockCount);
             func(GetRecordAddr(), GetRecordSpace(), 0, GetExcInfoBuf());
-            g_intCount[ArchCurrCpuid()] = 1;
+            OsSysStateRestore(intCount, lockCount);
         }
 #endif
     }

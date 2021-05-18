@@ -28,17 +28,21 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
-unittest("liteos_a_process_unittest") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../../common/include",
-    "../../process/process",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "./",
+]
+
+sources_entry = [
+  "../../common/osTest.cpp",
+  "process_process_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../../common/osTest.cpp",
-    "process_process_test.cpp",
     "smoke/process_test_001.cpp",
     "smoke/process_test_002.cpp",
     "smoke/process_test_004.cpp",
@@ -114,6 +118,40 @@ unittest("liteos_a_process_unittest") {
     "smp/process_test_smp_007.cpp",
     "smp/process_test_smp_008.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [ "../..:public_config" ]
+}
+
+source_set("sources_other") {
+  sources = [
+  ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_process_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_process_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

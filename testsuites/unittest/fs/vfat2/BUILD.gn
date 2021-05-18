@@ -28,18 +28,105 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
-unittest("liteos_a_fs_vfat_unittest") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "//kernel/liteos_a/testsuites/unittest/common/include",
-    "//kernel/liteos_a/testsuites/unittest/fs/vfs",
-    "//kernel/liteos_a/testsuites/unittest/fs/vfat2",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "//kernel/liteos_a/testsuites/unittest/fs/vfs",
+  "//kernel/liteos_a/testsuites/unittest/fs/vfat2",
+]
+
+sources_entry = [
+  "../../common/osTest.cpp",
+  "VfsFatTest.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "//kernel/liteos_a/testsuites/unittest/common/osTest.cpp",
-    "VfsFatTest.cpp",
+    "smoke/It_vfs_fat_026.cpp",
+  ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_PRESSURE == true) {
+  source_set("sources_pressure") {
+    sources = [
+      "pressure/It_fs_fat_performance_001.cpp",
+      "pressure/It_fs_fat_performance_002.cpp",
+      "pressure/It_fs_fat_performance_003.cpp",
+      "pressure/It_fs_fat_performance_004.cpp",
+      "pressure/It_fs_fat_performance_005.cpp",
+      "pressure/It_fs_fat_performance_006.cpp",
+      "pressure/It_fs_fat_performance_007.cpp",
+      "pressure/It_fs_fat_performance_008.cpp",
+      "pressure/It_fs_fat_performance_013.cpp",
+      "pressure/It_fs_fat_performance_014.cpp",
+      "pressure/It_fs_fat_performance_015.cpp",
+      "pressure/It_fs_fat_performance_016.cpp",
+
+      "pressure/It_fs_fat_pressure_029.cpp",
+      "pressure/It_fs_fat_pressure_030.cpp",
+      "pressure/It_fs_fat_pressure_031.cpp",
+      "pressure/It_fs_fat_pressure_038.cpp",
+      "pressure/It_fs_fat_pressure_040.cpp",
+      "pressure/It_fs_fat_pressure_041.cpp",
+      "pressure/It_fs_fat_pressure_042.cpp",
+      "pressure/It_fs_fat_pressure_301.cpp",
+      "pressure/It_fs_fat_pressure_302.cpp",
+      "pressure/It_fs_fat_pressure_303.cpp",
+      "pressure/It_fs_fat_pressure_305.cpp",
+      "pressure/It_fs_fat_pressure_306.cpp",
+      "pressure/It_fs_fat_pressure_309.cpp",
+
+      "pressure/It_vfs_fat_mutipthread_003.cpp",
+      "pressure/It_vfs_fat_mutipthread_004.cpp",
+      "pressure/It_vfs_fat_mutipthread_005.cpp",
+      "pressure/It_vfs_fat_mutipthread_006.cpp",
+      "pressure/It_vfs_fat_mutipthread_008.cpp",
+      "pressure/It_vfs_fat_mutipthread_009.cpp",
+      "pressure/It_vfs_fat_mutipthread_010.cpp",
+      "pressure/It_vfs_fat_mutipthread_012.cpp",
+      "pressure/It_vfs_fat_mutipthread_014.cpp",
+      "pressure/It_vfs_fat_mutipthread_016.cpp",
+      "pressure/It_vfs_fat_mutipthread_017.cpp",
+      "pressure/It_vfs_fat_mutipthread_018.cpp",
+      "pressure/It_vfs_fat_mutipthread_019.cpp",
+      "pressure/It_vfs_fat_mutipthread_020.cpp",
+      "pressure/It_vfs_fat_mutipthread_021.cpp",
+      "pressure/It_vfs_fat_mutipthread_022.cpp",
+      "pressure/It_vfs_fat_mutipthread_023.cpp",
+      "pressure/It_vfs_fat_mutipthread_024.cpp",
+      "pressure/It_vfs_fat_mutipthread_027.cpp",
+      "pressure/It_vfs_fat_mutipthread_029.cpp",
+      "pressure/It_vfs_fat_mutipthread_030.cpp",
+      "pressure/It_vfs_fat_mutipthread_032.cpp",
+      "pressure/It_vfs_fat_mutipthread_033.cpp",
+      "pressure/It_vfs_fat_mutipthread_035.cpp",
+      "pressure/It_vfs_fat_mutipthread_036.cpp",
+      "pressure/It_vfs_fat_mutipthread_038.cpp",
+      "pressure/It_vfs_fat_mutipthread_039.cpp",
+      "pressure/It_vfs_fat_mutipthread_040.cpp",
+      "pressure/It_vfs_fat_mutipthread_041.cpp",
+      "pressure/It_vfs_fat_mutipthread_042.cpp",
+      "pressure/It_vfs_fat_mutipthread_043.cpp",
+      "pressure/It_vfs_fat_mutipthread_044.cpp",
+      "pressure/It_vfs_fat_mutipthread_045.cpp",
+      "pressure/It_vfs_fat_mutipthread_046.cpp",
+      "pressure/It_vfs_fat_mutipthread_047.cpp",
+      "pressure/It_vfs_fat_mutipthread_048.cpp",
+      "pressure/It_vfs_fat_mutipthread_049.cpp",
+      "pressure/It_vfs_fat_mutipthread_050.cpp",
+    ]
+    include_dirs = common_include_dirs
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  }
+}
+
+source_set("sources_other") {
+  sources = [
     "full/It_vfs_fat_066.cpp",
     "full/It_vfs_fat_068.cpp",
     "full/It_vfs_fat_072.cpp",
@@ -106,75 +193,36 @@ unittest("liteos_a_fs_vfat_unittest") {
     "full/It_vfs_fat_903.cpp",
     "full/It_vfs_fat_904.cpp",
     "full/It_vfs_fat_909.cpp",
-
-    "pressure/It_fs_fat_performance_001.cpp",
-    "pressure/It_fs_fat_performance_002.cpp",
-    "pressure/It_fs_fat_performance_003.cpp",
-    "pressure/It_fs_fat_performance_004.cpp",
-    "pressure/It_fs_fat_performance_005.cpp",
-    "pressure/It_fs_fat_performance_006.cpp",
-    "pressure/It_fs_fat_performance_007.cpp",
-    "pressure/It_fs_fat_performance_008.cpp",
-    "pressure/It_fs_fat_performance_013.cpp",
-    "pressure/It_fs_fat_performance_014.cpp",
-    "pressure/It_fs_fat_performance_015.cpp",
-    "pressure/It_fs_fat_performance_016.cpp",
-
-    "pressure/It_fs_fat_pressure_029.cpp",
-    "pressure/It_fs_fat_pressure_030.cpp",
-    "pressure/It_fs_fat_pressure_031.cpp",
-    "pressure/It_fs_fat_pressure_038.cpp",
-    "pressure/It_fs_fat_pressure_040.cpp",
-    "pressure/It_fs_fat_pressure_041.cpp",
-    "pressure/It_fs_fat_pressure_042.cpp",
-    "pressure/It_fs_fat_pressure_301.cpp",
-    "pressure/It_fs_fat_pressure_302.cpp",
-    "pressure/It_fs_fat_pressure_303.cpp",
-    "pressure/It_fs_fat_pressure_305.cpp",
-    "pressure/It_fs_fat_pressure_306.cpp",
-    "pressure/It_fs_fat_pressure_309.cpp",
-
-    "pressure/It_vfs_fat_mutipthread_003.cpp",
-    "pressure/It_vfs_fat_mutipthread_004.cpp",
-    "pressure/It_vfs_fat_mutipthread_005.cpp",
-    "pressure/It_vfs_fat_mutipthread_006.cpp",
-    "pressure/It_vfs_fat_mutipthread_008.cpp",
-    "pressure/It_vfs_fat_mutipthread_009.cpp",
-    "pressure/It_vfs_fat_mutipthread_010.cpp",
-    "pressure/It_vfs_fat_mutipthread_012.cpp",
-    "pressure/It_vfs_fat_mutipthread_014.cpp",
-    "pressure/It_vfs_fat_mutipthread_016.cpp",
-    "pressure/It_vfs_fat_mutipthread_017.cpp",
-    "pressure/It_vfs_fat_mutipthread_018.cpp",
-    "pressure/It_vfs_fat_mutipthread_019.cpp",
-    "pressure/It_vfs_fat_mutipthread_020.cpp",
-    "pressure/It_vfs_fat_mutipthread_021.cpp",
-    "pressure/It_vfs_fat_mutipthread_022.cpp",
-    "pressure/It_vfs_fat_mutipthread_023.cpp",
-    "pressure/It_vfs_fat_mutipthread_024.cpp",
-    "pressure/It_vfs_fat_mutipthread_027.cpp",
-    "pressure/It_vfs_fat_mutipthread_029.cpp",
-    "pressure/It_vfs_fat_mutipthread_030.cpp",
-    "pressure/It_vfs_fat_mutipthread_032.cpp",
-    "pressure/It_vfs_fat_mutipthread_033.cpp",
-    "pressure/It_vfs_fat_mutipthread_035.cpp",
-    "pressure/It_vfs_fat_mutipthread_036.cpp",
-    "pressure/It_vfs_fat_mutipthread_038.cpp",
-    "pressure/It_vfs_fat_mutipthread_039.cpp",
-    "pressure/It_vfs_fat_mutipthread_040.cpp",
-    "pressure/It_vfs_fat_mutipthread_041.cpp",
-    "pressure/It_vfs_fat_mutipthread_042.cpp",
-    "pressure/It_vfs_fat_mutipthread_043.cpp",
-    "pressure/It_vfs_fat_mutipthread_044.cpp",
-    "pressure/It_vfs_fat_mutipthread_045.cpp",
-    "pressure/It_vfs_fat_mutipthread_046.cpp",
-    "pressure/It_vfs_fat_mutipthread_047.cpp",
-    "pressure/It_vfs_fat_mutipthread_048.cpp",
-    "pressure/It_vfs_fat_mutipthread_049.cpp",
-    "pressure/It_vfs_fat_mutipthread_050.cpp",
-
-    "smoke/It_vfs_fat_026.cpp",
   ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [ "//kernel/liteos_a/testsuites/unittest:public_config" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_fs_vfat_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    if (LOSCFG_USER_TEST_PRESSURE == true) {
+      deps += [ ":sources_pressure" ]
+    }
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_fs_vfat_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

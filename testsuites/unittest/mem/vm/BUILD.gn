@@ -28,17 +28,21 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
-unittest("liteos_a_mem_vm_unittest") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../../common/include",
-    "../../mem/vm",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "../../mem/vm",
+]
+
+sources_entry = [
+  "../../common/osTest.cpp",
+  "mem_vm_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../../common/osTest.cpp",
-    "mem_vm_test.cpp",
     "smoke/mmap_test_001.cpp",
     "smoke/mmap_test_002.cpp",
     "smoke/mmap_test_003.cpp",
@@ -55,6 +59,40 @@ unittest("liteos_a_mem_vm_unittest") {
     "smoke/open_wmemstream_test_001.cpp",
     "smoke/user_copy_test_001.cpp",
   ]
-  configs = [ "../..:public_config" ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+source_set("sources_other") {
+  sources = [
+  ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_mem_vm_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_mem_vm_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

@@ -92,7 +92,6 @@ $(LITEOS_TEST_LIBC): $(KERNEL)
 
 $(KERNEL): $(LITEOS_TEST_AUTOCONFIG_H)
 	$(HIDE)$(MAKE) -C ../ lib || exit 1
-	#echo "LITEOS_CFLAGS : $(LITEOS_CFLAGS)"
 
 ##### make test menuconfig #####
 export CONFIG_=LOSCFG_

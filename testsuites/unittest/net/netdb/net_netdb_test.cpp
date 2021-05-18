@@ -49,7 +49,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
-#if defined(LOSCFG_USER_TEST_FULL) && defined(LOSCFG_USER_TEST_NET_NETDB)
+#if defined(LOSCFG_USER_TEST_SMOKE) && defined(LOSCFG_USER_TEST_NET_NETDB)
 /* *
  * @tc.name: NetNetDbTest001
  * @tc.desc: function for NetDbTest

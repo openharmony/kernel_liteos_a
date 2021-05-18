@@ -47,12 +47,13 @@ static void Sigac(int param)
 
 static void Child()
 {
-    int i = 100;
+    int i = 10;
     signal(25, Sigac);
 
     while (i--) {
-        sleep(10);
+        sleep(1);
     }
+    exit(0);
 }
 
 static int TestChild(VOID)
@@ -131,7 +132,7 @@ static int TestChild(VOID)
     ret = capset(&capheader, &capdata[0]);
     ret = sched_setparam(pid, &param);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-
+    wait(nullptr);
     exit(92);
 
     return 0;

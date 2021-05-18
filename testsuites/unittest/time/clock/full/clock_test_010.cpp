@@ -64,7 +64,7 @@ static int SleepTest(int64_t expectTime)
     LogPrintln("slept time (expected --> actual): %" PRId64 "ns --> %" PRId64 "ns, delta: %" PRId64 "ns\n", expectTime,
         escapeTime, escapeTime - expectTime);
 
-    g_failCnt += (escapeTime < expectTime || (escapeTime - expectTime) >= 90000000); // 20000000, 2 ticks.
+    g_failCnt += (escapeTime < expectTime || (escapeTime - expectTime) >= 20000000); // 20000000, 2 ticks.
 
     return 0;
 }

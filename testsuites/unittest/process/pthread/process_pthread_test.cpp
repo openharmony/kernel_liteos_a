@@ -51,6 +51,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_pthread_001
  * @tc.desc: function for ProcessPthreadTest
@@ -165,8 +166,8 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread010, TestSize.Level0)
 {
     ItTestPthread010();
 }
-
 #endif
+
 /* *
  * @tc.name: it_test_pthread_011
  * @tc.desc: function for ProcessPthreadTest
@@ -211,8 +212,8 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread014, TestSize.Level0)
 {
     ItTestPthread014();
 }
-
 #endif
+
 /* *
  * @tc.name: it_test_pthread_015
  * @tc.desc: function for ProcessPthreadTest
@@ -322,4 +323,5 @@ HWTEST_F(ProcessPthreadTest, ItTestPthreadCond002, TestSize.Level0)
 {
     ItTestPthreadCond002();
 }
+#endif
 } // namespace OHOS

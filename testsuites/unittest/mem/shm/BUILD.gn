@@ -28,33 +28,70 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../../config.gni")
 
-unittest("liteos_a_mem_shm_unittest") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../../common/include",
-    "../../mem/shm",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "../../mem/shm",
+]
+
+sources_entry = [
+  "../../common/osTest.cpp",
+  "mem_shm_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../../common/osTest.cpp",
-    "mem_shm_test.cpp",
-    "smoke/shm_test_001.cpp",
-    "smoke/shm_test_002.cpp",
-    "smoke/shm_test_003.cpp",
-    "smoke/shm_test_004.cpp",
-    "smoke/shm_test_005.cpp",
-    "smoke/shm_test_006.cpp",
-    "smoke/shm_test_007.cpp",
-    "smoke/shm_test_008.cpp",
-    "smoke/shm_test_009.cpp",
-    "smoke/shm_test_010.cpp",
-    "smoke/shm_test_011.cpp",
-    "smoke/shm_test_012.cpp",
-    "smoke/shm_test_013.cpp",
-    "smoke/shm_test_014.cpp",
-    #    "smoke/it_test_mem_100.cpp",
+      "smoke/shm_test_001.cpp",
+      "smoke/shm_test_002.cpp",
+      "smoke/shm_test_003.cpp",
+      "smoke/shm_test_004.cpp",
+      "smoke/shm_test_005.cpp",
+      "smoke/shm_test_006.cpp",
+      "smoke/shm_test_007.cpp",
+      "smoke/shm_test_008.cpp",
+      "smoke/shm_test_009.cpp",
+      "smoke/shm_test_010.cpp",
+      "smoke/shm_test_011.cpp",
+      "smoke/shm_test_012.cpp",
+      "smoke/shm_test_013.cpp",
+      "smoke/shm_test_014.cpp",
   ]
-  configs = [ "../..:public_config" ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+source_set("sources_other") {
+  sources = [
+  ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_mem_shm_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_mem_shm_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

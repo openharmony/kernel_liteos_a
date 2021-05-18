@@ -40,6 +40,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_storage_001
  * @tc.desc: function for drivers storage
@@ -50,4 +51,5 @@ HWTEST_F(DriversStorageTest, ItTestStorage001, TestSize.Level0)
 {
     ItTestStorage001();
 }
+#endif
 } // namespace OHOS

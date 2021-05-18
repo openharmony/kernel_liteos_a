@@ -41,6 +41,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: ItTestExc005
  * @tc.desc: function for ExcTest
@@ -95,5 +96,5 @@ HWTEST_F(ExcTest, ItTestExc004, TestSize.Level0)
 {
     ItTestExc004();
 }
-
+#endif
 } // namespace OHOS

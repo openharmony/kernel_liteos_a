@@ -28,20 +28,58 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../config.gni")
 
-unittest("liteos_a_ipc_unittest") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../common/include",
-    "../IPC",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../common/include",
+  "../IPC",
+]
+
+sources_entry = [
+  "../common/osTest.cpp",
+  "ipc_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../common/osTest.cpp",
+  ]
+  configs += [ "..:local_public_config" ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+source_set("sources_other") {
+  sources = [
     "full/IPC_test_mkfifoat_001.cpp",
     "full/IPC_test_mkfifoat_002.cpp",
-    "ipc_test.cpp",
   ]
+  configs += [ "..:local_public_config" ]
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [ "..:public_config" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_ipc_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_ipc_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

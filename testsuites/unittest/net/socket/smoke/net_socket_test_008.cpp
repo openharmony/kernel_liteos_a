@@ -38,7 +38,7 @@
 
 #define SERVER_PORT 6666
 #define INVALID_SOCKET -1
-#define CLIENT_NUM 50
+#define CLIENT_NUM 25
 #define BACKLOG CLIENT_NUM
 
 static int gFds[FD_SETSIZE];

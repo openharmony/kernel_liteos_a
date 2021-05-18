@@ -238,34 +238,6 @@ STATIC BOOL OsVmSpaceParamCheck(LosVmSpace *vmSpace)
     return TRUE;
 }
 
-LosVmMapRegion *OsShareRegionClone(LosVmMapRegion *oldRegion)
-{
-    /* no need to create vm object */
-    LosVmMapRegion *newRegion = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmMapRegion));
-    if (newRegion == NULL) {
-        VM_ERR("malloc new region struct failed.");
-        return NULL;
-    }
-
-    /* todo: */
-    *newRegion = *oldRegion;
-    return newRegion;
-}
-
-LosVmMapRegion *OsPrivateRegionClone(LosVmMapRegion *oldRegion)
-{
-    /* need to create vm object */
-    LosVmMapRegion *newRegion = LOS_MemAlloc(m_aucSysMem0, sizeof(LosVmMapRegion));
-    if (newRegion == NULL) {
-        VM_ERR("malloc new region struct failed.");
-        return NULL;
-    }
-
-    /* todo: */
-    *newRegion = *oldRegion;
-    return newRegion;
-}
-
 STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
 {
     LosVmMapRegion *oldRegion = NULL;
@@ -838,11 +810,6 @@ STATUS_T OsIsRegionCanExpand(LosVmSpace *space, LosVmMapRegion *region, size_t s
 
     if ((space == NULL) || (region == NULL)) {
         return LOS_NOK;
-    }
-
-    /* if next node is head, then we can expand */
-    if (OsIsVmRegionEmpty(space) == TRUE) {
-        return LOS_OK;
     }
 
     nextRegion = (LosVmMapRegion *)LOS_RbSuccessorNode(&space->regionRbTree, &region->rbNode);

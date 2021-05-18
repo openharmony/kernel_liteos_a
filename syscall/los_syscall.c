@@ -38,6 +38,7 @@
 #include "los_syscall.h"
 #include "los_task_pri.h"
 #include "los_process_pri.h"
+#include "los_hw_pri.h"
 #include "los_printf.h"
 #include "time.h"
 #include "utime.h"
@@ -93,21 +94,16 @@ void SyscallHandleInit(void)
 }
 
 /* The SYSCALL ID is in R7 on entry.  Parameters follow in R0..R6 */
-LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
+VOID OsArmA32SyscallHandle(TaskContext *regs)
 {
     UINT32 ret;
     UINT8 nArgs;
     UINTPTR handle;
-    UINT32 cmd = regs[REG_R7];
+    UINT32 cmd = regs->reserved2;
 
     if (cmd >= SYS_CALL_NUM) {
         PRINT_ERR("Syscall ID: error %d !!!\n", cmd);
-        return regs;
-    }
-
-    if (cmd == __NR_sigreturn) {
-        OsRestorSignalContext(regs);
-        return regs;
+        return;
     }
 
     handle = g_syscallHandle[cmd];
@@ -115,35 +111,28 @@ LITE_OS_SEC_TEXT UINT32 *OsArmA32SyscallHandle(UINT32 *regs)
     nArgs = (cmd & 1) ? (nArgs >> NARG_BITS) : (nArgs & NARG_MASK);
     if ((handle == 0) || (nArgs > ARG_NUM_7)) {
         PRINT_ERR("Unsupport syscall ID: %d nArgs: %d\n", cmd, nArgs);
-        regs[REG_R0] = -ENOSYS;
-        return regs;
+        regs->R0 = -ENOSYS;
+        return;
     }
 
     switch (nArgs) {
         case ARG_NUM_0:
         case ARG_NUM_1:
-            ret = (*(SyscallFun1)handle)(regs[REG_R0]);
+            ret = (*(SyscallFun1)handle)(regs->R0);
             break;
         case ARG_NUM_2:
         case ARG_NUM_3:
-            ret = (*(SyscallFun3)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2]);
+            ret = (*(SyscallFun3)handle)(regs->R0, regs->R1, regs->R2);
             break;
         case ARG_NUM_4:
         case ARG_NUM_5:
-            ret = (*(SyscallFun5)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2], regs[REG_R3],
-                                         regs[REG_R4]);
+            ret = (*(SyscallFun5)handle)(regs->R0, regs->R1, regs->R2, regs->R3, regs->R4);
             break;
         default:
-            ret = (*(SyscallFun7)handle)(regs[REG_R0], regs[REG_R1], regs[REG_R2], regs[REG_R3],
-                                         regs[REG_R4], regs[REG_R5], regs[REG_R6]);
+            ret = (*(SyscallFun7)handle)(regs->R0, regs->R1, regs->R2, regs->R3, regs->R4, regs->R5, regs->R6);
     }
 
-    regs[REG_R0] = ret;
+    regs->R0 = ret;
 
-    OsSaveSignalContext(regs);
-
-    /* Return the last value of curent_regs.  This supports context switches on return from the exception.
-     * That capability is only used with theSYS_context_switch system call.
-     */
-    return regs;
+    return;
 }

@@ -68,9 +68,6 @@
 #define OK 0
 #endif
 
-#define LOSCFG_USER_TEST_SMOKE 1
-#define LOSCFG_USER_TEST_FULL 1
-
 #define dprintf printf
 #define ENOERR OK
 #define LOSCFG_BASE_CORE_TSK_CONFIG 1024

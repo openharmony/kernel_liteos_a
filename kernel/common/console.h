@@ -80,12 +80,13 @@ typedef struct {
     UINT32 consoleID;
     UINT32 consoleType;
     UINT32 consoleSem;
-    UINT32 shellEntryId;
     UINT32 consoleMask;
     struct Vnode *devVnode;
     CHAR *name;
     INT32 fd;
     UINT32 refCount;
+    UINT32 shellEntryId;
+    INT32 pgrpId;
     BOOL isNonBlock;
 #ifdef LOSCFG_SHELL
     VOID *shellHandle;
@@ -123,6 +124,7 @@ extern INT32 GetFilepOps(const struct file *filep, struct file **privFilep, cons
 extern VOID OsWaitConsoleSendTaskPend(UINT32 taskID);
 extern VOID OsWakeConsoleSendTask(VOID);
 #endif
+extern VOID KillPgrp(VOID);
 
 /* console ioctl */
 #define CONSOLE_IOC_MAGIC   'c'

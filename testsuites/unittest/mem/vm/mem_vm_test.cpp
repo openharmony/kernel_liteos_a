@@ -41,6 +41,7 @@ public:
     static void TearDownTestCase(void) {}
 };
 
+#if defined(LOSCFG_USER_TEST_SMOKE)
 /* *
  * @tc.name: it_test_mmap_001
  * @tc.desc: function for MemVmTest
@@ -208,4 +209,5 @@ HWTEST_F(MemVmTest, open_wmemstream_test_001, TestSize.Level0)
 {
     open_wmemstream_test_001();
 }
+#endif
 } // namespace OHOS

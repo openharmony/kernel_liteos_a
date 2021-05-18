@@ -125,6 +125,8 @@ VOID ItPosixQueue206(VOID);
 VOID ItPosixQueue207(VOID);
 VOID ItPosixQueue208(VOID);
 VOID ItPosixQueue209(VOID);
+VOID ItPosixQueue053(VOID);
+VOID ItPosixQueue144(VOID);
 #endif
 
 #if defined(LOSCFG_USER_TEST_FULL)
@@ -166,7 +168,6 @@ VOID ItPosixQueue048(VOID);
 VOID ItPosixQueue049(VOID);
 VOID ItPosixQueue050(VOID);
 VOID ItPosixQueue052(VOID);
-VOID ItPosixQueue053(VOID);
 VOID ItPosixQueue054(VOID);
 VOID ItPosixQueue055(VOID);
 VOID ItPosixQueue056(VOID);
@@ -241,7 +242,6 @@ VOID ItPosixQueue133(VOID);
 VOID ItPosixQueue134(VOID);
 VOID ItPosixQueue136(VOID);
 VOID ItPosixQueue143(VOID);
-VOID ItPosixQueue144(VOID);
 VOID ItPosixQueue145(VOID);
 VOID ItPosixQueue146(VOID);
 VOID ItPosixQueue147(VOID);

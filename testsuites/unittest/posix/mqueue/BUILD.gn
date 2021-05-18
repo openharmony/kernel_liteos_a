@@ -35,62 +35,38 @@ config("mqueue_config") {
   cflags_cc = cflags
 }
 
-unittest("liteos_a_posix_mqueue_unittest") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../../common/include",
-    "../../posix/mqueue",
-  ]
-  sourcesllt = []
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../../common/include",
+  "./",
+]
 
-  if (LOSCFG_USER_TEST_LLT == true) {
-    sourcesllt += [
-      "llt/It_posix_queue_006.cpp",
-      "llt/It_posix_queue_009.cpp",
-      "llt/It_posix_queue_022.cpp",
-      "llt/It_posix_queue_023.cpp",
-      "llt/It_posix_queue_024.cpp",
-      "llt/It_posix_queue_029.cpp",
-      "llt/It_posix_queue_034.cpp",
-      "llt/It_posix_queue_035.cpp",
-      "llt/It_posix_queue_037.cpp",
-      "llt/It_posix_queue_039.cpp",
-      "llt/It_posix_queue_045.cpp",
-      "llt/It_posix_queue_051.cpp",
-      "llt/It_posix_queue_059.cpp",
-      "llt/It_posix_queue_068.cpp",
-      "llt/It_posix_queue_092.cpp",
-      "llt/It_posix_queue_099.cpp",
-      "llt/It_posix_queue_105.cpp",
-      "llt/It_posix_queue_107.cpp",
-      "llt/It_posix_queue_131.cpp",
-      "llt/It_posix_queue_132.cpp",
-      "llt/It_posix_queue_135.cpp",
-      "llt/It_posix_queue_137.cpp",
-      "llt/It_posix_queue_138.cpp",
-      "llt/It_posix_queue_139.cpp",
-      "llt/It_posix_queue_140.cpp",
-      "llt/It_posix_queue_141.cpp",
-      "llt/It_posix_queue_142.cpp",
-      "llt/It_posix_queue_158.cpp",
-      "llt/LLT_posix_queue_001.cpp",
-      "llt/LLT_posix_queue_002.cpp",
-      "llt/LLT_posix_queue_003.cpp",
-      "llt/LLT_posix_queue_004.cpp",
-      "llt/LLT_posix_queue_005.cpp",
-      "llt/LLT_posix_queue_006.cpp",
-      "llt/LLT_posix_queue_007.cpp",
-      "llt/LLT_posix_queue_008.cpp",
-      "llt/LLT_posix_queue_009.cpp",
-      "llt/LLT_posix_queue_010.cpp",
-      "llt/LLT_posix_queue_011.cpp",
-      "llt/LLT_posix_queue_012.cpp",
-      "llt/LLT_posix_queue_013.cpp",
-    ]
-  }
+sources_entry = [
+  "../../common/osTest.cpp",
+  "posix_mqueue_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../../common/osTest.cpp",
+    "smoke/It_posix_queue_001.cpp",
+    "smoke/It_posix_queue_003.cpp",
+    "smoke/It_posix_queue_028.cpp",
+    "smoke/It_posix_queue_053.cpp",
+    "smoke/It_posix_queue_144.cpp",
+    "smoke/It_posix_queue_062.cpp",
+    "smoke/It_posix_queue_205.cpp",
+    "smoke/It_posix_queue_206.cpp",
+    "smoke/It_posix_queue_207.cpp",
+    "smoke/It_posix_queue_208.cpp",
+    "smoke/It_posix_queue_209.cpp",
+  ]
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+source_set("sources_other") {
+  sources = [
     "full/It_posix_queue_002.cpp",
     "full/It_posix_queue_005.cpp",
     "full/It_posix_queue_008.cpp",
@@ -123,7 +99,6 @@ unittest("liteos_a_posix_mqueue_unittest") {
     "full/It_posix_queue_049.cpp",
     "full/It_posix_queue_050.cpp",
     "full/It_posix_queue_052.cpp",
-    "full/It_posix_queue_053.cpp",
     "full/It_posix_queue_054.cpp",
     "full/It_posix_queue_055.cpp",
     "full/It_posix_queue_056.cpp",
@@ -198,7 +173,6 @@ unittest("liteos_a_posix_mqueue_unittest") {
     "full/It_posix_queue_134.cpp",
     "full/It_posix_queue_136.cpp",
     "full/It_posix_queue_143.cpp",
-    "full/It_posix_queue_144.cpp",
     "full/It_posix_queue_145.cpp",
     "full/It_posix_queue_146.cpp",
     "full/It_posix_queue_147.cpp",
@@ -232,19 +206,35 @@ unittest("liteos_a_posix_mqueue_unittest") {
     "full/It_posix_queue_202.cpp",
     "full/It_posix_queue_203.cpp",
     "full/It_posix_queue_204.cpp",
-    "posix_mqueue_test.cpp",
-    "smoke/It_posix_queue_001.cpp",
-    "smoke/It_posix_queue_003.cpp",
-    "smoke/It_posix_queue_028.cpp",
-    "smoke/It_posix_queue_062.cpp",
-    "smoke/It_posix_queue_205.cpp",
-    "smoke/It_posix_queue_206.cpp",
-    "smoke/It_posix_queue_207.cpp",
-    "smoke/It_posix_queue_208.cpp",
-    "smoke/It_posix_queue_209.cpp",
   ]
-  sources += sourcesllt
+  configs += [ "../..:local_public_config" ]
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [ "../..:public_config" ]
-  configs += [ ":mqueue_config" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_posix_mqueue_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_full" ]
+    configs += [ ":mqueue_config" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_posix_mqueue_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "../..:public_config_smk" ]
+    configs += [ ":mqueue_config" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }

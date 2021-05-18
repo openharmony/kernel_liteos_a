@@ -28,20 +28,33 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//build/lite/config/test.gni")
+import("../config.gni")
 
-unittest("liteos_a_io_unittest") {
-  output_extension = "bin"
-  output_dir = "$root_out_dir/test/unittest/kernel"
-  include_dirs = [
-    "../common/include",
-    "../IO",
-  ]
+common_include_dirs = [
+  "//third_party/googletest/googletest/include",
+  "../common/include",
+  "../IO",
+]
+
+sources_entry = [
+  "../common/osTest.cpp",
+  "io_test.cpp",
+]
+
+source_set("sources_smoke") {
   sources = [
-    "../common/osTest.cpp",
-    "full/IO_test_005.cpp",
-    "full/IO_test_008.cpp",
-    "full/IO_test_010.cpp",
-    "full/IO_test_013.cpp",
+    "smoke/IO_test_005.cpp",
+    "smoke/IO_test_008.cpp",
+    "smoke/IO_test_010.cpp",
+    "smoke/IO_test_013.cpp",
+  ]
+  configs += [ "..:local_public_config" ]
+  include_dirs = common_include_dirs
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+}
+
+source_set("sources_other") {
+  sources = [
     "full/IO_test_confstr_001.cpp",
     "full/IO_test_dcgettext_001.cpp",
     "full/IO_test_dcgettext_002.cpp",
@@ -74,13 +87,35 @@ unittest("liteos_a_io_unittest") {
     "full/It_stdlib_poll_002.cpp",
     "full/It_stdlib_poll_003.cpp",
     "full/IO_test_gettext_001.cpp",
-    #"full/IO_test_ppoll_001.cpp",
-    #"full/IO_test_ppoll_002.cpp",
-    #"full/IO_test_pselect_001.cpp",
     "full/IO_test_strncasecmp_l_001.cpp",
     "full/IO_test_strncasecmp_l_002.cpp",
-    "io_test.cpp",
   ]
+  configs += [ "..:local_public_config" ]
+  include_dirs = common_include_dirs
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-  configs = [ "..:public_config" ]
+}
+
+if (LOSCFG_USER_TEST_FOR_ALL == true) {
+  unittest("liteos_a_io_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "..:public_config_full" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+    deps += [ ":sources_other" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_FOR_DOOR == true) {
+  unittest("liteos_a_io_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    configs = [ "..:public_config_smk" ]
+    deps = []
+    deps += [ ":sources_smoke" ]
+  }
 }
