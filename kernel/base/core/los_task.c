@@ -240,7 +240,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     ret = LOS_TaskCreateOnly(idleTaskID, &taskInitParam);
     LosTaskCB *idleTask = OS_TCB_FROM_TID(*idleTaskID);
     idleTask->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;
-    OsSchedSetIdleTaskSchedPartam(idleTask);
+    OsSchedSetIdleTaskSchedParam(idleTask);
 
     return ret;
 }
