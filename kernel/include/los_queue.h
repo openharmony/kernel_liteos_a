@@ -356,7 +356,7 @@ typedef struct tagQueueInfo {
  * This API is used to create a message queue.
  * @attention
  * <ul>
- * <li>Threre are LOSCFG_BASE_IPC_QUEUE_LIMIT queues available, change it's value when necessory.</li>
+ * <li>There are LOSCFG_BASE_IPC_QUEUE_LIMIT queues available, change it's value when necessary.</li>
  * </ul>
  * @param queueName        [IN]  Message queue name. Reserved parameter, not used for now.
  * @param len              [IN]  Queue length. The value range is [1,0xffff].
