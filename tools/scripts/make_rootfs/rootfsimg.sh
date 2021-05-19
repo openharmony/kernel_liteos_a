@@ -38,6 +38,7 @@ JFFS2_TOOL=mkfs.jffs2
 WIN_JFFS2_TOOL=mkfs.jffs2.exe
 YAFFS2_TOOL=mkyaffs2image100
 VFAT_TOOL=mkfs.vfat
+ROMFS_TOOL=genromfs
 MCOPY_TOOL=mcopy
 
 tool_check() {
@@ -66,8 +67,11 @@ if [ "${FSTYPE}" = "jffs2" ]; then
         ${JFFS2_TOOL} -q -o ${ROOTFS_IMG} -d ${ROOTFS_DIR} --pagesize=4096
     fi
 elif [ "${FSTYPE}" = "yaffs2" ]; then
-        tool_check ${YAFFS2_TOOL}
-	${YAFFS2_TOOL}  ${ROOTFS_DIR} ${ROOTFS_IMG} 2k 24bit
+    tool_check ${YAFFS2_TOOL}
+    ${YAFFS2_TOOL}  ${ROOTFS_DIR} ${ROOTFS_IMG} 2k 24bit
+elif [ "${FSTYPE}" = "romfs" ]; then
+    tool_check ${ROMFS_TOOL}
+    ${ROMFS_TOOL}  -d ${ROOTFS_DIR} -f ${ROOTFS_IMG}
 elif [ "${FSTYPE}" = "vfat" ]; then
     if [ "${system}" != "Linux" ] ; then
         echo "Unsupported fs type!" >&2
