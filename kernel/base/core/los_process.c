@@ -468,7 +468,7 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
         }
         SCHEDULER_UNLOCK(intSave);
 
-        OsTaskCBRecyleToFree();
+        OsTaskCBRecycleToFree();
 
         SCHEDULER_LOCK(intSave);
         processCB->processStatus &= ~OS_PROCESS_FLAG_EXIT;
