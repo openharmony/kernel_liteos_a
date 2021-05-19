@@ -46,6 +46,7 @@ config("local_public_config") {
     "-O2",
     "-fbuiltin",
     "-Wno-narrowing",
+    "-fPIE",
   ]
   cflags += local_flags
   cflags_cc = cflags
@@ -57,6 +58,7 @@ config("public_config_smk") {
     "-O2",
     "-fbuiltin",
     "-Wno-narrowing",
+    "-fPIE",
   ]
   cflags += local_flags_smoke
   cflags += local_flags
@@ -69,6 +71,7 @@ config("public_config_full") {
     "-O2",
     "-fbuiltin",
     "-Wno-narrowing",
+    "-fPIE",
   ]
   cflags += local_flags_full
   cflags += local_flags
