@@ -193,20 +193,20 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
 {
     UINT8 *queueNode = NULL;
     UINT32 msgDataSize;
-    UINT16 queuePosion;
+    UINT16 queuequeuePosition;
 
     /* get the queue position */
     switch (OS_QUEUE_OPERATE_GET(operateType)) {
         case OS_QUEUE_READ_HEAD:
-            queuePosion = queueCB->queueHead;
+            queuequeuePosition = queueCB->queueHead;
             ((queueCB->queueHead + 1) == queueCB->queueLen) ? (queueCB->queueHead = 0) : (queueCB->queueHead++);
             break;
         case OS_QUEUE_WRITE_HEAD:
             (queueCB->queueHead == 0) ? (queueCB->queueHead = queueCB->queueLen - 1) : (--queueCB->queueHead);
-            queuePosion = queueCB->queueHead;
+            queuequeuePosition = queueCB->queueHead;
             break;
         case OS_QUEUE_WRITE_TAIL:
-            queuePosion = queueCB->queueTail;
+            queuequeuePosition = queueCB->queueTail;
             ((queueCB->queueTail + 1) == queueCB->queueLen) ? (queueCB->queueTail = 0) : (queueCB->queueTail++);
             break;
         default:  /* read tail, reserved. */
@@ -214,7 +214,7 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
             return;
     }
 
-    queueNode = &(queueCB->queueHandle[(queuePosion * (queueCB->queueSize))]);
+    queueNode = &(queueCB->queueHandle[(queuequeuePosition * (queueCB->queueSize))]);
 
     if (OS_QUEUE_IS_READ(operateType)) {
         if (memcpy_s(&msgDataSize, sizeof(UINT32), queueNode + queueCB->queueSize - sizeof(UINT32),
