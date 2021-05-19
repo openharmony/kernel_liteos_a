@@ -454,7 +454,7 @@ UINT32 OsShellCmdTraceSwitch(INT32 argc, const CHAR **argv)
         if (isdigit(argv[0][0]) != 0) {
             CHAR *endPtr = NULL;
             UINT32 traceType = strtoul(argv[0], &endPtr, 0);
-            if ((endPtr != NULL) || (*endPtr != 0)) {
+            if ((endPtr == NULL) || (*endPtr != 0)) {
                 PRINTK("Unknown option: %s\n", argv[0]);
                 goto TRACE_HELP;
             }
