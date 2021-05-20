@@ -488,7 +488,7 @@ extern VOID OsExecDestroyTaskGroup(VOID);
 extern VOID OsProcessSuspendAllTask(VOID);
 extern UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB);
 extern VOID OsWriteResourceEvent(UINT32 events);
-extern UINT32 OsCreateResourceFreeTask(VOID);
+extern UINT32 OsResourceFreeTaskCreate(VOID);
 
 #define OS_TASK_WAIT_ANYPROCESS (1 << 0U)
 #define OS_TASK_WAIT_PROCESS    (1 << 1U)

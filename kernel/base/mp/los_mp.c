@@ -30,11 +30,11 @@
  */
 
 #include "los_mp.h"
-#include "los_task_pri.h"
+#include "los_init.h"
 #include "los_percpu_pri.h"
 #include "los_sched_pri.h"
 #include "los_swtmr.h"
-
+#include "los_task_pri.h"
 
 #if (LOSCFG_KERNEL_SMP == YES)
 
@@ -104,6 +104,8 @@ UINT32 OsMpInit(VOID)
 
     return LOS_OK;
 }
+
+LOS_MODULE_INIT(OsMpInit, LOS_INIT_LEVEL_KMOD_TASK);
 
 #endif
 

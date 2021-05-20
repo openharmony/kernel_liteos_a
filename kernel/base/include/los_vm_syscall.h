@@ -59,11 +59,11 @@ STATIC INLINE BOOL LOS_IsAnonymousMapping(unsigned long flags)
 VADDR_T LOS_MMap(VADDR_T vaddr, size_t len, unsigned prot, unsigned long flags, int fd, unsigned long pgoff);
 STATUS_T LOS_UnMMap(VADDR_T addr, size_t size);
 VOID *LOS_DoBrk(VOID *addr);
-int LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot);
+INT32 LOS_DoMprotect(VADDR_T vaddr, size_t len, unsigned long prot);
 VADDR_T LOS_DoMremap(VADDR_T oldAddress, size_t oldSize, size_t newSize, int flags, VADDR_T newAddr);
 VOID LOS_DumpMemRegion(VADDR_T vaddr);
-INT32 ShmInit(VOID);
-INT32 ShmDeinit(VOID);
+UINT32 ShmInit(VOID);
+UINT32 ShmDeinit(VOID);
 INT32 ShmGet(key_t key, size_t size, INT32 shmflg);
 VOID *ShmAt(INT32 shmid, const VOID *shmaddr, INT32 shmflg);
 INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf);

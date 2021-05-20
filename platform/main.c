@@ -30,69 +30,58 @@
  */
 
 #include "los_config.h"
-#include "los_printf.h"
-#include "los_atomic.h"
-#include "los_process_pri.h"
-#include "los_task_pri.h"
-#include "los_swtmr_pri.h"
-#include "los_sched_pri.h"
-#include "los_arch_mmu.h"
 #include "gic_common.h"
+#include "los_arch_mmu.h"
+#include "los_atomic.h"
+#include "los_init_pri.h"
+#include "los_printf.h"
+#include "los_process_pri.h"
+#include "los_sched_pri.h"
+#include "los_swtmr_pri.h"
+#include "los_task_pri.h"
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == 1)
 STATIC Atomic g_ncpu = 1;
 #endif
 
-LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
-{
-#ifdef LOSCFG_DEBUG_VERSION
-    const CHAR *buildType = "debug";
-#else
-    const CHAR *buildType = "release";
-#endif /* LOSCFG_DEBUG_VERSION */
-
-    PRINT_RELEASE("\n******************Welcome******************\n\n"
-            "Processor   : %s"
-#if (LOSCFG_KERNEL_SMP == YES)
-            " * %d\n"
-            "Run Mode    : SMP\n"
-#else
-            "\n"
-            "Run Mode    : UP\n"
-#endif
-            "GIC Rev     : %s\n"
-            "build time  : %s %s\n"
-            "Kernel      : %s %d.%d.%d.%d/%s\n"
-            "\n*******************************************\n",
-            LOS_CpuInfo(),
-#if (LOSCFG_KERNEL_SMP == YES)
-            LOSCFG_KERNEL_SMP_CORE_NUM,
-#endif
-            HalIrqVersion(), __DATE__, __TIME__,\
-            KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, buildType);
-}
-
 LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == 1)
     UINT32 cpuid = ArchCurrCpuid();
+
+    OsCurrTaskSet(OsGetMainTask());
+
+    /* increase cpu counter and sync multi-core */
+    LOS_AtomicInc(&g_ncpu);
+    while (LOS_AtomicRead(&g_ncpu) < LOSCFG_KERNEL_CORE_NUM) {
+        asm volatile("wfe");
+    }
+    asm volatile("sev");
+
+    OsInitCall(LOS_INIT_LEVEL_VM_COMPLETE);
 
 #ifdef LOSCFG_KERNEL_MMU
     OsArchMmuInitPerCPU();
 #endif
-
-    OsCurrTaskSet(OsGetMainTask());
-
-    /* increase cpu counter */
-    LOS_AtomicInc(&g_ncpu);
-
     /* store each core's hwid */
     CPU_MAP_SET(cpuid, OsHwIDGet());
     HalIrqInitPercpu();
+    OsInitCall(LOS_INIT_LEVEL_ARCH);
+
+    OsInitCall(LOS_INIT_LEVEL_PLATFORM);
 
     OsCurrProcessSet(OS_PCB_FROM_PID(OsGetKernelInitProcessID()));
+    OsInitCall(LOS_INIT_LEVEL_KMOD_BASIC);
+
+#if (LOSCFG_BASE_CORE_SWTMR == 1)
     OsSwtmrInit();
+#endif
+
+    OsInitCall(LOS_INIT_LEVEL_KMOD_EXTENDED);
+
     OsIdleTaskCreate();
+    OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);
+
     OsSchedStart();
     while (1) {
         __asm volatile("wfi");
@@ -100,7 +89,7 @@ LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
 #endif
 }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == 1)
 #ifdef LOSCFG_TEE_ENABLE
 #define TSP_CPU_ON  0xb2000011UL
 STATIC INT32 raw_smc_send(UINT32 cmd)
@@ -124,6 +113,8 @@ STATIC VOID trigger_secondary_cpu(VOID)
 
 LITE_OS_SEC_TEXT_INIT VOID release_secondary_cores(VOID)
 {
+    PRINT_RELEASE("releasing %u secondary cores\n", LOSCFG_KERNEL_SMP_CORE_NUM - 1);
+
     trigger_secondary_cpu();
     /* wait until all APs are ready */
     while (LOS_AtomicRead(&g_ncpu) < LOSCFG_KERNEL_CORE_NUM) {
@@ -135,6 +126,8 @@ LITE_OS_SEC_TEXT_INIT VOID release_secondary_cores(VOID)
 LITE_OS_SEC_TEXT_INIT VOID release_secondary_cores(VOID)
 {
     UINT32 regval;
+
+    PRINT_RELEASE("releasing %u secondary cores\n", LOSCFG_KERNEL_SMP_CORE_NUM - 1);
 
     /* clear the second cpu reset status */
     READ_UINT32(regval, PERI_CRG30_BASE);
@@ -151,30 +144,12 @@ LITE_OS_SEC_TEXT_INIT VOID release_secondary_cores(VOID)
 
 LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
 {
-    UINT32 uwRet = LOS_OK;
-
-    OsSetMainTask();
-    OsCurrTaskSet(OsGetMainTask());
-
-    /* set system counter freq */
-#ifndef LOSCFG_TEE_ENABLE
-    HalClockFreqWrite(OS_SYS_CLOCK);
-#endif
-
-    /* system and chip info */
-    OsSystemInfo();
-
-    PRINT_RELEASE("\nmain core booting up...\n");
+    UINT32 uwRet;
 
     uwRet = OsMain();
     if (uwRet != LOS_OK) {
         return LOS_NOK;
     }
-
-#if (LOSCFG_KERNEL_SMP == YES)
-    PRINT_RELEASE("releasing %u secondary cores\n", LOSCFG_KERNEL_SMP_CORE_NUM - 1);
-    release_secondary_cores();
-#endif
 
     CPU_MAP_SET(0, OsHwIDGet());
 

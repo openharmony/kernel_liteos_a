@@ -30,92 +30,26 @@
  */
 
 #include "los_config.h"
-#include "string.h"
 #include "stdio.h"
-#include "los_oom.h"
-#ifdef LOSCFG_COMPAT_LINUXKPI
-#include "linux/workqueue.h"
-#include "linux/module.h"
-#endif
-#include "los_sys.h"
-#include "los_tick.h"
-#include "los_task_pri.h"
-#include "los_printf.h"
-#include "los_swtmr.h"
-#include "los_swtmr_pri.h"
-#include "los_memory_pri.h"
-#include "los_sem_pri.h"
-#include "los_mux_pri.h"
-#include "los_rwlock_pri.h"
-#include "los_queue_pri.h"
-#include "los_memstat_pri.h"
-#include "los_hwi_pri.h"
-#include "los_spinlock.h"
-#include "los_mp.h"
+#include "string.h"
+#include "gic_common.h"
 #include "los_atomic.h"
 #include "los_exc_pri.h"
-#include "gic_common.h"
-#include "los_vm_boot.h"
-
-#ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
-#include "fs/fs_operation.h"
-#endif
-
-#if (LOSCFG_KERNEL_TRACE == YES)
-#include "los_trace.h"
-#endif
-
-#ifdef LOSCFG_KERNEL_CPUP
-#include "los_cpup_pri.h"
-#endif
-
-#ifdef LOSCFG_COMPAT_POSIX
-#include "pprivate.h"
-#endif
-
-#ifdef LOSCFG_DRIVERS_HDF_PLATFORM_UART
-#include "console.h"
-#endif
-#ifdef LOSCFG_ARCH_CORTEX_M7
-#include "los_exc_pri.h"
-#endif
-#include "los_hw_tick_pri.h"
 #include "los_hwi_pri.h"
-
-#if defined(LOSCFG_HW_RANDOM_ENABLE) || defined (LOSCFG_DRIVERS_RANDOM)
-#include "randomdev.h"
-#include "yarrow.h"
-#endif
-#ifdef LOSCFG_SHELL_DMESG
-#include "dmesg_pri.h"
-#endif
-#ifdef LOSCFG_SHELL_LK
-#include "shell_pri.h"
-#endif
-
-#ifdef LOSCFG_KERNEL_PIPE
-#include "pipe_common.h"
-#endif
-
+#include "los_hw_tick_pri.h"
+#include "los_init_pri.h"
+#include "los_memory_pri.h"
+#include "los_mp.h"
+#include "los_mux_pri.h"
+#include "los_printf.h"
 #include "los_process_pri.h"
-#include "los_futex_pri.h"
-
-#ifdef LOSCFG_KERNEL_VDSO
-#include "los_vdso.h"
-#endif
-
-#if (LOSCFG_KERNEL_LITEIPC == YES)
-#include "hm_liteipc.h"
-#endif
-
-#ifdef LOSCFG_DRIVERS_HIEVENT
-#include "hievent_driver.h"
-#endif
-
-#if (LOSCFG_BASE_CORE_HILOG == YES)
-#include "los_hilog.h"
-#endif
+#include "los_queue_pri.h"
+#include "los_sem_pri.h"
+#include "los_spinlock.h"
+#include "los_swtmr_pri.h"
+#include "los_task_pri.h"
+#include "los_tick.h"
+#include "los_vm_boot.h"
 
 STATIC SystemRebootFunc g_rebootHook = NULL;
 
@@ -131,102 +65,32 @@ SystemRebootFunc OsGetRebootHook(VOID)
 
 extern UINT32 OsSystemInit(VOID);
 extern VOID SystemInit(VOID);
+#if (LOSCFG_KERNEL_SMP == 1)
+extern VOID release_secondary_cores(VOID);
+#endif
 
-LITE_OS_SEC_TEXT_INIT VOID osRegister(VOID)
+LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
 {
+    /* Must be placed at the beginning of the boot process */
+    OsSetMainTask();
+    OsCurrTaskSet(OsGetMainTask());
+
     g_sysClock = OS_SYS_CLOCK;
     g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;
 
-    return;
-}
-
-LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
-{
-    UINT32 ret;
-#if (LOSCFG_BASE_IPC_SEM == YES)
-    ret = OsSemInit();
-    if (ret != LOS_OK) {
-        return ret;
-    }
-#endif
-
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
-    ret = OsQueueInit();
-    if (ret != LOS_OK) {
-        return ret;
-    }
-#endif
     return LOS_OK;
 }
 
-#ifdef LOSCFG_KERNEL_PIPE
-LITE_OS_SEC_TEXT_INIT STATIC VOID OsDriverPipeInit(VOID)
+LITE_OS_SEC_TEXT_INIT STATIC UINT32 ArchEarlyInit(VOID)
 {
-    (VOID)pipe_init();
-}
+    UINT32 ret = LOS_OK;
+
+    /* set system counter freq */
+#ifndef LOSCFG_TEE_ENABLE
+    HalClockFreqWrite(OS_SYS_CLOCK);
 #endif
 
-#ifdef LOSCFG_DRIVERS_HIEVENT
-LITE_OS_SEC_TEXT_INIT STATIC VOID OsDriverHiEventInit(VOID)
-{
-    (VOID)HieventInit();
-}
-#endif
-
-#ifdef LOSCFG_COMPAT_BSD
-extern void configure (void);
-LITE_OS_SEC_TEXT_INIT STATIC INT32 OsBsdInit(VOID)
-{
-    /*
-     * WORKAROUND: Inside configure(), nexus_init() function calls
-     *             HiSi-specific, library procedure - machine_resource_init().
-     *             The latter one is defined in libhi35xx_bsp.a which is only
-     *             available for Hi3516 and Hi3518.
-     *             Temporarily ifdef configure until this routine is implemented
-     *             by other platforms.
-     */
-#if defined(LOSCFG_PLATFORM_HI3516DV300) || defined(LOSCFG_PLATFORM_HI3518EV300)
-    configure();
-#endif
-    mi_startup(SI_SUB_ARCH_INIT);
-    return LOS_OK;
-}
-#endif
-
-LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
-{
-    UINT32 ret;
-
-    osRegister();
-
-#ifdef LOSCFG_SHELL_DMESG
-    ret = OsDmesgInit();
-    if (ret != LOS_OK) {
-        return ret;
-    }
-#endif
-
-#ifdef LOSCFG_SHELL_LK
-    OsLkLoggerInit(NULL);
-#endif
-
-#if (LOSCFG_KERNEL_TRACE == YES)
-    LOS_TraceInit();
-#endif
-
-#ifdef LOSCFG_EXC_INTERACTION
-#ifdef LOSCFG_ARCH_CORTEX_M7
-    /* 4096: 4K space for Stack */
-    ret = OsMemExcInteractionInit((UINT32)&__bss_end + 4096);
-#else
-    ret = OsMemExcInteractionInit((UINTPTR)&__bss_end);
-#endif
-    if (ret != LOS_OK) {
-        return ret;
-    }
-#endif
-
-#if (LOSCFG_PLATFORM_HWI == YES)
+#if (LOSCFG_PLATFORM_HWI == 1)
     OsHwiInit();
 #endif
 
@@ -234,133 +98,181 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
 
     ret = OsTickInit(g_sysClock, LOSCFG_BASE_CORE_TICK_PER_SECOND);
     if (ret != LOS_OK) {
+        PRINT_ERR("OsTickInit error!\n");
         return ret;
     }
 
-#ifdef LOSCFG_PLATFORM_UART_WITHOUT_VFS
-#ifdef LOSCFG_DRIVERS
+    return LOS_OK;
+}
+
+LITE_OS_SEC_TEXT_INIT STATIC UINT32 PlatformEarlyInit(VOID)
+{
+#if defined(LOSCFG_PLATFORM_UART_WITHOUT_VFS) && defined(LOSCFG_DRIVERS)
     uart_init();
+#endif /* LOSCFG_PLATFORM_UART_WITHOUT_VFS */
+
+    return LOS_OK;
+}
+
+LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsIpcInit(VOID)
+{
+    UINT32 ret;
+
+#if (LOSCFG_BASE_IPC_SEM == 1)
+    ret = OsSemInit();
+    if (ret != LOS_OK) {
+        PRINT_ERR("OsSemInit error\n");
+        return ret;
+    }
 #endif
-#ifdef LOSCFG_SHELL
-#endif //LOSCFG_SHELL
-#endif //LOSCFG_PLATFORM_UART_WITHOUT_VFS
+
+#if (LOSCFG_BASE_IPC_QUEUE == 1)
+    ret = OsQueueInit();
+    if (ret != LOS_OK) {
+        PRINT_ERR("OsQueueInit error\n");
+        return ret;
+    }
+#endif
+    return LOS_OK;
+}
+
+LITE_OS_SEC_TEXT_INIT STATIC UINT32 ArchInit(VOID)
+{
+#ifdef LOSCFG_KERNEL_MMU
+    OsArchMmuInitPerCPU();
+#endif
+    return LOS_OK;
+}
+
+LITE_OS_SEC_TEXT_INIT STATIC UINT32 PlatformInit(VOID)
+{
+    return LOS_OK;
+}
+
+LITE_OS_SEC_TEXT_INIT STATIC UINT32 KModInit(VOID)
+{
+#if (LOSCFG_BASE_CORE_SWTMR == 1)
+    OsSwtmrInit();
+#endif
+    return LOS_OK;
+}
+
+LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
+{
+#ifdef LOSCFG_DEBUG_VERSION
+    const CHAR *buildType = "debug";
+#else
+    const CHAR *buildType = "release";
+#endif /* LOSCFG_DEBUG_VERSION */
+
+    PRINT_RELEASE("\n******************Welcome******************\n\n"
+                  "Processor   : %s"
+#if (LOSCFG_KERNEL_SMP == 1)
+                  " * %d\n"
+                  "Run Mode    : SMP\n"
+#else
+                  "\n"
+                  "Run Mode    : UP\n"
+#endif
+                  "GIC Rev     : %s\n"
+                  "build time  : %s %s\n"
+                  "Kernel      : %s %d.%d.%d.%d/%s\n"
+                  "\n*******************************************\n",
+                  LOS_CpuInfo(),
+#if (LOSCFG_KERNEL_SMP == 1)
+                  LOSCFG_KERNEL_SMP_CORE_NUM,
+#endif
+                  HalIrqVersion(), __DATE__, __TIME__,\
+                  KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, buildType);
+}
+
+LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
+{
+    UINT32 ret;
+#ifdef LOS_INIT_STATISTICS
+    UINT64 startNsec, endNsec, durationUsec;
+#endif
+
+    ret = EarliestInit();
+    if (ret != LOS_OK) {
+        return ret;
+    }
+    OsInitCall(LOS_INIT_LEVEL_EARLIEST);
+
+    ret = ArchEarlyInit();
+    if (ret != LOS_OK) {
+        return ret;
+    }
+    OsInitCall(LOS_INIT_LEVEL_ARCH_EARLY);
+
+    ret = PlatformEarlyInit();
+    if (ret != LOS_OK) {
+        return ret;
+    }
+    OsInitCall(LOS_INIT_LEVEL_PLATFORM_EARLY);
+
+    /* system and chip info */
+    OsSystemInfo();
+
+    PRINT_RELEASE("\nmain core booting up...\n");
+
+#ifdef LOS_INIT_STATISTICS
+    startNsec = LOS_CurrNanosec();
+#endif
+
     ret = OsTaskInit();
     if (ret != LOS_OK) {
-        PRINT_ERR("OsTaskInit error\n");
         return ret;
     }
 
-#if ((LOSCFG_BASE_IPC_QUEUE == YES) || (LOSCFG_BASE_IPC_MUX == YES) || \
-     (LOSCFG_BASE_IPC_SEM == YES) || (LOSCFG_BASE_IPC_RWLOCK == YES))
+    OsInitCall(LOS_INIT_LEVEL_KMOD_PREVM);
+
+    ret = OsSysMemInit();
+    if (ret != LOS_OK) {
+        return ret;
+    }
+#if (LOSCFG_KERNEL_SMP == 1)
+    release_secondary_cores();
+#endif
+    OsInitCall(LOS_INIT_LEVEL_VM_COMPLETE);
+
     ret = OsIpcInit();
     if (ret != LOS_OK) {
         return ret;
     }
-#endif
-
-    ret = OsSysMemInit();
-    if (ret != LOS_OK) {
-        PRINT_ERR("OsSysMemInit error\n");
-        return ret;
-    }
-
-#ifdef LOSCFG_KERNEL_SYSCALL
-    SyscallHandleInit();
-#endif
-
-    /*
-     * CPUP should be inited before first task creation which depends on the semaphore
-     * when LOSCFG_KERNEL_SMP_TASK_SYNC is enabled. So don't change this init sequence
-     * if not neccessary. The sequence should be like this:
-     * 1. OsIpcInit
-     * 2. OsCpupInit
-     * 3. other inits have task creation
-     */
-#ifdef LOSCFG_KERNEL_CPUP
-    ret = OsCpupInit();
-    if (ret != LOS_OK) {
-        PRINT_ERR("OsCpupInit error\n");
-        return ret;
-    }
-#endif
 
     ret = OsSystemProcessCreate();
     if (ret != LOS_OK) {
         return ret;
     }
 
-#if (LOSCFG_BASE_CORE_SWTMR == YES)
-    ret = OsSwtmrInit();
+    ret = ArchInit();
     if (ret != LOS_OK) {
         return ret;
     }
-#endif
+    OsInitCall(LOS_INIT_LEVEL_ARCH);
 
-#ifdef LOSCFG_KERNEL_CPUP
-    OsCpupGuardCreator();
-#endif
-
-#if (LOSCFG_KERNEL_SMP == YES)
-    (VOID)OsMpInit();
-#endif
-
-#if defined(LOSCFG_HW_RANDOM_ENABLE) || defined (LOSCFG_DRIVERS_RANDOM)
-    random_alg_context.ra_init_alg(NULL);
-    run_harvester_iterate(NULL);
-#endif
-
-#ifdef LOSCFG_COMPAT_BSD
-    ret = OsBsdInit();
-    if (ret != LOS_OK) {
-        PRINT_ERR("init bsd failed!\n");
-        return ret;
-    }
-#endif
-
-#ifdef LOSCFG_KERNEL_PIPE
-    OsDriverPipeInit();
-#endif
-
-    ret = OsSystemInit();
+    ret = PlatformInit();
     if (ret != LOS_OK) {
         return ret;
     }
-#if (LOSCFG_BASE_CORE_HILOG == YES)
-    ret = HiLogDriverInit();
+    OsInitCall(LOS_INIT_LEVEL_PLATFORM);
+
+    ret = KModInit();
     if (ret != LOS_OK) {
         return ret;
     }
-#endif
 
-#if LOSCFG_DRIVERS_HIEVENT
-    OsDriverHiEventInit();
-#endif
+    OsInitCall(LOS_INIT_LEVEL_KMOD_BASIC);
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
-    ret = LiteIpcInit();
-    if (ret != LOS_OK) {
-        return ret;
-    }
-#endif
+    OsInitCall(LOS_INIT_LEVEL_KMOD_EXTENDED);
 
-#ifdef LOSCFG_KERNEL_VDSO
-    ret = OsInitVdso();
-    if (ret != LOS_OK) {
-        return ret;
-    }
-#endif
+    OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);
 
-#ifdef LOSCFG_KERNEL_VM
-    ret = OsFutexInit();
-    if (ret != LOS_OK) {
-        PRINT_ERR("Create futex failed : %d!\n", ret);
-        return ret;
-    }
-
-    ret = OomTaskInit();
-    if (ret != LOS_OK) {
-        return ret;
-    }
+#ifdef LOS_INIT_STATISTICS
+    endNsec = LOS_CurrNanosec();
+    durationUsec = (endNsec - startNsec) / OS_SYS_NS_PER_US;
+    PRINTK("The main core takes %lluus to start.\n", durationUsec);
 #endif
 
     return LOS_OK;
@@ -382,7 +294,7 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     sysTask.pcName = "SystemInit";
     sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;
     sysTask.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#if (LOSCFG_KERNEL_SMP == 1)
     sysTask.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     return LOS_TaskCreate(&taskID, &sysTask);
@@ -392,12 +304,7 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
 UINT32 OsSystemInit(VOID)
 {
     UINT32 ret;
-#ifdef LOSCFG_FS_VFS
-    los_vfs_init();
-#endif
-#ifdef LOSCFG_COMPAT_LINUXKPI
-    g_pstSystemWq = create_workqueue("system_wq");
-#endif
+
     ret = OsSystemInitTaskCreate();
     if (ret != LOS_OK) {
         return ret;
@@ -406,3 +313,4 @@ UINT32 OsSystemInit(VOID)
     return 0;
 }
 
+LOS_MODULE_INIT(OsSystemInit, LOS_INIT_LEVEL_KMOD_TASK);

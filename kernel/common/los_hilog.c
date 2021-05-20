@@ -30,6 +30,7 @@
  */
 
 #include "los_hilog.h"
+#include "los_init.h"
 #include "los_mp.h"
 #include "los_mux.h"
 #include "los_process_pri.h"
@@ -328,9 +329,10 @@ static void HiLogDeviceInit(void)
     g_hiLogDev.count = 0;
 }
 
-int HiLogDriverInit(VOID)
+int OsHiLogDriverInit(VOID)
 {
     HiLogDeviceInit();
     return register_driver(HILOG_DRIVER, &g_hilogFops, DRIVER_MODE, NULL);
 }
 
+LOS_MODULE_INIT(OsHiLogDriverInit, LOS_INIT_LEVEL_KMOD_EXTENDED);

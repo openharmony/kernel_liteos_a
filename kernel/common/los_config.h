@@ -253,9 +253,11 @@ extern UINT32 __heap_end;
  * @ingroup los_config
  * Maximum number of semaphores.
  */
+#ifndef OS_SEM_COUNT_MAX
 #define OS_SEM_COUNT_MAX 0xFFFE
+#endif
 
-/****************************** mutex module configuration ******************************/
+/****************************** Mutex module configuration ******************************/
 /**
  * @ingroup los_config
  * Configuration item for mutex module tailoring
@@ -397,7 +399,7 @@ extern UINT32 __heap_end;
 #define OS_AUTOINIT_DYNLOADER YES
 #endif
 
-/****************************** exception information  configuration ******************************/
+/****************************** Exception information configuration ******************************/
 #ifdef LOSCFG_SAVE_EXCINFO
 /**
  * @ingroup los_config
@@ -411,7 +413,7 @@ extern UINT32 __heap_end;
  * @attention
  * <ul>
  * <li> if uses, the address must be valid in flash, and it should not overlap with other addresses
- * used to store valid information.  </li>
+ * used to store valid information. </li>
  * </ul>
  *
  */

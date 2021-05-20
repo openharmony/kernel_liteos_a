@@ -36,6 +36,7 @@
 #include "sys/shm.h"
 #include "sys/stat.h"
 #include "los_config.h"
+#include "los_init.h"
 #include "los_vm_map.h"
 #include "los_vm_filemap.h"
 #include "los_vm_phys.h"
@@ -111,20 +112,20 @@ STATIC struct shminfo g_shmInfo = {
 STATIC struct shmIDSource *g_shmSegs = NULL;
 STATIC UINT32 g_shmUsedPageCount;
 
-INT32 ShmInit(VOID)
+UINT32 ShmInit(VOID)
 {
     UINT32 ret;
     UINT32 i;
 
     ret = LOS_MuxInit(&g_sysvShmMux, NULL);
     if (ret != LOS_OK) {
-        return -1;
+        goto ERROR;
     }
 
     g_shmSegs = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, sizeof(struct shmIDSource) * g_shmInfo.shmmni);
     if (g_shmSegs == NULL) {
         (VOID)LOS_MuxDestroy(&g_sysvShmMux);
-        return -1;
+        goto ERROR;
     }
     (VOID)memset_s(g_shmSegs, (sizeof(struct shmIDSource) * g_shmInfo.shmmni),
                    0, (sizeof(struct shmIDSource) * g_shmInfo.shmmni));
@@ -136,10 +137,16 @@ INT32 ShmInit(VOID)
     }
     g_shmUsedPageCount = 0;
 
-    return 0;
+    return LOS_OK;
+
+ERROR:
+    VM_ERR("ShmInit fail\n");
+    return LOS_NOK;
 }
 
-INT32 ShmDeinit(VOID)
+LOS_MODULE_INIT(ShmInit, LOS_INIT_LEVEL_VM_COMPLETE);
+
+UINT32 ShmDeinit(VOID)
 {
     UINT32 ret;
 
