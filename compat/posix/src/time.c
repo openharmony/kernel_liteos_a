@@ -1080,7 +1080,7 @@ int getitimer(int which, struct itimerval *value)
 }
 
 #ifdef LOSCFG_KERNEL_VDSO
-VOID OsGetVdsoTime(VdsoDataPage *vdsoDataPage)
+VOID OsVdsoTimeGet(VdsoDataPage *vdsoDataPage)
 {
     UINT32 intSave;
     struct timespec64 tmp = {0};

@@ -740,11 +740,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
     LOS_ListInit(&g_processGroup->groupList);
     OsCurrProcessSet(kerInitProcess);
 
-    ret = OsCreateResourceFreeTask();
-    if (ret != LOS_OK) {
-        return ret;
-    }
-
     LosProcessCB *idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);
     ret = OsInitPCB(idleProcess, OS_KERNEL_MODE, OS_TASK_PRIORITY_LOWEST, "KIdle");
     if (ret != LOS_OK) {

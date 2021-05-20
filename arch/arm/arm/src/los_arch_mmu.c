@@ -963,8 +963,6 @@ VOID OsInitMappingStartUp(VOID)
     OsSetKSectionAttr(KERNEL_VMM_BASE, FALSE);
     OsSetKSectionAttr(UNCACHED_VMM_BASE, TRUE);
     OsKSectionNewAttrEnable();
-
-    OsArchMmuInitPerCPU();
 }
 #endif
 

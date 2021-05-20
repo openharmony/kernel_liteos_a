@@ -1374,7 +1374,6 @@ INT32 system_console_init(const CHAR *deviceName)
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
 
 #ifdef LOSCFG_SHELL
-
     ret = OsShellInit(consoleID);
     if (ret != LOS_OK) {
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);

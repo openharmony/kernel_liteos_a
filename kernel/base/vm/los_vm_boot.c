@@ -57,44 +57,27 @@ VOID *OsVmBootMemAlloc(size_t len)
     return (VOID *)ptr;
 }
 
-#ifdef LOSCFG_KERNEL_VM
 UINT32 OsSysMemInit(VOID)
 {
     STATUS_T ret;
 
+#ifdef LOSCFG_KERNEL_VM
     OsKSpaceInit();
+#endif
 
     ret = OsKHeapInit(OS_KHEAP_BLOCK_SIZE);
     if (ret != LOS_OK) {
-        VM_ERR("OsKHeapInit fail");
+        VM_ERR("OsKHeapInit fail\n");
         return LOS_NOK;
     }
 
+#ifdef LOSCFG_KERNEL_VM
     OsVmPageStartup();
     g_kHeapInited = TRUE;
     OsInitMappingStartUp();
-
-#ifdef LOSCFG_KERNEL_SHM
-    ret = ShmInit();
-    if (ret < 0) {
-        VM_ERR("ShmInit fail");
-        return LOS_NOK;
-    }
-#endif
-    return LOS_OK;
-}
 #else
-UINT32 OsSysMemInit(VOID)
-{
-    STATUS_T ret;
-
-    ret = OsKHeapInit(OS_KHEAP_BLOCK_SIZE);
-    if (ret != LOS_OK) {
-        VM_ERR("OsKHeapInit fail");
-        return LOS_NOK;
-    }
     g_kHeapInited = TRUE;
-    return LOS_OK;
-}
 #endif
 
+    return LOS_OK;
+}

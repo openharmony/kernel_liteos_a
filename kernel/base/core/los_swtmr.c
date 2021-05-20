@@ -30,11 +30,12 @@
  */
 
 #include "los_swtmr_pri.h"
-#include "los_sortlink_pri.h"
-#include "los_queue_pri.h"
-#include "los_task_pri.h"
+#include "los_init.h"
 #include "los_process_pri.h"
+#include "los_queue_pri.h"
 #include "los_sched_pri.h"
+#include "los_sortlink_pri.h"
+#include "los_task_pri.h"
 
 
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
@@ -116,7 +117,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
         size = sizeof(SWTMR_CTRL_S) * LOSCFG_BASE_CORE_SWTMR_LIMIT;
         swtmr = (SWTMR_CTRL_S *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource */
         if (swtmr == NULL) {
-            return LOS_ERRNO_SWTMR_NO_MEMORY;
+            ret = LOS_ERRNO_SWTMR_NO_MEMORY;
+            goto ERROR;
         }
 
         (VOID)memset_s(swtmr, size, 0, size);
@@ -131,36 +133,45 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
 
         g_swtmrHandlerPool = (UINT8 *)LOS_MemAlloc(m_aucSysMem1, swtmrHandlePoolSize); /* system resident resource */
         if (g_swtmrHandlerPool == NULL) {
-            return LOS_ERRNO_SWTMR_NO_MEMORY;
+            ret = LOS_ERRNO_SWTMR_NO_MEMORY;
+            goto ERROR;
         }
 
         ret = LOS_MemboxInit(g_swtmrHandlerPool, swtmrHandlePoolSize, sizeof(SwtmrHandlerItem));
         if (ret != LOS_OK) {
-            return LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
+            ret = LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
+            goto ERROR;
         }
 
         ret = OsSchedSwtmrScanRegister((SchedScan)OsSwtmrScan);
         if (ret != LOS_OK) {
-            return ret;
+            goto ERROR;
         }
     }
 
     ret = LOS_QueueCreate(NULL, OS_SWTMR_HANDLE_QUEUE_SIZE, &g_percpu[cpuid].swtmrHandlerQueue, 0, sizeof(CHAR *));
     if (ret != LOS_OK) {
-        return LOS_ERRNO_SWTMR_QUEUE_CREATE_FAILED;
+        ret = LOS_ERRNO_SWTMR_QUEUE_CREATE_FAILED;
+        goto ERROR;
     }
 
     ret = OsSwtmrTaskCreate();
     if (ret != LOS_OK) {
-        return LOS_ERRNO_SWTMR_TASK_CREATE_FAILED;
+        ret = LOS_ERRNO_SWTMR_TASK_CREATE_FAILED;
+        goto ERROR;
     }
 
     ret = OsSortLinkInit(&g_percpu[cpuid].swtmrSortLink);
     if (ret != LOS_OK) {
-        return LOS_ERRNO_SWTMR_SORTLINK_CREATE_FAILED;
+        ret = LOS_ERRNO_SWTMR_SORTLINK_CREATE_FAILED;
+        goto ERROR;
     }
 
     return LOS_OK;
+
+ERROR:
+    PRINT_ERR("OsSwtmrInit error! ret = %u\n", ret);
+    return ret;
 }
 
 /*
@@ -522,5 +533,4 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
     return ret;
 }
 
-#endif /* (LOSCFG_BASE_CORE_SWTMR == YES) */
-
+#endif /* LOSCFG_BASE_CORE_SWTMR */

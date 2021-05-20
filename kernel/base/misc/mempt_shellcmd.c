@@ -105,14 +105,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemCheck(INT32 argc, const CHAR *argv[])
         WriteExcInfoToBuf("system memcheck over, all passed!\n");
 #endif
     }
-#ifdef LOSCFG_EXC_INTERACTION
-    if (LOS_MemIntegrityCheck(m_aucSysMem0) == LOS_OK) {
-        PRINTK("exc interaction memcheck over, all passed!\n");
-#ifdef LOSCFG_SAVE_EXCINFO
-        WriteExcInfoToBuf("exc interaction memcheck over, all passed!\n");
-#endif
-    }
-#endif
+
     return 0;
 }
 
@@ -138,11 +131,6 @@ LITE_OS_SEC_TEXT_MINOR STATIC VOID OsShellCmdSectionInfo(INT32 argc, const CHAR 
 
 LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OsShellCmdFreeInfo(INT32 argc, const CHAR *argv[])
 {
-#ifdef LOSCFG_EXC_INTERACTION
-    UINT32 memUsed0 = LOS_MemTotalUsedGet(m_aucSysMem0);
-    UINT32 totalMem0 = LOS_MemPoolSizeGet(m_aucSysMem0);
-    UINT32 freeMem0 = totalMem0 - memUsed0;
-#endif
     UINT32 memUsed = LOS_MemTotalUsedGet(m_aucSysMem1);
     UINT32 totalMem = LOS_MemPoolSizeGet(m_aucSysMem1);
     UINT32 freeMem = totalMem - memUsed;
@@ -165,31 +153,17 @@ LITE_OS_SEC_TEXT_MINOR STATIC UINT32 OsShellCmdFreeInfo(INT32 argc, const CHAR *
     if ((argc == 0) ||
         ((argc == 1) && (strcmp(argv[0], "-k") == 0)) ||
         ((argc == 1) && (strcmp(argv[0], "-m") == 0))) {
-#ifdef LOSCFG_EXC_INTERACTION
-        PRINTK("\r\n***** Mem:system mem      Mem1:exception interaction mem *****\n");
-#endif
         PRINTK("\r\n        total        used          free          heap\n");
     }
 
     if ((argc == 1) && (strcmp(argv[0], "-k") == 0)) {
         PRINTK("Mem:    %-9u    %-10u    %-10u    %-10u\n", MEM_SIZE_TO_KB(totalMem), MEM_SIZE_TO_KB(memUsed),
                MEM_SIZE_TO_KB(freeMem), MEM_SIZE_TO_KB(memUsedHeap));
-#ifdef LOSCFG_EXC_INTERACTION
-        PRINTK("Mem1:   %-9u    %-10u    %-10u\n", MEM_SIZE_TO_KB(totalMem), MEM_SIZE_TO_KB(memUsed),
-               MEM_SIZE_TO_KB(freeMem));
-#endif
     } else if ((argc == 1) && (strcmp(argv[0], "-m") == 0)) {
         PRINTK("Mem:    %-9u    %-10u    %-10u    %-10u\n", MEM_SIZE_TO_MB(totalMem), MEM_SIZE_TO_MB(memUsed),
                MEM_SIZE_TO_MB(freeMem), MEM_SIZE_TO_MB(memUsedHeap));
-#ifdef LOSCFG_EXC_INTERACTION
-        PRINTK("Mem1:   %-9u    %-10u    %-10u\n", MEM_SIZE_TO_MB(totalMem), MEM_SIZE_TO_MB(memUsed),
-               MEM_SIZE_TO_MB(freeMem));
-#endif
     } else if (argc == 0) {
         PRINTK("Mem:    %-9u    %-10u    %-10u    %-10u\n", totalMem, memUsed, freeMem, memUsedHeap);
-#ifdef LOSCFG_EXC_INTERACTION
-        PRINTK("Mem1:   %-9u    %-10u    %-10u\n", totalMem0, memUsed0, freeMem0);
-#endif
     } else {
         PRINTK("\nUsage: free or free [-k/-m]\n");
         return OS_ERROR;
@@ -255,10 +229,6 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdMemUsed(INT32 argc, const CHAR *argv[])
 
     OsMemUsedNodeShow(m_aucSysMem1);
 
-#ifdef LOSCFG_EXC_INTERACTION
-    PRINTK("\n exc interaction memory\n");
-    OsMemUsedNodeShow(m_aucSysMem0);
-#endif
     return 0;
 }
 #endif

@@ -863,7 +863,7 @@ STATIC INT32 OsMakeArgsStack(ELFLoadInfo *loadInfo, UINTPTR interpMapBase)
     AUX_VEC_ENTRY(auxVector, vecIndex, AUX_EXECFN, (UINTPTR)loadInfo->execName);
 
 #ifdef LOSCFG_KERNEL_VDSO
-    vdsoLoadAddr = OsLoadVdso(OsCurrProcessGet());
+    vdsoLoadAddr = OsVdsoLoad(OsCurrProcessGet());
     if (vdsoLoadAddr != 0) {
         AUX_VEC_ENTRY(auxVector, vecIndex, AUX_SYSINFO_EHDR, vdsoLoadAddr);
     }

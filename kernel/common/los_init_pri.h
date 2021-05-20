@@ -29,25 +29,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_EXC_INTER_PRI_H
-#define _LOS_EXC_INTER_PRI_H
+#ifndef _LOS_INIT_PRI_H
+#define _LOS_INIT_PRI_H
 
-#include "los_config.h"
-#include "los_task.h"
+#include "los_init.h"
+#include "los_typedef.h"
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+VOID OsInitCall(const UINT32 level);
 
-extern UINT32 OsExcInteractionTaskCheck(const TSK_INIT_PARAM_S *initParam);
-extern VOID OsExcInteractionTaskKeep(VOID);
-
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-
-#endif /* _LOS_EXC_INTER_PRI_H */
+#endif /* _LOS_INIT_PRI_H */

@@ -37,9 +37,6 @@
 #ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
 #endif
-#ifdef LOSCFG_EXC_INTERACTION
-#include "los_exc_interaction_pri.h"
-#endif
 #include "los_sys_stack_pri.h"
 #include "los_stackinfo_pri.h"
 #ifdef LOSCFG_COREDUMP
@@ -196,8 +193,8 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
     if (irqEnable) {
         ArchIrqEnable();
     } else {
-        PrintExcInfo("[ERR][%s] may be held scheduler lock when entering [%s]\n",
-                     OsCurrTaskGet()->taskName, __FUNCTION__);
+        PrintExcInfo("[ERR][%s] may be held scheduler lock when entering [%s] on cpu [%u]\n",
+                     OsCurrTaskGet()->taskName, __FUNCTION__, ArchCurrCpuid());
     }
 #else
     ArchIrqEnable();
@@ -1149,9 +1146,6 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
         }
 #endif
     }
-#ifdef LOSCFG_EXC_INTERACTION
-    OsExcInteractionTaskKeep();
-#endif
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG
     SystemRebootFunc rebootHook = OsGetRebootHook();
