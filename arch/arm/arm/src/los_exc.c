@@ -220,7 +220,9 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             pfFlags |= user ? VM_MAP_PF_FLAG_USER : 0;
             pfFlags |= instructionFault ? VM_MAP_PF_FLAG_INSTRUCTION : 0;
             pfFlags |= VM_MAP_PF_FLAG_NOT_PRESENT;
+            OsSigIntLock();
             ret = OsVmPageFaultHandler(far, pfFlags, frame);
+            OsSigIntUnlock();
             break;
         }
         default:
@@ -537,7 +539,9 @@ STATIC VOID OsExcRestore(VOID)
 
 STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 {
+    UINT32 intSave;
     UINT32 currCpu = ArchCurrCpuid();
+    LosTaskCB *runTask = OsCurrTaskGet();
     LosProcessCB *runProcess = OsCurrProcessGet();
 
     if (g_excFromUserMode[ArchCurrCpuid()] == FALSE) {
@@ -565,16 +569,28 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
 #endif
 
+    SCHEDULER_LOCK(intSave);
 #ifdef LOSCFG_SAVE_EXCINFO
     OsProcessExitCodeCoreDumpSet(runProcess);
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
 
-    /* Exception handling All operations should be kept prior to that operation */
-    OsExcRestore();
+    /* An exception was raised by a task that is not the current main thread during the exit process of
+     * the current process.
+     */
+    if ((runProcess->processStatus & OS_PROCESS_FLAG_EXIT) && (runProcess->threadGroupID != runTask->taskID)) {
+        SCHEDULER_UNLOCK(intSave);
+        /* Exception handling All operations should be kept prior to that operation */
+        OsExcRestore();
+        OsTaskToExit(runTask, OS_PRO_EXIT_OK);
+    } else {
+        SCHEDULER_UNLOCK(intSave);
 
-    /* kill user exc process */
-    LOS_Exit(OS_PRO_EXIT_OK);
+        /* Exception handling All operations should be kept prior to that operation */
+        OsExcRestore();
+        /* kill user exc process */
+        LOS_Exit(OS_PRO_EXIT_OK);
+    }
 
     /* User mode exception handling failed , which normally does not exist */
     g_curNestCount[currCpu]++;
@@ -940,7 +956,6 @@ STATIC VOID WaitAllCpuStop(UINT32 cpuID)
 
 STATIC VOID OsWaitOtherCoresHandleExcEnd(UINT32 currCpuID)
 {
-    OsProcessSuspendAllTask();
     while (1) {
         LOS_SpinLock(&g_excSerializerSpin);
         if ((g_currHandleExcCpuID == INVALID_CPUID) || (g_currHandleExcCpuID == currCpuID)) {
@@ -967,6 +982,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
     LOCKDEP_CLEAR_LOCKS();
 
     LOS_SpinLock(&g_excSerializerSpin);
+    /* Only the current nuclear anomaly */
     if (g_currHandleExcCpuID == INVALID_CPUID) {
         g_currHandleExcCpuID = currCpuID;
         g_currHandleExcPID = OsCurrProcessGet()->processID;
@@ -976,13 +992,14 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
             HalIrqSendIpi(target, LOS_MP_IPI_HALT);
         }
     } else if (g_excFromUserMode[currCpuID] == TRUE) {
+        /* Both cores raise exceptions, and the current core is a user-mode exception.
+         * Both cores are abnormal and come from the same process
+         */
         if (OsCurrProcessGet()->processID == g_currHandleExcPID) {
             LOS_SpinUnlock(&g_excSerializerSpin);
             OsExcRestore();
-            while (1) {
-                ret = LOS_TaskSuspend(OsCurrTaskGet()->taskID);
-                PrintExcInfo("%s supend task :%u failed: 0x%x\n", __FUNCTION__, OsCurrTaskGet()->taskID, ret);
-            }
+            ret = LOS_TaskDelete(OsCurrTaskGet()->taskID);
+            LOS_Panic("%s supend task :%u failed: 0x%x\n", __FUNCTION__, OsCurrTaskGet()->taskID, ret);
         }
         LOS_SpinUnlock(&g_excSerializerSpin);
 
@@ -1017,10 +1034,6 @@ STATIC VOID OsCheckCpuStatus(VOID)
 
 LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
-    UINT16 runCount;
-#endif
-
     if ((excBufAddr->regCPSR & CPSR_MASK_MODE) == CPSR_USER_MODE) {
         g_minAddr = USER_ASPACE_BASE;
         g_maxAddr = USER_ASPACE_BASE + USER_ASPACE_SIZE;
@@ -1032,22 +1045,6 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
     }
 
     OsCheckCpuStatus();
-
-    if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
-        while (1) {
-            OsProcessSuspendAllTask();
-#if (LOSCFG_KERNEL_SMP == YES)
-            LOS_SpinLock(&g_taskSpin);
-            runCount = OS_PROCESS_GET_RUNTASK_COUNT(OsCurrProcessGet()->processStatus);
-            LOS_SpinUnlock(&g_taskSpin);
-            if (runCount == 1) {
-                break;
-            }
-#else
-            break;
-#endif
-        }
-    }
 
 #if (LOSCFG_KERNEL_SMP == YES)
 #ifdef LOSCFG_FS_VFS

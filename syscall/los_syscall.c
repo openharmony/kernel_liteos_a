@@ -118,6 +118,7 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
         return;
     }
 
+    OsSigIntLock();
     switch (nArgs) {
         case ARG_NUM_0:
         case ARG_NUM_1:
@@ -136,6 +137,7 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
     }
 
     regs->R0 = ret;
+    OsSigIntUnlock();
 
     return;
 }

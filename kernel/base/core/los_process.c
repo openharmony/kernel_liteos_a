@@ -179,7 +179,7 @@ STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32
     return NULL;
 }
 
-STATIC INLINE VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
+VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
 {
     taskCB->waitID = wakePID;
     OsSchedTaskWake(taskCB);
@@ -410,7 +410,9 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
 
         processCB->processStatus |= OS_PROCESS_STATUS_ZOMBIES;
 
+#ifdef LOSCFG_KERNEL_VM
         (VOID)OsKill(processCB->parentProcessID, SIGCHLD, OS_KERNEL_KILL_PERMISSION);
+#endif
         LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);
         OsRunTaskToDelete(runTask);
         return;
@@ -907,27 +909,6 @@ OUT:
 LITE_OS_SEC_TEXT INT32 LOS_GetProcessPriority(INT32 pid)
 {
     return OsGetProcessPriority(LOS_PRIO_PROCESS, pid);
-}
-
-LITE_OS_SEC_TEXT VOID OsWaitSignalToWakeProcess(LosProcessCB *processCB)
-{
-    LosTaskCB *taskCB = NULL;
-
-    if (processCB == NULL) {
-        return;
-    }
-
-    /* only suspend process can continue */
-    if (!(processCB->processStatus & OS_PROCESS_STATUS_PENDING)) {
-        return;
-    }
-
-    if (!LOS_ListEmpty(&processCB->waitList)) {
-        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&processCB->waitList));
-        OsWaitWakeTask(taskCB, OS_INVALID_VALUE);
-    }
-
-    return;
 }
 
 STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *processCB)
@@ -1595,9 +1576,9 @@ STATIC UINT32 OsCopyParent(UINT32 flags, LosProcessCB *childProcessCB, LosProces
     childProcessCB->priority = runProcessCB->priority;
 
     if (flags & CLONE_PARENT) {
-        parentProcessCB = OS_PCB_FROM_PID(runProcessCB->parentProcessID);        
+        parentProcessCB = OS_PCB_FROM_PID(runProcessCB->parentProcessID);
     } else {
-        parentProcessCB = runProcessCB;         
+        parentProcessCB = runProcessCB;
     }
     childProcessCB->parentProcessID = parentProcessCB->processID;
     LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);
@@ -1793,6 +1774,18 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
 
 LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
 {
+    UINT32 intSave;
+
+    /* The exit of a kernel - state process must be kernel - state and all threads must actively exit */
+    LosProcessCB *processCB = OsCurrProcessGet();
+    SCHEDULER_LOCK(intSave);
+    if (!OsProcessIsUserMode(processCB) && (processCB->threadNumber != 1)) {
+        SCHEDULER_UNLOCK(intSave);
+        PRINT_ERR("Kernel-state processes with multiple threads are not allowed to exit directly\n");
+        return;
+    }
+    SCHEDULER_UNLOCK(intSave);
+
     OsTaskExitGroup((UINT32)status);
     OsProcessExit(OsCurrTaskGet(), (UINT32)status);
 }
