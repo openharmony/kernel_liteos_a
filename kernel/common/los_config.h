@@ -320,9 +320,6 @@ extern UINT32 __heap_end;
 
 
 /****************************** Memory module configuration **************************/
-#ifndef OS_EXC_INTERACTMEM_SIZE
-#define OS_EXC_INTERACTMEM_SIZE (EXC_INTERACT_MEM_SIZE)
-#endif
 /**
  * @ingroup los_config
  * Starting address of the system memory
@@ -337,7 +334,7 @@ extern UINT32 __heap_end;
  */
 #ifndef OS_SYS_MEM_SIZE
 #define OS_SYS_MEM_SIZE \
-    ((OS_SYS_FUNC_ADDR_END) - ((OS_EXC_INTERACTMEM_SIZE + ((UINTPTR)&__bss_end) + (64 - 1)) & ~(64 - 1)))
+    ((OS_SYS_FUNC_ADDR_END) - (((UINTPTR)&__bss_end + (64 - 1)) & ~(64 - 1)))
 #endif
 
 /****************************** SMP module configuration **************************/
@@ -473,7 +470,6 @@ typedef VOID (*log_read_write_fn)(UINT32 startAddr, UINT32 space, UINT32 rwFlag,
 VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_write_fn hook);
 #endif
 
-extern VOID OsStart(VOID);
 extern INT32 OsMain(VOID);
 
 typedef VOID (*SystemRebootFunc)(VOID);
