@@ -4,7 +4,7 @@
 	- [ ] dump增强（配套解析工具）
 	- [ ] 全内存dump（配套解析工具）
 	- [ ] 实现完整L0 OHOS的qemu仿真
-	- [ ] shell + AT
+	- [ ] Shell + AT
 
 - liteos_m能力增强
 	- [ ] liteos_m支持elf动态加载
