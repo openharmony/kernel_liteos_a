@@ -364,7 +364,7 @@ extern UINT32 LOS_SwtmrTimeGet(UINT16 swtmrID, UINT32 *tick);
  * @attention
  * <ul>
  * <li>Do not use the delay interface in the callback function that handles software timer timeout.</li>
- * <li>Threre are LOSCFG_BASE_CORE_SWTMR_LIMIT timers available, change it's value when necessory.</li>
+ * <li>There are LOSCFG_BASE_CORE_SWTMR_LIMIT timers available, change it's value when necessary.</li>
  * </ul>
  *
  * @param  interval     [IN] Timing duration of the software timer to be created (unit: tick).
