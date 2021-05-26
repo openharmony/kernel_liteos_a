@@ -62,7 +62,7 @@ STATIC VOID InitLevelCall(const CHAR *name, const UINT32 level, struct ModuleIni
     UINT64 startNsec, endNsec;
     UINT64 totalTime = 0;
     UINT64 singleTime = 0;
-    UINT32 ret;
+    UINT32 ret = LOS_OK;
 #endif
 
     if (ArchCurrCpuid() == 0) {
