@@ -120,7 +120,21 @@ LITEOS_TABLES_KERNEL_INIT_LDFLAGS := \
     -ulos_vfs_init \
     -uProcFsInit \
     -uOsDriverRandomInit \
-    -uHieventInit
+    -uHieventInit \
+    -uOsBsdInit \
+    -uShmInit \
+    -uOsDmesgInit \
+    -uOsLkLoggerInit \
+    -uOsCpupInit \
+    -uOsFutexInit \
+    -uOsSysWorkQueueInit \
+    -uOsSyscallHandleInit \
+    -upipe_init \
+    -uOomTaskInit \
+    -uOsCpupGuardCreator \
+    -uOsMpInit \
+    -uOsResourceFreeTaskCreate \
+    -uOsSystemInit
 
 LITEOS_TABLES_DRIVER_LDFLAGS := \
     -ui2c_init \
