@@ -35,48 +35,58 @@ static int Testcase(VOID)
     int shmid;
     int ret;
     void *shm = NULL;
-    void *vaddrPageAlign = NULL;
-    void *vaddr = NULL;
-
-    shmid = shmget(IPC_PRIVATE, PAGE_SIZE, 0);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
-
-    errno = 0;
-    shmid = shmget(0x111, PAGE_SIZE, 0777 | IPC_EXCL);
-    ICUNIT_ASSERT_EQUAL(shmid, -1, shmid);
-    ICUNIT_ASSERT_EQUAL(errno, ENOENT, errno);
+    struct shmid_ds ds = { 0 };
+    struct shminfo info = { 0 };
 
     shmid = shmget(IPC_PRIVATE, PAGE_SIZE, 0777 | IPC_CREAT);
     ICUNIT_ASSERT_NOT_EQUAL(shmid, -1, shmid);
 
-    shm = shmat(shmid, NULL, SHM_REMAP);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
-
-    shm = shmat(shmid, (const void *)0x100, 0);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
-
     shm = shmat(shmid, NULL, 0);
-    ICUNIT_ASSERT_NOT_EQUAL(shm, (void *)-1, shm);
+    ICUNIT_GOTO_NOT_EQUAL(shm, INVALID_PTR, shm, ERROR_OUT);
 
-    ret = shmdt((const void *)0x100);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
+    (void)memset_s(shm, PAGE_SIZE, 0, PAGE_SIZE);
+
+    ret = shmctl(shmid, IPC_STAT, &ds);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(ds.shm_segsz, PAGE_SIZE, ds.shm_segsz, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(ds.shm_nattch, 1, ds.shm_nattch, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(ds.shm_cpid, getpid(), ds.shm_cpid, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(ds.shm_lpid, getpid(), ds.shm_lpid, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(ds.shm_perm.uid, getuid(), ds.shm_perm.uid, ERROR_OUT);
+
+    ret = shmctl(shmid, SHM_STAT, &ds);
+    // ICUNIT_GOTO_EQUAL(ret, 0x10000, ret, ERROR_OUT);
+    ICUNIT_GOTO_NOT_EQUAL(ret, -1, ret, ERROR_OUT);
+    ICUNIT_GOTO_NOT_EQUAL(ret, 0, ret, ERROR_OUT);
+
+    ds.shm_perm.uid = getuid();
+    ds.shm_perm.gid = getgid();
+    ds.shm_perm.mode = 0;
+    ret = shmctl(shmid, IPC_SET, &ds);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, ERROR_OUT);
+
+    ret = shmctl(shmid, IPC_INFO, (struct shmid_ds *)&info);
+    ICUNIT_GOTO_EQUAL(ret, 192, ret, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(info.shmmax, 0x1000000, info.shmmax, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(info.shmmin, 1, info.shmmin, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(info.shmmni, 192, info.shmmni, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(info.shmseg, 128, info.shmseg, ERROR_OUT);
+    ICUNIT_GOTO_EQUAL(info.shmall, 0x1000, info.shmall, ERROR_OUT);
 
     ret = shmdt(shm);
-    ICUNIT_ASSERT_NOT_EQUAL(ret, -1, ret);
-
-    ret = shmctl(0x111, IPC_RMID, NULL);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
+    ICUNIT_GOTO_NOT_EQUAL(ret, -1, ret, ERROR_OUT);
 
     ret = shmctl(shmid, IPC_RMID, NULL);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    ret = shmctl(shmid, IPC_RMID, NULL);
-    ICUNIT_ASSERT_EQUAL(errno, EIDRM, errno);
-
     return 0;
+
+ERROR_OUT:
+    ret = shmctl(shmid, IPC_RMID, NULL);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    return -1;
 }
 
-void ItTestShm005(void)
+void ItTestShm004(void)
 {
-    TEST_ADD_CASE("IT_MEM_SHM_005", Testcase, TEST_LOS, TEST_MEM, TEST_LEVEL0, TEST_FUNCTION);
+    TEST_ADD_CASE("IT_MEM_SHM_004", Testcase, TEST_LOS, TEST_MEM, TEST_LEVEL0, TEST_FUNCTION);
 }
