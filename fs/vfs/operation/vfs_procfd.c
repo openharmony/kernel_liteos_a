@@ -37,7 +37,7 @@
 #include "lwip/sockets.h"
 #endif
 
-static void FileTableLock(struct fd_table_s *fdt)
+void FileTableLock(struct fd_table_s *fdt)
 {
     /* Take the semaphore (perhaps waiting) */
     while (sem_wait(&fdt->ft_sem) != 0) {
@@ -49,7 +49,7 @@ static void FileTableLock(struct fd_table_s *fdt)
     }
 }
 
-static void FileTableUnLock(struct fd_table_s *fdt)
+void FileTableUnLock(struct fd_table_s *fdt)
 {
     int ret = sem_post(&fdt->ft_sem);
     if (ret == -1) {
@@ -78,7 +78,7 @@ static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
     return VFS_ERROR;
 }
 
-static struct fd_table_s *GetFdTable(void)
+struct fd_table_s *GetFdTable(void)
 {
     struct fd_table_s *fdt = NULL;
     struct files_struct *procFiles = OsCurrProcessGet()->files;
@@ -197,6 +197,7 @@ void FreeProcessFd(int procFd)
 
     FileTableLock(fdt);
     FD_CLR(procFd, fdt->proc_fds);
+    FD_CLR(procFd, fdt->cloexec_fds);
     fdt->ft_fds[procFd].sysFd = -1;
     FileTableUnLock(fdt);
 }
@@ -467,6 +468,7 @@ int CloseProcFd(int procFd, unsigned int targetPid)
 
     /* clean the fd set */
     FD_CLR(procFd, fdt->proc_fds);
+    FD_CLR(procFd, fdt->cloexec_fds);
     fdt->ft_fds[procFd].sysFd = -1;
     if (sem_post(&semId) == -1) {
         PRINTK("sem_post error, errno %d \n", get_errno());

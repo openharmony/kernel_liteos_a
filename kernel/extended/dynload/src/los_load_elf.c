@@ -33,6 +33,7 @@
 #include "fcntl.h"
 #include "fs/fd_table.h"
 #include "fs/file.h"
+#include "fs/fs_operation.h"
 #include "los_config.h"
 #include "los_vm_map.h"
 #include "los_vm_syscall.h"
@@ -53,6 +54,10 @@ static int OsELFOpen(const CHAR *fileName, INT32 oflags)
     procFd = AllocProcessFd();
     if (procFd < 0) {
         return -EMFILE;
+    }
+
+    if (oflags & O_CLOEXEC) {
+        SetCloexecFlag(procFd);
     }
 
     ret = open(fileName, oflags);
@@ -185,7 +190,7 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
         return -ENOENT;
     }
 
-    ret = OsELFOpen(fileName, O_RDONLY | O_EXECVE);
+    ret = OsELFOpen(fileName, O_RDONLY | O_EXECVE | O_CLOEXEC);
     if (ret < 0) {
         PRINT_ERR("%s[%d], Failed to open ELF file: %s!\n", __FUNCTION__, __LINE__, fileName);
         return ret;
