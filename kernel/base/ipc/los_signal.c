@@ -38,7 +38,9 @@
 #ifdef LOSCFG_SECURITY_CAPABILITY
 #include "capability_api.h"
 #endif
+#include "los_atomic.h"
 
+#ifdef LOSCFG_KERNEL_VM
 
 int raise(int sig)
 {
@@ -65,6 +67,57 @@ int OsSigIsMember(const sigset_t *set, int signo)
     return ret;
 }
 
+STATIC INLINE VOID OsSigWaitTaskWake(LosTaskCB *taskCB, INT32 signo)
+{
+    sig_cb *sigcb = &taskCB->sig;
+
+    if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, signo)) {
+        OsTaskWakeClearPendMask(taskCB);
+        OsSchedTaskWake(taskCB);
+        OsSigEmptySet(&sigcb->sigwaitmask);
+    }
+}
+
+STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
+{
+    if (!OsTaskIsPending(taskCB) || !OsProcessIsUserMode(OS_PCB_FROM_PID(taskCB->processID))) {
+        return 0;
+    }
+
+    if ((signo != SIGKILL) && (taskCB->waitFlag != OS_TASK_WAIT_SIGNAL)) {
+        return 0;
+    }
+
+    switch (taskCB->waitFlag) {
+        case OS_TASK_WAIT_PROCESS:
+        case OS_TASK_WAIT_GID:
+        case OS_TASK_WAIT_ANYPROCESS:
+            OsWaitWakeTask(taskCB, OS_INVALID_VALUE);
+            break;
+        case OS_TASK_WAIT_JOIN:
+            OsTaskWakeClearPendMask(taskCB);
+            OsSchedTaskWake(taskCB);
+            break;
+        case OS_TASK_WAIT_SIGNAL:
+            OsSigWaitTaskWake(taskCB, signo);
+            break;
+        case OS_TASK_WAIT_LITEIPC:
+            taskCB->ipcStatus &= ~IPC_THREAD_STATUS_PEND;
+            OsTaskWakeClearPendMask(taskCB);
+            OsSchedTaskWake(taskCB);
+            break;
+        case OS_TASK_WAIT_FUTEX:
+            OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
+            OsTaskWakeClearPendMask(taskCB);
+            OsSchedTaskWake(taskCB);
+            break;
+        default:
+            break;
+    }
+
+    return 0;
+}
+
 int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
 {
     bool masked = FALSE;
@@ -78,24 +131,17 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
     masked = (bool)OsSigIsMember(&sigcb->sigprocmask, info->si_signo);
     if (masked) {
         /* If signal is in wait list and mask list, need unblock it */
-        if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {
-            OsTaskWakeClearPendMask(stcb);
-            OsSchedTaskWake(stcb);
-            OsSigEmptySet(&sigcb->sigwaitmask);
-        } else {
+        if (LOS_ListEmpty(&sigcb->waitList)  ||
+           (!LOS_ListEmpty(&sigcb->waitList) && !OsSigIsMember(&sigcb->sigwaitmask, info->si_signo))) {
             OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);
         }
     } else {
         /* unmasked signal actions */
         OsSigAddSet(&sigcb->sigFlag, info->si_signo);
-        if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->si_signo)) {
-            OsTaskWakeClearPendMask(stcb);
-            OsSchedTaskWake(stcb);
-            OsSigEmptySet(&sigcb->sigwaitmask);
-        }
     }
     (void) memcpy_s(&sigcb->sigunbinfo, sizeof(siginfo_t), info, sizeof(siginfo_t));
-    return 0;
+
+    return OsPendingTaskWake(stcb, info->si_signo);
 }
 
 void OsSigMaskSwitch(LosTaskCB * const rtcb, sigset_t set)
@@ -231,15 +277,7 @@ static int SigProcessKillSigHandler(LosTaskCB *tcb, void *arg)
 {
     struct ProcessSignalInfo *info = (struct ProcessSignalInfo *)arg;
 
-    if ((tcb != NULL) && (info != NULL) && (info->sigInfo != NULL)) {
-        sig_cb *sigcb = &tcb->sig;
-        if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, info->sigInfo->si_signo)) {
-            OsTaskWakeClearPendMask(tcb);
-            OsSchedTaskWake(tcb);
-            OsSigEmptySet(&sigcb->sigwaitmask);
-        }
-    }
-    return 0;
+    return OsPendingTaskWake(tcb, info->sigInfo->si_signo);
 }
 
 static void SigProcessLoadTcb(struct ProcessSignalInfo *info, siginfo_t *sigInfo)
@@ -276,9 +314,8 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
 
     /* visit all taskcb and dispatch signal */
     if (info.sigInfo->si_signo == SIGKILL) {
-        (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);
         OsSigAddSet(&spcb->sigShare, info.sigInfo->si_signo);
-        OsWaitSignalToWakeProcess(spcb);
+        (void)OsSigProcessForeachChild(spcb, SigProcessKillSigHandler, &info);
         return 0;
     } else {
         ret = OsSigProcessForeachChild(spcb, SigProcessSignalHandler, &info);
@@ -316,14 +353,14 @@ int OsDispatch(pid_t pid, siginfo_t *info, int permission)
     if (OsProcessIsUnused(spcb)) {
         return -ESRCH;
     }
-#ifdef LOSCFG_SECURITY_CAPABILITY
-    LosProcessCB *current = OsCurrProcessGet();
 
     /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
     if (OsProcessIsInactive(spcb)) {
         return LOS_OK;
     }
 
+#ifdef LOSCFG_SECURITY_CAPABILITY
+    LosProcessCB *current = OsCurrProcessGet();
     /* Kernel process always has kill permission and user process should check permission */
     if (OsProcessIsUserMode(current) && !(current->processStatus & OS_PROCESS_FLAG_EXIT)) {
         if ((current != spcb) && (!IsCapPermit(CAP_KILL)) && (current->user->userID != spcb->user->userID)) {
@@ -371,11 +408,27 @@ int OsKillLock(pid_t pid, int sig)
     return ret;
 }
 
+INT32 OsTaskKillUnsafe(UINT32 taskID, INT32 signo)
+{
+    siginfo_t info;
+    LosTaskCB *taskCB = OsGetTaskCB(taskID);
+    INT32 ret = OsUserTaskOperatePermissionsCheck(taskCB);
+    if (ret != LOS_OK) {
+        return -ret;
+    }
+
+    /* Create the siginfo structure */
+    info.si_signo = signo;
+    info.si_code = SI_USER;
+    info.si_value.sival_ptr = NULL;
+
+    /* Dispatch the signal to thread, bypassing normal task group thread
+     * dispatch rules. */
+    return OsTcbDispatch(taskCB, &info);
+}
+
 int OsPthreadKill(UINT32 tid, int signo)
 {
-    LosTaskCB *stcb = NULL;
-    siginfo_t info;
-
     int ret;
     UINT32 intSave;
 
@@ -385,23 +438,9 @@ int OsPthreadKill(UINT32 tid, int signo)
         return -ESRCH;
     }
 
-    /* Create the siginfo structure */
-    info.si_signo = signo;
-    info.si_code = SI_USER;
-    info.si_value.sival_ptr = NULL;
     /* Keep things stationary through the following */
     SCHEDULER_LOCK(intSave);
-    /* Get the TCB associated with the thread */
-    stcb = OsGetTaskCB(tid);
-    OS_GOTO_EXIT_IF(stcb == NULL, -ESRCH);
-
-    ret = OsUserTaskOperatePermissionsCheck(stcb);
-    OS_GOTO_EXIT_IF(ret != LOS_OK, -ret);
-
-    /* Dispatch the signal to thread, bypassing normal task group thread
-     * dispatch rules. */
-    ret = OsTcbDispatch(stcb, &info);
-EXIT:
+    ret = OsTaskKillUnsafe(tid, signo);
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
@@ -556,6 +595,22 @@ int OsSigAction(int sig, const sigaction_t *act, sigaction_t *oact)
     return LOS_OK;
 }
 
+VOID OsSigIntLock(VOID)
+{
+    LosTaskCB *task = OsCurrTaskGet();
+    sig_cb *sigcb = &task->sig;
+
+    (VOID)LOS_AtomicAdd((Atomic *)&sigcb->sigIntLock, 1);
+}
+
+VOID OsSigIntUnlock(VOID)
+{
+    LosTaskCB *task = OsCurrTaskGet();
+    sig_cb *sigcb = &task->sig;
+
+    (VOID)LOS_AtomicSub((Atomic *)&sigcb->sigIntLock, 1);
+}
+
 VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
 {
     UINTPTR sigHandler;
@@ -564,6 +619,16 @@ VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
     LosTaskCB *task = OsCurrTaskGet();
     LosProcessCB *process = OsCurrProcessGet();
     sig_cb *sigcb = &task->sig;
+
+    /* A thread is not allowed to interrupt the processing of its signals during a system call */
+    if (sigcb->sigIntLock > 0) {
+        return sp;
+    }
+
+    if (task->taskStatus & OS_TASK_FLAG_EXIT_KILL) {
+        OsTaskToExit(task, 0);
+        return sp;
+    }
 
     SCHEDULER_LOCK(intSave);
     if ((sigcb->count == 0) && ((sigcb->sigFlag != 0) || (process->sigShare != 0))) {
@@ -618,3 +683,4 @@ VOID *OsRestorSignalContext(VOID *sp)
     return saveContext;
 }
 
+#endif

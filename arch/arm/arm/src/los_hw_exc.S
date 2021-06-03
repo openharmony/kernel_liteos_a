@@ -325,6 +325,14 @@ _osExceptDataAbortHdl:
 #ifdef LOSCFG_KERNEL_VM
 _osExcPageFaultReturn:
     LDMFD  SP!, {R4-R11}
+
+    MOV     R0, SP
+    STR     R7, [SP, #0]
+    SUB     SP, SP, #(12 * 4)                                @ sp - sizeof(IrqContext), reserved for signal
+    MOV     R1, SP
+    BLX     OsSaveSignalContext
+    MOV     SP, R0
+
     ADD    SP, SP, #(2 * 4)
     LDMFD  SP, {R13, R14}^
     ADD    SP, SP, #(2 * 4)                                  @ Jump reserved fileds

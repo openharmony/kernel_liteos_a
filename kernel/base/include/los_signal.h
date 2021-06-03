@@ -135,11 +135,12 @@ typedef struct sq_queue_s sq_queue_t;
 typedef struct {
     sigset_t sigFlag;
     sigset_t sigPendFlag;
-    sigset_t sigprocmask; /* Signals that are blocked            */
+    sigset_t sigprocmask; /* Signals that are blocked */
     sq_queue_t sigactionq;
     LOS_DL_LIST waitList;
-    sigset_t sigwaitmask; /* Waiting for pending signals         */
-    siginfo_t sigunbinfo; /* Signal info when task unblocked     */
+    sigset_t sigwaitmask; /* Waiting for pending signals */
+    siginfo_t sigunbinfo; /* Signal info when task unblocked */
+    unsigned int sigIntLock;
     void *sigContext;
     unsigned int count;
 } sig_cb;
@@ -163,6 +164,9 @@ int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout);
 int OsPause(void);
 int OsSigPending(sigset_t *set);
 int OsSigSuspend(const sigset_t *set);
+VOID OsSigIntLock(VOID);
+VOID OsSigIntUnlock(VOID);
+INT32 OsTaskKillUnsafe(UINT32 taskID, INT32 signo);
 
 #ifdef __cplusplus
 #if __cplusplus

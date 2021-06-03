@@ -46,6 +46,7 @@
 #include "los_process_pri.h"
 #include "los_vm_map.h"
 #include "los_vm_syscall.h"
+#include "los_signal.h"
 
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
@@ -267,30 +268,29 @@ LITE_OS_SEC_TEXT UINT32 LOS_CurTaskIDGet(VOID)
 LITE_OS_SEC_TEXT VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status)
 {
     UINT32 intSave;
-    LosProcessCB *runProcess = NULL;
-    LosTaskCB *mainTask = NULL;
 
-    SCHEDULER_LOCK(intSave);
-    runProcess = OS_PCB_FROM_PID(taskCB->processID);
-    mainTask = OS_TCB_FROM_TID(runProcess->threadGroupID);
-    SCHEDULER_UNLOCK(intSave);
+    LosProcessCB *runProcess = OS_PCB_FROM_PID(taskCB->processID);
+    LosTaskCB *mainTask = OS_TCB_FROM_TID(runProcess->threadGroupID);
     if (mainTask == taskCB) {
         OsTaskExitGroup(status);
     }
 
     SCHEDULER_LOCK(intSave);
+
     if (runProcess->threadNumber == 1) { /* 1: The last task of the process exits */
         SCHEDULER_UNLOCK(intSave);
         (VOID)OsProcessExit(taskCB, status);
         return;
     }
 
-    if (taskCB->taskStatus & OS_TASK_FLAG_DETACHED) {
+    /* The thread being killed must be able to exit automatically and will have the detached property */
+    OsTaskJoinPostUnsafe(taskCB);
+
+    if (taskCB->taskStatus & (OS_TASK_FLAG_DETACHED | OS_TASK_FLAG_EXIT_KILL)) {
         UINT32 ret = OsTaskDeleteUnsafe(taskCB, status, intSave);
         LOS_Panic("Task delete failed! ERROR : 0x%x\n", ret);
     }
 
-    OsTaskJoinPostUnsafe(taskCB);
     OsSchedResched();
     SCHEDULER_UNLOCK(intSave);
     return;
@@ -536,8 +536,8 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskCBInitBase(LosTaskCB *taskCB,
     if (initParam->uwResved & OS_TASK_FLAG_DETACHED) {
         taskCB->taskStatus |= OS_TASK_FLAG_DETACHED;
     } else {
-        LOS_ListInit(&taskCB->joinList);
         taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;
+        LOS_ListInit(&taskCB->joinList);
     }
 
     taskCB->futex.index = OS_INVALID_VALUE;
@@ -870,6 +870,7 @@ STATIC INLINE VOID OsTaskReleaseHoldLock(LosProcessCB *processCB, LosTaskCB *tas
 
     if (processCB->processMode == OS_USER_MODE) {
         OsTaskJoinPostUnsafe(taskCB);
+
 #ifdef LOSCFG_KERNEL_VM
         OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
 #endif
@@ -878,15 +879,16 @@ STATIC INLINE VOID OsTaskReleaseHoldLock(LosProcessCB *processCB, LosTaskCB *tas
     OsTaskSyncWake(taskCB);
 }
 
-LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *taskCB)
+LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *runTask)
 {
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
-    OsTaskReleaseHoldLock(processCB, taskCB);
-    OsTaskStatusUnusedSet(taskCB);
+    LosProcessCB *processCB = OS_PCB_FROM_PID(runTask->processID);
 
-    LOS_ListDelete(&taskCB->threadList);
+    OsTaskReleaseHoldLock(processCB, runTask);
+    OsTaskStatusUnusedSet(runTask);
+
+    LOS_ListDelete(&runTask->threadList);
     processCB->threadNumber--;
-    LOS_ListTailInsert(&g_taskRecyleList, &taskCB->pendList);
+    LOS_ListTailInsert(&g_taskRecyleList, &runTask->pendList);
     OsEventWriteUnsafe(&g_resourceEvent, OS_RESOURCE_EVENT_FREE, FALSE, NULL);
 
     OsSchedResched();
@@ -1033,7 +1035,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
     }
 
     processCB = OS_PCB_FROM_PID(taskCB->processID);
-    if (processCB->threadNumber == 1) {
+    if (processCB->threadNumber == 1) { /* 1: The last task of the process exits */
         if (processCB == OsCurrProcessGet()) {
             SCHEDULER_UNLOCK(intSave);
             OsProcessExit(taskCB, OS_PRO_EXIT_OK);
@@ -1399,57 +1401,70 @@ EXIT:
     return err;
 }
 
+STATIC VOID OsExitGroupActiveTaskKilled(LosProcessCB *processCB, LosTaskCB *taskCB)
+{
+    INT32 ret;
+
+    taskCB->taskStatus |= OS_TASK_FLAG_EXIT_KILL;
+#if (LOSCFG_KERNEL_SMP == YES)
+    /* The other core that the thread is running on and is currently running in a non-system call */
+    if (!taskCB->sig.sigIntLock && (taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
+        taskCB->signal = SIGNAL_KILL;
+        LOS_MpSchedule(taskCB->currCpu);
+    } else
+#endif
+    {
+        ret = OsTaskKillUnsafe(taskCB->taskID, SIGKILL);
+        if (ret != LOS_OK) {
+            PRINT_ERR("pid %u exit, Exit task group %u kill %u failed! ERROR: %d\n",
+                      taskCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, ret);
+        }
+    }
+
+    if (!(taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN)) {
+        taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;
+        LOS_ListInit(&taskCB->joinList);
+    }
+
+    ret = OsTaskJoinPendUnsafe(taskCB);
+    if (ret != LOS_OK) {
+        PRINT_ERR("pid %u exit, Exit task group %u to wait others task %u(0x%x) exit failed! ERROR: %d\n",
+                  taskCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, taskCB->taskStatus, ret);
+    }
+}
+
 LITE_OS_SEC_TEXT VOID OsTaskExitGroup(UINT32 status)
 {
-    LosProcessCB *processCB = NULL;
-    LosTaskCB *taskCB = NULL;
-    LOS_DL_LIST *list = NULL;
-    LOS_DL_LIST *head = NULL;
-    LosTaskCB *runTask[LOSCFG_KERNEL_CORE_NUM] = { 0 };
     UINT32 intSave;
-#if (LOSCFG_KERNEL_SMP == YES)
-    UINT16 cpu;
-#endif
 
+    LosProcessCB *processCB = OsCurrProcessGet();
+    LosTaskCB *currTask = OsCurrTaskGet();
     SCHEDULER_LOCK(intSave);
-    processCB = OsCurrProcessGet();
-    if (processCB->processStatus & OS_PROCESS_FLAG_EXIT) {
+    if ((processCB->processStatus & OS_PROCESS_FLAG_EXIT) || !OsProcessIsUserMode(processCB)) {
         SCHEDULER_UNLOCK(intSave);
         return;
     }
 
     processCB->processStatus |= OS_PROCESS_FLAG_EXIT;
-    runTask[ArchCurrCpuid()] = OsCurrTaskGet();
-    runTask[ArchCurrCpuid()]->sig.sigprocmask = OS_INVALID_VALUE;
+    processCB->threadGroupID = currTask->taskID;
 
-    list = &processCB->threadSiblingList;
-    head = list;
+    LOS_DL_LIST *list = &processCB->threadSiblingList;
+    LOS_DL_LIST *head = list;
     do {
-        taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);
-        if (!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
+        LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);
+        if ((taskCB->taskStatus & (OS_TASK_STATUS_INIT | OS_TASK_STATUS_EXIT)) &&
+            !(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
             OsTaskDeleteInactive(processCB, taskCB);
         } else {
-#if (LOSCFG_KERNEL_SMP == YES)
-            if (taskCB->currCpu != ArchCurrCpuid()) {
-                taskCB->signal = SIGNAL_KILL;
-                runTask[taskCB->currCpu] = taskCB;
-                LOS_MpSchedule(taskCB->currCpu);
+            if (taskCB != currTask) {
+                OsExitGroupActiveTaskKilled(processCB, taskCB);
+            } else {
+                /* Skip the current task */
+                list = list->pstNext;
             }
-#endif
-            list = list->pstNext;
         }
     } while (head != list->pstNext);
 
-#if (LOSCFG_KERNEL_SMP == YES)
-    for (cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
-        if ((cpu == ArchCurrCpuid()) || (runTask[cpu] == NULL)) {
-            continue;
-        }
-
-        (VOID)OsTaskSyncWait(runTask[cpu]);
-    }
-#endif
-    processCB->threadGroupID = OsCurrTaskGet()->taskID;
     SCHEDULER_UNLOCK(intSave);
 
     LOS_ASSERT(processCB->threadNumber == 1);
@@ -1460,38 +1475,6 @@ LITE_OS_SEC_TEXT VOID OsExecDestroyTaskGroup(VOID)
 {
     OsTaskExitGroup(OS_PRO_EXIT_OK);
     OsTaskCBRecycleToFree();
-}
-
-LITE_OS_SEC_TEXT VOID OsProcessSuspendAllTask(VOID)
-{
-    LosProcessCB *process = NULL;
-    LosTaskCB *taskCB = NULL;
-    LosTaskCB *runTask = NULL;
-    LOS_DL_LIST *list = NULL;
-    LOS_DL_LIST *head = NULL;
-    UINT32 intSave;
-    UINT32 ret;
-
-    SCHEDULER_LOCK(intSave);
-    process = OsCurrProcessGet();
-    runTask = OsCurrTaskGet();
-
-    list = &process->threadSiblingList;
-    head = list;
-    do {
-        taskCB = LOS_DL_LIST_ENTRY(list->pstNext, LosTaskCB, threadList);
-        if (taskCB != runTask) {
-            ret = OsTaskSuspend(taskCB);
-            if ((ret != LOS_OK) && (ret != LOS_ERRNO_TSK_ALREADY_SUSPENDED)) {
-                PRINT_ERR("process(%d) suspend all task(%u) failed! ERROR: 0x%x\n",
-                          process->processID, taskCB->taskID, ret);
-            }
-        }
-        list = list->pstNext;
-    } while (head != list->pstNext);
-
-    SCHEDULER_UNLOCK(intSave);
-    return;
 }
 
 UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB)
@@ -1638,6 +1621,11 @@ LITE_OS_SEC_TEXT UINT32 LOS_GetSystemTaskMaximum(VOID)
 LITE_OS_SEC_TEXT VOID OsWriteResourceEvent(UINT32 events)
 {
     (VOID)LOS_EventWrite(&g_resourceEvent, events);
+}
+
+LITE_OS_SEC_TEXT VOID OsWriteResourceEventUnsafe(UINT32 events)
+{
+    (VOID)OsEventWriteUnsafe(&g_resourceEvent, events, FALSE, NULL);
 }
 
 STATIC VOID OsResourceRecoveryTask(VOID)
