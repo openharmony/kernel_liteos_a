@@ -143,8 +143,8 @@ INT32 CheckMagicKey(CHAR key)
     }
 
     if (magicKeySwitch != 0) {
-        for (i = 0; g_magicOpTable[i] != NULL; ++i) {
-            if (key == g_magicOpTable[i]->magicKey) {
+        for (i = 0; i < MAGIC_KEY_NUM; i++) {
+            if (g_magicOpTable[i] != NULL && key == g_magicOpTable[i]->magicKey) {
                 (g_magicOpTable[i])->opHandler();
                 return 1;
             }
