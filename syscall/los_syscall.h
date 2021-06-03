@@ -39,6 +39,7 @@
 #include "fs/fs.h"
 #include "syscall.h"
 #include "sysinfo.h"
+#include "time_posix.h"
 #ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_exec_elf.h"
 #endif
@@ -172,7 +173,7 @@ extern clock_t SysTimes(struct tms *buf);
 extern time_t SysTime(time_t *tloc);
 extern int SysSetiTimer(int which, const struct itimerval *value, struct itimerval *ovalue);
 extern int SysGetiTimer(int which, struct itimerval *value);
-extern int SysTimerCreate(clockid_t clockID, struct sigevent *evp, timer_t *timerID);
+extern int SysTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID);
 extern int SysTimerGettime(timer_t timerID, struct itimerspec *value);
 extern int SysTimerGetoverrun(timer_t timerID);
 extern int SysTimerDelete(timer_t timerID);

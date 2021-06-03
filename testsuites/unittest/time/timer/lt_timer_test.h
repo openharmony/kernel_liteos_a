@@ -41,6 +41,7 @@ void TimerTest001(void);
 void TimerTest002(void);
 void TimerTest003(void);
 void TimerTest004(void);
+void TimerTest005(void);
 void TIME_TEST_TZSET_001(void);
 void TIME_TEST_TZSET_002(void);
 

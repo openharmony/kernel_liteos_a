@@ -46,6 +46,7 @@ sources_smoke = [
   "smoke/timer_test_002.cpp",
   "smoke/timer_test_003.cpp",
   "smoke/timer_test_004.cpp",
+  "smoke/timer_test_005.cpp",
   "smoke/timer_test_tzset_001.cpp",
   "smoke/timer_test_tzset_002.cpp",
 ]

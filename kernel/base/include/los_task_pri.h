@@ -542,6 +542,8 @@ extern VOID OsTaskExitGroup(UINT32 status);
 extern VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status);
 extern VOID OsExecDestroyTaskGroup(VOID);
 extern UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB);
+extern UINT32 OsUserProcessOperatePermissionsCheck(LosTaskCB *taskCB, UINT32 processID);
+extern INT32 OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info);
 extern VOID OsWriteResourceEvent(UINT32 events);
 extern VOID OsWriteResourceEventUnsafe(UINT32 events);
 extern UINT32 OsResourceFreeTaskCreate(VOID);

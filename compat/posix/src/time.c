@@ -693,45 +693,60 @@ int clock_nanosleep(clockid_t clk, int flags, const struct timespec *req, struct
 
 typedef struct {
     int sigev_signo;
-    UINT32 pid;
+    pid_t pid;
+    unsigned int tid;
     union sigval sigev_value;
 } swtmr_proc_arg;
 
 static VOID SwtmrProc(UINTPTR tmrArg)
 {
-    unsigned int intSave;
-    int sig;
+    INT32 sig, ret;
+    UINT32 intSave;
     pid_t pid;
     siginfo_t info;
-    swtmr_proc_arg *arg = (swtmr_proc_arg *)tmrArg;
-    if (arg == NULL) {
-        return;
-    }
+    LosTaskCB *stcb = NULL;
 
-    sig = arg->sigev_signo + 1;
+    swtmr_proc_arg *arg = (swtmr_proc_arg *)tmrArg;
+    OS_GOTO_EXIT_IF(arg == NULL, EINVAL);
+
+    sig = arg->sigev_signo;
     pid = arg->pid;
-    /* Make sure that the para is valid */
-    if (!GOOD_SIGNO(sig) || pid <= 0) {
-        return;
-    }
-    if (OS_PID_CHECK_INVALID(pid)) {
-        return;
-    }
+    OS_GOTO_EXIT_IF(!GOOD_SIGNO(sig), EINVAL);
 
     /* Create the siginfo structure */
     info.si_signo = sig;
     info.si_code = SI_TIMER;
     info.si_value.sival_ptr = arg->sigev_value.sival_ptr;
 
-    /* Send the signal */
-    SCHEDULER_LOCK(intSave);
-    OsDispatch(pid, &info, OS_USER_KILL_PERMISSION);
-    SCHEDULER_UNLOCK(intSave);
+    /* Send signals to threads or processes */
+    if (arg->tid > 0) {
+        /* Make sure that the para is valid */
+        OS_GOTO_EXIT_IF(OS_TID_CHECK_INVALID(arg->tid), EINVAL);
+        stcb = OsGetTaskCB(arg->tid);
+        ret = OsUserProcessOperatePermissionsCheck(stcb, stcb->processID);
+        OS_GOTO_EXIT_IF(ret != LOS_OK, -ret);
 
+        /* Dispatch the signal to thread, bypassing normal task group thread
+         * dispatch rules. */
+        SCHEDULER_LOCK(intSave);
+        ret = OsTcbDispatch(stcb, &info);
+        SCHEDULER_UNLOCK(intSave);
+        OS_GOTO_EXIT_IF(ret != LOS_OK, -ret);
+    } else {
+        /* Make sure that the para is valid */
+        OS_GOTO_EXIT_IF(pid <= 0 || OS_PID_CHECK_INVALID(pid), EINVAL);
+        /* Dispatch the signal to process */
+        SCHEDULER_LOCK(intSave);
+        OsDispatch(pid, &info, OS_USER_KILL_PERMISSION);
+        SCHEDULER_UNLOCK(intSave);
+    }
+    return;
+EXIT:
+    PRINT_ERR("Dsipatch signals failed!, ret: %d\r\n", ret);
     return;
 }
 
-int timer_create(clockid_t clockID, struct sigevent *evp, timer_t *timerID)
+int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
 {
     UINT32 ret;
     UINT16 swtmrID;
@@ -761,7 +776,9 @@ int timer_create(clockid_t clockID, struct sigevent *evp, timer_t *timerID)
         errno = ENOMEM;
         return -1;
     }
-    arg->sigev_signo = signo - 1;
+
+    arg->tid = evp ? evp->sigev_tid : 0;
+    arg->sigev_signo = signo;
     arg->pid = LOS_GetCurrProcessID();
     arg->sigev_value.sival_ptr = evp ? evp->sigev_value.sival_ptr : NULL;
     ret = LOS_SwtmrCreate(1, LOS_SWTMR_MODE_ONCE, SwtmrProc, &swtmrID, (UINTPTR)arg);
@@ -1016,14 +1033,14 @@ int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue
 
     /* To avoid creating an invalid timer after the timer has already been create */
     if (processCB->timerID == (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID) {
-        ret = timer_create(CLOCK_REALTIME, NULL, &timerID);
+        ret = OsTimerCreate(CLOCK_REALTIME, NULL, &timerID);
         if (ret != LOS_OK) {
             return ret;
         }
     }
 
     /* The initialization of this global timer must be in spinlock
-     * timer_create cannot be located in spinlock.
+     * OsTimerCreate cannot be located in spinlock.
      */
     SCHEDULER_LOCK(intSave);
     if (processCB->timerID == (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID) {
