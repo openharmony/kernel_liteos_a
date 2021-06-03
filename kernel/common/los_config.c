@@ -231,9 +231,7 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     if (ret != LOS_OK) {
         return ret;
     }
-#if (LOSCFG_KERNEL_SMP == 1)
-    release_secondary_cores();
-#endif
+
     OsInitCall(LOS_INIT_LEVEL_VM_COMPLETE);
 
     ret = OsIpcInit();
@@ -266,6 +264,10 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     OsInitCall(LOS_INIT_LEVEL_KMOD_BASIC);
 
     OsInitCall(LOS_INIT_LEVEL_KMOD_EXTENDED);
+
+#if (LOSCFG_KERNEL_SMP == 1)
+    release_secondary_cores();
+#endif
 
     OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);
 
