@@ -165,6 +165,7 @@ LITEOS_TABLES_DRIVER_LDFLAGS := \
 ####FS MAP####
 LITEOS_TABLES_FSMAP_LDFLAGS := \
     -uramfs_fsmap \
+    -uromfs_fsmap \
     -unfs_fsmap \
     -ufat_fsmap \
     -ujffs_fsmap \
