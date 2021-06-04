@@ -1479,15 +1479,24 @@ LITE_OS_SEC_TEXT VOID OsExecDestroyTaskGroup(VOID)
 
 UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB)
 {
+    return OsUserProcessOperatePermissionsCheck(taskCB, OsCurrProcessGet()->processID);
+}
+
+UINT32 OsUserProcessOperatePermissionsCheck(LosTaskCB *taskCB, UINT32 processID)
+{
     if (taskCB == NULL) {
         return LOS_EINVAL;
+    }
+
+    if (processID == OS_INVALID_VALUE) {
+        return OS_INVALID_VALUE;
     }
 
     if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
         return LOS_EINVAL;
     }
 
-    if (OsCurrProcessGet()->processID != taskCB->processID) {
+    if (processID != taskCB->processID) {
         return LOS_EPERM;
     }
 
