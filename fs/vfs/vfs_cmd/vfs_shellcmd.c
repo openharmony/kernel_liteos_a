@@ -832,7 +832,7 @@ static int os_shell_cmd_do_rmdir(const char *pathname)
       return -1;
     }
 
-  if (S_ISREG(stat_info.st_mode))
+  if (S_ISREG(stat_info.st_mode) || S_ISLNK(stat_info.st_mode))
     {
       return remove(pathname);
     }
@@ -1050,7 +1050,7 @@ static int os_wildcard_extract_directory(char *fullpath, void *dst, wildcard_typ
       else if (mark == CP_COUNT)
         {
           ret = stat(fullpath, &stat_buf);
-          if (ret == 0 && S_ISREG(stat_buf.st_mode))
+          if (ret == 0 && (S_ISREG(stat_buf.st_mode) || S_ISLNK(stat_buf.st_mode)))
             {
               (*(int *)dst)++;
             }
@@ -1106,7 +1106,7 @@ static int os_wildcard_extract_directory(char *fullpath, void *dst, wildcard_typ
               else if (mark == CP_COUNT)
                 {
                   ret = stat(src, &stat_buf);
-                  if (ret == 0 && S_ISREG(stat_buf.st_mode))
+                  if (ret == 0 && (S_ISREG(stat_buf.st_mode) || S_ISLNK(stat_buf.st_mode)))
                     {
                       (*(int *)dst)++;
                       if ((*(int *)dst) > 1)
@@ -1216,7 +1216,7 @@ int osShellCmdCp(int argc, const char **argv)
     }
   else
     {
-      if (S_ISREG(stat_buf.st_mode) && dst[strlen(dst) - 1] == '/')
+      if ((S_ISREG(stat_buf.st_mode) || S_ISLNK(stat_buf.st_mode)) && dst[strlen(dst) - 1] == '/')
         {
           PRINTK("cp error: %s is not a directory.\n", dst_fullpath);
           goto errout_with_path;
@@ -1225,7 +1225,7 @@ int osShellCmdCp(int argc, const char **argv)
 
    if (os_is_containers_wildcard(src_fullpath))
     {
-      if (ret < 0 || S_ISREG(stat_buf.st_mode))
+      if (ret < 0 || S_ISREG(stat_buf.st_mode) || S_ISLNK(stat_buf.st_mode))
         {
           char *src_copy = strdup(src_fullpath);
           if (src_copy == NULL)

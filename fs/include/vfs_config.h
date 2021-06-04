@@ -75,6 +75,8 @@ extern "C" {
 
 #define CONFIG_FS_FLASH_BLOCK_NUM 1
 
+#define CONFIG_FS_MAX_LNK_CNT 40
+
 /* nfs configure */
 
 #define CONFIG_NFS_MACHINE_NAME "IPC"   // nfs device name is IPC

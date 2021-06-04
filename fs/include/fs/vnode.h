@@ -99,6 +99,9 @@ struct VnodeOps {
     int (*Truncate)(struct Vnode *vnode, off_t len);
     int (*Truncate64)(struct Vnode *vnode, off64_t len);
     int (*Fscheck)(struct Vnode *vnode, struct fs_dirent_s *dir);
+    int (*Link)(struct Vnode *src, struct Vnode *dstParent, struct Vnode **dst, const char *dstName);
+    int (*Symlink)(struct Vnode *parentVnode, struct Vnode **newVnode, const char *path, const char *target);
+    ssize_t (*Readlink)(struct Vnode *vnode, char *buffer, size_t bufLen);
 };
 
 typedef int VfsHashCmp(struct Vnode *vnode, void *arg);
