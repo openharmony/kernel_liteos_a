@@ -88,7 +88,9 @@ elif [ "${FSTYPE}" = "vfat" ]; then
             FAT32_ITEM_SIZE=4
             RESV_CNT=38
             IMG_MIN_SIZE=1048576
-            DIR_SIZE=$(( $(echo $(du -s ${ROOTFS_DIR} | awk '{print $1}')) * 1024 ))
+            DU_DIR_SIZE=$(( $(echo $(du -s ${ROOTFS_DIR} | awk '{print $1}')) * 1024 ))
+            DIR_NUM=$(( $(echo $(ls -lR ${ROOTFS_DIR} | grep "^d" | wc -l | awk '{print $1}')) + 1 ))
+            DIR_SIZE=$(( ${DU_DIR_SIZE} + ${DIR_NUM} * 4096 ))
             IMG_SIZE=$(( ${DIR_SIZE} / (1 - ${FAT_TAB_NUM} * ${FAT32_ITEM_SIZE} / ${CLT_SIZE}) + ${RESV_CNT} * ${BLK_SIZE}))
             if [ ${IMG_SIZE} -le ${IMG_MIN_SIZE} ]; then
                 IMG_SIZE=${IMG_MIN_SIZE}
