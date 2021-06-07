@@ -692,7 +692,9 @@ VOID BackTraceSub(UINTPTR regFP)
     UINTPTR backFP = regFP;
     UINT32 count = 0;
     VADDR_T kvaddr;
+#ifdef LOSCFG_KERNEL_VM
     LosProcessCB *runProcess = OsCurrProcessGet();
+#endif
 
     if (FindSuitableStack(regFP, &stackStart, &stackEnd, &kvaddr) == FALSE) {
         PrintExcInfo("traceback error fp = 0x%x\n", regFP);

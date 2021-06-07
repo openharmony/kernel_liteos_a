@@ -280,6 +280,13 @@ LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
     return LOS_OK;
 }
 
+#ifndef LOSCFG_PLATFORM_ADAPT
+STATIC VOID SystemInit(VOID)
+{
+    PRINTK("dummy: *** %s ***\n", __FUNCTION__);
+}
+#endif
+
 STATIC UINT32 OsSystemInitTaskCreate(VOID)
 {
     UINT32 taskID;

@@ -751,8 +751,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
     LOS_ListTailInsert(&kerInitProcess->childrenList, &idleProcess->siblingList);
     idleProcess->group = kerInitProcess->group;
     LOS_ListTailInsert(&kerInitProcess->group->processList, &idleProcess->subordinateGroupList);
+#ifdef LOSCFG_SECURITY_CAPABILITY
     idleProcess->user = kerInitProcess->user;
+#endif
+#ifdef LOSCFG_FS_VFS
     idleProcess->files = kerInitProcess->files;
+#endif
 
     ret = OsIdleTaskCreate();
     if (ret != LOS_OK) {
