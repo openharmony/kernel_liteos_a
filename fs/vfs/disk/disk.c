@@ -865,7 +865,7 @@ INT32 los_disk_write(INT32 drvID, const VOID *buf, UINT64 sector, UINT32 count)
 #endif
     INT32 result = VFS_ERROR;
     los_disk *disk = get_disk(drvID);
-    if (disk == NULL) {
+    if (disk == NULL || disk->dev == NULL || disk->dev->data == NULL) {
         return result;
     }
 
@@ -896,7 +896,7 @@ INT32 los_disk_write(INT32 drvID, const VOID *buf, UINT64 sector, UINT32 count)
     } else {
 #endif
     struct block_operations *bops = (struct block_operations *)((struct drv_data *)disk->dev->data)->ops;
-    if ((disk->dev != NULL) && (bops != NULL) && (bops->write != NULL)) {
+    if ((bops != NULL) && (bops->write != NULL)) {
         result = bops->write(disk->dev, (UINT8 *)buf, sector, count);
         if (result == (INT32)count) {
             result = ENOERR;
@@ -1151,6 +1151,9 @@ INT32 los_disk_cache_clear(INT32 drvID)
     los_part *part = get_part(drvID);
     los_disk *disk = NULL;
 
+    if (part == NULL) {
+        return VFS_ERROR;
+    }
     result = OsSdSync(part->disk_id);
     if (result != 0) {
         PRINTK("[ERROR]disk_cache_clear SD sync failed!\n");
@@ -1159,7 +1162,7 @@ INT32 los_disk_cache_clear(INT32 drvID)
 
     disk = get_disk(part->disk_id);
     if (disk == NULL) {
-        return -1;
+        return VFS_ERROR;
     }
 
     DISK_LOCK(&disk->disk_mutex);

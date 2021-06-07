@@ -171,7 +171,7 @@ BOOL IsConsoleOccupied(const CONSOLE_CB *consoleCB)
 
 STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
 {
-    struct termios consoleTermios;
+    struct termios consoleTermios = {0};
     UINT32 intSave;
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
@@ -185,7 +185,7 @@ STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
 
 STATIC INT32 ConsoleCtrlCaptureChar(CONSOLE_CB *consoleCB)
 {
-    struct termios consoleTermios;
+    struct termios consoleTermios = {0};
     UINT32 intSave;
 
     LOS_SpinLockSave(&g_consoleSpin, &intSave);
@@ -1014,7 +1014,7 @@ STATIC const struct file_operations_vfs g_consoleDevOps = {
 
 STATIC VOID OsConsoleTermiosInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
 {
-    struct termios consoleTermios;
+    struct termios consoleTermios = {0};
 
     if ((deviceName != NULL) &&
         (strlen(deviceName) == strlen(SERIAL)) &&
