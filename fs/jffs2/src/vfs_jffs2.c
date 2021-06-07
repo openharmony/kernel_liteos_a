@@ -603,7 +603,7 @@ int VfsJffs2Chattr(struct Vnode *pVnode, struct IATTR *attr)
     return ret;
 }
 
-int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, char *path)
+int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, const char *path)
 {
     int ret;
 
@@ -620,7 +620,7 @@ int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, char *pa
     return ret;
 }
 
-int VfsJffs2Unlink(struct Vnode *parentVnode, struct Vnode *targetVnode, char *path)
+int VfsJffs2Unlink(struct Vnode *parentVnode, struct Vnode *targetVnode, const char *path)
 {
     int ret;
 

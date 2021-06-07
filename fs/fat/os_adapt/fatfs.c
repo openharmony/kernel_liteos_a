@@ -1836,7 +1836,7 @@ ERROR_OUT:
     return -fatfs_2_vfs(result);
 }
 
-int fatfs_rmdir(struct Vnode *parent, struct Vnode *vp, char *name)
+int fatfs_rmdir(struct Vnode *parent, struct Vnode *vp, const char *name)
 {
     FATFS *fs = (FATFS *)vp->originMount->data;
     DIR_FILE *dfp = (DIR_FILE *)vp->data;
@@ -1898,7 +1898,7 @@ int fatfs_reclaim(struct Vnode *vp)
     return 0;
 }
 
-int fatfs_unlink(struct Vnode *parent, struct Vnode *vp, char *name)
+int fatfs_unlink(struct Vnode *parent, struct Vnode *vp, const char *name)
 {
     FATFS *fs = (FATFS *)vp->originMount->data;
     DIR_FILE *dfp = (DIR_FILE *)vp->data;

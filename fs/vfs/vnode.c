@@ -245,9 +245,6 @@ int VnodeDrop()
 static char *NextName(char *pos, uint8_t *len)
 {
     char *name = NULL;
-    if (*pos == '\0') {
-        return NULL;
-    }
     while (*pos != 0 && *pos == '/') {
         pos++;
     }
@@ -319,6 +316,7 @@ static int Step(char **currentDir, struct Vnode **currentVnode, uint32_t flags)
     }
     nextDir = NextName(*currentDir, &len);
     if (nextDir == NULL) {
+        // there is '/' at the end of the *currentDir.
         *currentDir = NULL;
         return LOS_OK;
     }
@@ -361,7 +359,6 @@ int VnodeLookup(const char *path, struct Vnode **result, uint32_t flags)
     struct Vnode *startVnode = NULL;
     char *normalizedPath = NULL;
 
-
     int ret = PreProcess(path, &startVnode, &normalizedPath);
     if (ret != LOS_OK) {
         PRINT_ERR("[VFS]lookup failed, invalid path=%s err = %d\n", path, ret);
@@ -377,9 +374,9 @@ int VnodeLookup(const char *path, struct Vnode **result, uint32_t flags)
     char *currentDir = normalizedPath;
     struct Vnode *currentVnode = startVnode;
 
-    while (currentDir && *currentDir != '\0') {
+    while (*currentDir != '\0') {
         ret = Step(&currentDir, &currentVnode, flags);
-        if (*currentDir == '\0') {
+        if (currentDir == NULL || *currentDir == '\0') {
             // return target or parent vnode as result
             *result = currentVnode;
         } else if (VfsVnodePermissionCheck(currentVnode, EXEC_OP)) {

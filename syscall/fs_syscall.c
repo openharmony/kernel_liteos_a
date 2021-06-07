@@ -270,13 +270,11 @@ int SysOpen(const char *path, int oflags, ...)
     mode_t mode = DEFAULT_FILE_MODE; /* 0666: File read-write properties. */
     char *pathRet = NULL;
 
-    if (path == NULL && *path == 0) {
-        return -EINVAL;
-    }
-
-    ret = UserPathCopy(path, &pathRet);
-    if (ret != 0) {
-        return ret;
+    if (path != NULL) {
+        ret = UserPathCopy(path, &pathRet);
+        if (ret != 0) {
+            goto ERROUT_PATH_FREE;
+        }
     }
 
     procFd = AllocProcessFd();
@@ -310,14 +308,15 @@ int SysOpen(const char *path, int oflags, ...)
     return procFd;
 
 ERROUT:
-    if (pathRet != NULL) {
-        LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
-    }
     if (ret >= 0) {
         AssociateSystemFd(procFd, ret);
         ret = procFd;
     } else {
         FreeProcessFd(procFd);
+    }
+ERROUT_PATH_FREE:
+    if (pathRet != NULL) {
+        LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
     }
 
     return ret;

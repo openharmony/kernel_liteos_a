@@ -131,8 +131,8 @@ int fatfs_closedir(struct Vnode *vnode, struct fs_dirent_s *dir);
 int fatfs_rename(struct Vnode *oldvnode, struct Vnode *newparent, const char *oldname, const char *newname);
 int fatfs_mkfs (struct Vnode *device, int sectors, int option);
 int fatfs_mkdir(struct Vnode *parent, const char *name, mode_t mode, struct Vnode **vpp);
-int fatfs_rmdir(struct Vnode *parent, struct Vnode *vp, char *name);
-int fatfs_unlink(struct Vnode *parent, struct Vnode *vp, char *name);
+int fatfs_rmdir(struct Vnode *parent, struct Vnode *vp, const char *name);
+int fatfs_unlink(struct Vnode *parent, struct Vnode *vp, const char *name);
 int fatfs_ioctl(struct file *filep, int req, unsigned long arg);
 int fatfs_fscheck(struct Vnode* vnode, struct fs_dirent_s *dir);
 
