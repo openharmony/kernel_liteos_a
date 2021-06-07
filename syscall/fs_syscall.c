@@ -1557,6 +1557,7 @@ int SysFtruncate64(int fd, off64_t length)
 int SysOpenat(int dirfd, const char *path, int oflags, ...)
 {
     int ret;
+    int procFd;
     char *pathRet = NULL;
     mode_t mode;
 #ifdef LOSCFG_FILE_MODE
@@ -1572,8 +1573,14 @@ int SysOpenat(int dirfd, const char *path, int oflags, ...)
     if (path != NULL) {
         ret = UserPathCopy(path, &pathRet);
         if (ret != 0) {
-            goto OUT;
+            return ret;
         }
+    }
+
+    procFd = AllocProcessFd();
+    if (procFd < 0) {
+        ret = -EMFILE;
+        goto ERROUT;
     }
 
     if (dirfd != AT_FDCWD) {
@@ -1584,11 +1591,21 @@ int SysOpenat(int dirfd, const char *path, int oflags, ...)
     ret = do_open(dirfd, (path ? pathRet : NULL), oflags, mode);
     if (ret < 0) {
         ret = -get_errno();
+        goto ERROUT;
     }
 
-OUT:
+    AssociateSystemFd(procFd, ret);
     if (pathRet != NULL) {
         (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    return procFd;
+
+ERROUT:
+    if (pathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    if (procFd >= 0) {
+        FreeProcessFd(procFd);
     }
     return ret;
 }
