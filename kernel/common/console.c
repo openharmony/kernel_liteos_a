@@ -853,11 +853,10 @@ STATIC INT32 ConsoleGetWinSize(unsigned long arg)
         .ws_row = DEFAULT_WINDOW_SIZE_ROW
     };
 
-    if(LOS_ArchCopyToUser((VOID *)arg, &kws, sizeof(struct winsize)) != 0) {
+    if (LOS_CopyFromKernel((VOID *)arg, sizeof(struct winsize), &kws, sizeof(struct winsize)) != 0) {
         return -EFAULT;
-    } else {
-        return LOS_OK;
     }
+    return LOS_OK;
 }
 
 STATIC INT32 ConsoleGetTermios(unsigned long arg)
