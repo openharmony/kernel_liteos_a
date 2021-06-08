@@ -126,7 +126,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR tas
     context->PC = (UINTPTR)taskEntry;
 }
 
-VOID OsInitSignalContext(VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param)
+VOID OsInitSignalContext(const VOID *sp, VOID *signalContext, UINTPTR sigHandler, UINT32 signo, UINT32 param)
 {
     IrqContext *newSp = (IrqContext *)signalContext;
     (VOID)memcpy_s(signalContext, sizeof(IrqContext), sp, sizeof(IrqContext));

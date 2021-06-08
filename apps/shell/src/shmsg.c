@@ -333,6 +333,7 @@ static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len
 {
     int ret;
     pid_t forkPid;
+    pid_t gid;
 
     if (strncmp(cmdline, SHELL_EXEC_COMMAND, SHELL_EXEC_COMMAND_BYTES) == 0) {
         forkPid = fork();
@@ -345,9 +346,14 @@ static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len
                 exit(1);
             }
 
-            ret = tcsetpgrp(STDIN_FILENO, getpgrp());
+            gid = getpgrp();
+            if (gid < 0) {
+                printf("get group id failed, pgrpid %d, errno %d\n", gid, errno);
+            }
+
+            ret = tcsetpgrp(STDIN_FILENO, gid);
             if (ret != 0) {
-                printf("tcsetpgrp failed, pgrpid %d, errno %d\n", getpgrp(), errno);
+                printf("tcsetpgrp failed, errno %d\n", errno);
             }
 
             ret = execve((const char *)cmdParsed->paramArray[0], (char * const *)cmdParsed->paramArray, NULL);
