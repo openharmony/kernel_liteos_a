@@ -270,11 +270,27 @@ int update_file_path(const char *old_path, const char *new_path)
             continue;
         }
         int len = strlen(new_path) + 1;
-        filp->f_path = zalloc(len);
-        strncpy_s(filp->f_path, strlen(new_path) + 1, new_path, len);
+        char *tmp_path = LOS_MemAlloc(m_aucSysMem0, len);
+        if (tmp_path == NULL) {
+            PRINT_ERR("%s-%d: Mem alloc failed, path length(%d)\n", __FUNCTION__, __LINE__, len);
+            ret = VFS_ERROR;
+            goto out;
+        }
+        ret = strncpy_s(tmp_path, strlen(new_path) + 1, new_path, len);
+        if (ret != 0) {
+            (VOID)LOS_MemFree(m_aucSysMem0, tmp_path);
+            PRINT_ERR("%s-%d: strcpy failed.\n", __FUNCTION__, __LINE__);
+            ret = VFS_ERROR;
+            goto out;
+        }
+        free(filp->f_path);
+        filp->f_path = tmp_path;
     }
+    ret = LOS_OK;
+
+out:
     (VOID)LOS_MuxUnlock(&g_file_mapping.lock);
     (void)sem_post(&f_list->fl_sem);
-    return LOS_OK;
+    return ret;
 }
 #endif

@@ -82,7 +82,7 @@ static uint32_t NameHash(const char *name, int len, struct Vnode *dvp)
 {
     uint32_t hash;
     hash = fnv_32_buf(name, len, FNV1_32_INIT);
-    hash = fnv_32_buf(&dvp, sizeof(dvp), hash);
+    hash = fnv_32_buf(&dvp, sizeof(struct Vnode *), hash);
     return hash;
 }
 

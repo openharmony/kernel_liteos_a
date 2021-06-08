@@ -85,8 +85,8 @@ struct VnodeOps {
     int (*Open)(struct Vnode *vnode, int fd, int mode, int flags);
     int (*Close)(struct Vnode *vnode);
     int (*Reclaim)(struct Vnode *vnode);
-    int (*Unlink)(struct Vnode *parent, struct Vnode *vnode, char *fileName);
-    int (*Rmdir)(struct Vnode *parent, struct Vnode *vnode, char *dirName);
+    int (*Unlink)(struct Vnode *parent, struct Vnode *vnode, const char *fileName);
+    int (*Rmdir)(struct Vnode *parent, struct Vnode *vnode, const char *dirName);
     int (*Mkdir)(struct Vnode *parent, const char *dirName, mode_t mode, struct Vnode **vnode);
     int (*Readdir)(struct Vnode *vnode, struct fs_dirent_s *dir);
     int (*Opendir)(struct Vnode *vnode, struct fs_dirent_s *dir);
