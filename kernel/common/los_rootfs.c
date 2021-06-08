@@ -35,7 +35,6 @@
 #include "mtd_partition.h"
 #endif
 #ifdef LOSCFG_DRIVERS_MMC
-#include "mmc/block.h"
 #include "disk.h"
 #endif
 #include "sys/mount.h"
@@ -103,18 +102,22 @@ los_disk *GetMmcDisk(UINT8 type)
 #endif
 
 #ifdef LOSCFG_STORAGE_EMMC
+struct disk_divide_info *StorageBlockGetEmmc(void);
+struct block_operations *StorageBlockGetMmcOps(void);
+char *StorageBlockGetEmmcNodeName(void *block);
+
 STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
 {
     INT32 ret;
 
-    struct mmc_block *block = (struct mmc_block *)((struct drv_data *)g_emmcDisk->dev->data)->priv;
-    const char *node_name = mmc_block_get_node_name(block);
+    void *block = ((struct drv_data *)g_emmcDisk->dev->data)->priv;
+    const char *node_name = StorageBlockGetEmmcNodeName(block);
     if (los_disk_deinit(g_emmcDisk->disk_id) != ENOERR) {
         PRINT_ERR("Failed to deinit emmc disk!\n");
         return NULL;
     }
 
-    struct disk_divide_info *emmc = get_emmc();
+    struct disk_divide_info *emmc = StorageBlockGetEmmc();
     ret = add_mmc_partition(emmc, rootAddr / EMMC_SEC_SIZE, rootSize / EMMC_SEC_SIZE);
     if (ret != LOS_OK) {
         PRINT_ERR("Failed to add mmc root partition!\n");
@@ -138,7 +141,7 @@ STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
             PRINT_ERR("Failed to alloc disk %s!\n", node_name);
             return NULL;
         }
-        if (los_disk_init(node_name, mmc_block_get_bops(block), (void *)block, diskId, emmc) != ENOERR) {
+        if (los_disk_init(node_name, StorageBlockGetMmcOps(), block, diskId, emmc) != ENOERR) {
             PRINT_ERR("Failed to init emmc disk!\n");
             return NULL;
         }

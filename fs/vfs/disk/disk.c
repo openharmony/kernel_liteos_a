@@ -35,13 +35,7 @@
 #include "unistd.h"
 #include "sys/mount.h"
 #include "linux/spinlock.h"
-
 #include "fs/path_cache.h"
-
-#ifdef LOSCFG_DRIVERS_MMC
-#include "mmc/block.h"
-#endif
-
 
 los_disk g_sysDisk[SYS_MAX_DISK];
 los_part g_sysPart[SYS_MAX_PART];
@@ -1685,13 +1679,17 @@ VOID show_part(los_part *part)
     PRINTK("part sec count   : %llu\n", part->sector_count);
 }
 
+#ifdef LOSCFG_DRIVERS_MMC
+ssize_t StorageBlockMmcErase(uint32_t blockId, size_t secStart, size_t secNr);
+#endif
+
 INT32 EraseDiskByID(UINT32 diskID, size_t startSector, UINT32 sectors)
 {
     INT32 ret = VFS_ERROR;
 #ifdef LOSCFG_DRIVERS_MMC
     los_disk *disk = get_disk((INT32)diskID);
     if (disk != NULL) {
-        ret = do_mmc_erase(diskID, startSector, sectors);
+        ret = StorageBlockMmcErase(diskID, startSector, sectors);
     }
 #endif
 
