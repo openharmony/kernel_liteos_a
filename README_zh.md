@@ -73,8 +73,8 @@ OpenHarmony LiteOS-A内核支持Hi3518EV300（[介绍](https://gitee.com/openhar
 
 开发者需要在Linux上搭建编译环境：
 
--   Hi3518EV300单板：参考[环境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E6%90%AD%E5%BB%BA%E7%8E%AF%E5%A2%83.md)；
--   Hi3516DV300单板：参考[环境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3516%E6%90%AD%E5%BB%BA%E7%8E%AF%E5%A2%83.md)。
+-   Hi3518EV300单板：参考[环境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3518%E5%BC%80%E5%8F%91%E6%9D%BF.md)；
+-   Hi3516DV300单板：参考[环境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3516%E5%BC%80%E5%8F%91%E6%9D%BF.md)。
 
 ### 获取源码<a name="section11443189655"></a>
 
@@ -84,9 +84,9 @@ OpenHarmony LiteOS-A内核支持Hi3518EV300（[介绍](https://gitee.com/openhar
 
 开发者开发第一个应用程序可参考：
 
--   [helloworld for Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E5%BC%80%E5%8F%91Hi3518%E7%AC%AC%E4%B8%80%E4%B8%AA%E7%A4%BA%E4%BE%8B%E7%A8%8B%E5%BA%8F.md)；
+-   [helloworld for Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E8%BF%90%E8%A1%8CHello-OHOS-4.md)；
 
--   [helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E5%BC%80%E5%8F%91Hi3516%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B.md)。
+-   [helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E8%BF%90%E8%A1%8CHello-OHOS.md)。
 
 ## 相关仓<a name="section1371113476307"></a>
 
