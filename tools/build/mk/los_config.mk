@@ -455,14 +455,7 @@ ifeq ($(LOSCFG_COMPILE_DEBUG), y)
     LITEOS_COPTS_OPTION  = -g -gdwarf-2
 else
     ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-        ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-                # WORKAROUND: Disable LTO to avoid undefined __stack_chk_guard
-                #             problem. "externally_visible" attribute could be
-                #             a fix for that but it is not known to our LLVM.
-                LITEOS_COPTS_OPTMIZE = -Oz #-flto
-        else
-                LITEOS_COPTS_OPTMIZE = -Oz -flto
-        endif
+        LITEOS_COPTS_OPTMIZE = -Oz -flto
     else
         LITEOS_COPTS_OPTMIZE = -O2
     endif
