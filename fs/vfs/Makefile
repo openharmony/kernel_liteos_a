@@ -64,6 +64,9 @@ $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_statfs.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_truncate.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_truncate64.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_unlink.c \
+$(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_link.c \
+$(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_readlink.c \
+$(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_symlink.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/vfs/fs_write.c \
 $(wildcard operation/*.c) \
 \

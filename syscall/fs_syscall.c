@@ -356,6 +356,98 @@ OUT:
     return ret;
 }
 
+int SysLink(const char *oldpath, const char *newpath)
+{
+    int ret;
+    char *oldpathRet = NULL;
+    char *newpathRet = NULL;
+
+    if (oldpath != NULL) {
+        ret = UserPathCopy(oldpath, &oldpathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    if (newpath != NULL) {
+        ret = UserPathCopy(newpath, &newpathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    ret = link(oldpathRet, newpathRet);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+OUT:
+    if (oldpathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, oldpathRet);
+    }
+    if (newpathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, newpathRet);
+    }
+    return ret;
+}
+
+ssize_t SysReadlink(const char *pathname, char *buf, size_t bufsize)
+{
+    ssize_t ret;
+    char *pathRet = NULL;
+
+    if (bufsize == 0) {
+        return -EINVAL;
+    }
+
+    if (pathname != NULL) {
+        ret = UserPathCopy(pathname, &pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, bufsize)) {
+        ret = -EFAULT;
+        goto OUT;
+    }
+
+    ret = readlink(pathRet, buf, bufsize);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+OUT:
+    if (pathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    return ret;
+}
+
+int SysSymlink(const char *target, const char *linkpath)
+{
+    int ret;
+    char *pathRet = NULL;
+
+    if (linkpath != NULL) {
+        ret = UserPathCopy(linkpath, &pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    ret = symlink(target, pathRet);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+OUT:
+    if (pathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    return ret;
+}
+
 int SysUnlink(const char *pathname)
 {
     int ret;
@@ -1627,6 +1719,118 @@ int SysMkdirat(int dirfd, const char *pathname, mode_t mode)
     }
 
     ret = do_mkdir(dirfd, (pathname ? pathRet : NULL), mode);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+OUT:
+    if (pathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    return ret;
+}
+
+int SysLinkat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, int flags)
+{
+    int ret;
+    char *oldpathRet = NULL;
+    char *newpathRet = NULL;
+
+    if (oldpath != NULL) {
+        ret = UserPathCopy(oldpath, &oldpathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    if (newpath != NULL) {
+        ret = UserPathCopy(newpath, &newpathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    if (olddirfd != AT_FDCWD) {
+        /* Process fd convert to system global fd */
+        olddirfd = GetAssociatedSystemFd(olddirfd);
+    }
+
+    if (newdirfd != AT_FDCWD) {
+        /* Process fd convert to system global fd */
+        newdirfd = GetAssociatedSystemFd(newdirfd);
+    }
+
+    ret = linkat(olddirfd, oldpathRet, newdirfd, newpathRet, flags);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+OUT:
+    if (oldpathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, oldpathRet);
+    }
+    if (newpathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, newpathRet);
+    }
+    return ret;
+}
+
+int SysSymlinkat(const char *target, int dirfd, const char *linkpath)
+{
+    int ret;
+    char *pathRet = NULL;
+
+    if (linkpath != NULL) {
+        ret = UserPathCopy(linkpath, &pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    if (dirfd != AT_FDCWD) {
+        /* Process fd convert to system global fd */
+        dirfd = GetAssociatedSystemFd(dirfd);
+    }
+
+    ret = symlinkat(target, dirfd, pathRet);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+OUT:
+    if (pathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    return ret;
+}
+
+ssize_t SysReadlinkat(int dirfd, const char *pathname, char *buf, size_t bufsize)
+{
+    ssize_t ret;
+    char *pathRet = NULL;
+
+    if (bufsize == 0) {
+        return -EINVAL;
+    }
+
+    if (pathname != NULL) {
+        ret = UserPathCopy(pathname, &pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    if (dirfd != AT_FDCWD) {
+        /* Process fd convert to system global fd */
+        dirfd = GetAssociatedSystemFd(dirfd);
+    }
+
+    if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, bufsize)) {
+        ret = -EFAULT;
+        goto OUT;
+    }
+
+    ret = readlinkat(dirfd, pathRet, buf, bufsize);
     if (ret < 0) {
         ret = -get_errno();
     }
