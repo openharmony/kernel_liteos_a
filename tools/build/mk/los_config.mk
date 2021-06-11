@@ -229,10 +229,8 @@ ifeq ($(LOSCFG_LIB_LIBC), y)
     LITEOS_BASELIB  += -lc -lsec
     LITEOS_LIBC_INCLUDE   += \
         $(LITEOS_LIBSCREW_INCLUDE) \
-        -I $(LITEOSTOPDIR)/lib/libc/musl/include \
-        -I $(LITEOSTOPDIR)/lib/libc/musl/obj/include \
-        -I $(LITEOSTOPDIR)/lib/libc/musl/arch/arm \
-        -I $(LITEOSTOPDIR)/lib/libc/musl/arch/generic \
+        -I $(LITEOSTOPDIR)/lib/libc/include \
+        -I $(LITEOSTHIRDPARTY)/musl/porting/liteos_a/kernel/include \
         -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
 endif
 
@@ -585,7 +583,6 @@ LITEOS_CXXINCLUDE += \
     -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/ext \
     -I $(LITEOS_COMPILER_CXX_PATH)/c++/$(VERSION_NUM)/backward \
     -I $(LITEOSTOPDIR)/compat/posix/include \
-    -I $(LITEOSTOPDIR)/lib/libc/musl/include \
     -I $(LITEOSTOPDIR)/fs/include \
     -I $(LITEOSTOPDIR)/kernel/include \
     $(LITEOS_LIBC_INCLUDE)
