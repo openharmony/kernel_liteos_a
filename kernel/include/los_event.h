@@ -149,13 +149,13 @@ extern "C" {
 
 /**
  * @ingroup los_event
- * Event reading error code: should not be distory.
+ * Event reading error code: should not be destroy.
  *
  * Value: 0x02001c08
  *
  * Solution: Check whether the event list is not empty.
  */
-#define LOS_ERRNO_EVENT_SHOULD_NOT_DESTORY  LOS_ERRNO_OS_ERROR(LOS_MOD_EVENT, 0x08)
+#define LOS_ERRNO_EVENT_SHOULD_NOT_DESTROY  LOS_ERRNO_OS_ERROR(LOS_MOD_EVENT, 0x08)
 
 /**
  * @ingroup los_event
