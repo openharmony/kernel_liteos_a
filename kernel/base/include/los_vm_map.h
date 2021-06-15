@@ -286,7 +286,7 @@ STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region);
 STATUS_T LOS_VmSpaceFree(LosVmSpace *space);
 STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, size_t len, UINT32 flags);
 BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb);
-LosVmSpace *OsCreateUserVmSapce(VOID);
+LosVmSpace *OsCreateUserVmSpace(VOID);
 STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace);
 STATUS_T LOS_UserSpaceVmAlloc(LosVmSpace *space, size_t size, VOID **ptr, UINT8 align_log2, UINT32 regionFlags);
 LosMux *OsGVmSpaceMuxGet(VOID);

@@ -204,7 +204,7 @@ BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb)
     return OsVmSpaceInitCommon(vmSpace, virtTtb);
 }
 
-LosVmSpace *OsCreateUserVmSapce(VOID)
+LosVmSpace *OsCreateUserVmSpace(VOID)
 {
     BOOL retVal = FALSE;
 
