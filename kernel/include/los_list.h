@@ -112,7 +112,8 @@ LITE_OS_SEC_ALW_INLINE STATIC INLINE VOID LOS_ListInit(LOS_DL_LIST *list)
  * <li>None.</li>
  * </ul>
  *
- * @param object  [IN] Node in the doubly linked list.
+ * @param list  [IN] Doubly linked list.
+ * @param node  [IN] The node to be tested if the end of the list.
  *
  * @retval None.
  * @par Dependency:
