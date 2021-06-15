@@ -49,7 +49,7 @@
 #include "los_process_pri.h"
 #include "los_vm_dump.h"
 #ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
+#include "fs/file.h"
 #endif
 #include "los_sched_pri.h"
 

@@ -34,7 +34,6 @@
 #include "unistd.h"
 #include "fs/fd_table.h"
 #include "fs/file.h"
-#include "fs/fs.h"
 #include "fs/fs_operation.h"
 #include "sys/mount.h"
 #include "los_task_pri.h"
@@ -51,10 +50,10 @@
 #include "los_vm_map.h"
 #include "los_memory.h"
 #include "los_strncpy_from_user.h"
-#include "fs_other.h"
-#include "fs_file.h"
+#include "fs/file.h"
 #include "capability_type.h"
 #include "capability_api.h"
+#include "sys/statfs.h"
 
 #define HIGH_SHIFT_BIT 32
 

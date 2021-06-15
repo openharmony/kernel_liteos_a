@@ -36,6 +36,8 @@
 #include <unistd.h>
 
 #include "fs/dirent_fs.h"
+#include "fs/mount.h"
+#include "fs/fs.h"
 #include "los_tables.h"
 #include "internal.h"
 

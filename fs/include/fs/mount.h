@@ -31,11 +31,12 @@
 #ifndef _MOUNT_H_
 #define _MOUNT_H_
 
-#include "los_mux.h"
-#include "fs/vfs_util.h"
-#include "fs/vnode.h"
 #include <sys/stat.h>
-#include <limits.h>
+#include <sys/statfs.h>
+#include "vnode.h"
+
+#define MS_RDONLY 1
+#define MS_NOSYNC 2
 
 struct MountOps;
 
@@ -60,6 +61,11 @@ struct MountOps {
     int (*Statfs)(struct Mount *mount, struct statfs *sbp);
 };
 
+typedef int (*foreach_mountpoint_t)(const char *mountpoint,
+                                    struct statfs *statbuf,
+                                    void *arg);
+
 struct Mount* MountAlloc(struct Vnode* vnode, struct MountOps* mop);
 LIST_HEAD* GetMountList(void);
+int foreach_mountpoint(foreach_mountpoint_t handler, void *arg);
 #endif

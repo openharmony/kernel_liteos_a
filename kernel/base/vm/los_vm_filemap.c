@@ -41,6 +41,7 @@
 #include "los_vm_fault.h"
 #include "los_process_pri.h"
 #include "los_vm_lock.h"
+#include "vnode.h"
 
 #ifndef UNUSED
 #define UNUSED(x)          (VOID)x

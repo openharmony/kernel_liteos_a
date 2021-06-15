@@ -33,7 +33,7 @@
 #define _FATFS_H
 
 #include "ff.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "disk.h"
 #include "unistd.h"
 #include "string.h"
@@ -106,6 +106,12 @@ extern "C" {
 #else
 #define FDEBUG(...)
 #endif
+
+/* Format options (3rd argument of format) */
+#define FMT_FAT      0x01
+#define FMT_FAT32    0x02
+#define FMT_ANY      0x07
+#define FMT_ERASE    0x08
 
 int fatfs_2_vfs(int result);
 int fatfs_lookup(struct Vnode *parent, const char *name, int len, struct Vnode **vpp);

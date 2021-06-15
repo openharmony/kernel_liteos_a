@@ -32,13 +32,11 @@
 #ifndef _LOS_SYSCALL_H
 #define _LOS_SYSCALL_H
 
+#include <sys/statfs.h>
 #include "los_typedef.h"
 #include "los_task.h"
 #include "los_mux.h"
 #include "los_signal.h"
-#ifdef LOSCFG_FS_VFS
-#include "fs/fs.h"
-#endif
 #include "syscall.h"
 #include "sysinfo.h"
 #include "time_posix.h"
@@ -60,10 +58,11 @@
 #ifdef LOSCFG_FS_VFS
 #include "sys/socket.h"
 #include "dirent.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #endif
 #include <sys/wait.h>
 #include "sys/resource.h"
+#include "vnode.h"
 
 /* process */
 extern unsigned int SysGetGroupId(void);

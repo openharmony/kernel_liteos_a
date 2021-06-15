@@ -29,7 +29,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "fs_other.h"
 #include "errno.h"
 #include "stdlib.h"
 #include "string.h"
@@ -39,12 +38,12 @@
 #include "sys/stat.h"
 #include "sys/prctl.h"
 #include "fs/fd_table.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "linux/spinlock.h"
 #include "los_process_pri.h"
 #include "los_task_pri.h"
 #include "capability_api.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 
 #define MAX_DIR_ENT 1024
 int fstat(int fd, struct stat *buf)

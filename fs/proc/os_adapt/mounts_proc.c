@@ -35,7 +35,7 @@
 #include <sys/mount.h>
 #include <sys/statfs.h>
 
-#include "fs/file.h"
+#include "fs/mount.h"
 #include "internal.h"
 
 static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)

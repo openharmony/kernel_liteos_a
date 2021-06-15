@@ -34,7 +34,7 @@
 #include "errno.h"
 #include "unistd.h"
 #include "los_vm_syscall.h"
-#include "fs_file.h"
+#include "fs/file.h"
 
 
 void *SysMmap(void *addr, size_t size, int prot, int flags, int fd, size_t offset)

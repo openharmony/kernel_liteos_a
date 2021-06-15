@@ -40,6 +40,7 @@
 #ifdef LOSCFG_FS_PROC
 #include "linux/spinlock.h"
 #include "asm/atomic.h"
+#include "vnode.h"
 #include "fs/file.h"
 #include "los_seq_buf.h"
 

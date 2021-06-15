@@ -36,10 +36,8 @@
 #endif
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
+#include "fs/driver.h"
 #endif
-
-#include "fs/path_cache.h"
-
 
 STATIC volatile UINT32 g_serialType = 0;
 STATIC struct file g_serialFilep;

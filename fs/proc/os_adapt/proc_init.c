@@ -38,6 +38,9 @@
 
 #ifdef LOSCFG_FS_PROC
 
+#define PROCFS_MOUNT_POINT  "/proc"
+#define PROCFS_MOUNT_POINT_SIZE (sizeof(PROCFS_MOUNT_POINT) - 1)
+
 void ProcFsInit(void)
 {
     int ret;

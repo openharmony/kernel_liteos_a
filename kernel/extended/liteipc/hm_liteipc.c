@@ -31,8 +31,8 @@
 
 #include "hm_liteipc.h"
 #include "linux/kernel.h"
-#include "fs/fs.h"
-#include "fs_file.h"
+#include "fs/file.h"
+#include "fs/driver.h"
 #include "los_init.h"
 #include "los_mp.h"
 #include "los_mux.h"

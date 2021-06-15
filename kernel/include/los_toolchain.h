@@ -47,6 +47,13 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#ifndef UNUSED
+#define UNUSED(var)    \
+        do {           \
+            (void)var; \
+        } while (0)
+#endif
+
 /* for ARM Compiler */
 #if defined ( __CC_ARM )
 #ifndef ASM

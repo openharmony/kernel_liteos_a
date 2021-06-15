@@ -32,15 +32,13 @@
 #include "fatfs.h"
 #ifdef LOSCFG_FS_FAT
 #include "ff.h"
-#include "fs/vfs_util.h"
 #include "disk_pri.h"
 #include "diskio.h"
 #include "fs/fs.h"
 #include "fs/dirent_fs.h"
-#include "fs_other.h"
 #include "fs/mount.h"
-#include "fs/vnode.h"
-#include "fs/path_cache.h"
+#include "vnode.h"
+#include "path_cache.h"
 #ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
 #include "virpartff.h"
 #include "errcode_fat.h"
@@ -55,6 +53,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "los_hash.h"
 
 
 struct VnodeOps fatfs_vops; /* forward define */
@@ -214,10 +213,10 @@ int fatfs_hash_cmp(struct Vnode *vp, void *arg)
 
 static DWORD fatfs_hash(QWORD sect, DWORD dptr, DWORD sclst)
 {
-    DWORD hash = FNV1_32_INIT;
-    hash = fnv_32_buf(&sect, sizeof(QWORD), hash);
-    hash = fnv_32_buf(&dptr, sizeof(DWORD), hash);
-    hash = fnv_32_buf(&sclst, sizeof(DWORD), hash);
+    DWORD hash = FNV1_32A_INIT;
+    hash = LOS_HashFNV32aBuf(&sect, sizeof(QWORD), hash);
+    hash = LOS_HashFNV32aBuf(&dptr, sizeof(DWORD), hash);
+    hash = LOS_HashFNV32aBuf(&sclst, sizeof(DWORD), hash);
 
     return hash;
 }

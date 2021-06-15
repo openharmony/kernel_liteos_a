@@ -29,8 +29,16 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _FS_POLL_PRI_H
-#define _FS_POLL_PRI_H
+#ifndef __FS_DRIVER_DRIVER_H
+#define __FS_DRIVER_DRIVER_H
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
+#include "vfs_config.h"
+#include "fs/file.h"
+
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -38,12 +46,59 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-extern void poll_wait(struct file *filp, wait_queue_head_t *wait_address, poll_table *p);
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+/****************************************************************************
+* Global Variables
+****************************************************************************/
+
+/**
+ * @ingroup  disk
+ * @brief Set usb mode.
+ *
+ * @par Description:
+ * Set the corresponding bit of g_usbMode as usb host mode.
+ *
+ * @attention
+ * <ul>
+ * <li>diskId should be [0,SYS_MAX_DISK)</li>
+ * </ul>
+ *
+ * @param  diskId      [IN]  Type # unsigned int  disk id.
+ *
+ * @par Dependency:
+ * <ul><li>driver.h</li></ul>
+ * @see OsClearUsbStatus
+ *
+ */
+VOID OsSetUsbStatus(UINT32 diskId);
+
+/**
+ * @ingroup  disk
+ * @brief Set usb mode.
+ *
+ * @par Description:
+ * Clear the corresponding bit of g_usbMode as usb host mode.
+ *
+ * @attention
+ * <ul>
+ * <li>diskId should be [0,SYS_MAX_DISK)</li>
+ * </ul>
+ *
+ * @param  diskId      [IN]  Type # unsigned int  disk id.
+ *
+ * @par Dependency:
+ * <ul><li>driver.h</li></ul>
+ * @see OsSetUsbStatus
+ *
+ */
+VOID OsClearUsbStatus(UINT32 diskId);
 
 #ifdef __cplusplus
 #if __cplusplus
 }
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-#endif /* _FS_POLL_PRI_H */
+#endif /* __FS_DRIVER_DRIVER_H */

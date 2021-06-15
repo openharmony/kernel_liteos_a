@@ -47,10 +47,8 @@
 #include "los_exc_pri.h"
 #include "los_process_pri.h"
 #include "los_sched_pri.h"
-#include "fs/path_cache.h"
-#include "fs/vfs_util.h"
 #include "user_copy.h"
-#include "fs/vnode.h"
+#include "fs/driver.h"
 
 #define EACH_CHAR 1
 #define UART_IOC_MAGIC   'u'

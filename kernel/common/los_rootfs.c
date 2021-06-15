@@ -42,7 +42,7 @@
 #include "los_rootfs.h"
 #endif
 #include "mtd_list.h"
-#include "fs/path_cache.h"
+#include "fs/driver.h"
 
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
 #include "mtd_partition.h"

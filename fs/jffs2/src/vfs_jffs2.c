@@ -46,7 +46,8 @@
 
 #include "fs/dirent_fs.h"
 #include "fs/fs.h"
-#include "fs/vnode.h"
+#include "fs/driver.h"
+#include "vnode.h"
 #include "mtd_list.h"
 #include "mtd_partition.h"
 #include "jffs2_hash.h"
