@@ -582,7 +582,7 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, c
 
 #ifdef LOSCFG_KERNEL_VM
     if (OsProcessIsUserMode(processCB)) {
-        processCB->vmSpace = OsCreateUserVmSapce();
+        processCB->vmSpace = OsCreateUserVmSpace();
         if (processCB->vmSpace == NULL) {
             processCB->processStatus = OS_PROCESS_FLAG_UNUSED;
             return LOS_ENOMEM;
