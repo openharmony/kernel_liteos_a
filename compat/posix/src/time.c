@@ -459,8 +459,9 @@ static int PthreadGetCputime(clockid_t clockID, struct timespec *ats)
     UINT32 tid = ((UINT32) ~((clockID) >> CPUCLOCK_ID_OFFSET));
 
     if (OS_TID_CHECK_INVALID(tid)) {
-        return -ESRCH;
+        return -EINVAL;
     }
+
     LosTaskCB *task = OsGetTaskCB(tid);
 
     if (OsCurrTaskGet()->processID != task->processID) {
