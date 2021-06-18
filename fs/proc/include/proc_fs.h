@@ -89,6 +89,8 @@ struct ProcFileOperations {
 };
 
 struct ProcDirEntry {
+    uint uid;
+    uint gid;
     mode_t mode;
     int flags;
     const struct ProcFileOperations *procFileOps;
