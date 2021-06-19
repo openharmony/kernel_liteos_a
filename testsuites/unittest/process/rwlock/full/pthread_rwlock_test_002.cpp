@@ -100,6 +100,7 @@ static void *ThreadReadFunc(void *a)
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     while (loop > 0) {
+        SLEEP_AND_YIELD(1);
         ret = pthread_rwlock_rdlock(&g_rwlockLock);
         ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
         g_isReading[threadCount] = 1;
@@ -139,6 +140,7 @@ static void *ThreadWriteFunc1(void *a)
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     while (CheckReadThreadExit()) {
+        SLEEP_AND_YIELD(1);
         ret = pthread_rwlock_wrlock(&g_rwlockLock);
         ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
@@ -180,6 +182,7 @@ static void *ThreadWriteFunc(void *a)
     int threadCount = *((int *)a);
 
     while (CheckReadThreadExit() || CheckWriteThreadExit()) {
+        SLEEP_AND_YIELD(1);
         ret = pthread_rwlock_wrlock(&g_rwlockLock);
         ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
@@ -247,20 +250,20 @@ static int PthreadRwlockTest(void)
         count = 1;
         while (count < WRITE_THREAD_COUNT) {
             g_writePar[count] = count;
-            ret = pthread_create(&newPthread, &a, ThreadWriteFunc1, &g_writePar[count]);
-            ICUNIT_ASSERT_EQUAL(ret, 0, ret);
             g_isWriting[count] = 0;
             g_isWriteExit[count] = 0;
+            ret = pthread_create(&newPthread, &a, ThreadWriteFunc1, &g_writePar[count]);
+            ICUNIT_ASSERT_EQUAL(ret, 0, ret);
             count++;
         }
 
         count = 0;
         while (count < READ_THREAD_COUNT) {
             g_readPar[count] = count;
-            ret = pthread_create(&newPthread, &a, ThreadReadFunc, &g_readPar[count]);
-            ICUNIT_ASSERT_EQUAL(ret, 0, ret);
             g_isReading[count] = 0;
             g_isReadExit[count] = 0;
+            ret = pthread_create(&newPthread, &a, ThreadReadFunc, &g_readPar[count]);
+            ICUNIT_ASSERT_EQUAL(ret, 0, ret);
             count++;
         }
 
