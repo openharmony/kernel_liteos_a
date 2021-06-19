@@ -35,7 +35,7 @@
 #include "unistd.h"
 #include "sys/mount.h"
 #include "linux/spinlock.h"
-#include "fs/path_cache.h"
+#include "path_cache.h"
 
 los_disk g_sysDisk[SYS_MAX_DISK];
 los_part g_sysPart[SYS_MAX_PART];

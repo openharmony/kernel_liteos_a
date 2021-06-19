@@ -31,17 +31,16 @@
 
 #include "disk_pri.h"
 #include "fcntl.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "fs/fs_operation.h"
 #include "linux/spinlock.h"
 #include "los_init.h"
 #include "los_printf.h"
 #include "fs/mount.h"
-#include "fs/path_cache.h"
+#include "path_cache.h"
 #include "sys/statfs.h"
 #include "unistd.h"
-#include "fs/vfs_util.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 
 void los_vfs_init(void)
 {

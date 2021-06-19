@@ -36,7 +36,7 @@
 #include "mtd_list.h"
 #include "los_config.h"
 #include "los_mux.h"
-
+#include "fs/driver.h"
 #include "mtd_common.h"
 
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7

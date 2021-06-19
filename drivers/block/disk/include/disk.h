@@ -37,7 +37,7 @@
 #ifndef _DISK_H
 #define _DISK_H
 
-#include "fs/fs.h"
+#include "fs/driver.h"
 #include "los_base.h"
 #include "pthread.h"
 

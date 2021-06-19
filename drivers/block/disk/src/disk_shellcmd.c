@@ -29,31 +29,48 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-/****************************************************************************
-* Included Files
-****************************************************************************/
-
-#include "vfs_config.h"
-
-#include "sys/statfs.h"
-#include "string.h"
-#include "sched.h"
-
-#include "errno.h"
+#include "stdio.h"
 #include "stdlib.h"
-/****************************************************************************
-* Private Functions
-****************************************************************************/
+#include "los_config.h"
+#ifdef LOSCFG_SHELL_CMD_DEBUG
+#include "disk.h"
+#include "shcmd.h"
+#include "shell.h"
+#include "path_cache.h"
 
-/****************************************************************************
-* Name: statpseudo
-****************************************************************************/
-
-#ifdef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-int virstatfs(const char *path,  struct statfs *buf)
+INT32 osShellCmdPartInfo(INT32 argc, const CHAR **argv)
 {
-  //currently not implemented
-  return LOS_OK;
+    struct Vnode *node = NULL;
+    los_part *part = NULL;
+    const CHAR *str = "/dev";
+    int ret;
+
+    if ((argc != 1) || (strncmp(argv[0], str, strlen(str)) != 0)) {
+        PRINTK("Usage  :\n");
+        PRINTK("        partinfo <dev_vnodename>\n");
+        PRINTK("        dev_vnodename : the name of dev\n");
+        PRINTK("Example:\n");
+        PRINTK("        partinfo /dev/sdap0 \n");
+
+        set_errno(EINVAL);
+        return -LOS_NOK;
+    }
+    VnodeHold();
+    ret = VnodeLookup(argv[0], &node, 0);
+    if (ret < 0) {
+        PRINT_ERR("no part found\n");
+        VnodeDrop();
+        set_errno(ENOENT);
+        return -LOS_NOK;
+    }
+
+    part = los_part_find(node);
+    VnodeDrop();
+    show_part(part);
+
+    return LOS_OK;
 }
+
+SHELLCMD_ENTRY(partinfo_shellcmd, CMD_TYPE_EX, "partinfo", XARGS, (CmdCallBackFunc)osShellCmdPartInfo);
+
 #endif

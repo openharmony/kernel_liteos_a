@@ -28,12 +28,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "fs/path_cache.h"
+#include "path_cache.h"
 #include "los_config.h"
+#include "los_hash.h"
 #include "stdlib.h"
 #include "limits.h"
-#include "fs/vfs_util.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 
 #define PATH_CACHE_HASH_MASK (LOSCFG_MAX_PATH_CACHE_SIZE - 1)
 LIST_HEAD g_pathCacheHashEntrys[LOSCFG_MAX_PATH_CACHE_SIZE];
@@ -81,8 +81,8 @@ void PathCacheMemoryDump(void)
 static uint32_t NameHash(const char *name, int len, struct Vnode *dvp)
 {
     uint32_t hash;
-    hash = fnv_32_buf(name, len, FNV1_32_INIT);
-    hash = fnv_32_buf(&dvp, sizeof(struct Vnode *), hash);
+    hash = LOS_HashFNV32aBuf(name, len, FNV1_32A_INIT);
+    hash = LOS_HashFNV32aBuf(&dvp, sizeof(struct Vnode *), hash);
     return hash;
 }
 
@@ -137,29 +137,6 @@ int PathCacheFree(struct PathCache *nc)
     LOS_ListDelete(&nc->parentEntry);
     LOS_ListDelete(&nc->childEntry);
     free(nc);
-
-    return LOS_OK;
-}
-
-/* alloc an empty node and awlays add it to path_cache.cache */
-int PathCacheAllocDummy(struct Vnode *parent, struct Vnode **vnode, const char *name, uint8_t len)
-{
-    int ret;
-    struct PathCache *dt = NULL;
-
-    ret = VnodeAlloc(NULL, vnode);
-    if (ret != LOS_OK) {
-        PRINT_ERR("pathCache alloc vnode %s failed\n", name);
-        return -ENOENT;
-    }
-
-    dt = PathCacheAlloc(parent, *vnode, name, len);
-    if (dt == NULL) {
-        PRINT_ERR("pathCache alloc pathCache %s failed\n", name);
-        VnodeFree(*vnode);
-        *vnode = NULL;
-        return -ENOENT;
-    }
 
     return LOS_OK;
 }

@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,33 +28,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FS_FILE_H
-#define FS_FILE_H
-
-#define MIN_START_FD 3 // 0,1,2 are used for stdin,stdout,stderr respectively
-
-int AllocProcessFd(void);
-
-int AllocLowestProcessFd(int minFd);
-
-int AllocSpecifiedProcessFd(int procFd);
-
-int AllocAndAssocProcessFd(int sysFd, int minFd);
-
-int AllocAndAssocSystemFd(int procFd, int minFd);
-
-void AssociateSystemFd(int procFd, int sysFd);
-
-int DisassociateProcessFd(int procFd);
-
-int GetAssociatedSystemFd(int procFd);
-
-int CheckProcessFd(int procFd);
-
-void FreeProcessFd(int procFd);
-
-int CopyFdToProc(int fd, unsigned int targetPid);
-
-int CloseProcFd(int fd, unsigned int targetPid);
-
+#ifndef _FS_POLL_PRI_H_
+#define _FS_POLL_PRI_H_
+/* empty file for hdf compatibility should remove later */
 #endif

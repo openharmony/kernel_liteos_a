@@ -29,10 +29,9 @@
  */
 
 #include "los_mux.h"
-#include "fs/vfs_util.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 #include "fs/dirent_fs.h"
-#include "fs_other.h"
+#include "path_cache.h"
 
 LIST_HEAD g_vnodeFreeList;              /* free vnodes list */
 LIST_HEAD g_vnodeVirtualList;           /* dev vnodes list */
@@ -183,10 +182,17 @@ int VnodeFree(struct Vnode *vnode)
         vnode->vop->Reclaim(vnode);
     }
 
-    memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
-    LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);
-
-    g_freeVnodeSize++;
+    if (vnode->vop == &g_devfsOps) {
+        /* for dev vnode, just free it */
+        free(vnode->data);
+        free(vnode);
+        g_totalVnodeSize--;
+    } else {
+        /* for normal vnode, reclaim it to g_VnodeFreeList */
+        memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
+        LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);
+        g_freeVnodeSize++;
+    }
     VnodeDrop();
 
     return LOS_OK;
@@ -526,7 +532,7 @@ int VnodeDevInit()
     struct Vnode *devNode = NULL;
     struct Mount *devMount = NULL;
 
-    int retval = VnodeLookup("/dev", &devNode, V_CREATE | V_CACHE | V_DUMMY);
+    int retval = VnodeLookup("/dev", &devNode, V_CREATE | V_DUMMY);
     if (retval != LOS_OK) {
         PRINT_ERR("VnodeDevInit failed error %d\n", retval);
         return retval;
@@ -618,29 +624,4 @@ void VnodeMemoryDump(void)
 
     PRINTK("Vnode number = %d\n", vnodeCount);
     PRINTK("Vnode memory size = %d(B)\n", vnodeCount * sizeof(struct Vnode));
-}
-
-int VnodeDestory(struct Vnode *vnode)
-{
-    if (vnode == NULL || vnode->vop != &g_devfsOps) {
-        /* destory only support dev vnode */
-        return -EINVAL;
-    }
-
-    VnodeHold();
-    if (vnode->useCount > 0) {
-        VnodeDrop();
-        return -EBUSY;
-    }
-
-    VnodePathCacheFree(vnode);
-    LOS_ListDelete(&(vnode->hashEntry));
-    LOS_ListDelete(&vnode->actFreeEntry);
-
-    free(vnode->data);
-    free(vnode);
-    g_totalVnodeSize--;
-    VnodeDrop();
-
-    return LOS_OK;
 }

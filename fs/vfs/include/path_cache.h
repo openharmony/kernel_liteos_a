@@ -33,7 +33,7 @@
 
 #include "los_list.h"
 #include "fs/mount.h"
-#include "fs/vnode.h"
+#include "vnode.h"
 
 struct PathCache {
     struct Vnode *parentVnode;    /* vnode points to the cache */
@@ -48,7 +48,6 @@ struct PathCache {
 int PathCacheInit(void);
 int PathCacheFree(struct PathCache *cache);
 struct PathCache *PathCacheAlloc(struct Vnode *parent, struct Vnode *vnode, const char *name, uint8_t len);
-int PathCacheAllocDummy(struct Vnode *parent, struct Vnode **vnode, const char *name, uint8_t len);
 int PathCacheLookup(struct Vnode *parent, const char *name, int len, struct Vnode **vnode);
 void VnodePathCacheFree(struct Vnode *vnode);
 void PathCacheMemoryDump(void);

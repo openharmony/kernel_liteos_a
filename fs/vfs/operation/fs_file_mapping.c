@@ -30,7 +30,7 @@
  */
 
 #include "fs/file.h"
-#include "fs/fs.h"
+#include "fs/file.h"
 #include "fs/fs_operation.h"
 #include "unistd.h"
 #include "los_mux.h"

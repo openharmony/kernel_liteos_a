@@ -36,11 +36,9 @@
 
 #include "los_typedef.h"
 #include "shell.h"
-#include "fs/fs.h"
 #include "sys/stat.h"
 #include "stdlib.h"
 #include "unistd.h"
-#include "fs_other.h"
 #include "fcntl.h"
 #include "sys/statfs.h"
 #include "stdio.h"
