@@ -576,7 +576,7 @@ int fatfs_open(struct file *filep)
     ret = lock_fs(fs);
     if (ret == FALSE) {
         ret = EBUSY;
-        goto ERROR_EXIT;
+        goto ERROR_FREE;
     }
 
     fp->dir_sect = dp->sect;
@@ -595,7 +595,7 @@ int fatfs_open(struct file *filep)
     fp->buf = (BYTE*) ff_memalloc(SS(fs));
     if (fp->buf == NULL) {
         ret = ENOMEM;
-        goto ERROR_FREE;
+        goto ERROR_UNLOCK;
     }
     LOS_ListAdd(&finfo->fp_list, &fp->fp_entry);
     unlock_fs(fs, FR_OK);
@@ -603,8 +603,9 @@ int fatfs_open(struct file *filep)
     filep->f_priv = fp;
     return fatfs_sync(vp->originMount->mountFlags, fs);
 
-ERROR_FREE:
+ERROR_UNLOCK:
     unlock_fs(fs, FR_OK);
+ERROR_FREE:
     free(fp);
 ERROR_EXIT:
     return -ret;
