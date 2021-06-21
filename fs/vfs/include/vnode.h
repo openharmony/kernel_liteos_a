@@ -176,8 +176,5 @@ void VnodeMemoryDump(void);
 mode_t GetUmask(void);
 int VfsPermissionCheck(uint fuid, uint fgid, mode_t fileMode, int accMode);
 int VfsVnodePermissionCheck(const struct Vnode *node, int accMode);
-LIST_HEAD* GetVnodeFreeList(void);
-LIST_HEAD* GetVnodeActiveList(void);
-LIST_HEAD* GetVnodeVirtualList(void);
 
 #endif /* !_VNODE_H_ */

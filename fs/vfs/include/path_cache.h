@@ -42,9 +42,6 @@ struct PathCache {
     LIST_ENTRY childEntry;        /* list entry for cache list in the child vnode */
     LIST_ENTRY hashEntry;         /* list entry for buckets in the hash table */
     uint8_t nameLen;              /* length of path component */
-#ifdef LOSCFG_DEBUG_VERSION
-    int hit;                      /* cache hit count*/
-#endif
     char name[0];                 /* path component name */
 };
 
@@ -55,9 +52,5 @@ int PathCacheLookup(struct Vnode *parent, const char *name, int len, struct Vnod
 void VnodePathCacheFree(struct Vnode *vnode);
 void PathCacheMemoryDump(void);
 void PathCacheDump(void);
-LIST_HEAD* GetPathCacheList(void);
-#ifdef LOSCFG_DEBUG_VERSION
-void ResetPathCacheHitInfo(int *hit, int *try);
-#endif
 
 #endif /* _PATH_CACHE_H */
