@@ -293,12 +293,12 @@ static FRESULT init_cluster(DIR *dp_new, FATFS *fs, int type, const char *target
 #else
         PARENTFS(fs)->winsect = sect++;
         PARENTFS(fs)->wflag = 1;
+#endif
         result = sync_window(fs);
         if (result != FR_OK) {
             remove_chain(&(dp_new->obj), *clust, 0);
             return result;
         }
-#endif
         if (type == AM_LNK) {
             /* No need to clean the rest sectors of the cluster for symlink */
             break;
