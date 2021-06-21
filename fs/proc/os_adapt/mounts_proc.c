@@ -42,44 +42,38 @@ static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)
 {
     struct SeqBuf *seqBuf = (struct SeqBuf *)arg;
     char *type = NULL;
-    char *name = NULL;
 
     switch (statBuf->f_type) {
         case PROCFS_MAGIC:
             type = "proc";
-            name = "proc";
             break;
         case JFFS2_SUPER_MAGIC:
             type = "jffs2";
-            name = "jffs2";
             break;
         case NFS_SUPER_MAGIC:
             type = "nfs";
-            name = "nfs";
             break;
         case TMPFS_MAGIC:
             type = "tmpfs";
-            name = "tmpfs";
             break;
         case MSDOS_SUPER_MAGIC:
             type = "vfat";
-            name = "fat";
             break;
         case ZPFS_MAGIC:
             type = "zpfs";
-            name = "zpfs";
             break;
         default:
             return 0;
     }
 
-    (void)LosBufPrintf(seqBuf, "%s %s %s\n", name, mountPoint, type);
+    (void)LosBufPrintf(seqBuf, "%s\t%s\n", type, mountPoint);
 
     return 0;
 }
 
 static int MountsProcFill(struct SeqBuf *m, void *v)
 {
+    (void)LosBufPrintf(m, "%s\t%s\n", "Type", "MountPoint");
     foreach_mountpoint_t handler = ShowType;
     (void)foreach_mountpoint(handler, (void *)m);
 
