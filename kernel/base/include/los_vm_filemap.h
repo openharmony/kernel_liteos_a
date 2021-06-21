@@ -206,9 +206,6 @@ VOID OsMarkPageDirty(LosFilePage *fpage, LosVmMapRegion *region, int off, int le
 
 typedef struct ProcessCB LosProcessCB;
 VOID OsVmmFileRegionFree(struct file *filep, LosProcessCB *processCB);
-#ifdef LOSCFG_DEBUG_VERSION
-VOID ResetPageCacheHitInfo(int *try, int *hit);
-#endif
 #ifdef __cplusplus
 #if __cplusplus
 }

@@ -35,7 +35,7 @@
 
 LIST_HEAD g_vnodeFreeList;              /* free vnodes list */
 LIST_HEAD g_vnodeVirtualList;           /* dev vnodes list */
-LIST_HEAD g_vnodeActiveList;              /* inuse vnodes list */
+LIST_HEAD g_vnodeCurrList;              /* inuse vnodes list */
 static int g_freeVnodeSize = 0;         /* system free vnodes size */
 static int g_totalVnodeSize = 0;        /* total vnode size */
 
@@ -57,7 +57,7 @@ int VnodesInit(void)
 
     LOS_ListInit(&g_vnodeFreeList);
     LOS_ListInit(&g_vnodeVirtualList);
-    LOS_ListInit(&g_vnodeActiveList);
+    LOS_ListInit(&g_vnodeCurrList);
     retval = VnodeAlloc(NULL, &g_rootVnode);
     if (retval != LOS_OK) {
         PRINT_ERR("VnodeInit failed error %d\n", retval);
@@ -94,7 +94,7 @@ struct Vnode *VnodeReclaimLru(void)
     struct Vnode *nextItem = NULL;
     int releaseCount = 0;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &g_vnodeActiveList, struct Vnode, actFreeEntry) {
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
         if ((item->useCount > 0) ||
             (item->flag & VNODE_FLAG_MOUNT_ORIGIN) ||
             (item->flag & VNODE_FLAG_MOUNT_NEW)) {
@@ -152,7 +152,7 @@ int VnodeAlloc(struct VnodeOps *vop, struct Vnode **newVnode)
         LOS_ListAdd(&g_vnodeVirtualList, &(vnode->actFreeEntry));
         vnode->vop = &g_devfsOps;
     } else {
-        LOS_ListTailInsert(&g_vnodeActiveList, &(vnode->actFreeEntry));
+        LOS_ListTailInsert(&g_vnodeCurrList, &(vnode->actFreeEntry));
         vnode->vop = vop;
     }
     VnodeDrop();
@@ -204,7 +204,7 @@ int VnodeFreeAll(const struct Mount *mount)
     struct Vnode *nextVnode = NULL;
     int ret;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(vnode, nextVnode, &g_vnodeActiveList, struct Vnode, actFreeEntry) {
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(vnode, nextVnode, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
         if ((vnode->originMount == mount) && !(vnode->flag & VNODE_FLAG_MOUNT_NEW)) {
             ret = VnodeFree(vnode);
             if (ret != LOS_OK) {
@@ -220,7 +220,7 @@ BOOL VnodeInUseIter(const struct Mount *mount)
 {
     struct Vnode *vnode = NULL;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(vnode, &g_vnodeActiveList, struct Vnode, actFreeEntry) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(vnode, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
         if (vnode->originMount == mount) {
             if ((vnode->useCount > 0) || (vnode->flag & VNODE_FLAG_MOUNT_ORIGIN)) {
                 return TRUE;
@@ -294,7 +294,7 @@ static void RefreshLRU(struct Vnode *vnode)
         return;
     }
     LOS_ListDelete(&(vnode->actFreeEntry));
-    LOS_ListTailInsert(&g_vnodeActiveList, &(vnode->actFreeEntry));
+    LOS_ListTailInsert(&g_vnodeCurrList, &(vnode->actFreeEntry));
 }
 
 static int ProcessVirtualVnode(struct Vnode *parent, uint32_t flags, struct Vnode **vnode)
@@ -612,7 +612,7 @@ void VnodeMemoryDump(void)
     struct Vnode *nextItem = NULL;
     int vnodeCount = 0;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &g_vnodeActiveList, struct Vnode, actFreeEntry) {
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &g_vnodeCurrList, struct Vnode, actFreeEntry) {
         if ((item->useCount > 0) ||
             (item->flag & VNODE_FLAG_MOUNT_ORIGIN) ||
             (item->flag & VNODE_FLAG_MOUNT_NEW)) {
@@ -624,19 +624,4 @@ void VnodeMemoryDump(void)
 
     PRINTK("Vnode number = %d\n", vnodeCount);
     PRINTK("Vnode memory size = %d(B)\n", vnodeCount * sizeof(struct Vnode));
-}
-
-LIST_HEAD* GetVnodeFreeList()
-{
-    return &g_vnodeFreeList;
-}
-
-LIST_HEAD* GetVnodeVirtualList()
-{
-    return &g_vnodeVirtualList;
-}
-
-LIST_HEAD* GetVnodeActiveList()
-{
-    return &g_vnodeActiveList;
 }
