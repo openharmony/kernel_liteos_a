@@ -47,6 +47,24 @@
 #define UNUSED(x)          (VOID)x
 #endif
 
+#ifdef LOSCFG_DEBUG_VERSION
+static int g_totalPageCacheTry = 0;
+static int g_totalPageCacheHit = 0;
+#define TRACE_TRY_CACHE() do { g_totalPageCacheTry++; } while (0)
+#define TRACE_HIT_CACHE() do { g_totalPageCacheHit++; } while (0)
+
+VOID ResetPageCacheHitInfo(int *try, int *hit)
+{
+    *try = g_totalPageCacheTry;
+    *hit = g_totalPageCacheHit;
+    g_totalPageCacheHit = 0;
+    g_totalPageCacheTry = 0;
+}
+#else
+#define TRACE_TRY_CACHE()
+#define TRACE_HIT_CACHE()
+#endif
+
 #ifdef LOSCFG_KERNEL_VM
 
 STATIC VOID OsPageCacheAdd(LosFilePage *page, struct page_mapping *mapping, VM_OFFSET_T pgoff)
@@ -365,7 +383,9 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
     /* get or create a new cache node */
     LOS_SpinLockSave(&mapping->list_lock, &intSave);
     fpage = OsFindGetEntry(mapping, vmf->pgoff);
+    TRACE_TRY_CACHE();
     if (fpage != NULL) {
+        TRACE_HIT_CACHE();
         OsPageRefIncLocked(fpage);
     } else {
         fpage = OsPageCacheAlloc(mapping, vmf->pgoff);
