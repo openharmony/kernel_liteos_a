@@ -287,7 +287,8 @@ ifeq ($(LOSCFG_FS_VFS_BLOCK_DEVICE), y)
     LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/bch
 endif
     LIB_SUBDIRS       += fs/vfs drivers/mtd/multi_partition
-    LITEOS_VFS_INCLUDE   += -I $(LITEOSTOPDIR)/fs/include
+    LITEOS_VFS_INCLUDE   += -I $(LITEOSTOPDIR)/fs/include \
+                            -I $(LITEOSTOPDIR)/fs/vfs/include
     LITEOS_VFS_INCLUDE   += -I $(LITEOSTOPDIR)/fs/vfs/include/operation
     LITEOS_VFS_MTD_INCLUDE := -I $(LITEOSTOPDIR)/drivers/mtd/multi_partition/include
     LITEOS_VFS_DISK_INCLUDE := -I $(LITEOSTOPDIR)/drivers/block/disk/include
@@ -313,8 +314,7 @@ endif
 ifeq ($(LOSCFG_FS_FAT_CACHE), y)
     LITEOS_BASELIB  += -lbcache
     LIB_SUBDIRS     += fs/vfs/bcache
-    LITEOS_FAT_CACHE_INCLUDE += -I $(LITEOSTOPDIR)/fs/vfs/include/bcache \
-                                -I $(LITEOSTOPDIR)/fs/vfs/include
+    LITEOS_FAT_CACHE_INCLUDE += -I $(LITEOSTOPDIR)/fs/vfs/include/bcache
 endif
 
 
