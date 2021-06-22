@@ -63,6 +63,8 @@ extern void ProcMountsInit(void);
 
 extern void ProcUptimeInit(void);
 
+extern void ProcFsCacheInit(void);
+
 #ifdef __cplusplus
 #if __cplusplus
 }
