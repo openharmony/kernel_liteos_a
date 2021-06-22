@@ -162,6 +162,7 @@ UINT16 LOS_HighBitGet(UINT32 bitmap);
  * <li>None</li>
  * </ul>
  * @param *bitmap   [IN] The bitmap pointer.
+ * @param numBits   [IN] The number of bits that is used to limit the bitmap range.
  *
  * @retval int The bit index of the first zero bit from LSB.
  * @par Dependency:
