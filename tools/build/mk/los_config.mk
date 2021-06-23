@@ -365,13 +365,13 @@ ifeq ($(LOSCFG_NET_LWIP_SACK_2_1), y)
 
     LITEOS_CMACRO     +=  $(LWIP_MACROS)
 else ifeq ($(LOSCFG_NET_LWIP_SACK_2_0), y)
-    LWIPDIR := $(LITEOSTHIRDPARTY)/lwip_enhanced
+    LWIPDIR := $(LITEOSTHIRDPARTY)/lwip_enhanced/src
     LITEOS_BASELIB += -llwip
     LIB_SUBDIRS       += $(LWIPDIR)
     LITEOS_LWIP_SACK_INCLUDE   += \
         -I $(LWIPDIR)/include \
         -I $(LITEOSTOPDIR)/net/mac
-    LWIP_MACROS += -DLWIP_CONFIG_FILE=\"lwip/lwipopts.h\"
+    LWIP_MACROS += -DLWIP_CONFIG_FILE=\"lwip/lwipopts.h\" -DLWIP_LITEOS_A_COMPAT
     LITEOS_CMACRO     +=  $(LWIP_MACROS)
 else
     $(error "unknown lwip version")
