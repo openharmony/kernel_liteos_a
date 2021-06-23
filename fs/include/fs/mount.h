@@ -53,6 +53,7 @@ struct Mount {
     uint32_t hashseed;                 /* Random seed for vfshash */
     unsigned long mountFlags;          /* Flags for mount */
     char pathName[PATH_MAX];           /* path name of mount point */
+    char devName[PATH_MAX];            /* path name of dev point */
 };
 
 struct MountOps {
@@ -61,7 +62,8 @@ struct MountOps {
     int (*Statfs)(struct Mount *mount, struct statfs *sbp);
 };
 
-typedef int (*foreach_mountpoint_t)(const char *mountpoint,
+typedef int (*foreach_mountpoint_t)(const char *devpoint,
+                                    const char *mountpoint,
                                     struct statfs *statbuf,
                                     void *arg);
 

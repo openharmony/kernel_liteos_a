@@ -38,7 +38,7 @@
 #include "fs/mount.h"
 #include "internal.h"
 
-static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)
+static int ShowType(const char *devPoint, const char *mountPoint, struct statfs *statBuf, void *arg)
 {
     struct SeqBuf *seqBuf = (struct SeqBuf *)arg;
     char *type = NULL;
@@ -66,14 +66,17 @@ static int ShowType(const char *mountPoint, struct statfs *statBuf, void *arg)
             return 0;
     }
 
-    (void)LosBufPrintf(seqBuf, "%s\t%s\n", type, mountPoint);
+    if (strlen(devPoint) == 0) {
+        (void)LosBufPrintf(seqBuf, "%s %s %s %s %d %d\n", type, mountPoint, type, "()", 0, 0);
+    } else {
+        (void)LosBufPrintf(seqBuf, "%s %s %s %s %d %d\n", devPoint, mountPoint, type, "()", 0, 0);
+    }
 
     return 0;
 }
 
 static int MountsProcFill(struct SeqBuf *m, void *v)
 {
-    (void)LosBufPrintf(m, "%s\t%s\n", "Type", "MountPoint");
     foreach_mountpoint_t handler = ShowType;
     (void)foreach_mountpoint(handler, (void *)m);
 
