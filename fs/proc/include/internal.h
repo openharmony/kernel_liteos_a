@@ -45,6 +45,8 @@ extern "C" {
 extern spinlock_t procfsLock;
 extern bool procfsInit;
 
+void ProcPmInit(void);
+
 void ProcVmmInit(void);
 
 void ProcProcessInit(void);
