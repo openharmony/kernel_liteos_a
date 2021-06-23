@@ -82,6 +82,9 @@ ROOTFS_DIR = $(OUT)/rootfs
 ROOTFS_ZIP = $(OUT)/rootfs.zip
 VERSION =
 
+SYSROOT_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot
+export SYSROOT_PATH
+
 all: $(OUT) $(BUILD) $(LITEOS_TARGET) $(APPS)
 lib: $(OUT) $(BUILD) $(LITEOS_LIBS_TARGET)
 
@@ -165,11 +168,15 @@ $(LITEOS_TARGET): $(__LIBS)
 $(APPS): $(LITEOS_TARGET)
 	$(HIDE)$(MAKE) -C apps all
 
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+MULTILIB := $(patsubst $(shell $(CC) --target=$(LLVM_TARGET) $(ARCH_CFLAGS) -print-file-name=lib/$(LLVM_TARGET)/)%,%,$(dir $(shell $(CC) --target=$(LLVM_TARGET) $(ARCH_CFLAGS) -print-libgcc-file-name)))
+endif
+
 prepare:
 	$(HIDE)mkdir -p $(OUT)/musl
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-	$(HIDE)cp -f $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/usr/lib/$(LLVM_TARGET)/a7_softfp_neon-vfpv4/libc.so $(OUT)/musl
-	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/lib/$(LLVM_TARGET)/c++/a7_softfp_neon-vfpv4/libc++.so $(OUT)/musl
+	$(HIDE)cp -f $(SYSROOT_PATH)/usr/lib/$(LLVM_TARGET)/$(MULTILIB)/libc.so $(OUT)/musl
+	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/lib/$(LLVM_TARGET)/c++/$(MULTILIB)/libc++.so $(OUT)/musl
 else
 	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/target/usr/lib/libc.so $(OUT)/musl
 	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libstdc++.so.6 $(OUT)/musl
