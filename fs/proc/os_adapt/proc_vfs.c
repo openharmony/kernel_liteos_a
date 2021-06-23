@@ -60,11 +60,9 @@ static struct Vnode *EntryToVnode(struct ProcDirEntry *entry)
     node->fop = &g_procfsFops;
     node->data = entry;
     node->type = entry->type;
-    if (node->type == VNODE_TYPE_DIR) {
-        node->mode = S_IFDIR | PROCFS_DEFAULT_MODE;
-    } else {
-        node->mode = S_IFREG | PROCFS_DEFAULT_MODE;
-    }
+    node->uid = entry->uid;
+    node->gid = entry->gid;
+    node->mode = entry->mode;
     return node;
 }
 
