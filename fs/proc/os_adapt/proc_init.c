@@ -65,6 +65,7 @@ void ProcFsInit(void)
     ProcUptimeInit();
     ProcKernelTraceInit();
     ProcFsCacheInit();
+    ProcFdInit();
 }
 
 LOS_MODULE_INIT(ProcFsInit, LOS_INIT_LEVEL_KMOD_EXTENDED);

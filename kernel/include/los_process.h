@@ -34,6 +34,10 @@
 
 #include "los_task.h"
 
+#ifdef LOSCFG_FS_VFS
+#include "fs/fd_table.h"
+#endif
+
 #ifdef __cplusplus
 #if __cplusplus
     extern "C" {
@@ -67,6 +71,12 @@ extern BOOL LOS_CheckInGroups(UINT32 gid);
 #endif
 extern INT32 LOS_GetUserID(VOID);
 extern INT32 LOS_GetGroupID(VOID);
+
+extern INT32 LOS_GetUsedPIDList(UINT32 *pidList, INT32 pidMaxNum);
+
+#ifdef LOSCFG_FS_VFS
+struct fd_table_s *LOS_GetFdTable(UINT32 pid);
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
