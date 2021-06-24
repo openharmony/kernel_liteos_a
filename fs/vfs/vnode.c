@@ -640,3 +640,26 @@ LIST_HEAD* GetVnodeActiveList()
 {
     return &g_vnodeActiveList;
 }
+
+int VnodeClearCache()
+{
+    struct Vnode *item = NULL;
+    struct Vnode *nextItem = NULL;
+    int count = 0;
+
+    VnodeHold();
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, &g_vnodeActiveList, struct Vnode, actFreeEntry) {
+        if ((item->useCount > 0) ||
+            (item->flag & VNODE_FLAG_MOUNT_ORIGIN) ||
+            (item->flag & VNODE_FLAG_MOUNT_NEW)) {
+            continue;
+        }
+
+        if (VnodeFree(item) == LOS_OK) {
+            count++;
+        }
+    }
+    VnodeDrop();
+
+    return count;
+}

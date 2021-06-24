@@ -208,6 +208,7 @@ typedef struct ProcessCB LosProcessCB;
 VOID OsVmmFileRegionFree(struct file *filep, LosProcessCB *processCB);
 #ifdef LOSCFG_DEBUG_VERSION
 VOID ResetPageCacheHitInfo(int *try, int *hit);
+struct file_map* GetFileMappingList(void);
 #endif
 #ifdef __cplusplus
 #if __cplusplus
