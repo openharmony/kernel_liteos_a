@@ -106,7 +106,7 @@ struct disk_divide_info *StorageBlockGetEmmc(void);
 struct block_operations *StorageBlockGetMmcOps(void);
 char *StorageBlockGetEmmcNodeName(void *block);
 
-STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
+STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 userSize)
 {
     INT32 ret;
 
@@ -123,8 +123,8 @@ STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
         PRINT_ERR("Failed to add mmc root partition!\n");
         return NULL;
     } else {
-        UINT64 storageStartCnt = (rootAddr + rootSize) / EMMC_SEC_SIZE;
-        UINT64 storageSizeCnt = STORAGE_SIZE / EMMC_SEC_SIZE;
+        UINT64 storageStartCnt = userAddr / EMMC_SEC_SIZE;
+        UINT64 storageSizeCnt = userSize / EMMC_SEC_SIZE;
         UINT64 userdataStartCnt = storageStartCnt + storageSizeCnt;
         UINT64 userdataSizeCnt = g_emmcDisk->sector_count - userdataStartCnt;
         ret = add_mmc_partition(emmc, storageStartCnt, storageSizeCnt);
@@ -150,7 +150,7 @@ STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize)
 }
 #endif
 
-STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSize)
+STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 userSize)
 {
     const CHAR *rootDev = NULL;
 
@@ -162,7 +162,7 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
             PRINT_ERR("Failed to add spinor/spinand root partition!\n");
         } else {
             rootDev = FLASH_DEV_NAME;
-            ret = add_mtd_partition(FLASH_TYPE, (rootAddr + rootSize), STORAGE_SIZE, SECOND_MTD_PART_NUM);
+            ret = add_mtd_partition(FLASH_TYPE, userAddr, userSize, SECOND_MTD_PART_NUM);
             if (ret != LOS_OK) {
                 PRINT_ERR("Failed to add spinor/spinand storage partition!\n");
             }
@@ -189,7 +189,7 @@ STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSi
 
 #ifdef LOSCFG_STORAGE_EMMC
     if (strcmp(rootType, "emmc") == 0) {
-        rootDev = AddEmmcRootfsPart(rootAddr, rootSize);
+        rootDev = AddEmmcRootfsPart(rootAddr, rootSize, userAddr, userSize);
     } else
 #endif
 
@@ -341,12 +341,14 @@ ERROUT:
     return LOS_NOK;
 }
 
-STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize)
+STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize, INT32 *userAddr, INT32 *userSize)
 {
     const CHAR *rootName = "root=";
     const CHAR *fsName = "fstype=";
     const CHAR *rootAddrName = "rootaddr=";
     const CHAR *rootSizeName = "rootsize=";
+    const CHAR *userAddrName = "useraddr=";
+    const CHAR *userSizeName = "usersize=";
 
     if ((*rootType == NULL) && (strncmp(p, rootName, strlen(rootName)) == 0)) {
         *rootType = strdup(p + strlen(rootName));
@@ -378,10 +380,24 @@ STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootA
         }
     }
 
+    if (*userAddr < 0) {
+        if (MatchRootPos(p, userAddrName, userAddr) != LOS_OK) {
+            return LOS_NOK;
+        } else if (*userAddr >= 0) {
+            return LOS_OK;
+        }
+    }
+
+    if (*userSize < 0) {
+        if (MatchRootPos(p, userSizeName, userSize) != LOS_OK) {
+            return LOS_NOK;
+        }
+    }
+
     return LOS_OK;
 }
 
-STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize)
+STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize, INT32 *userAddr, INT32 *userSize)
 {
     CHAR *args = NULL;
     CHAR *p = NULL;
@@ -396,7 +412,7 @@ STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 
 #endif
     p = strsep(&args, " ");
     while (p != NULL) {
-        if (MatchRootInfo(p, rootType, fsType, rootAddr, rootSize) != LOS_OK) {
+        if (MatchRootInfo(p, rootType, fsType, rootAddr, rootSize, userAddr, userSize) != LOS_OK) {
             goto ERROUT;
         }
         p = strsep(&args, " ");
@@ -528,6 +544,8 @@ INT32 OsMountRootfs(VOID)
     INT32 err;
     INT32 rootAddr = -1;
     INT32 rootSize = -1;
+    INT32 userAddr = -1;
+    INT32 userSize = -1;
     CHAR *rootType = NULL;
     CHAR *fsType = NULL;
     const CHAR *rootDev = NULL;
@@ -538,15 +556,17 @@ INT32 OsMountRootfs(VOID)
     rootAddr = ROOTFS_FLASH_ADDR;
     rootSize = ROOTFS_FLASH_SIZE;
 #else
-    ret = GetRootType(&rootType, &fsType, &rootAddr, &rootSize);
+    ret = GetRootType(&rootType, &fsType, &rootAddr, &rootSize, &userAddr, &userSize);
     if (ret != LOS_OK) {
         return ret;
     }
     rootAddr = (rootAddr >= 0) ? rootAddr : ROOTFS_FLASH_ADDR;
     rootSize = (rootSize >= 0) ? rootSize : ROOTFS_FLASH_SIZE;
 #endif
+    userAddr = (userAddr >= 0) ? userAddr : rootAddr + rootSize;
+    userSize = (userSize >= 0) ? userSize : STORAGE_SIZE;
 
-    rootDev = GetDevName(rootType, rootAddr, rootSize);
+    rootDev = GetDevName(rootType, rootAddr, rootSize, userAddr, userSize);
     if (rootDev != NULL) {
         ret = OsMountRootfsAndUserfs(rootDev, fsType);
         if (ret != LOS_OK) {
