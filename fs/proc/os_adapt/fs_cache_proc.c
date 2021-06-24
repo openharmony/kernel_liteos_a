@@ -35,6 +35,11 @@
 #include "los_vm_filemap.h"
 
 #ifdef LOSCFG_DEBUG_VERSION
+
+#define CLEAR_ALL_CACHE  "clear all"
+#define CLEAR_PATH_CACHE "clear pathcache"
+#define CLEAR_PAGE_CACHE "clear pagecache"
+
 static char* VnodeTypeToStr(enum VnodeType type) {
     switch (type) {
         case VNODE_TYPE_UNKNOWN:
@@ -93,40 +98,39 @@ static int PathCacheListProcess(struct SeqBuf *buf)
     return count;
 }
 
-static void PageCacheEntryProcess(struct SeqBuf *buf, struct page_mapping *mapping)
+static int PageCacheEntryProcess(struct SeqBuf *buf, struct page_mapping *mapping)
 {
+    int total = 0;
     LosFilePage *fpage = NULL;
 
     if (mapping == NULL) {
         LosBufPrintf(buf, "null]\n");
-        return;
+        return total;
     }
 
     LOS_DL_LIST_FOR_EACH_ENTRY(fpage, &mapping->page_list, LosFilePage, node) {
         LosBufPrintf(buf, "%d,", fpage->pgoff);
+        total++;
     }
     LosBufPrintf(buf, "]\n");
-    return;
+    return total;
 }
 
-static void PageCacheMapProcess(struct SeqBuf *buf)
+static int PageCacheMapProcess(struct SeqBuf *buf)
 {
-    struct filelist *flist = &tg_filelist;
-    struct file *filep = NULL;
+    struct file_map *mapList = GetFileMappingList();
+    char *name = NULL;
+    struct file_map *curMap = NULL;
+    int total = 0;
 
-    (void)sem_wait(&flist->fl_sem);
-    for (int i = 3; i < CONFIG_NFILE_DESCRIPTORS; i++) {
-        if (!get_bit(i)) {
-            continue;
-        }
-        filep = &flist->fl_files[i];
-        if (filep == NULL) {
-            continue;
-        }
-        LosBufPrintf(buf, "[%d]%s:[", i, filep->f_path);
-        PageCacheEntryProcess(buf, filep->f_mapping);
+    (VOID)LOS_MuxLock(&mapList->lock, LOS_WAIT_FOREVER);
+    LOS_DL_LIST_FOR_EACH_ENTRY(curMap, &mapList->head, struct file_map, head) {
+        name = curMap->rename ? curMap->rename: curMap->owner;
+        LosBufPrintf(buf, "%s:[", name);
+        total += PageCacheEntryProcess(buf, &curMap->mapping);
     }
-    (void)sem_post(&flist->fl_sem);
+    (VOID)LOS_MuxUnlock(&mapList->lock);
+    return total;
 }
 
 static int FsCacheInfoFill(struct SeqBuf *buf, void *arg)
@@ -140,6 +144,7 @@ static int FsCacheInfoFill(struct SeqBuf *buf, void *arg)
     int pathCacheTotalTry = 0;
     int pathCacheTotalHit = 0;
 
+    int pageCacheTotal = 0;
     int pageCacheTotalTry = 0;
     int pageCacheTotalHit = 0;
 
@@ -159,19 +164,43 @@ static int FsCacheInfoFill(struct SeqBuf *buf, void *arg)
     pathCacheTotal = PathCacheListProcess(buf);
 
     LosBufPrintf(buf, "\n=================================================================\n");
-    PageCacheMapProcess(buf);
+    pageCacheTotal = PageCacheMapProcess(buf);
+
     LosBufPrintf(buf, "\n=================================================================\n");
     LosBufPrintf(buf, "PathCache Total:%d Try:%d Hit:%d\n",
         pathCacheTotal, pathCacheTotalTry, pathCacheTotalHit);
     LosBufPrintf(buf, "Vnode Total:%d Free:%d Virtual:%d Active:%d\n",
         vnodeTotal, vnodeFree, vnodeVirtual, vnodeActive);
-    LosBufPrintf(buf, "PageCache Try:%d Hit:%d\n", pageCacheTotalTry, pageCacheTotalHit);
+    LosBufPrintf(buf, "PageCache total:%d Try:%d Hit:%d\n", pageCacheTotal, pageCacheTotalTry, pageCacheTotalHit);
     VnodeDrop();
     return 0;
 }
 
+static int FsCacheClear(struct ProcFile *pf, const char *buffer, size_t buflen, loff_t *ppos)
+{
+    if (buffer == NULL || buflen < sizeof(CLEAR_ALL_CACHE)) {
+        return -EINVAL;
+    }
+    int vnodeCount = 0;
+    int pageCount = 0;
+
+    if (!strcmp(buffer, CLEAR_ALL_CACHE)) {
+        vnodeCount = VnodeClearCache();
+        pageCount = OsTryShrinkMemory(VM_FILEMAP_MAX_SCAN);
+    } else if (!strcmp(buffer, CLEAR_PAGE_CACHE)) {
+        pageCount = OsTryShrinkMemory(VM_FILEMAP_MAX_SCAN);
+    } else if (!strcmp(buffer, CLEAR_PATH_CACHE)) {
+        vnodeCount = VnodeClearCache();
+    } else {
+        return -EINVAL;
+    }
+
+    PRINTK("%d vnodes and related pathcaches cleared\n%d pages cleared\n", vnodeCount, pageCount);
+    return buflen;
+}
 static const struct ProcFileOperations FS_CACHE_PROC_FOPS = {
     .read = FsCacheInfoFill,
+    .write = FsCacheClear,
 };
 
 void ProcFsCacheInit(void)

@@ -293,4 +293,9 @@ out:
     (void)sem_post(&f_list->fl_sem);
     return ret;
 }
+
+struct file_map* GetFileMappingList()
+{
+    return &g_file_mapping;
+}
 #endif
