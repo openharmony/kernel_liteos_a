@@ -294,8 +294,10 @@ out:
     return ret;
 }
 
-struct file_map* GetFileMappingList()
+#ifdef LOSCFG_DEBUG_VERSION
+struct file_map* GetFileMappingList(void)
 {
     return &g_file_mapping;
 }
+#endif
 #endif
