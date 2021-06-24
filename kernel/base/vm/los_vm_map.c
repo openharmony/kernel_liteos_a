@@ -1135,7 +1135,7 @@ DONE:
 
 LosMux *OsGVmSpaceMuxGet(VOID)
 {
-	    return &g_vmSpaceListMux;
+    return &g_vmSpaceListMux;
 }
 
 STATIC INLINE BOOL OsMemLargeAlloc(UINT32 size)
