@@ -251,11 +251,13 @@ static enum VnodeType fatfstype_2_vnodetype(BYTE type) {
     }
 }
 
-static FRESULT init_cluster(DIR *dp_new, FATFS *fs, int type, const char *target, DWORD *clust)
+#define DIR_SIZE 32
+static FRESULT init_cluster(DIR_FILE *pdfp, DIR *dp_new, FATFS *fs, int type, const char *target, DWORD *clust)
 {
     FRESULT result;
     BYTE *dir = NULL;
     QWORD sect;
+    DWORD pclust;
     UINT n;
 
     /* Allocate a new cluster */
@@ -285,23 +287,51 @@ static FRESULT init_cluster(DIR *dp_new, FATFS *fs, int type, const char *target
     if (type == AM_LNK && target) {
         /* Write target to symlink */
         strcpy_s((char *)dir, SS(fs), target);
-    }
-    for (n = fs->csize; n > 0; n--) {
-#ifndef LOSCFG_FS_FAT_VIRTUAL_PARTITION
-        fs->winsect = sect++;
-        fs->wflag = 1;
-#else
-        PARENTFS(fs)->winsect = sect++;
-        PARENTFS(fs)->wflag = 1;
-#endif
-        result = sync_window(fs);
-        if (result != FR_OK) {
-            remove_chain(&(dp_new->obj), *clust, 0);
-            return result;
+    } else {
+        /* Write the dir cluster */
+        mem_set(dir, 0, SS(fs));
+        mem_set(dir + DIR_Name, ' ', 11); /* Create "." entry */
+        dir[DIR_Name] = '.';
+        dir[DIR_Attr] = AM_DIR;
+        st_clust(fs, dir, *clust);
+        mem_cpy(dir + DIR_SIZE, dir, DIR_SIZE); /* Create ".." entry */
+        dir[DIR_SIZE + 1] = '.'; /* Add extra "." */
+        pclust = pdfp->fno.sclst;
+        if (fs->fs_type == FS_FAT32 && pclust == fs->dirbase) {
+            pclust = 0;
         }
-        if (type == AM_LNK) {
-            /* No need to clean the rest sectors of the cluster for symlink */
-            break;
+        st_clust(fs, dir + DIR_SIZE, pclust);
+    }
+
+#ifndef LOSCFG_FS_FAT_VIRTUAL_PARTITION
+    fs->winsect = sect++;
+    fs->wflag = 1;
+#else
+    PARENTFS(fs)->winsect = sect++;
+    PARENTFS(fs)->wflag = 1;
+#endif
+    result = sync_window(fs);
+    if (result != FR_OK) {
+        remove_chain(&(dp_new->obj), *clust, 0);
+        return result;
+    }
+
+    /* Rest of directory cluster should set to be zero */
+    if (type == AM_DIR) {
+        mem_set(dir, 0, SS(fs));
+        for (n = fs->csize - 1; n > 0; n--) {
+#ifndef LOSCFG_FS_FAT_VIRTUAL_PARTITION
+            fs->winsect = sect++;
+            fs->wflag = 1;
+#else
+            PARENTFS(fs)->winsect = sect++;
+            PARENTFS(fs)->wflag = 1;
+#endif
+            result = sync_window(fs);
+            if (result != FR_OK) {
+                remove_chain(&(dp_new->obj), *clust, 0);
+                return result;
+            }
         }
     }
 
@@ -366,7 +396,7 @@ static int fatfs_create_obj(struct Vnode *parent, const char *name, int mode, st
     }
 
     if (type == AM_DIR || type == AM_LNK) {
-        result = init_cluster(dp_new, fs, type, target, &clust);
+        result = init_cluster(dfp, dp_new, fs, type, target, &clust);
         if (result != FR_OK) {
             goto ERROR_UNLOCK;
         }
