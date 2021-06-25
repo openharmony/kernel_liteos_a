@@ -328,11 +328,7 @@ static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount,
 
         VnodeHold();
         VnodeLookup(devName, &partDev, 0);
-        if (ret < 0) {
-            VnodeDrop();
-            PRINT_ERR("DiskAddPart : find %s fail!\n", devName);
-            return VFS_ERROR;
-        }
+
         part = DiskPartAllocate(partDev, sectorStart, sectorCount);
         VnodeDrop();
         if (part == NULL) {
