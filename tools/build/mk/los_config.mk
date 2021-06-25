@@ -219,6 +219,13 @@ ifeq ($(LOSCFG_KERNEL_PIPE), y)
     LIB_SUBDIRS           += kernel/extended/pipes
     LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/pipes
 endif
+
+ifeq ($(LOSCFG_KERNEL_PM), y)
+    LITEOS_BASELIB        += -lpower
+    LIB_SUBDIRS           += kernel/extended/power
+    LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/power
+endif
+
 ################################### Kernel Option End ################################
 
 #################################### Lib Option Begin ###############################
