@@ -74,7 +74,7 @@ static int PipecommonWrite()
                     exit(errno);
                 }
             }
-            usleep(15000); // 15000, Used to calculate the delay time.
+            usleep(150000); // 150000, Used to calculate the delay time.
         }
         exit(0);
     } else {
