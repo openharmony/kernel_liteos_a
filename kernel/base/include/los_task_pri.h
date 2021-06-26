@@ -470,6 +470,15 @@ STATIC INLINE BOOL OsTaskIsPending(const LosTaskCB *taskCB)
     return FALSE;
 }
 
+STATIC INLINE BOOL OsTaskIsKilled(const LosTaskCB *taskCB)
+{
+    if (taskCB->taskStatus & OS_TASK_FLAG_EXIT_KILL) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 #define OS_TID_CHECK_INVALID(taskID) ((UINT32)(taskID) >= g_taskMaxNum)
 
 /* get task info */
