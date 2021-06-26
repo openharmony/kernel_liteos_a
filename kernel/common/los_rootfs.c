@@ -49,6 +49,7 @@
 #include "cfiflash.h"
 #define DEV_STORAGE_PATH        "/dev/cfiflash1"
 #define SECOND_MTD_PART_NUM 1
+#define STORAGE_SIZE 0x1400000
 #endif
 
 #ifdef LOSCFG_STORAGE_SPINOR

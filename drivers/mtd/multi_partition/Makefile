@@ -39,7 +39,7 @@ LOCAL_INCLUDE := \
     -I $(LITEOSTOPDIR)/../../device/hisilicon/drivers/include/mtd/common/include
 
 ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/../../device/qemu/arm_virt/config/cfiflash
+LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/../../device/qemu/drivers/cfiflash
 endif
 
 LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
