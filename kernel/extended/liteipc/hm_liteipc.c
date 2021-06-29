@@ -108,6 +108,7 @@ typedef enum {
     READ,
     READ_DROP,
     READ_TIMEOUT,
+    KILL,
     OPERATION_NUM
 } IpcOpertion;
 
@@ -1099,6 +1100,14 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
                 return -ETIME;
             }
 
+            if (OsTaskIsKilled(tcb)) {
+#if (LOSCFG_KERNEL_TRACE == YES)
+                IpcTrace(NULL, KILL, tcb->ipcStatus, syncFlag ? MT_REPLY : MT_REQUEST);
+#endif
+                SCHEDULER_UNLOCK(intSave);
+                return -ERFKILL;
+            }
+
             SCHEDULER_UNLOCK(intSave);
         } else {
             listNode = LOS_DL_LIST_FIRST(listHead);
@@ -1178,7 +1187,7 @@ BUFFER_FREE:
     if ((content->flag & RECV) == RECV) {
         ret = LiteIpcRead(content);
         if (ret != LOS_OK) {
-            PRINT_ERR("LiteIpcRead failed\n");
+            PRINT_ERR("LiteIpcRead failed ERROR: %d\n", (INT32)ret);
             return ret;
         }
         UINT32 offset = LOS_OFF_SET_OF(IpcContent, inMsg);
