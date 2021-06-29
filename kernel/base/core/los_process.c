@@ -183,7 +183,7 @@ VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
 {
     taskCB->waitID = wakePID;
     OsSchedTaskWake(taskCB);
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     LOS_MpSchedule(OS_MP_CPU_ALL);
 #endif
 }
@@ -312,7 +312,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     }
 #endif
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     if (OsProcessIsUserMode(processCB)) {
         LiteIpcPoolDelete(&(processCB->ipcInfo));
         (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
@@ -685,7 +685,7 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
         goto EXIT;
     }
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     if (OsProcessIsUserMode(processCB)) {
         ret = LiteIpcPoolInit(&(processCB->ipcInfo));
         if (ret != LOS_OK) {
@@ -1294,7 +1294,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
         return ret;
     }
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     ret = LiteIpcPoolInit(&(processCB->ipcInfo));
     if (ret != LOS_OK) {
         return LOS_NOK;
@@ -1690,7 +1690,7 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
         return ret;
     }
 
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     if (OsProcessIsUserMode(child)) {
         ret = LiteIpcPoolReInit(&child->ipcInfo, (const ProcIpcInfo *)(&run->ipcInfo));
         if (ret != LOS_OK) {

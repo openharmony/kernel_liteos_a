@@ -498,7 +498,7 @@ typedef struct tagTskInitParam {
     UINTPTR         auwArgs[4];    /**< Task parameters, of which the maximum number is four */
     UINT32          uwStackSize;   /**< Task stack size */
     CHAR            *pcName;       /**< Task name */
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT16          usCpuAffiMask; /**< Task cpu affinity mask         */
 #endif
     UINT32          uwResved;      /**< It is automatically deleted if set to LOS_TASK_STATUS_DETACHED.

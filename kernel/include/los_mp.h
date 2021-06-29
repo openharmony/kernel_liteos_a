@@ -50,7 +50,7 @@ typedef enum {
     LOS_MP_IPI_HALT,
 } MP_IPI_TYPE;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 extern VOID LOS_MpSchedule(UINT32 target);
 extern VOID OsMpWakeHandler(VOID);
 extern VOID OsMpScheduleHandler(VOID);

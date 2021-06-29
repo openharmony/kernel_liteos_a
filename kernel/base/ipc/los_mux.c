@@ -38,7 +38,7 @@
 #include "los_sched_pri.h"
 
 
-#if (LOSCFG_BASE_IPC_MUX == YES)
+#ifdef LOSCFG_BASE_IPC_MUX
 #define MUTEXATTR_TYPE_MASK 0x0FU
 
 LITE_OS_SEC_TEXT UINT32 LOS_MuxAttrInit(LosMuxAttr *attr)
@@ -560,5 +560,5 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxUnlock(LosMux *mutex)
     return ret;
 }
 
-#endif /* (LOSCFG_BASE_IPC_MUX == YES) */
+#endif /* LOSCFG_BASE_IPC_MUX */
 

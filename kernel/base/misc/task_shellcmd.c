@@ -428,7 +428,7 @@ EXIT:
 STATIC VOID OsShellCmdTskInfoTitle(VOID *seqBuf, UINT16 flag)
 {
     PROCESS_INFO_SHOW(seqBuf, "\r\n  TID  PID ");
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     PROCESS_INFO_SHOW(seqBuf, "Affi CPU  ");
 #endif
     PROCESS_INFO_SHOW(seqBuf, "     Status StackSize WaterLine ");
@@ -456,7 +456,7 @@ STATIC INLINE VOID OsShellTskInfoData(const LosTaskCB *taskCB, VOID *seqBuf, UIN
 #endif
     PROCESS_INFO_SHOW(seqBuf, " %4u%5u", taskCB->taskID, taskCB->processID);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     PROCESS_INFO_SHOW(seqBuf, "%#5x%4d ", taskCB->cpuAffiMask, (INT16)(taskCB->currCpu));
 #endif
 

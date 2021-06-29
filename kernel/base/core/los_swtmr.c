@@ -38,7 +38,7 @@
 #include "los_task_pri.h"
 
 
-#if (LOSCFG_BASE_CORE_SWTMR == YES)
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #if (LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0)
 #error "swtmr maxnum cannot be zero"
 #endif /* LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0 */
@@ -84,7 +84,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrTaskCreate(VOID)
     swtmrTask.pcName = "Swt_Task";
     swtmrTask.usTaskPrio = 0;
     swtmrTask.uwResved = LOS_TASK_STATUS_DETACHED;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     swtmrTask.usCpuAffiMask   = CPUID_TO_AFFI_MASK(cpuid);
 #endif
     ret = LOS_TaskCreate(&swtmrTaskID, &swtmrTask);
@@ -533,4 +533,4 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
     return ret;
 }
 
-#endif /* LOSCFG_BASE_CORE_SWTMR */
+#endif /* LOSCFG_BASE_CORE_SWTMR_ENABLE */
