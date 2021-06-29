@@ -87,6 +87,18 @@ int SysMqClose(mqd_t personal)
     return ret;
 }
 
+int SysMqNotify(mqd_t personal, const struct sigevent *sigev)
+{
+    int ret;
+
+    MQUEUE_FD_U2K(personal);
+    ret = OsMqNotify(personal, sigev);
+    if (ret < 0) {
+        return -get_errno();
+    }
+    return ret;
+}
+
 int SysMqGetSetAttr(mqd_t mqd, const struct mq_attr *new, struct mq_attr *old)
 {
     int ret;
