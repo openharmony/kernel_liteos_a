@@ -116,6 +116,15 @@ else
 	$(HIDE)$(SCRIPTS_PATH)/mklibversion.sh
 endif
 
+##### make sysroot #####
+sysroot:
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+ifeq ($(wildcard $(SYSROOT_PATH)/usr/include/$(LLVM_TARGET)/),)
+	$(HIDE)$(MAKE) -C $(SYSROOT_PATH)/build TARGETS=liteos_a_user
+endif
+	$(HIDE)echo "sysroot:" $(abspath $(SYSROOT_PATH))
+endif
+
 ##### make dynload #####
 -include $(LITEOS_MK_PATH)/dynload.mk
 
@@ -132,7 +141,7 @@ $(OUT): $(LITEOS_MENUCONFIG_H)
 $(BUILD):
 	$(HIDE)mkdir -p $(BUILD)
 
-$(LITEOS_LIBS_TARGET): $(__LIBS)
+$(LITEOS_LIBS_TARGET): $(__LIBS) sysroot
 	$(HIDE)for dir in $(LIB_SUBDIRS); \
 		do $(MAKE) -C $$dir all || exit 1; \
 	done
@@ -151,7 +160,7 @@ genconfig:$(MENUCONFIG_CONF)
 $(LITEOS_MENUCONFIG_H): .config
 	$(HIDE)$(MAKE) genconfig
 
-$(LITEOS_TARGET): $(__LIBS)
+$(LITEOS_TARGET): $(__LIBS) sysroot
 	$(HIDE)touch $(LOSCFG_ENTRY_SRC)
 
 	$(HIDE)for dir in $(LITEOS_SUBDIRS); \
@@ -165,18 +174,14 @@ $(LITEOS_TARGET): $(__LIBS)
 	$(OBJDUMP) -d $(OUT)/$@ >$(OUT)/$@.asm
 #	$(NM) -S --size-sort $(OUT)/$@ >$(OUT)/$@.size
 
-$(APPS): $(LITEOS_TARGET)
+$(APPS): $(LITEOS_TARGET) sysroot
 	$(HIDE)$(MAKE) -C apps all
-
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-MULTILIB := $(patsubst $(shell $(CC) --target=$(LLVM_TARGET) $(ARCH_CFLAGS) -print-file-name=lib/$(LLVM_TARGET)/)%,%,$(dir $(shell $(CC) --target=$(LLVM_TARGET) $(ARCH_CFLAGS) -print-libgcc-file-name)))
-endif
 
 prepare:
 	$(HIDE)mkdir -p $(OUT)/musl
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-	$(HIDE)cp -f $(SYSROOT_PATH)/usr/lib/$(LLVM_TARGET)/$(MULTILIB)/libc.so $(OUT)/musl
-	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/lib/$(LLVM_TARGET)/c++/$(MULTILIB)/libc++.so $(OUT)/musl
+	$(HIDE)cp -f $$($(CC) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
+	$(HIDE)cp -f $$($(GPP) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl
 else
 	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/target/usr/lib/libc.so $(OUT)/musl
 	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libstdc++.so.6 $(OUT)/musl
@@ -225,3 +230,4 @@ update_all_config:
 	$(HIDE)test -f tools/build/config/$@ && cp tools/build/config/$@ .config && $(MENUCONFIG_MCONF) $(KCONFIG_FILE_PATH) && $(MENUCONFIG_CONF) --savedefconfig tools/build/config/$@ $(KCONFIG_FILE_PATH)
 
 .PHONY: all lib clean cleanall $(LITEOS_TARGET) debug release help update_all_config
+.PHONY: prepare sysroot cleanrootfs $(ROOTFS) $(ROOTFSDIR) $(APPS) menuconfig genconfig $(LITEOS_LIBS_TARGET) $(__LIBS) $(OUT)
