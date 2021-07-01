@@ -49,7 +49,7 @@ int pthread_attr_init(pthread_attr_t *attr)
     attr->stacksize_set               = 1;
     attr->stacksize                   = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     attr->cpuset.__bits[0] = 0;
 #endif
 
@@ -239,7 +239,7 @@ int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stackSize)
  */
 int pthread_attr_setaffinity_np(pthread_attr_t* attr, size_t cpusetsize, const cpu_set_t* cpuset)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     if (attr == NULL) {
         return EINVAL;
     }
@@ -264,7 +264,7 @@ int pthread_attr_setaffinity_np(pthread_attr_t* attr, size_t cpusetsize, const c
  */
 int pthread_attr_getaffinity_np(const pthread_attr_t* attr, size_t cpusetsize, cpu_set_t* cpuset)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     if ((attr == NULL) || (cpuset == NULL) || (cpusetsize != sizeof(cpu_set_t))) {
         return EINVAL;
     }

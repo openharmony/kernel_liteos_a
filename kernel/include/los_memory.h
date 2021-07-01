@@ -77,19 +77,6 @@ extern UINT8 *m_aucSysMem0;
  */
 extern UINT8 *m_aucSysMem1;
 
-/**
- * @ingroup los_memory
- * The memory Maximum memory usage statistics.
- * @attention
- * <ul> <li>If running as debug mode, it will affect the performance of memory malloc and free.</li>
- * <li> OS_MEM_WATERLINE=YES: open the function for Maximum memory usage statistics </li>
- * <li> OS_MEM_WATERLINE=NO: close the function for Maximum memory usage statistics, it set to NO as usual </li>
- * </ul>
- */
-#ifdef LOSCFG_MEM_WATERLINE
-#define OS_MEM_WATERLINE YES
-#endif
-
 #ifdef LOSCFG_MEM_MUL_POOL
 /**
  * @ingroup los_memory
@@ -141,7 +128,7 @@ typedef struct {
     UINT32 maxFreeNodeSize;
     UINT32 usedNodeNum;
     UINT32 freeNodeNum;
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
     UINT32 usageWaterLine;
 #endif
 } LOS_MEM_POOL_STATUS;

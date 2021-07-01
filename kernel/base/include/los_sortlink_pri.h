@@ -50,7 +50,7 @@ typedef enum {
 typedef struct {
     LOS_DL_LIST sortLinkNode;
     UINT64      responseTime;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32      cpuid;
 #endif
 } SortLinkList;

@@ -38,7 +38,7 @@
 #include "los_percpu_pri.h"
 
 
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
+#ifdef LOSCFG_BASE_IPC_QUEUE
 #if (LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0)
 #error "queue maxnum cannot be zero"
 #endif /* LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0 */
@@ -493,5 +493,5 @@ QUEUE_END:
     return ret;
 }
 
-#endif /* (LOSCFG_BASE_IPC_QUEUE == YES) */
+#endif /* LOSCFG_BASE_IPC_QUEUE */
 

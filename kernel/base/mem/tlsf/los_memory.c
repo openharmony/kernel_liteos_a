@@ -147,7 +147,7 @@ struct OsMemPoolInfo {
     VOID *pool;
     UINT32 totalSize;
     UINT32 attr;
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
     UINT32 waterLine;   /* Maximum usage size in a memory pool */
     UINT32 curUsedSize; /* Current usage size in a memory pool */
 #endif
@@ -230,7 +230,7 @@ STATIC INLINE VOID OsMemNodeSetTaskID(struct OsMemUsedNodeHead *node)
 }
 #endif
 
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
 STATIC INLINE VOID OsMemWaterUsedRecord(struct OsMemPoolHead *pool, UINT32 size)
 {
     pool->info.curUsedSize += size;
@@ -775,7 +775,7 @@ STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
     endNode->ptr.prev = newNode;
     OS_MEM_NODE_SET_USED_FLAG(endNode->sizeAndFlag);
 #endif
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
     poolHead->info.curUsedSize = sizeof(struct OsMemPoolHead) + OS_MEM_NODE_HEAD_SIZE;
     poolHead->info.waterLine = poolHead->info.curUsedSize;
 #endif
@@ -1171,7 +1171,7 @@ STATIC INLINE UINT32 OsMemFree(struct OsMemPoolHead *pool, struct OsMemNodeHead 
         return ret;
     }
 
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
     pool->info.curUsedSize -= OS_MEM_NODE_GET_SIZE(node->sizeAndFlag);
 #endif
 
@@ -1256,14 +1256,14 @@ UINT32 LOS_MemFree(VOID *pool, VOID *ptr)
 
 STATIC INLINE VOID OsMemReAllocSmaller(VOID *pool, UINT32 allocSize, struct OsMemNodeHead *node, UINT32 nodeSize)
 {
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
     struct OsMemPoolHead *poolInfo = (struct OsMemPoolHead *)pool;
 #endif
     node->sizeAndFlag = nodeSize;
     if ((allocSize + OS_MEM_NODE_HEAD_SIZE + OS_MEM_MIN_ALLOC_SIZE) <= nodeSize) {
         OsMemSplitNode(pool, node, allocSize);
         OS_MEM_NODE_SET_USED_FLAG(node->sizeAndFlag);
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
         poolInfo->info.curUsedSize -= nodeSize - allocSize;
 #endif
     }
@@ -1603,7 +1603,7 @@ STATIC VOID OsMemPoolHeadCheck(const struct OsMemPoolHead *pool)
 OUT:
     if (flag) {
         PRINTK("mem pool info: poolAddr: %#x, poolSize: 0x%x\n", pool, pool->info.totalSize);
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
         PRINTK("mem pool info: poolWaterLine: 0x%x, poolCurUsedSize: 0x%x\n", pool->info.waterLine,
                pool->info.curUsedSize);
 #endif
@@ -1844,7 +1844,7 @@ UINT32 LOS_MemInfoGet(VOID *pool, LOS_MEM_POOL_STATUS *poolStatus)
         OsMemInfoGet(poolInfo, tmpNode, poolStatus);
     }
 #endif
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
     poolStatus->usageWaterLine = poolInfo->info.waterLine;
 #endif
     MEM_UNLOCK(poolInfo, intSave);
@@ -1861,7 +1861,7 @@ STATIC VOID OsMemInfoPrint(VOID *pool)
         return;
     }
 
-#if defined(OS_MEM_WATERLINE) && (OS_MEM_WATERLINE == YES)
+#ifdef LOSCFG_MEM_WATERLINE
     PRINTK("pool addr          pool size    used size     free size    "
            "max free node size   used node num     free node num      UsageWaterLine\n");
     PRINTK("---------------    --------     -------       --------     "

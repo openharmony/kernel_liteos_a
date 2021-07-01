@@ -145,7 +145,7 @@ STATIC INLINE VOID ArchCurrUserTaskSet(UINTPTR val)
 
 STATIC INLINE UINT32 ArchCurrCpuid(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     return ARM_SYSREG_READ(MPIDR) & MPIDR_CPUID_MASK;
 #else
     return 0;

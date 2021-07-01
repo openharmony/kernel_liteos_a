@@ -1662,7 +1662,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
     return LOS_OK;
 }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 VOID OsWaitConsoleSendTaskPend(UINT32 taskID)
 {
     UINT32 i;

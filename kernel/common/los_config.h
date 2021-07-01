@@ -116,16 +116,15 @@ extern UINT32 __heap_end;
  * External configuration item for timer tailoring
  */
 #ifndef LOSCFG_BASE_CORE_TICK_HW_TIME
-#define LOSCFG_BASE_CORE_TICK_HW_TIME NO
+#undef LOSCFG_BASE_CORE_TICK_HW_TIME
 #endif
-
 /****************************** Hardware interrupt module configuration ******************************/
 /**
  * @ingroup los_config
  * Configuration item for hardware interrupt tailoring
  */
 #ifndef LOSCFG_PLATFORM_HWI
-#define LOSCFG_PLATFORM_HWI YES
+#define LOSCFG_PLATFORM_HWI
 #endif
 
 /**
@@ -221,15 +220,7 @@ extern UINT32 __heap_end;
  * Configuration item for task (stack) monitoring module tailoring
  */
 #ifndef LOSCFG_BASE_CORE_TSK_MONITOR
-#define LOSCFG_BASE_CORE_TSK_MONITOR YES
-#endif
-
-/**
- * @ingroup los_config
- * Configuration item for task perf task filter hook
- */
-#ifndef OS_PERF_TSK_FILTER
-#define OS_PERF_TSK_FILTER NO
+#define LOSCFG_BASE_CORE_TSK_MONITOR
 #endif
 
 /****************************** Semaphore module configuration ******************************/
@@ -238,7 +229,7 @@ extern UINT32 __heap_end;
  * Configuration item for semaphore module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_SEM
-#define LOSCFG_BASE_IPC_SEM YES
+#define LOSCFG_BASE_IPC_SEM
 #endif
 
 /**
@@ -263,7 +254,7 @@ extern UINT32 __heap_end;
  * Configuration item for mutex module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_MUX
-#define LOSCFG_BASE_IPC_MUX YES
+#define LOSCFG_BASE_IPC_MUX
 #endif
 
 /****************************** Queue module configuration ********************************/
@@ -272,7 +263,7 @@ extern UINT32 __heap_end;
  * Configuration item for queue module tailoring
  */
 #ifndef LOSCFG_BASE_IPC_QUEUE
-#define LOSCFG_BASE_IPC_QUEUE YES
+#define LOSCFG_BASE_IPC_QUEUE
 #endif
 
 /**
@@ -283,14 +274,20 @@ extern UINT32 __heap_end;
 #define LOSCFG_BASE_IPC_QUEUE_LIMIT 1024
 #endif
 /****************************** Software timer module configuration **************************/
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
+#ifdef LOSCFG_BASE_IPC_QUEUE
 
 /**
  * @ingroup los_config
  * Configuration item for software timer module tailoring
  */
-#ifndef LOSCFG_BASE_CORE_SWTMR
-#define LOSCFG_BASE_CORE_SWTMR YES
+#ifndef LOSCFG_BASE_CORE_SWTMR_ENABLE
+#define LOSCFG_BASE_CORE_SWTMR_ENABLE
+#endif
+
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
+#define LOSCFG_BASE_CORE_SWTMR 1
+#else
+#define LOSCFG_BASE_CORE_SWTMR 0
 #endif
 
 /**
@@ -338,23 +335,7 @@ extern UINT32 __heap_end;
 #endif
 
 /****************************** SMP module configuration **************************/
-#ifndef LOSCFG_KERNEL_SMP
-#define LOSCFG_KERNEL_SMP                               NO
-#endif
-
-#ifndef LOSCFG_KERNEL_SMP_LOCKDEP
-#define LOSCFG_KERNEL_SMP_LOCKDEP                       NO
-#endif
-
-#ifndef LOSCFG_KERNEL_SMP_TASK_SYNC
-#define LOSCFG_KERNEL_SMP_TASK_SYNC                     NO
-#endif
-
-#ifndef LOSCFG_KERNEL_SCHED_STATISTICS
-#define LOSCFG_KERNEL_SCHED_STATISTICS                  NO
-#endif
-
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #define LOSCFG_KERNEL_CORE_NUM                          LOSCFG_KERNEL_SMP_CORE_NUM
 #else
 #define LOSCFG_KERNEL_CORE_NUM                          1
@@ -390,11 +371,6 @@ extern UINT32 __heap_end;
 
 #define VERSION_NUM(a, b, c, d) (((a) << 24) | ((b) << 16) | (c) << 8 | (d))
 #define KERNEL_OPEN_VERSION_NUM VERSION_NUM(KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE)
-
-/****************************** Dynamic loading module configuration **************************/
-#ifndef OS_AUTOINIT_DYNLOADER
-#define OS_AUTOINIT_DYNLOADER YES
-#endif
 
 /****************************** Exception information configuration ******************************/
 #ifdef LOSCFG_SAVE_EXCINFO

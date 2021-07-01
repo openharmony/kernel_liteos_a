@@ -75,7 +75,7 @@ VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr);
 UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };
 BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];
 STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 STATIC SPIN_LOCK_INIT(g_excSerializerSpin);
 STATIC UINT32 g_currHandleExcPID = OS_INVALID_VALUE;
 STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
@@ -531,7 +531,7 @@ STATIC VOID OsExcRestore(VOID)
     g_excFromUserMode[currCpuID] = FALSE;
     g_intCount[currCpuID] = 0;
     g_curNestCount[currCpuID] = 0;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     OsPercpuGet()->excFlag = CPU_RUNNING;
 #endif
     OsPercpuGet()->taskLockCnt = 0;
@@ -548,7 +548,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
         return;
     }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     LOS_SpinLock(&g_excSerializerSpin);
     if (g_nextExcWaitCpu != INVALID_CPUID) {
         g_currHandleExcCpuID = g_nextExcWaitCpu;
@@ -563,7 +563,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
     runProcess->processStatus &= ~OS_PROCESS_FLAG_EXIT;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_FS_VFS
     OsWakeConsoleSendTask();
 #endif
@@ -909,7 +909,7 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 #endif /* __LINUX_ARM_ARCH__ */
 #endif /* LOSCFG_GDB */
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #define EXC_WAIT_INTER 50U
 #define EXC_WAIT_TIME  2000U
 
@@ -1027,7 +1027,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
 
 STATIC VOID OsCheckCpuStatus(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     OsCheckAllCpuStatus();
 #else
     g_currHandleExcCpuID = ArchCurrCpuid();
@@ -1048,7 +1048,7 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 
     OsCheckCpuStatus();
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_FS_VFS
     /* Wait for the end of the Console task to avoid multicore printing code */
     OsWaitConsoleSendTaskPend(OsCurrTaskGet()->taskID);
@@ -1113,7 +1113,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 
     OsPrintExcHead(far);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     OsAllCpuStatusOutput();
 #endif
 

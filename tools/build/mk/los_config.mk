@@ -185,12 +185,6 @@ ifeq ($(LOSCFG_KERNEL_CPUP), y)
     LITEOS_CPUP_INCLUDE := -I $(LITEOSTOPDIR)/kernel/extended/cpup
 endif
 
-ifeq ($(LOSCFG_KERNEL_SCHED_STATISTICS), y)
-    LITEOS_CMACRO += -DLOSCFG_KERNEL_SCHED_STATISTICS=1
-else
-    LITEOS_CMACRO += -DLOSCFG_KERNEL_SCHED_STATISTICS=0
-endif
-
 ifeq ($(LOSCFG_KERNEL_DYNLOAD), y)
     LITEOS_BASELIB   += -ldynload
     LIB_SUBDIRS      += kernel/extended/dynload
