@@ -287,5 +287,8 @@ extern int SysUmask(int mask);
 extern int SysShellExec(const char *msgName, const char *cmdString);
 extern int SysReboot(int magic, int magic2, int type);
 extern int SysGetrusage(int what, struct rusage *ru);
+extern long SysSysconf(int name);
+extern int SysUgetrlimit(int resource, unsigned long long k_rlim[2]);
+extern int SysSetrlimit(int resource, unsigned long long k_rlim[2]);
 #endif
 #endif /* _LOS_SYSCALL_H */
