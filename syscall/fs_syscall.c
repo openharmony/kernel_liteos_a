@@ -703,8 +703,6 @@ OUT:
 int SysAccess(const char *path, int amode)
 {
     int ret;
-    struct stat buf;
-    struct statfs fsBuf;
     char *pathRet = NULL;
 
     if (path != NULL) {
@@ -714,30 +712,9 @@ int SysAccess(const char *path, int amode)
         }
     }
 
-    ret = statfs((path ? pathRet : NULL), &fsBuf);
-    if (ret != 0) {
+    ret = access(pathRet, amode);
+    if (ret < 0) {
         ret = -get_errno();
-        if (ret != -ENOSYS) {
-            goto OUT;
-        } else {
-            /* dev has no statfs ops, need devfs to handle this in feature */
-            ret = LOS_OK;
-        }
-    }
-
-    if ((fsBuf.f_flags & MS_RDONLY) && ((unsigned int)amode & W_OK)) {
-        ret = -EROFS;
-        goto OUT;
-    }
-
-    ret = stat((path ? pathRet : NULL), &buf);
-    if (ret != 0) {
-        ret = -get_errno();
-        goto OUT;
-    }
-
-    if (VfsPermissionCheck(buf.st_uid, buf.st_gid, buf.st_mode, amode)) {
-        ret = -EACCES;
     }
 
 OUT:
@@ -2149,9 +2126,6 @@ OUT:
 
 int SysChmod(const char *pathname, mode_t mode)
 {
-    struct IATTR attr = {0};
-    attr.attr_chg_mode = mode;
-    attr.attr_chg_valid = CHG_MODE; /* change mode */
     int ret;
     char *pathRet = NULL;
 
@@ -2162,7 +2136,7 @@ int SysChmod(const char *pathname, mode_t mode)
         }
     }
 
-    ret = chattr((pathname ? pathRet : NULL), &attr);
+    ret = chmod(pathRet, mode);
     if (ret < 0) {
         ret = -get_errno();
     }
@@ -2176,8 +2150,6 @@ OUT:
 
 int SysChown(const char *pathname, uid_t owner, gid_t group)
 {
-    struct IATTR attr = {0};
-    attr.attr_chg_valid = 0;
     int ret;
     char *pathRet = NULL;
 
@@ -2188,15 +2160,7 @@ int SysChown(const char *pathname, uid_t owner, gid_t group)
         }
     }
 
-    if (owner != (uid_t)-1) {
-        attr.attr_chg_uid = owner;
-        attr.attr_chg_valid |= CHG_UID;
-    }
-    if (group != (gid_t)-1) {
-        attr.attr_chg_gid = group;
-        attr.attr_chg_valid |= CHG_GID;
-    }
-    ret = chattr((pathname ? pathRet : NULL), &attr);
+    ret = chown(pathRet, owner, group);
     if (ret < 0) {
         ret = -get_errno();
     }
