@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,40 +28,36 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_EXCINFO_PRI_H
-#define _LOS_EXCINFO_PRI_H
-
-#include "los_config.h"
-
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-
-#ifdef LOSCFG_SAVE_EXCINFO
-extern VOID SetExcInfoRW(log_read_write_fn func);
-extern log_read_write_fn GetExcInfoRW(VOID);
-extern VOID SetExcInfoBuf(CHAR *buf);
-extern CHAR *GetExcInfoBuf(VOID);
-extern VOID SetExcInfoIndex(UINT32 index);
-extern UINT32 GetExcInfoIndex(VOID);
-#ifdef LOSCFG_BLACKBOX
-extern UINT32 GetExcInfoLen(VOID);
-#endif
-extern VOID SetRecordAddr(UINT32 addr);
-extern UINT32 GetRecordAddr(VOID);
-extern VOID SetRecordSpace(UINT32 space);
-extern UINT32 GetRecordSpace(VOID);
-extern VOID WriteExcBufVa(const CHAR *format, va_list arg);
-extern VOID WriteExcInfoToBuf(const CHAR *format, ...);
-extern VOID OsRecordExcInfoTime(VOID);
+/* ------------ includes ------------ */
+#include "los_blackbox_detector.h"
+#include "los_blackbox_common.h"
+#ifdef LOSCFG_LIB_LIBC
+#include "stdlib.h"
+#include "unistd.h"
 #endif
 
-#ifdef __cplusplus
-#if __cplusplus
+/* ------------ local macroes ------------ */
+/* ------------ local prototypes ------------ */
+/* ------------ local function declarations ------------ */
+/* ------------ global function declarations ------------ */
+/* ------------ local variables ------------ */
+/* ------------ function definitions ------------ */
+int UploadEventByFile(const char *filePath)
+{
+    if (filePath == NULL) {
+        BBOX_PRINT_ERR("filePath: %p\n", filePath);
+        return -1;
+    }
+
+    return 0;
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
-#endif /* _LOS_EXCINFO_PRI_H */
+int UploadEventByStream(const char *buf, size_t bufSize)
+{
+    if (buf == NULL || bufSize == 0) {
+        BBOX_PRINT_ERR("buf: %p, bufSize: %u\n", buf, (UINT32)bufSize);
+        return -1;
+    }
+
+    return 0;
+}
