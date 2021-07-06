@@ -38,7 +38,6 @@
 #include "los_excinfo_pri.h"
 #endif
 #include "los_sys_stack_pri.h"
-#include "los_stackinfo_pri.h"
 #ifdef LOSCFG_COREDUMP
 #include "los_coredump.h"
 #endif
@@ -723,7 +722,7 @@ VOID BackTraceSub(UINTPTR regFP)
         }
         backLR = *(UINTPTR *)(UINTPTR)kvaddr;
 #else
-	backLR = *(UINTPTR *)(UINTPTR)kvaddr;
+        backLR = *(UINTPTR *)(UINTPTR)kvaddr;
         if (IsValidFP(tmpFP - POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
             PrintExcInfo("traceback backFP check failed, backFP: 0x%x\n", tmpFP - POINTER_SIZE);
             return;
@@ -1007,7 +1006,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
 
         OsWaitOtherCoresHandleExcEnd(currCpuID);
     } else {
-        if (g_excFromUserMode[g_currHandleExcCpuID] == TRUE) {
+        if ((g_currHandleExcCpuID < LOSCFG_KERNEL_CORE_NUM) && (g_excFromUserMode[g_currHandleExcCpuID] == TRUE)) {
             g_currHandleExcCpuID = currCpuID;
             LOS_SpinUnlock(&g_excSerializerSpin);
             target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuID));

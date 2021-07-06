@@ -44,7 +44,7 @@
 #include "vnode.h"
 
 #ifndef UNUSED
-#define UNUSED(x)          (VOID)x
+#define UNUSED(x)          (VOID)(x)
 #endif
 
 #ifdef LOSCFG_DEBUG_VERSION
