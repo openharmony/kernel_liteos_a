@@ -1413,6 +1413,7 @@ STATIC VOID OsExitGroupActiveTaskKilled(LosProcessCB *processCB, LosTaskCB *task
         LOS_MpSchedule(taskCB->currCpu);
     } else
 #endif
+#ifdef LOSCFG_KERNEL_VM
     {
         ret = OsTaskKillUnsafe(taskCB->taskID, SIGKILL);
         if (ret != LOS_OK) {
@@ -1420,6 +1421,7 @@ STATIC VOID OsExitGroupActiveTaskKilled(LosProcessCB *processCB, LosTaskCB *task
                       taskCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, ret);
         }
     }
+#endif
 
     if (!(taskCB->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN)) {
         taskCB->taskStatus |= OS_TASK_FLAG_PTHREAD_JOIN;

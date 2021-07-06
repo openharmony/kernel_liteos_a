@@ -1182,7 +1182,7 @@ __attribute__((noinline)) VOID LOS_Panic(const CHAR *fmt, ...)
 }
 
 /* stack protector */
-UINT32 __stack_chk_guard = 0xd00a0dff;
+USED UINT32 __stack_chk_guard = 0xd00a0dff;
 
 VOID __stack_chk_fail(VOID)
 {

@@ -45,7 +45,9 @@
 #include "los_cpup_pri.h"
 #endif
 
+#ifdef LOSCFG_KERNEL_TRACE
 #include "los_trace.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

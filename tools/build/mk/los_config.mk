@@ -198,9 +198,11 @@ ifeq ($(LOSCFG_KERNEL_VDSO), y)
     LITEOS_VDSO_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/vdso/include
 endif
 
+ifeq ($(LOSCFG_KERNEL_TRACE), y)
     LITEOS_BASELIB += -ltrace
     LIB_SUBDIRS       += kernel/extended/trace
     LITEOS_TRACE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/trace
+endif
 
 ifeq ($(LOSCFG_KERNEL_LITEIPC), y)
     LITEOS_BASELIB     += -lliteipc
