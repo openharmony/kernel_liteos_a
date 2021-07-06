@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,10 +28,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_EXCINFO_PRI_H
-#define _LOS_EXCINFO_PRI_H
-
-#include "los_config.h"
+#ifndef LOS_BLACKBOX_DETECTOR_H
+#define LOS_BLACKBOX_DETECTOR_H
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -40,24 +37,14 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#ifdef LOSCFG_SAVE_EXCINFO
-extern VOID SetExcInfoRW(log_read_write_fn func);
-extern log_read_write_fn GetExcInfoRW(VOID);
-extern VOID SetExcInfoBuf(CHAR *buf);
-extern CHAR *GetExcInfoBuf(VOID);
-extern VOID SetExcInfoIndex(UINT32 index);
-extern UINT32 GetExcInfoIndex(VOID);
-#ifdef LOSCFG_BLACKBOX
-extern UINT32 GetExcInfoLen(VOID);
+#ifndef __user
+#define __user
 #endif
-extern VOID SetRecordAddr(UINT32 addr);
-extern UINT32 GetRecordAddr(VOID);
-extern VOID SetRecordSpace(UINT32 space);
-extern UINT32 GetRecordSpace(VOID);
-extern VOID WriteExcBufVa(const CHAR *format, va_list arg);
-extern VOID WriteExcInfoToBuf(const CHAR *format, ...);
-extern VOID OsRecordExcInfoTime(VOID);
-#endif
+
+#include "los_typedef.h"
+
+int UploadEventByFile(const char *filePath);
+int UploadEventByStream(const char *buf, size_t bufSize);
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -65,4 +52,4 @@ extern VOID OsRecordExcInfoTime(VOID);
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#endif /* _LOS_EXCINFO_PRI_H */
+#endif

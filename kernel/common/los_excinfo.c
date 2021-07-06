@@ -34,13 +34,29 @@
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #endif
+#ifdef LOSCFG_BLACKBOX
+#include "fs/fs.h"
+#include "fs/fs_operation.h"
+#endif
+
+#ifdef LOSCFG_BLACKBOX
+#define TEMP_EXC_INFO_SIZE 0x400
+#endif
 
 #ifdef LOSCFG_SAVE_EXCINFO
 STATIC log_read_write_fn g_excInfoRW = NULL; /* the hook of read-writing exception information */
 STATIC CHAR *g_excInfoBuf = NULL;            /* pointer to the buffer for storing the exception information */
+#ifdef LOSCFG_BLACKBOX
+STATIC UINT32 g_excInfoIndex = 0;            /* the index of the buffer for storing the exception information */
+#else
 STATIC UINT32 g_excInfoIndex = 0xFFFFFFFF;   /* the index of the buffer for storing the exception information */
+#endif
 STATIC UINT32 g_recordAddr = 0;              /* the address of storing the exception information */
 STATIC UINT32 g_recordSpace = 0;             /* the size of storing the exception information */
+#ifdef LOSCFG_BLACKBOX
+STATIC UINT32 g_excLogLen = 0;               /* the length of the exception information */
+STATIC CHAR *g_tempExcInfoBuf = NULL;        /* pointer to the buffer for storing the temp 	exception information */
+#endif
 
 VOID SetExcInfoRW(log_read_write_fn func)
 {
@@ -65,12 +81,24 @@ CHAR *GetExcInfoBuf(VOID)
 VOID SetExcInfoIndex(UINT32 index)
 {
     g_excInfoIndex = index;
+#ifdef LOSCFG_BLACKBOX
+    if (g_excInfoIndex == 0) {
+        g_excLogLen = 0;
+    }
+#endif
 }
 
 UINT32 GetExcInfoIndex(VOID)
 {
     return g_excInfoIndex;
 }
+
+#ifdef LOSCFG_BLACKBOX
+UINT32 GetExcInfoLen(VOID)
+{
+    return g_excLogLen;
+}
+#endif
 
 VOID SetRecordAddr(UINT32 addr)
 {
@@ -92,8 +120,35 @@ UINT32 GetRecordSpace(VOID)
     return g_recordSpace;
 }
 
+#ifdef LOSCFG_BLACKBOX
+STATIC VOID SaveExcInfoUnsafe(CHAR *buf, INT32 size)
+{
+    for (INT32 i = 0; i < size; i++) {
+        *(g_excInfoBuf + g_excInfoIndex) = *(buf + i);
+        g_excInfoIndex++;
+        if (g_excLogLen < g_recordSpace) {
+            g_excLogLen++;
+        }
+        if (g_excInfoIndex >= g_recordSpace) {
+            g_excInfoIndex = 0;
+        }
+    }
+}
+#endif
+
 VOID WriteExcBufVa(const CHAR *format, va_list arglist)
 {
+#ifdef LOSCFG_BLACKBOX
+    if (g_tempExcInfoBuf != NULL) {
+        (VOID)memset_s(g_tempExcInfoBuf, TEMP_EXC_INFO_SIZE, 0, TEMP_EXC_INFO_SIZE);
+        INT32 ret = vsnprintf_s(g_tempExcInfoBuf, TEMP_EXC_INFO_SIZE, TEMP_EXC_INFO_SIZE - 1, format, arglist);
+        if (ret == -1) {
+            PRINT_ERR("g_tempExcInfoBuf is not enough or vsnprintf_s is error.\n");
+            return;
+        }
+        SaveExcInfoUnsafe(g_tempExcInfoBuf, ret);
+    }
+#else
     errno_t ret;
 
     if (g_recordSpace > g_excInfoIndex) {
@@ -105,6 +160,7 @@ VOID WriteExcBufVa(const CHAR *format, va_list arglist)
         }
         g_excInfoIndex += ret;
     }
+#endif
 }
 
 VOID WriteExcInfoToBuf(const CHAR *format, ...)
@@ -130,6 +186,9 @@ VOID LOS_ExcInfoRegHook(UINT32 startAddr, UINT32 space, CHAR *buf, log_read_writ
 
 #ifdef LOSCFG_FS_VFS
     los_vfs_init();
+#endif
+#ifdef LOSCFG_BLACKBOX
+    g_tempExcInfoBuf = LOS_VMalloc(TEMP_EXC_INFO_SIZE);
 #endif
 }
 

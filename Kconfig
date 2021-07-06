@@ -61,6 +61,8 @@ source "../../kernel/liteos_a/arch/Kconfig"
 source "../../kernel/liteos_a/kernel/common/Kconfig"
 ######################### config options of patchfs #####################
 source "../../kernel/liteos_a/kernel/common/patchfs/Kconfig"
+######################### config options of blackbox #####################
+source "../../kernel/liteos_a/kernel/common/blackbox/Kconfig"
 
 config QUICK_START
     bool "Enable QUICK_START"
@@ -175,7 +177,7 @@ config PLATFORM_DVFS
 
 config SAVE_EXCINFO
     bool "Enable Saving Exception Information"
-    default n
+    default y if BLACKBOX
     help
       Answer Y to enable LiteOS support saving exception information to storage medium.
 
