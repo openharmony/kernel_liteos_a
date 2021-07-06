@@ -132,6 +132,7 @@ extern void TestBusyTaskDelay(UINT32 tick);
 extern void *malloc(size_t size);
 extern void TEST_DumpCpuid(void);
 extern u_long T_random(void);
+extern VOID TestAssertWaitDelay(UINT32 *testCount, UINT32 flag);
 
 UINT32 LosTaskDelay(UINT32 tick);
 #define TEST_HwiDelete(ID) TEST_TEST_HwiDelete(ID, NULL)
