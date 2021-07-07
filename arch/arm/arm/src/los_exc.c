@@ -62,9 +62,6 @@
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif
-#ifdef LOSCFG_BLACKBOX
-#include "los_blackbox.h"
-#endif
 
 
 #define INVALID_CPUID  0xFFFF
@@ -592,9 +589,6 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
         /* Exception handling All operations should be kept prior to that operation */
         OsExcRestore();
         /* kill user exc process */
-#ifdef LOSCFG_BLACKBOX
-        BBoxNotifyError("USER_CRASH", MODULE_SYSTEM, "Crash in user", 0);
-#endif
         LOS_Exit(OS_PRO_EXIT_OK);
     }
 
@@ -1064,9 +1058,6 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
 {
-#ifdef LOSCFG_BLACKBOX
-    SetExcInfoIndex(0);
-#endif
 #ifdef LOSCFG_KERNEL_VM
     /* You are not allowed to add any other print information before this exception information */
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
@@ -1134,9 +1125,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
         if (g_curNestCount[ArchCurrCpuid()] == 1) {
 #ifdef LOSCFG_SAVE_EXCINFO
             if (func != NULL) {
-#ifndef LOSCFG_BLACKBOX
                 SetExcInfoIndex(0);
-#endif
                 OsSysStateSave(&intCount, &lockCount);
                 OsRecordExcInfoTime();
                 OsSysStateRestore(intCount, lockCount);
@@ -1165,9 +1154,6 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
     }
 #endif
 
-#ifdef LOSCFG_BLACKBOX
-    BBoxNotifyError(EVENT_PANIC, MODULE_SYSTEM, "Crash in kernel", 1);
-#endif
     while (1) {}
 }
 

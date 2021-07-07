@@ -47,9 +47,6 @@ extern VOID SetExcInfoBuf(CHAR *buf);
 extern CHAR *GetExcInfoBuf(VOID);
 extern VOID SetExcInfoIndex(UINT32 index);
 extern UINT32 GetExcInfoIndex(VOID);
-#ifdef LOSCFG_BLACKBOX
-extern UINT32 GetExcInfoLen(VOID);
-#endif
 extern VOID SetRecordAddr(UINT32 addr);
 extern UINT32 GetRecordAddr(VOID);
 extern VOID SetRecordSpace(UINT32 space);
