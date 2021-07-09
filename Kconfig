@@ -61,6 +61,8 @@ source "arch/Kconfig"
 source "kernel/common/Kconfig"
 ######################### config options of patchfs #####################
 source "kernel/common/patchfs/Kconfig"
+######################### config options of blackbox #####################
+source "kernel/common/blackbox/Kconfig"
 
 config QUICK_START
     bool "Enable QUICK_START"
