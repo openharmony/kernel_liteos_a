@@ -80,5 +80,7 @@ build_ext_component("make") {
   outdir = rebase_path(get_path_info(".", "out_dir"))
   sysroot_path = rebase_path(ohos_current_sysroot)
   arch_cflags = string_join(" ", target_arch_cflags)
-  command = "./build.sh ${board_name} ${ohos_build_compiler} ${root_build_dir} ${ohos_build_type} ${tee_enable} \"${device_company}\" \"${product_path}\" $outdir \"${ohos_version}\" ${sysroot_path} \"${arch_cflags}\""
+  command = "./build.sh ${board_name} ${ohos_build_compiler} ${root_build_dir} ${ohos_build_type} ${tee_enable}"
+  command += " \"${device_company}\" \"${product_path}\" $outdir \"${ohos_version}\" ${sysroot_path} \"${arch_cflags}\""
+  command += " \"${device_path}\""
 }
