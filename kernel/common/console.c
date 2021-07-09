@@ -437,10 +437,10 @@ STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
 
 VOID KillPgrp()
 {
-    INT32 consoleId = -1;
+    INT32 consoleId;
     LosProcessCB *process = OsCurrProcessGet();
 
-    if ((process->consoleID > CONSOLE_NUM -1 ) || (process->consoleID < 0)) {
+    if ((process->consoleID > CONSOLE_NUM - 1) || (process->consoleID < 0)) {
         return;
     }
 
@@ -872,7 +872,7 @@ STATIC INT32 ConsoleGetTermios(unsigned long arg)
         return -EFAULT;
     }
 
-    if(LOS_ArchCopyToUser((VOID *)arg, &consoleCB->consoleTermios, sizeof(struct termios)) != 0) {
+    if (LOS_ArchCopyToUser((VOID *)arg, &consoleCB->consoleTermios, sizeof(struct termios)) != 0) {
         return -EFAULT;
     } else {
         return LOS_OK;

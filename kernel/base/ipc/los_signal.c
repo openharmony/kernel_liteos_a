@@ -134,7 +134,7 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
     if (masked) {
         /* If signal is in wait list and mask list, need unblock it */
         if (LOS_ListEmpty(&sigcb->waitList)  ||
-           (!LOS_ListEmpty(&sigcb->waitList) && !OsSigIsMember(&sigcb->sigwaitmask, info->si_signo))) {
+            (!LOS_ListEmpty(&sigcb->waitList) && !OsSigIsMember(&sigcb->sigwaitmask, info->si_signo))) {
             OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);
         }
     } else {
@@ -310,7 +310,7 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
         .receivedTcb = NULL
     };
 
-    if (info.sigInfo == NULL){
+    if (info.sigInfo == NULL) {
         return -EFAULT;
     }
 

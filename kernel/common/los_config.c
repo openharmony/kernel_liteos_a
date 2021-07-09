@@ -83,7 +83,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
 
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 ArchEarlyInit(VOID)
 {
-    UINT32 ret = LOS_OK;
+    UINT32 ret;
 
     /* set system counter freq */
 #ifndef LOSCFG_TEE_ENABLE

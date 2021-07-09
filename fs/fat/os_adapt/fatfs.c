@@ -238,7 +238,8 @@ static mode_t fatfs_get_mode(BYTE attribute, mode_t fs_mode)
     return fs_mode;
 }
 
-static enum VnodeType fatfstype_2_vnodetype(BYTE type) {
+static enum VnodeType fatfstype_2_vnodetype(BYTE type) 
+{
     switch (type) {
         case AM_ARC:
             return VNODE_TYPE_REG;
@@ -286,7 +287,7 @@ static FRESULT init_cluster(DIR_FILE *pdfp, DIR *dp_new, FATFS *fs, int type, co
     mem_set(dir, 0, SS(fs));
     if (type == AM_LNK && target) {
         /* Write target to symlink */
-        strcpy_s((char *)dir, SS(fs), target);
+        (void)strcpy_s((char *)dir, SS(fs), target);
     } else {
         /* Write the dir cluster */
         mem_set(dir, 0, SS(fs));

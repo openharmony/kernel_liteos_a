@@ -137,7 +137,7 @@ INT32 CheckMagicKey(CHAR key)
             PRINTK("Magic key off\n");
         }
         return 1;
-    } else if (key == 0x03){ /* ctrl + c */
+    } else if (key == 0x03) { /* ctrl + c */
         KillPgrp();
         return 0;
     }
