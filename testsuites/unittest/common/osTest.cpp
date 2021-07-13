@@ -215,6 +215,13 @@ VOID TestAssertBusyTaskDelay(UINT32 timeout, UINT32 flag)
     }
 }
 
+VOID TestAssertWaitDelay(UINT32 *testCount, UINT32 flag)
+{
+    while (*testCount != flag) {
+    usleep(1);
+    }
+}
+
 UINT32 PosixPthreadInit(pthread_attr_t *attr, int pri)
 {
     UINT32 uwRet = 0;
