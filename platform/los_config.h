@@ -115,7 +115,7 @@ extern UINT32 __heap_end;
  * @ingroup los_config
  * External configuration item for timer tailoring
  */
-#ifndef LOSCFG_BASE_CORE_TICK_HW_TIME
+#if defined(LOSCFG_BASE_CORE_TICK_HW_TIME) && (LOSCFG_BASE_CORE_TICK_HW_TIME == 0)
 #undef LOSCFG_BASE_CORE_TICK_HW_TIME
 #endif
 /****************************** Hardware interrupt module configuration ******************************/
