@@ -85,12 +85,18 @@ STATIC UINT32 *taskWaterLine = NULL;
 #define OS_TASK_ALL_INFO_LEN      (g_taskMaxNum * (sizeof(LosTaskCB) + sizeof(UINT32)))
 
 #ifdef LOSCFG_FS_VFS
+#if defined(LOSCFG_BLACKBOX) && defined(LOSCFG_SAVE_EXCINFO)
+#define SaveExcInfo(arg, ...) WriteExcInfoToBuf(arg, ##__VA_ARGS__)
+#else
+#define SaveExcInfo(arg, ...)
+#endif
 #define PROCESS_INFO_SHOW(seqBuf, arg...) do {              \
     if (seqBuf != NULL) {                                   \
         (void)LosBufPrintf((struct SeqBuf *)seqBuf, ##arg); \
     } else {                                                 \
         PRINTK(arg);                                         \
     }                                                        \
+    SaveExcInfo(arg);                                        \
 } while (0)
 #else
 #define PROCESS_INFO_SHOW(seqBuf, arg...) PRINTK(arg)
