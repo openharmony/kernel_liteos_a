@@ -448,6 +448,11 @@ ifeq ($(LOSCFG_BLACKBOX), y)
     LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/common/blackbox
     LITEOS_BLACKBOX_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/common/blackbox
 endif
+ifeq ($(LOSCFG_HIDUMPER), y)
+    LITEOS_BASELIB     += -lhidumper
+    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/common/hidumper
+    LITEOS_HIDUMPER_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/common/hidumper
+endif
 ############################## Dfx Option End #######################################
 
 ############################# Tools && Debug Option Begin ##############################
@@ -645,7 +650,8 @@ LITEOS_DRIVERS_INCLUDE     := $(LITEOS_CELLWISE_INCLUDE)   $(LITEOS_GPIO_INCLUDE
                               $(LITEOS_HIEVENT_INCLUDE)    $(LITEOS_DEV_MEM_INCLUDE) \
                               $(LITEOS_DEV_QUICKSTART_INCLUDE)
 LITEOS_DFX_INCLUDE    := $(LITEOS_HILOG_INCLUDE) \
-                         $(LITEOS_BLACKBOX_INCLUDE)
+                         $(LITEOS_BLACKBOX_INCLUDE) \
+                         $(LITEOS_HIDUMPER_INCLUDE)
 
 LITEOS_SECURITY_INCLUDE    := $(LITEOS_SECURITY_CAP_INC) $(LITEOS_SECURITY_VID_INC)
 LOSCFG_TOOLS_DEBUG_INCLUDE := $(LITEOS_SHELL_INCLUDE)  $(LITEOS_UART_INCLUDE) \
