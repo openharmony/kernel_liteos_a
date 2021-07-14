@@ -63,6 +63,8 @@ source "kernel/common/Kconfig"
 source "kernel/common/patchfs/Kconfig"
 ######################### config options of blackbox #####################
 source "kernel/common/blackbox/Kconfig"
+######################### config options of hidumper #####################
+source "kernel/common/hidumper/Kconfig"
 
 config QUICK_START
     bool "Enable QUICK_START"

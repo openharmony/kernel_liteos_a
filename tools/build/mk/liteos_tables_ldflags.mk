@@ -137,7 +137,8 @@ LITEOS_TABLES_KERNEL_INIT_LDFLAGS := \
     -uOsResourceFreeTaskCreate \
     -uOsSystemInit \
     -uOsBBoxDriverInit \
-    -uOsBBoxSystemAdapterInit
+    -uOsBBoxSystemAdapterInit \
+    -uOsHiDumperDriverInit
 
 LITEOS_TABLES_DRIVER_LDFLAGS := \
     -ui2c_init \
