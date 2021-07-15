@@ -721,7 +721,7 @@ VOID BackTraceSub(UINTPTR regFP)
     while (IsValidFP(backFP, stackStart, stackEnd, &kvaddr) == TRUE) {
         tmpFP = backFP;
 #ifdef LOSCFG_COMPILER_CLANG_LLVM
-	backFP = *(UINTPTR *)(UINTPTR)kvaddr;
+        backFP = *(UINTPTR *)(UINTPTR)kvaddr;
         if (IsValidFP(tmpFP + POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
             PrintExcInfo("traceback backLR check failed, backLP: 0x%x\n", tmpFP + POINTER_SIZE);
             return;
@@ -1215,7 +1215,11 @@ VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCou
     framePtr = Get_Fp();
     while ((framePtr > stackStart) && (framePtr < stackEnd) && IS_ALIGNED(framePtr, sizeof(CHAR *))) {
         tmpFramePtr = framePtr;
+#ifdef LOSCFG_COMPILER_CLANG_LLVM
+        linkReg = *(UINTPTR *)(tmpFramePtr + sizeof(UINTPTR));
+#else
         linkReg = *(UINTPTR *)framePtr;
+#endif
         if (index >= jumpCount) {
             LR[count++] = linkReg;
             if (count == recordCount) {
@@ -1223,7 +1227,11 @@ VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCou
             }
         }
         index++;
+#ifdef LOSCFG_COMPILER_CLANG_LLVM
+        framePtr = *(UINTPTR *)framePtr;
+#else
         framePtr = *(UINTPTR *)(tmpFramePtr - sizeof(UINTPTR));
+#endif
     }
 
     /* if linkReg is not enough,clean up the last of the effective LR as the end. */
