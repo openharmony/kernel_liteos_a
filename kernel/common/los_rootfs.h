@@ -32,45 +32,52 @@
 #ifndef _LOS_ROOTFS_H
 #define _LOS_ROOTFS_H
 
-#define BYTES_PER_MBYTE         0x100000
-#define BYTES_PER_KBYTE         0x400
+#include "los_typedef.h"
 
-#define COMMAND_LINE_ADDR       LOSCFG_BOOTENV_ADDR * BYTES_PER_KBYTE
-#define COMMAND_LINE_SIZE       1024
-
-#ifdef LOSCFG_STORAGE_SPINOR
-#define ROOTFS_ROOT_TYPE        "flash"
-#define ROOTFS_FS_TYPE          "jffs2"
-#elif defined(LOSCFG_STORAGE_SPINAND)
-#define ROOTFS_ROOT_TYPE        "nand"
-#define ROOTFS_FS_TYPE          "yaffs2"
-#endif
-
+#define ROOT_DIR_NAME           "/"
+#define STORAGE_DIR_NAME        "/storage"
 #ifdef LOSCFG_STORAGE_EMMC
-#define ROOTFS_ROOT_TYPE        "emmc"
-#define ROOTFS_FS_TYPE          "vfat"
+#define USERDATA_DIR_NAME       "/userdata"
 #endif
-
-#ifdef LOSCFG_TEE_ENABLE
-#define ROOTFS_FLASH_ADDR       0x600000
-#define ROOTFS_FLASH_SIZE       0x800000
-#else
-#define ROOTFS_FLASH_ADDR       0x400000
-#define ROOTFS_FLASH_SIZE       0xa00000
-#endif
+#define DEFAULT_MOUNT_DIR_MODE  0755
+#define DEFAULT_MOUNT_DATA      NULL
 
 #ifdef LOSCFG_STORAGE_SPINOR
 #define FLASH_TYPE              "spinor"
-#define FLASH_DEV_NAME          "/dev/spinorblk0"
-#elif defined(LOSCFG_STORAGE_SPINAND)
+#define ROOT_DEV_NAME           "/dev/spinorblk0"
+#define USER_DEV_NAME           "/dev/spinorblk2"
+#define ROOTFS_ADDR             0x600000
+#define ROOTFS_SIZE             0x800000
+#define USERFS_SIZE             0x80000
+#elif defined (LOSCFG_STORAGE_SPINAND)
 #define FLASH_TYPE              "nand"
-#define FLASH_DEV_NAME          "/dev/nandblk0"
+#define ROOT_DEV_NAME           "/dev/nandblk0"
+#define USER_DEV_NAME           "/dev/nandblk2"
+#define ROOTFS_ADDR             0x600000
+#define ROOTFS_SIZE             0x800000
+#define USERFS_SIZE             0x80000
+#elif defined (LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
+#define ROOT_DEV_NAME           "/dev/cfiflash0"
+#define USER_DEV_NAME           "/dev/cfiflash2"
+#define ROOTFS_ADDR             CFIFLASH_ROOT_ADDR
+#define ROOTFS_SIZE             0x1B00000
+#define USERFS_SIZE             (CFIFLASH_CAPACITY - ROOTFS_ADDR - ROOTFS_SIZE)
+#elif defined (LOSCFG_STORAGE_EMMC)
+#define ROOT_DEV_NAME           "/dev/mmcblk0p0"
+#define USER_DEV_NAME           "/dev/mmcblk0p1"
+#define USERDATA_DEV_NAME       "/dev/mmcblk0p2"
+#define ROOTFS_ADDR             0xA00000
+#define ROOTFS_SIZE             0x1400000
+#define USERFS_SIZE             0x3200000
+#ifdef DEFAULT_MOUNT_DIR_MODE
+#undef DEFAULT_MOUNT_DIR_MODE
 #endif
-
-#define EMMC_SEC_SIZE           512
-
-#define DEC_NUMBER_STRING       "0123456789"
-#define HEX_NUMBER_STRING       "0123456789abcdefABCDEF"
+#ifdef DEFAULT_MOUNT_DATA
+#undef DEFAULT_MOUNT_DATA
+#endif
+#define DEFAULT_MOUNT_DIR_MODE  0777
+#define DEFAULT_MOUNT_DATA      "umask=000"
+#endif
 
 INT32 OsMountRootfs(VOID);
 VOID OsSetCmdLineAddr(UINT64 addr);
