@@ -904,11 +904,13 @@ int fatfs_fallocate64(struct file *filep, int mode, off64_t offset, off64_t len)
         return -EBUSY;
     }
     result = f_expand(fp, (FSIZE_t)offset, (FSIZE_t)len, 1);
-    if (result == FR_OK && finfo->sclst == 0) {
-        finfo->sclst = fp->obj.sclust;
+    if (result == FR_OK) {
+        if (finfo->sclst == 0) {
+            finfo->sclst = fp->obj.sclust;
+        }
+        result = f_sync(fp);
     }
-    result = f_sync(fp);
-    unlock_fs(fs, FR_OK);
+    unlock_fs(fs, result);
 
     return -fatfs_2_vfs(result);
 }
