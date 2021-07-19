@@ -1206,7 +1206,7 @@ OUT:
     return ret;
 }
 
-int SysStat(const char *path, struct stat *buf)
+int SysStat(const char *path, struct kstat *buf)
 {
     int ret;
     char *pathRet = NULL;
@@ -1225,7 +1225,7 @@ int SysStat(const char *path, struct stat *buf)
         goto OUT;
     }
 
-    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct stat));
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         ret = -EFAULT;
     }
@@ -1237,7 +1237,7 @@ OUT:
     return ret;
 }
 
-int SysLstat(const char *path, struct stat *buffer)
+int SysLstat(const char *path, struct kstat *buffer)
 {
     int ret;
     char *pathRet = NULL;
@@ -1256,7 +1256,7 @@ int SysLstat(const char *path, struct stat *buffer)
         goto OUT;
     }
 
-    ret = LOS_ArchCopyToUser(buffer, &bufRet, sizeof(struct stat));
+    ret = LOS_ArchCopyToUser(buffer, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         ret = -EFAULT;
     }
