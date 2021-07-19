@@ -742,6 +742,7 @@ INT32 ShmDt(const VOID *shmaddr)
     /* remove it from aspace */
     LOS_RbDelNode(&space->regionRbTree, &region->rbNode);
     LOS_ArchMmuUnmap(&space->archMmu, region->range.base, region->range.size >> PAGE_SHIFT);
+    (VOID)LOS_MuxRelease(&space->regionMux);
     /* free it */
     free(region);
 
@@ -750,7 +751,7 @@ INT32 ShmDt(const VOID *shmaddr)
     if (seg == NULL) {
         ret = EINVAL;
         SYSV_SHM_UNLOCK();
-        goto ERROR_WITH_LOCK;
+        goto ERROR;
     }
 
     ShmPagesRefDec(seg);
@@ -763,7 +764,7 @@ INT32 ShmDt(const VOID *shmaddr)
         seg->ds.shm_lpid = LOS_GetCurrProcessID();
     }
     SYSV_SHM_UNLOCK();
-    (VOID)LOS_MuxRelease(&space->regionMux);
+
     return 0;
 
 ERROR_WITH_LOCK:
