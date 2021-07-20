@@ -30,14 +30,17 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 set -e
 
-BIN_DIR=$1
-LIB_DIR=$2
-ROOTFS_DIR=$3
-OUT_DIR=$4
+OUT=$1
+ROOTFS_DIR=$2
+OUT_DIR=$3
+BIN_DIR=${OUT}/bin
+LIB_DIR=${OUT}/musl
+ETC_DIR=${OUT}/etc
 NEED_COPYTO_OUTDIR=(shell toybox mksh tftp)
+
 mkdir -p ${ROOTFS_DIR}/bin ${ROOTFS_DIR}/lib ${ROOTFS_DIR}/usr/bin ${ROOTFS_DIR}/usr/lib ${ROOTFS_DIR}/etc \
 ${ROOTFS_DIR}/app ${ROOTFS_DIR}/data ${ROOTFS_DIR}/proc ${ROOTFS_DIR}/dev ${ROOTFS_DIR}/data/system ${ROOTFS_DIR}/data/system/param \
-${ROOTFS_DIR}/system ${ROOTFS_DIR}/system/internal ${ROOTFS_DIR}/system/external ${OUT_DIR}/bin ${OUT_DIR}/libs
+${ROOTFS_DIR}/system ${ROOTFS_DIR}/system/internal ${ROOTFS_DIR}/system/external ${OUT_DIR}/bin ${OUT_DIR}/libs ${OUT_DIR}/etc
 if [ -d "${BIN_DIR}" ] && [ "$(ls -A "${BIN_DIR}")" != "" ]; then
     cp -f ${BIN_DIR}/* ${ROOTFS_DIR}/bin
     for el in ${NEED_COPYTO_OUTDIR[@]}
@@ -49,3 +52,8 @@ if [ -d "${BIN_DIR}" ] && [ "$(ls -A "${BIN_DIR}")" != "" ]; then
 fi
 cp -f ${LIB_DIR}/* ${ROOTFS_DIR}/lib
 cp -f ${LIB_DIR}/* ${OUT_DIR}/libs
+
+if [ -e ${ETC_DIR} ]; then
+cp -f ${ETC_DIR}/.mkshrc ${ROOTFS_DIR}/etc
+cp -f ${ETC_DIR}/.mkshrc ${OUT_DIR}/etc
+fi
