@@ -200,7 +200,6 @@ INT32 LOS_GetArgValue(CHAR *argName, CHAR **argValue) {
     return LOS_NOK;
 }
 
-
 UINT64 LOS_GetAlignsize() {
     return g_alignSize;
 }

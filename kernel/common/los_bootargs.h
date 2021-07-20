@@ -55,4 +55,7 @@ INT32 LOS_GetArgValue(CHAR *argName, CHAR **argValue);
 UINT64 LOS_GetAlignsize(VOID);
 UINT64 LOS_SizeStrToNum(CHAR *value);
 
+#ifdef LOSCFG_BOOTENV_RAM
+CHAR *OsGetArgsAddr(VOID);
+#endif
 #endif /* _LOS_BOOTARGS_H */
