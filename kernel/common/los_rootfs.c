@@ -156,10 +156,11 @@ STATIC INT32 AddPartitions(CHAR *dev, UINT64 rootAddr, UINT64 rootSize, UINT64 u
 }
 
 
-STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *rootSize) {
+STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *rootSize, UINT32 *mountFlags) {
     INT32 ret;
     CHAR *rootAddrStr;
     CHAR *rootSizeStr;
+    CHAR *rwTag;
 
     ret = LOS_GetArgValue("root", dev);
     if (ret != LOS_OK) {
@@ -185,6 +186,13 @@ STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *
         *rootSize = ROOTFS_SIZE;
     } else {
         *rootSize = LOS_SizeStrToNum(rootSizeStr);
+    }
+    
+    ret = LOS_GetArgValue("ro", &rwTag);
+    if (ret == LOS_OK) {
+        *mountFlags = MS_RDONLY;
+    } else {
+        *mountFlags = 0;
     }
 
     return LOS_OK;
@@ -212,12 +220,12 @@ STATIC INT32 ParseUserArgs(UINT64 rootAddr, UINT64 rootSize, UINT64 *userAddr, U
     return LOS_OK;
 }
 
-STATIC INT32 MountPartitions(CHAR *fsType) {
+STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags) {
     INT32 ret;
     INT32 err;
 
     /* Mount rootfs */
-    ret = mount(ROOT_DEV_NAME, ROOT_DIR_NAME, fsType, MS_RDONLY, NULL);
+    ret = mount(ROOT_DEV_NAME, ROOT_DIR_NAME, fsType, mountFlags, NULL);
     if (ret != LOS_OK) {
         err = get_errno();
         PRINT_ERR("Failed to mount %s, rootDev %s, errno %d: %s\n", ROOT_DIR_NAME, ROOT_DEV_NAME, err, strerror(err));
@@ -291,8 +299,9 @@ INT32 OsMountRootfs() {
     UINT64 rootSize;
     UINT64 userAddr;
     UINT64 userSize;
+    UINT32 mountFlags;
 
-    ret = ParseRootArgs(&dev, &fstype, &rootAddr, &rootSize);
+    ret = ParseRootArgs(&dev, &fstype, &rootAddr, &rootSize, &mountFlags);
     if (ret != LOS_OK) {
         return ret;
     }
@@ -312,7 +321,7 @@ INT32 OsMountRootfs() {
         return ret;
     }
 
-    ret = MountPartitions(fstype);
+    ret = MountPartitions(fstype, mountFlags);
     if (ret != LOS_OK) {
         return ret;
     }

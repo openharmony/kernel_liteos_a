@@ -123,7 +123,7 @@ int VfsJffs2Bind(struct Mount *mnt, struct Vnode *blkDriver, const void *data)
 
     partNo = p->patitionnum;
 
-    ret = jffs2_mount(partNo, &rootNode);
+    ret = jffs2_mount(partNo, &rootNode, mnt->mountFlags);
     if (ret != 0) {
         LOS_MuxUnlock(&g_jffs2FsLock);
         return ret;
