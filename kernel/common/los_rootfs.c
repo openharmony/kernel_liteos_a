@@ -28,555 +28,294 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+#include "los_rootfs.h"
+#include "los_bootargs.h"
 #include "los_base.h"
-#include "los_typedef.h"
 #include "string.h"
-#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
+#include "sys/mount.h"
+#include "sys/stat.h"
+#include "sys/types.h"
+
+#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND) || defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
+#include "mtd_list.h"
 #include "mtd_partition.h"
 #endif
-#ifdef LOSCFG_DRIVERS_MMC
-#include "disk.h"
-#endif
-#include "sys/mount.h"
-#ifdef LOSCFG_PLATFORM_ROOTFS
-#include "los_rootfs.h"
-#endif
-#include "mtd_list.h"
-#include "fs/driver.h"
 
 #ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-#include "mtd_partition.h"
 #include "cfiflash.h"
-#define DEV_STORAGE_PATH        "/dev/cfiflash1"
-#define SECOND_MTD_PART_NUM 1
-#define STORAGE_SIZE 0x1400000
-#endif
-
-#ifdef LOSCFG_STORAGE_SPINOR
-#define DEV_STORAGE_PATH       "/dev/spinorblk2"
-#define SECOND_MTD_PART_NUM 2
-#define STORAGE_SIZE 0x80000
-#endif
-
-#ifdef LOSCFG_STORAGE_SPINAND
-#define DEV_STORAGE_PATH       "/dev/nandblk2"
-#define SECOND_MTD_PART_NUM 2
-#define STORAGE_SIZE 0xa00000
 #endif
 
 #ifdef LOSCFG_STORAGE_EMMC
+#include "disk.h"
 #include "ff.h"
-#define STORAGE_SIZE 0x3200000
-STATIC los_disk *g_emmcDisk = NULL;
 #endif
 
-
-#ifndef LOSCFG_SECURITY_BOOT
-STATIC INT32 g_alignSize = 0;
-#endif
-
-#define VFAT_STORAGE_MOUNT_DIR_MODE 0777
-#define DEFAULT_STORAGE_MOUNT_DIR_MODE 0755
-
-#ifdef LOSCFG_DRIVERS_MMC
-los_disk *GetMmcDisk(UINT8 type)
-{
-    const CHAR *mmcDevHead = "/dev/mmcblk";
-
-    for (INT32 diskId = 0; diskId < SYS_MAX_DISK; diskId++) {
-        los_disk *disk = get_disk(diskId);
-        if (disk == NULL) {
-            continue;
-        } else if (disk->disk_name == NULL) {
-            continue;
-        } else if (strncmp(disk->disk_name, mmcDevHead, strlen(mmcDevHead))) {
-            continue;
-        } else {
-            if (disk->type == type) {
-                return disk;
-            }
-        }
-    }
-    PRINT_ERR("Cannot find the mmc disk!\n");
-    return NULL;
-}
-#endif
 
 #ifdef LOSCFG_STORAGE_EMMC
 struct disk_divide_info *StorageBlockGetEmmc(void);
 struct block_operations *StorageBlockGetMmcOps(void);
 char *StorageBlockGetEmmcNodeName(void *block);
 
-STATIC const CHAR *AddEmmcRootfsPart(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 userSize)
+STATIC INT32 AddEmmcParts(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 userSize)
 {
     INT32 ret;
 
-    void *block = ((struct drv_data *)g_emmcDisk->dev->data)->priv;
+    los_disk *emmcDisk = los_get_mmcdisk_bytype(EMMC);
+    if (emmcDisk == NULL) {
+        PRINT_ERR("Get EMMC disk failed!\n");
+        return LOS_NOK;
+    }
+
+    void *block = ((struct drv_data *)emmcDisk->dev->data)->priv;
     const char *node_name = StorageBlockGetEmmcNodeName(block);
-    if (los_disk_deinit(g_emmcDisk->disk_id) != ENOERR) {
+    if (los_disk_deinit(emmcDisk->disk_id) != ENOERR) {
         PRINT_ERR("Failed to deinit emmc disk!\n");
-        return NULL;
+        return LOS_NOK;
     }
 
     struct disk_divide_info *emmc = StorageBlockGetEmmc();
     ret = add_mmc_partition(emmc, rootAddr / EMMC_SEC_SIZE, rootSize / EMMC_SEC_SIZE);
     if (ret != LOS_OK) {
         PRINT_ERR("Failed to add mmc root partition!\n");
-        return NULL;
-    } else {
-        UINT64 storageStartCnt = userAddr / EMMC_SEC_SIZE;
-        UINT64 storageSizeCnt = userSize / EMMC_SEC_SIZE;
-        UINT64 userdataStartCnt = storageStartCnt + storageSizeCnt;
-        UINT64 userdataSizeCnt = g_emmcDisk->sector_count - userdataStartCnt;
-        ret = add_mmc_partition(emmc, storageStartCnt, storageSizeCnt);
-        if (ret != LOS_OK) {
-            PRINT_ERR("Failed to add mmc storage partition!\n");
-        }
-        ret = add_mmc_partition(emmc, userdataStartCnt, userdataSizeCnt);
-        if (ret != LOS_OK) {
-            PRINT_ERR("Failed to add mmc userdata partition!\n");
-        }
-        LOS_Msleep(10); /* waiting for device identification */
-        INT32 diskId = los_alloc_diskid_byname(node_name);
-        if (diskId < 0) {
-            PRINT_ERR("Failed to alloc disk %s!\n", node_name);
-            return NULL;
-        }
-        if (los_disk_init(node_name, StorageBlockGetMmcOps(), block, diskId, emmc) != ENOERR) {
-            PRINT_ERR("Failed to init emmc disk!\n");
-            return NULL;
-        }
-        return node_name;
-    }
-}
-#endif
-
-STATIC const CHAR *GetDevName(const CHAR *rootType, INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 userSize)
-{
-    const CHAR *rootDev = NULL;
-
-#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
-    INT32 ret;
-    if (strcmp(rootType, "flash") == 0) {
-        ret = add_mtd_partition(FLASH_TYPE, rootAddr, rootSize, 0);
-        if (ret != LOS_OK) {
-            PRINT_ERR("Failed to add spinor/spinand root partition!\n");
-        } else {
-            rootDev = FLASH_DEV_NAME;
-            ret = add_mtd_partition(FLASH_TYPE, userAddr, userSize, SECOND_MTD_PART_NUM);
-            if (ret != LOS_OK) {
-                PRINT_ERR("Failed to add spinor/spinand storage partition!\n");
-            }
-        }
-    } else
-#endif
-
-#ifdef LOSCFG_DRIVERS_USB_MASS_STORAGE
-    if (strcmp(rootType, "usb") == 0) {
-        rootDev = "/dev/sda";
-    } else
-#endif
-
-#ifdef LOSCFG_DRIVERS_SD
-    if (strcmp(rootType, "sdcard") == 0) {
-        los_disk *sdDisk = GetMmcDisk(OTHERS);
-        if (sdDisk == NULL) {
-            PRINT_ERR("Get sdcard failed!\n");
-        } else {
-            rootDev = sdDisk->disk_name;
-        }
-    } else
-#endif
-
-#ifdef LOSCFG_STORAGE_EMMC
-    if (strcmp(rootType, "emmc") == 0) {
-        rootDev = AddEmmcRootfsPart(rootAddr, rootSize, userAddr, userSize);
-    } else
-#endif
-
-#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-    if (strcmp(rootType, FLASH_TYPE) == 0) {
-        INT32 ret;
-        if (rootAddr != CFIFLASH_ROOT_ADDR) {
-            PRINT_ERR("Error rootAddr, must be %#0x!\n", CFIFLASH_ROOT_ADDR);
-            return NULL;
-        }
-        ret = add_mtd_partition(FLASH_TYPE, rootAddr, rootSize, 0);
-        if (ret != LOS_OK) {
-            PRINT_ERR("Failed to add %s root partition!\n", FLASH_TYPE);
-        } else {
-            rootDev = "/dev/cfiflash0";
-            ret = add_mtd_partition(FLASH_TYPE, (rootAddr + rootSize),
-                                    CFIFLASH_CAPACITY - rootAddr - rootSize, SECOND_MTD_PART_NUM);
-            if (ret != LOS_OK) {
-                PRINT_ERR("Failed to add %s storage partition!\n", FLASH_TYPE);
-            }
-        }
-    } else
-#endif
-    {
-        PRINT_ERR("Failed to find root dev type: %s\n", rootType);
-    }
-    return rootDev;
-}
-
-#ifndef LOSCFG_SECURITY_BOOT
-STATIC INT32 GetArgs(CHAR **args)
-{
-#ifdef LOSCFG_BOOTENV_RAM
-    *args = OsGetArgsAddr();
-    return LOS_OK;
-
-#else
-    INT32 ret;
-    INT32 i;
-    INT32 len = 0;
-    CHAR *cmdLine = NULL;
-    CHAR *tmp = NULL;
-    const CHAR *bootargName = "bootargs=";
-
-    cmdLine = (CHAR *)malloc(COMMAND_LINE_SIZE);
-    if (cmdLine == NULL) {
-        PRINT_ERR("Malloc cmdLine space error!\n");
         return LOS_NOK;
     }
 
-#ifdef LOSCFG_STORAGE_EMMC
-    g_emmcDisk = GetMmcDisk(EMMC);
-    if (g_emmcDisk == NULL) {
-        PRINT_ERR("Get EMMC disk failed!\n");
-        goto ERROUT;
-    }
-    /* param4 is TRUE for not reading large contiguous data */
-    ret = los_disk_read(g_emmcDisk->disk_id, cmdLine, COMMAND_LINE_ADDR / EMMC_SEC_SIZE,
-                        COMMAND_LINE_SIZE / EMMC_SEC_SIZE, TRUE);
-    if (ret != 0) {
-        PRINT_ERR("Read EMMC command line failed!\n");
-        goto ERROUT;
-    }
-    g_alignSize = EMMC_SEC_SIZE;
-#endif
-
-#if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND)
-    struct MtdDev *mtd = GetMtd(FLASH_TYPE);
-    if (mtd == NULL) {
-        PRINT_ERR("Get spinor mtd failed!\n");
-        goto ERROUT;
-    }
-    g_alignSize = mtd->eraseSize;
-    ret = mtd->read(mtd, COMMAND_LINE_ADDR, COMMAND_LINE_SIZE, cmdLine);
-    if (ret != COMMAND_LINE_SIZE) {
-        PRINT_ERR("Read spinor command line failed!\n");
-        goto ERROUT;
-    }
-#endif
-#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-    struct MtdDev *mtd = GetCfiMtdDev();
-    if (mtd == NULL) {
-        PRINT_ERR("Get CFI mtd failed!\n");
-        goto ERROUT;
-    }
-    g_alignSize = mtd->eraseSize;
-    ret = mtd->read(mtd, CFIFLASH_BOOTARGS_ADDR, COMMAND_LINE_SIZE, cmdLine);
-    if (ret != COMMAND_LINE_SIZE) {
-        PRINT_ERR("Read CFI command line failed!\n");
-        goto ERROUT;
-    }
-#endif
-
-    for (i = 0; i < COMMAND_LINE_SIZE; i += len + 1) {
-        len = strlen(cmdLine + i);
-        tmp = strstr(cmdLine + i, bootargName);
-        if (tmp != NULL) {
-            *args = strdup(tmp + strlen(bootargName));
-            if (*args == NULL) {
-                goto ERROUT;
-            }
-            free(cmdLine);
-            return LOS_OK;
-        }
-    }
-    PRINT_ERR("Cannot find bootargs!\n");
-
-ERROUT:
-    free(cmdLine);
-    return LOS_NOK;
-#endif
-}
-
-STATIC INT32 MatchRootPos(CHAR *p, const CHAR *rootInfoName, INT32 *rootInfo)
-{
-    UINT32 offset;
-    CHAR *value = NULL;
-
-    if (strncmp(p, rootInfoName, strlen(rootInfoName)) == 0) {
-        value = p + strlen(rootInfoName);
-        offset = strspn(value, DEC_NUMBER_STRING);
-        if (strcmp(p + strlen(p) - 1, "M") == 0) {
-            if ((offset < (strlen(value) - 1)) || (sscanf_s(value, "%d", rootInfo) <= 0)) {
-                goto ERROUT;
-            }
-            *rootInfo = *rootInfo * BYTES_PER_MBYTE;
-        } else if (strcmp(p + strlen(p) - 1, "K") == 0) {
-            if ((offset < (strlen(value) - 1)) || (sscanf_s(value, "%d", rootInfo) <= 0)) {
-                goto ERROUT;
-            }
-            *rootInfo = *rootInfo * BYTES_PER_KBYTE;
-        } else if (sscanf_s(value, "0x%x", rootInfo) > 0) {
-            value += strlen("0x");
-            if (strspn(value, HEX_NUMBER_STRING) < strlen(value)) {
-                goto ERROUT;
-            }
-        } else {
-            goto ERROUT;
-        }
-    }
-
-    if ((*rootInfo >= 0) && (g_alignSize != 0) && ((UINT32)(*rootInfo) & (UINT32)(g_alignSize - 1))) {
-        PRINT_ERR("The bootarg \"%s\" will be 0x%x aligned!\n", p, g_alignSize);
-    }
-    return LOS_OK;
-
-ERROUT:
-    PRINT_ERR("Invalid bootarg \"%s\"!\n", p);
-    return LOS_NOK;
-}
-
-STATIC INT32 MatchRootInfo(CHAR *p, CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize, INT32 *userAddr, INT32 *userSize)
-{
-    const CHAR *rootName = "root=";
-    const CHAR *fsName = "fstype=";
-    const CHAR *rootAddrName = "rootaddr=";
-    const CHAR *rootSizeName = "rootsize=";
-    const CHAR *userAddrName = "useraddr=";
-    const CHAR *userSizeName = "usersize=";
-
-    if ((*rootType == NULL) && (strncmp(p, rootName, strlen(rootName)) == 0)) {
-        *rootType = strdup(p + strlen(rootName));
-        if (*rootType == NULL) {
-            return LOS_NOK;
-        }
-        return LOS_OK;
-    }
-
-    if ((*fsType == NULL) && (strncmp(p, fsName, strlen(fsName)) == 0)) {
-        *fsType = strdup(p + strlen(fsName));
-        if (*fsType == NULL) {
-            return LOS_NOK;
-        }
-        return LOS_OK;
-    }
-
-    if (*rootAddr < 0) {
-        if (MatchRootPos(p, rootAddrName, rootAddr) != LOS_OK) {
-            return LOS_NOK;
-        } else if (*rootAddr >= 0) {
-            return LOS_OK;
-        }
-    }
-
-    if (*rootSize < 0) {
-        if (MatchRootPos(p, rootSizeName, rootSize) != LOS_OK) {
-            return LOS_NOK;
-        }
-    }
-
-    if (*userAddr < 0) {
-        if (MatchRootPos(p, userAddrName, userAddr) != LOS_OK) {
-            return LOS_NOK;
-        } else if (*userAddr >= 0) {
-            return LOS_OK;
-        }
-    }
-
-    if (*userSize < 0) {
-        if (MatchRootPos(p, userSizeName, userSize) != LOS_OK) {
-            return LOS_NOK;
-        }
-    }
-
-    return LOS_OK;
-}
-
-STATIC INT32 GetRootType(CHAR **rootType, CHAR **fsType, INT32 *rootAddr, INT32 *rootSize, INT32 *userAddr, INT32 *userSize)
-{
-    CHAR *args = NULL;
-    CHAR *p = NULL;
-
-    if (GetArgs(&args) != LOS_OK) {
-        PRINT_ERR("Cannot get bootargs!\n");
+    UINT64 storageStartCnt = userAddr / EMMC_SEC_SIZE;
+    UINT64 storageSizeCnt = userSize / EMMC_SEC_SIZE;
+    UINT64 userdataStartCnt = storageStartCnt + storageSizeCnt;
+    UINT64 userdataSizeCnt = emmcDisk->sector_count - userdataStartCnt;
+    ret = add_mmc_partition(emmc, storageStartCnt, storageSizeCnt);
+    if (ret != LOS_OK) {
+        PRINT_ERR("Failed to add mmc storage partition!\n");
         return LOS_NOK;
     }
-#ifndef LOSCFG_BOOTENV_RAM
-    CHAR *argsBak = NULL;
-    argsBak = args;
-#endif
-    p = strsep(&args, " ");
-    while (p != NULL) {
-        if (MatchRootInfo(p, rootType, fsType, rootAddr, rootSize, userAddr, userSize) != LOS_OK) {
-            goto ERROUT;
-        }
-        p = strsep(&args, " ");
-    }
-    if ((*fsType != NULL) && (*rootType != NULL)) {
-#ifndef LOSCFG_BOOTENV_RAM
-        free(argsBak);
-#endif
-        return LOS_OK;
+
+    ret = add_mmc_partition(emmc, userdataStartCnt, userdataSizeCnt);
+    if (ret != LOS_OK) {
+        PRINT_ERR("Failed to add mmc userdata partition!\n");
+        return LOS_NOK;
     }
 
-ERROUT:
-    PRINT_ERR("Invalid rootfs information!\n");
-    if (*rootType != NULL) {
-        free(*rootType);
-        *rootType = NULL;
+    LOS_Msleep(10); /* waiting for device identification */
+
+    INT32 diskId = los_alloc_diskid_byname(node_name);
+    if (diskId < 0) {
+        PRINT_ERR("Failed to alloc disk %s!\n", node_name);
+        return LOS_NOK;
     }
-    if (*fsType != NULL) {
-        free(*fsType);
-        *fsType = NULL;
+
+    if (los_disk_init(node_name, StorageBlockGetMmcOps(), block, diskId, emmc) != ENOERR) {
+        PRINT_ERR("Failed to init emmc disk!\n");
+        return LOS_NOK;
     }
-#ifndef LOSCFG_BOOTENV_RAM
-    free(argsBak);
-#endif
-    return LOS_NOK;
+
+    return LOS_OK;
 }
 #endif
 
-#ifdef LOSCFG_STORAGE_EMMC
-STATIC VOID OsMountUserdata(const CHAR *fsType)
+
+STATIC INT32 AddPartitions(CHAR *dev, UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, UINT64 userSize)
 {
-    INT32 ret;
-    INT32 err;
-    const CHAR *userdataDir = "/userdata";
-    ret = mkdir(userdataDir, VFAT_STORAGE_MOUNT_DIR_MODE);
-    if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
-        PRINT_ERR("Failed to mkdir /userdata, errno %d: %s\n", err, strerror(err));
-        return;
+#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
+    if ((strcmp(dev, "cfi-flash") == 0) && (rootAddr != CFIFLASH_ROOT_ADDR)) {
+        PRINT_ERR("Error rootAddr, must be %#0x!\n", CFIFLASH_ROOT_ADDR);
+        return LOS_NOK;
     }
-    CHAR emmcUserdataDev[DISK_NAME] = {0};
-    if (snprintf_s(emmcUserdataDev, sizeof(emmcUserdataDev), sizeof(emmcUserdataDev) - 1,
-        "%s%s", g_emmcDisk->disk_name, "p2") < 0) {
-        PRINT_ERR("Failed to get emmc userdata dev name!\n");
-        return;
-    }
-    ret = mount(emmcUserdataDev, userdataDir, fsType, 0, "umask=000");
-    if (ret == LOS_OK) {
-        return;
-    }
-    err = get_errno();
-    if (err == ENOTSUP) {
-#ifdef LOSCFG_FS_FAT
-        ret = format(emmcUserdataDev, 0, FM_FAT32);
-        if (ret != LOS_OK) {
-            PRINT_ERR("Failed to format %s\n", emmcUserdataDev);
-            return;
-        }
-#endif
-        ret = mount(emmcUserdataDev, userdataDir, fsType, 0, "umask=000");
-        if (ret != LOS_OK) {
-            err = get_errno();
-            PRINT_ERR("Failed to mount /userdata, errno %d: %s\n", err, strerror(err));
-        }
-    } else {
-        PRINT_ERR("Failed to mount /userdata, errno %d: %s\n", err, strerror(err));
-    }
-    return;
-}
 #endif
 
-STATIC INT32 OsMountRootfsAndUserfs(const CHAR *rootDev, const CHAR *fsType)
-{
-    INT32 ret;
-    INT32 err;
-    if (strcmp(fsType, "vfat") == 0) {
-        ret = mount(rootDev, "/", fsType, MS_RDONLY, NULL);
-        if (ret != LOS_OK) {
-            err = get_errno();
-            PRINT_ERR("Failed to mount vfat rootfs, errno %d: %s\n", err, strerror(err));
-            return ret;
-        }
-#ifdef LOSCFG_STORAGE_EMMC
-        ret = mkdir("/storage", VFAT_STORAGE_MOUNT_DIR_MODE);
-        if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
-            PRINT_ERR("Failed to mkdir /storage, errno %d: %s\n", err, strerror(err));
-            return ret;
-        } else {
-            CHAR emmcStorageDev[DISK_NAME] = {0};
-            if (snprintf_s(emmcStorageDev, sizeof(emmcStorageDev), sizeof(emmcStorageDev) - 1,
-                "%s%s", g_emmcDisk->disk_name, "p1") < 0) {
-                PRINT_ERR("Failed to get emmc storage dev name!\n");
-            } else {
-                ret = mount(emmcStorageDev, "/storage", fsType, 0, "umask=000");
-                if (ret != LOS_OK) {
-                    err = get_errno();
-                    PRINT_ERR("Failed to mount /storage, errno %d: %s\n", err, strerror(err));
-                }
-            }
-        }
-        OsMountUserdata(fsType);
-#endif
-    } else {
-        ret = mount(rootDev, "/", fsType, MS_RDONLY, NULL);
-        if (ret != LOS_OK) {
-            err = get_errno();
-            PRINT_ERR("Failed to mount rootfs,rootDev %s, errno %d: %s\n", rootDev, err, strerror(err));
-            return ret;
-        }
 #if defined(LOSCFG_STORAGE_SPINOR) || defined(LOSCFG_STORAGE_SPINAND) || defined(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7)
-        ret = mkdir("/storage", DEFAULT_STORAGE_MOUNT_DIR_MODE);
-        if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
-            PRINT_ERR("Failed to mkdir /storage, errno %d: %s\n", err, strerror(err));
-            return ret;
-        } else {
-            ret = mount(DEV_STORAGE_PATH, "/storage", fsType, 0, NULL);
-            if (ret != LOS_OK) {
-                err = get_errno();
-                PRINT_ERR("Failed to mount /storage, errno %d: %s\n", err, strerror(err));
-            }
+    INT32 ret;
+    INT32 blk0 = 0;
+    INT32 blk2 = 2;
+    if (strcmp(dev, "flash") == 0 || strcmp(dev, FLASH_TYPE) == 0) {
+        ret = add_mtd_partition(FLASH_TYPE, rootAddr, rootSize, blk0);
+        if (ret != LOS_OK) {
+            PRINT_ERR("Failed to add mtd root partition!\n");
+            return LOS_NOK;
         }
-#endif
+
+        ret = add_mtd_partition(FLASH_TYPE, userAddr, userSize, blk2);
+        if (ret != LOS_OK) {
+            PRINT_ERR("Failed to add mtd storage partition!\n");
+            return LOS_NOK;
+        }
+
+        return LOS_OK;
     }
+#endif
+
+#ifdef LOSCFG_STORAGE_EMMC
+    if (strcmp(dev, "emmc") == 0) {
+        return AddEmmcParts(rootAddr, rootSize, userAddr, userSize);
+    }
+#endif
+
+    PRINT_ERR("Unsupport dev type: %s\n", dev);
+    return LOS_NOK;
+}
+
+
+STATIC INT32 ParseRootArgs(CHAR **dev, CHAR **fstype, UINT64 *rootAddr, UINT64 *rootSize) {
+    INT32 ret;
+    CHAR *rootAddrStr;
+    CHAR *rootSizeStr;
+
+    ret = LOS_GetArgValue("root", dev);
+    if (ret != LOS_OK) {
+        PRINT_ERR("Cannot find root!");
+        return ret;
+    }
+
+    ret = LOS_GetArgValue("fstype", fstype);
+    if (ret != LOS_OK) {
+        PRINT_ERR("Cannot find fstype!");
+        return ret;
+    }
+
+    ret = LOS_GetArgValue("rootaddr", &rootAddrStr);
+    if (ret != LOS_OK) {
+        *rootAddr = ROOTFS_ADDR;
+    } else {
+        *rootAddr = LOS_SizeStrToNum(rootAddrStr);
+    }
+
+    ret = LOS_GetArgValue("rootsize", &rootSizeStr);
+    if (ret != LOS_OK) {
+        *rootSize = ROOTFS_SIZE;
+    } else {
+        *rootSize = LOS_SizeStrToNum(rootSizeStr);
+    }
+
     return LOS_OK;
 }
 
-INT32 OsMountRootfs(VOID)
-{
-    INT32 ret = LOS_OK;
-    INT32 err;
-    INT32 rootAddr = -1;
-    INT32 rootSize = -1;
-    INT32 userAddr = -1;
-    INT32 userSize = -1;
-    CHAR *rootType = NULL;
-    CHAR *fsType = NULL;
-    const CHAR *rootDev = NULL;
+STATIC INT32 ParseUserArgs(UINT64 rootAddr, UINT64 rootSize, UINT64 *userAddr, UINT64 *userSize) {
+    INT32 ret;
+    CHAR *userAddrStr;
+    CHAR *userSizeStr;
 
-#ifdef LOSCFG_SECURITY_BOOT
-    rootType = strdup(ROOTFS_ROOT_TYPE);
-    fsType = strdup(ROOTFS_FS_TYPE);
-    rootAddr = ROOTFS_FLASH_ADDR;
-    rootSize = ROOTFS_FLASH_SIZE;
-#else
-    ret = GetRootType(&rootType, &fsType, &rootAddr, &rootSize, &userAddr, &userSize);
+    ret = LOS_GetArgValue("useraddr", &userAddrStr);
+    if (ret != LOS_OK) {
+        *userAddr = rootAddr + rootSize;
+    } else {
+        *userAddr = LOS_SizeStrToNum(userAddrStr);
+    }
+
+    ret = LOS_GetArgValue("usersize", &userSizeStr);
+    if (ret != LOS_OK) {
+        *userSize = USERFS_SIZE;
+    } else {
+        *userSize = LOS_SizeStrToNum(userSizeStr);
+    }
+
+    return LOS_OK;
+}
+
+STATIC INT32 MountPartitions(CHAR *fsType) {
+    INT32 ret;
+    INT32 err;
+
+    /* Mount rootfs */
+    ret = mount(ROOT_DEV_NAME, ROOT_DIR_NAME, fsType, MS_RDONLY, NULL);
+    if (ret != LOS_OK) {
+        err = get_errno();
+        PRINT_ERR("Failed to mount %s, rootDev %s, errno %d: %s\n", ROOT_DIR_NAME, ROOT_DEV_NAME, err, strerror(err));
+        return ret;
+    }
+
+    /* Mount userfs */
+    ret = mkdir(STORAGE_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);
+    if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
+        PRINT_ERR("Failed to mkdir %s, errno %d: %s\n", STORAGE_DIR_NAME, err, strerror(err));
+        return ret;
+    }
+
+    ret = mount(USER_DEV_NAME, STORAGE_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);
+    if (ret != LOS_OK) {
+        err = get_errno();
+        PRINT_ERR("Failed to mount %s, errno %d: %s\n", STORAGE_DIR_NAME, err, strerror(err));
+        return ret;
+    }
+
+#ifdef LOSCFG_STORAGE_EMMC
+    /* Mount userdata */
+    ret = mkdir(USERDATA_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);
+    if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
+        PRINT_ERR("Failed to mkdir %s, errno %d: %s\n", USERDATA_DIR_NAME, err, strerror(err));
+        return ret;
+    }
+
+    ret = mount(USERDATA_DEV_NAME, USERDATA_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);
+    if ((ret != LOS_OK) && ((err = get_errno()) == ENOTSUP)) {
+        ret = format(USERDATA_DEV_NAME, 0, FM_FAT32);
+        if (ret != LOS_OK) {
+            PRINT_ERR("Failed to format %s\n", USERDATA_DEV_NAME);
+            return ret;
+        }
+
+        ret = mount(USERDATA_DEV_NAME, USERDATA_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);
+        if (ret != LOS_OK) {
+            err = get_errno();
+        }
+    }
+    if (ret != LOS_OK) {
+        PRINT_ERR("Failed to mount %s, errno %d: %s\n", USERDATA_DIR_NAME, err, strerror(err));
+        return ret;
+    }
+#endif
+    return LOS_OK;
+}
+
+STATIC INT32 CheckValidation(UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, UINT64 userSize) {
+    UINT64 alignSize = LOS_GetAlignsize();
+
+    if (alignSize == 0) {
+        return LOS_OK;
+    }
+
+    if ((rootAddr & (alignSize - 1)) || (rootSize & (alignSize - 1)) ||
+        (userAddr & (alignSize - 1)) || (userSize & (alignSize - 1))) {
+        PRINT_ERR("The address or size value should be 0x%x aligned!\n", alignSize);
+        return LOS_NOK;
+    }
+
+    return LOS_OK;
+}
+
+INT32 OsMountRootfs() {
+    INT32 ret;
+    CHAR *dev;
+    CHAR *fstype;
+    UINT64 rootAddr;
+    UINT64 rootSize;
+    UINT64 userAddr;
+    UINT64 userSize;
+
+    ret = ParseRootArgs(&dev, &fstype, &rootAddr, &rootSize);
     if (ret != LOS_OK) {
         return ret;
     }
-    rootAddr = (rootAddr >= 0) ? rootAddr : ROOTFS_FLASH_ADDR;
-    rootSize = (rootSize >= 0) ? rootSize : ROOTFS_FLASH_SIZE;
-#endif
-    userAddr = (userAddr >= 0) ? userAddr : rootAddr + rootSize;
-    userSize = (userSize >= 0) ? userSize : STORAGE_SIZE;
 
-    rootDev = GetDevName(rootType, rootAddr, rootSize, userAddr, userSize);
-    if (rootDev != NULL) {
-        ret = OsMountRootfsAndUserfs(rootDev, fsType);
-        if (ret != LOS_OK) {
-            err = get_errno();
-            PRINT_ERR("Failed to mount rootfs, errno %d: %s\n", err, strerror(err));
-        }
+    ret = ParseUserArgs(rootAddr, rootSize, &userAddr, &userSize);
+    if (ret != LOS_OK) {
+        return ret;
     }
 
-    free(rootType);
-    free(fsType);
-    return ret;
+    ret = CheckValidation(rootAddr, rootSize, userAddr, userSize);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    ret = AddPartitions(dev, rootAddr, rootSize, userAddr, userSize);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    ret = MountPartitions(fstype);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    return LOS_OK;
 }

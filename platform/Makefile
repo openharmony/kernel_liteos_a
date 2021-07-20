@@ -37,7 +37,7 @@ LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/compat/posix/src \
                  -I $(LITEOSTOPDIR)/bsd/dev/random
 
 LOCAL_SRCS += $(wildcard ../kernel/common/*.c)
-LOCAL_SRCS := $(filter-out ../kernel/common/los_rootfs.c, $(LOCAL_SRCS))
+LOCAL_SRCS := $(filter-out ../kernel/common/los_rootfs.c ../kernel/common/los_bootargs.c, $(LOCAL_SRCS))
 ifneq ($(LOSCFG_FS_VFS), y)
 LOCAL_SRCS := $(filter-out ../kernel/common/console.c ../kernel/common/virtual_serial.c, $(LOCAL_SRCS))
 endif
