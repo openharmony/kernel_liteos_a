@@ -46,6 +46,7 @@
 #include "los_tables.h"
 #include "user_copy.h"
 #include "los_vm_filemap.h"
+#include "los_hash.h"
 #include <time.h>
 #include <errno.h>
 #include <dirent.h>
@@ -53,7 +54,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "los_hash.h"
+#include <fcntl.h>
 
 
 struct VnodeOps fatfs_vops; /* forward define */
@@ -190,7 +191,7 @@ static int fatfs_sync(unsigned long mountflags, FATFS *fs)
 {
 #ifdef LOSCFG_FS_FAT_CACHE
     los_part *part = NULL;
-    if (mountflags != MS_NOSYNC) {
+    if (!(mountflags & (MS_NOSYNC | MS_RDONLY))) {
         part = get_part((INT)fs->pdrv);
         if (part == NULL) {
             return -ENODEV;
@@ -736,6 +737,7 @@ off64_t fatfs_lseek64(struct file *filep, off64_t offset, int whence)
     struct Vnode *vp = filep->f_vnode;
     DIR_FILE *dfp = (DIR_FILE *)vp->data;
     FILINFO *finfo = &(dfp->fno);
+    struct Mount *mount = vp->originMount;
     FSIZE_t fpos;
     FRESULT result;
     int ret;
@@ -772,6 +774,17 @@ off64_t fatfs_lseek64(struct file *filep, off64_t offset, int whence)
     ret = lock_fs(fs);
     if (ret == FALSE) {
         return -EBUSY;
+    }
+
+    if (fpos > finfo->fsize) {
+        if ((filep->f_oflags & O_ACCMODE) == O_RDONLY) {
+            result = FR_DENIED;
+            goto ERROR_EXIT;
+        }
+        if (mount->mountFlags & MS_RDONLY) {
+            result = FR_WRITE_PROTECTED;
+            goto ERROR_EXIT;
+        }
     }
     fp->obj.sclust = finfo->sclst;
     fp->obj.objsize = finfo->fsize;
