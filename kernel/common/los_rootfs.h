@@ -80,10 +80,5 @@
 #endif
 
 INT32 OsMountRootfs(VOID);
-VOID OsSetCmdLineAddr(UINT64 addr);
-UINT64 OsGetCmdLineAddr(VOID);
 
-#ifdef LOSCFG_BOOTENV_RAM
-CHAR *OsGetArgsAddr(VOID);
-#endif
 #endif /* _LOS_ROOTFS_H */
