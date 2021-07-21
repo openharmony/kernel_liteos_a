@@ -57,7 +57,7 @@
 
 LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL;
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;
-LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecyleList;
+LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecycleList;
 LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;
 LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;
 LITE_OS_SEC_BSS UINT32 g_kernelIdleProcess = OS_INVALID_VALUE;
@@ -331,9 +331,9 @@ LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, Proc
 
     LOS_ListDelete(&childCB->pendList);
     if (childCB->processStatus & OS_PROCESS_FLAG_EXIT) {
-        LOS_ListHeadInsert(&g_processRecyleList, &childCB->pendList);
+        LOS_ListHeadInsert(&g_processRecycleList, &childCB->pendList);
     } else if (childCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) {
-        LOS_ListTailInsert(&g_processRecyleList, &childCB->pendList);
+        LOS_ListTailInsert(&g_processRecycleList, &childCB->pendList);
     } else {
         OsInsertPCBToFreeList(childCB);
     }
@@ -413,7 +413,7 @@ STATIC VOID OsProcessNaturalExit(LosTaskCB *runTask, UINT32 status)
 #ifdef LOSCFG_KERNEL_VM
         (VOID)OsKill(processCB->parentProcessID, SIGCHLD, OS_KERNEL_KILL_PERMISSION);
 #endif
-        LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);
+        LOS_ListHeadInsert(&g_processRecycleList, &processCB->pendList);
         OsRunTaskToDelete(runTask);
         return;
     }
@@ -437,7 +437,7 @@ STATIC UINT32 OsProcessInit(VOID)
     (VOID)memset_s(g_processCBArray, size, 0, size);
 
     LOS_ListInit(&g_freeProcess);
-    LOS_ListInit(&g_processRecyleList);
+    LOS_ListInit(&g_processRecycleList);
 
     for (index = 0; index < g_processMaxNum; index++) {
         g_processCBArray[index].processID = index;
@@ -457,14 +457,14 @@ STATIC UINT32 OsProcessInit(VOID)
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
+LITE_OS_SEC_TEXT VOID OsProcessCBRecycleToFree(VOID)
 {
     UINT32 intSave;
     LosProcessCB *processCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-    while (!LOS_ListEmpty(&g_processRecyleList)) {
-        processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_processRecyleList));
+    while (!LOS_ListEmpty(&g_processRecycleList)) {
+        processCB = OS_PCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_processRecycleList));
         if (!(processCB->processStatus & OS_PROCESS_FLAG_EXIT)) {
             break;
         }
@@ -487,7 +487,7 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecyleToFree(VOID)
         LOS_ListDelete(&processCB->pendList);
         if ((processCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) ||
             (processCB->processStatus & OS_PROCESS_STATUS_ZOMBIES)) {
-            LOS_ListTailInsert(&g_processRecyleList, &processCB->pendList);
+            LOS_ListTailInsert(&g_processRecycleList, &processCB->pendList);
         } else {
             /* Clear the bottom 4 bits of process status */
             OsInsertPCBToFreeList(processCB);
@@ -525,7 +525,7 @@ STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
 
     processCB->processStatus &= ~OS_PROCESS_STATUS_INIT;
     processCB->processStatus |= OS_PROCESS_FLAG_EXIT;
-    LOS_ListHeadInsert(&g_processRecyleList, &processCB->pendList);
+    LOS_ListHeadInsert(&g_processRecycleList, &processCB->pendList);
     SCHEDULER_UNLOCK(intSave);
 
     (VOID)LOS_MemFree(m_aucSysMem1, group);
@@ -1005,7 +1005,7 @@ WAIT_BACK:
     return LOS_OK;
 }
 
-STATIC UINT32 OsWaitRecycleChildPorcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status)
+STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status)
 {
     ProcessGroup *group = NULL;
     UINT32 pid = childCB->processID;
@@ -1081,7 +1081,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
     }
 
     if (childCB != NULL) {
-        return (INT32)OsWaitRecycleChildPorcess(childCB, intSave, status);
+        return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status);
     }
 
     if ((options & LOS_WAIT_WNOHANG) != 0) {
@@ -1104,7 +1104,7 @@ LITE_OS_SEC_TEXT INT32 LOS_Wait(INT32 pid, USER INT32 *status, UINT32 options, V
         goto ERROR;
     }
 
-    return (INT32)OsWaitRecycleChildPorcess(childCB, intSave, status);
+    return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status);
 
 ERROR:
     SCHEDULER_UNLOCK(intSave);

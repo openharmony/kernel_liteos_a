@@ -67,7 +67,7 @@
 
 LITE_OS_SEC_BSS LosTaskCB    *g_taskCBArray;
 LITE_OS_SEC_BSS LOS_DL_LIST  g_losFreeTask;
-LITE_OS_SEC_BSS LOS_DL_LIST  g_taskRecyleList;
+LITE_OS_SEC_BSS LOS_DL_LIST  g_taskRecycleList;
 LITE_OS_SEC_BSS UINT32       g_taskMaxNum;
 LITE_OS_SEC_BSS UINT32       g_taskScheduled; /* one bit for each cores */
 LITE_OS_SEC_BSS EVENT_CB_S   g_resourceEvent;
@@ -201,7 +201,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
     (VOID)memset_s(g_taskCBArray, size, 0, size);
 
     LOS_ListInit(&g_losFreeTask);
-    LOS_ListInit(&g_taskRecyleList);
+    LOS_ListInit(&g_taskRecycleList);
     for (index = 0; index < g_taskMaxNum; index++) {
         g_taskCBArray[index].taskStatus = OS_TASK_STATUS_UNUSED;
         g_taskCBArray[index].taskID = index;
@@ -450,8 +450,8 @@ LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree()
     UINT32 intSave;
 
     SCHEDULER_LOCK(intSave);
-    while (!LOS_ListEmpty(&g_taskRecyleList)) {
-        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecyleList));
+    while (!LOS_ListEmpty(&g_taskRecycleList)) {
+        taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&g_taskRecycleList));
         LOS_ListDelete(&taskCB->pendList);
         SCHEDULER_UNLOCK(intSave);
 
@@ -888,7 +888,7 @@ LITE_OS_SEC_TEXT VOID OsRunTaskToDelete(LosTaskCB *runTask)
 
     LOS_ListDelete(&runTask->threadList);
     processCB->threadNumber--;
-    LOS_ListTailInsert(&g_taskRecyleList, &runTask->pendList);
+    LOS_ListTailInsert(&g_taskRecycleList, &runTask->pendList);
     OsEventWriteUnsafe(&g_resourceEvent, OS_RESOURCE_EVENT_FREE, FALSE, NULL);
 
     OsSchedResched();
@@ -962,7 +962,7 @@ STATIC VOID OsTaskDeleteInactive(LosProcessCB *processCB, LosTaskCB *taskCB)
 
     LOS_ListDelete(&taskCB->threadList);
     processCB->threadNumber--;
-    LOS_ListTailInsert(&g_taskRecyleList, &taskCB->pendList);
+    LOS_ListTailInsert(&g_taskRecycleList, &taskCB->pendList);
     return;
 }
 
@@ -1650,7 +1650,7 @@ STATIC VOID OsResourceRecoveryTask(VOID)
         if (ret & (OS_RESOURCE_EVENT_FREE | OS_RESOURCE_EVENT_OOM)) {
             OsTaskCBRecycleToFree();
 
-            OsProcessCBRecyleToFree();
+            OsProcessCBRecycleToFree();
         }
 
 #ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
