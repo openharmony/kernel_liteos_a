@@ -105,7 +105,15 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
 
 LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStack, UINT32 parentStackSize)
 {
-    VOID *cloneStack = (VOID *)(((UINTPTR)parentTopOfStack + parentStackSize) - sizeof(TaskContext));
+    LosTaskCB *task = OsCurrTaskGet();
+    sig_cb *sigcb = &task->sig;
+    VOID *cloneStack = NULL;
+
+    if (sigcb->sigContext != NULL) {
+        cloneStack = (VOID *)((UINTPTR)sigcb->sigContext - sizeof(TaskContext));
+    } else {
+        cloneStack = (VOID *)(((UINTPTR)parentTopOfStack + parentStackSize) - sizeof(TaskContext));
+    }
 
     (VOID)memcpy_s(childStack, sizeof(TaskContext), cloneStack, sizeof(TaskContext));
     ((TaskContext *)childStack)->R0 = 0;

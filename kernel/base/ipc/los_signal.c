@@ -678,6 +678,7 @@ VOID *OsRestorSignalContext(VOID *sp)
 
     LosProcessCB *process = OsCurrProcessGet();
     VOID *saveContext = sigcb->sigContext;
+    sigcb->sigContext = NULL;
     sigcb->count--;
     process->sigShare = 0;
     OsProcessExitCodeSignalClear(process);
