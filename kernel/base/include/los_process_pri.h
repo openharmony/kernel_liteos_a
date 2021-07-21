@@ -441,7 +441,7 @@ extern UINTPTR __user_init_bss;
 extern UINTPTR __user_init_end;
 extern UINTPTR __user_init_load_addr;
 extern UINT32 OsSystemProcessCreate(VOID);
-extern VOID OsProcessCBRecyleToFree(VOID);
+extern VOID OsProcessCBRecycleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);
 extern VOID OsProcessExit(LosTaskCB *runTask, INT32 status);
 extern UINT32 OsUserInitProcess(VOID);
