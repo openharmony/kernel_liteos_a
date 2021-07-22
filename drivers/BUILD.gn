@@ -29,9 +29,6 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-cmd = "if [ -f $device_path/drivers/BUILD.gn ]; then echo true; else echo false; fi"
-HAVE_DEVICE_DRIVERS = exec_script("//build/lite/run_shell_cmd.py", [ cmd ], "value")
-
 module_switch = defined(LOSCFG_DRIVERS)
 group("drivers") {
   if (module_switch) {
@@ -43,12 +40,7 @@ group("drivers") {
       "char/random",
       "char/video",
       "mtd/multi_partition",
-      "//drivers/adapter/khdf/liteos",
-      "//drivers/liteos",
     ]
-    if (HAVE_DEVICE_DRIVERS) {
-      deps += [ "$device_path/drivers" ]
-    }
   }
 }
 
@@ -61,10 +53,5 @@ config("public") {
     "char/random:public",
     "char/video:public",
     "mtd/multi_partition:public",
-    "//drivers/adapter/khdf/liteos:public",
-    "//drivers/liteos:public",
   ]
-  if (HAVE_DEVICE_DRIVERS) {
-    configs += [ "$device_path/drivers:public" ]
-  }
 }
