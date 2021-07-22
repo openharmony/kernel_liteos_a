@@ -30,7 +30,7 @@
 import("//kernel/liteos_a/liteos.gni")
 
 module_name = "userinit"
-shared_library(module_name) {
+executable(module_name) {
   sources = [ "src/los_user_init.c" ]
 
   include_dirs = [
@@ -46,12 +46,18 @@ shared_library(module_name) {
 
   ldflags = [
     "-static",
-    "-r",
+    "-Wl,-r",
   ]
 
+  output_dir = target_out_dir
+  output_name = "lib$module_name"
   output_extension = "O"
 }
 
 group("user") {
   public_deps = [ ":$module_name" ]
+}
+
+config("public") {
+  lib_dirs = [ "$target_out_dir/unstripped/bin" ]
 }

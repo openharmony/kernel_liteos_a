@@ -44,5 +44,6 @@ config("public") {
     "base:public",
     "common:public",
     "extended:public",
+    "user:public",
   ]
 }

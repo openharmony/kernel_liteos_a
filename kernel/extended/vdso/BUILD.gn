@@ -48,6 +48,6 @@ config("public") {
 
 copy("copy_ohos_vdso") {
   deps = [ "usr:OHOS-vdso" ]
-  sources = [ "$root_out_dir/libOHOS-vdso.so" ]
+  sources = [ get_path_info("usr/", "out_dir") + "/libOHOS-vdso.so" ]
   outputs = [ "$root_out_dir/OHOS-vdso.so" ]
 }
