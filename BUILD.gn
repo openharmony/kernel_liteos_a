@@ -160,7 +160,15 @@ config("public") {
   ]
 }
 
-config("los_config") {
+config("los_nostdinc") {
+  cflags = [ "-nostdinc" ]
+}
+
+config("los_nostdlib") {
+  ldflags = [ "-nostdlib" ]
+}
+
+config("los_common") {
   cflags = [
     "-imacros",
     "$LITEOS_MENUCONFIG_H",
@@ -168,16 +176,11 @@ config("los_config") {
 
   defines = [ "__LITEOS__" ]
 
-  configs = [ ":arch_config" ]
-
-  ldflags = [ "-nostdlib" ]
-
   cflags_c = [ "-std=c99" ]
 
   cflags += [
     "-fno-pic",
     "-fno-builtin",
-    "-nostdinc",
     "-Wall",
     "-Werror",
     "-fms-extensions",
@@ -250,6 +253,15 @@ config("los_config") {
   asmflags = cflags
 }
 
+config("los_config") {
+  configs = [
+    ":los_common",
+    ":arch_config",
+    ":los_nostdinc",
+    ":los_nostdlib",
+  ]
+}
+
 liteos_name = "liteos2"
 liteos_out = rebase_path("$target_out_dir/$liteos_name")
 executable(liteos_name) {
@@ -267,11 +279,13 @@ executable(liteos_name) {
   libgcc = exec_script("//build/lite/run_shell_cmd.py", [ "$cc -print-libgcc-file-name" ], "trim string")
   libs = [ libgcc ]
   if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-    libs += [ "tools/build/liteos_llvm.ld" ]
+    ldflags += [ "-Wl,-T" + rebase_path("tools/build/liteos_llvm.ld", root_build_dir) ]
   } else {
-    libs += [ "tools/build/liteos.ld" ]
+    ldflags += [ "-Wl,-T" + rebase_path("tools/build/liteos.ld", root_build_dir) ]
     ldflags += [ "-nostartfiles" ]
   }
+
+  output_dir = target_out_dir
 
   deps = [
     ":modules",
@@ -285,7 +299,7 @@ build_ext_component("build_liteos_bin") {
   objcopy = "${compile_prefix}objcopy$toolchain_cmd_suffix"
   objdump = "${compile_prefix}objdump$toolchain_cmd_suffix"
 
-  liteos = rebase_path("$root_out_dir/unstripped/bin/$liteos_name")
+  liteos = rebase_path("$target_out_dir/unstripped/bin/$liteos_name")
 
   command = "$objcopy -O binary $liteos $liteos_out.bin"
   command += " && sh -c '$objdump -t $liteos | sort >$liteos_out.sym.sorted'"
