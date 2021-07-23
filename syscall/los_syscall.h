@@ -55,6 +55,7 @@
 #include "time.h"
 #include "sys/time.h"
 #include "sys/stat.h"
+#include "sys/kstat.h"
 #ifdef LOSCFG_FS_VFS
 #include "sys/socket.h"
 #include "dirent.h"
@@ -252,8 +253,8 @@ extern int SysFtruncate(int fd, off_t length);
 extern int SysStatfs(const char *path, struct statfs *buf);
 extern int SysStatfs64(const char *path, size_t sz, struct statfs *buf);
 
-extern int SysStat(const char *path, struct stat *buf);
-extern int SysLstat(const char *path, struct stat *buffer);
+extern int SysStat(const char *path, struct kstat *buf);
+extern int SysLstat(const char *path, struct kstat *buffer);
 extern int SysFstat(int fildes, struct stat *buf);
 extern int SysStatx(int fd, const char *restrict path, int flag, unsigned mask, struct statx *restrict stx);
 extern int SysFsync(int fd);

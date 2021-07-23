@@ -1416,6 +1416,9 @@ int fatfs_stat(struct Vnode *vp, struct stat* sp)
     time = fattime_transfer(finfo->fdate, finfo->ftime);
     sp->st_mtime = time;
 
+    /* Adapt to kstat member "long tv_sec" */
+    sp->__st_mtim32.tv_sec = (long)time;
+
     unlock_fs(fs, FR_OK);
     return 0;
 }

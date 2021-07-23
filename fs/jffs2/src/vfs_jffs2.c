@@ -807,6 +807,11 @@ int VfsJffs2Stat(struct Vnode *pVnode, struct stat *buf)
     buf->st_mtime = node->i_mtime;
     buf->st_ctime = node->i_ctime;
 
+    /* Adapt to kstat member long tv_sec */
+    buf->__st_atim32.tv_sec = (long)node->i_atime;
+    buf->__st_mtim32.tv_sec = (long)node->i_mtime;
+    buf->__st_ctim32.tv_sec = (long)node->i_ctime;
+
     LOS_MuxUnlock(&g_jffs2FsLock);
 
     return 0;
