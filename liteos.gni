@@ -39,7 +39,7 @@ template("kernel_module") {
       not_needed(invoker, "*")
     }
   } else {
-    static_library(target_name) {
+    source_set(target_name) {
       forward_variables_from(invoker, "*")
     }
   }

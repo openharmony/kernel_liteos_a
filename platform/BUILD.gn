@@ -29,9 +29,6 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-cmd = "if [ -f " + rebase_path("//$LOSCFG_BOARD_CONFIG_PATH/BUILD.gn") + " ]; then echo true; else echo false; fi"
-HAVE_BOARD_CONFIG = exec_script("//build/lite/run_shell_cmd.py", [ cmd ], "value")
-
 module_name = "bsp"
 kernel_module(module_name) {
   sources = [ "main.c" ]
@@ -64,18 +61,10 @@ kernel_module(module_name) {
 group("platform") {
   public_deps = [ ":$module_name" ]
   deps = [ ":board.ld" ]
-  if (HAVE_BOARD_CONFIG) {
-    deps += [ "//$LOSCFG_BOARD_CONFIG_PATH" ]
-  }
 }
 
 config("public") {
-  include_dirs = [
-    ".",
-  ]
-  if (HAVE_BOARD_CONFIG) {
-    configs = [ "//$LOSCFG_BOARD_CONFIG_PATH:public" ]
-  }
+  include_dirs = [ "." ]
 }
 
 source_set("board") {
@@ -84,8 +73,7 @@ source_set("board") {
   configs = []
   configs += [
     "$LITEOSTOPDIR:los_config",
-    "$LITEOSTOPDIR/kernel/base:public",
-    ":public",
+    "$LITEOSTOPDIR:public",
   ]
 
   asmflags = [

@@ -50,14 +50,18 @@ executable(module_name) {
   ]
 
   output_dir = target_out_dir
-  output_name = "lib$module_name"
-  output_extension = "O"
 }
 
 group("user") {
   public_deps = [ ":$module_name" ]
+  deps = [ ":copy_userinit" ]
 }
 
 config("public") {
-  lib_dirs = [ "$target_out_dir/unstripped/bin" ]
+}
+
+copy("copy_userinit") {
+  deps = [ ":$module_name" ]
+  sources = [ "$target_out_dir/unstripped/bin/$module_name" ]
+  outputs = [ "$root_out_dir/lib$module_name.O" ]
 }
