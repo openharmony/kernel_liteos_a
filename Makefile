@@ -66,9 +66,6 @@ else
 CONFIG ?= $(PRODUCT_PATH)/config/debug$(tee).config
 endif
 
-ifeq ($(shell which menuconfig),)
-$(shell pip3 install --user kconfiglib >/dev/null)
-endif
 $(shell env CONFIG_=$(CONFIG_) DEVICE_PATH=$(DEVICE_PATH) olddefconfig >/dev/null)
 
 -include $(LITEOSTOPDIR)/tools/build/config.mk

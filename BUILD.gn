@@ -70,8 +70,6 @@ if (exec_script("//build/lite/run_shell_cmd.py", [ "if [ -f $f ]; then echo true
 
 print("liteos_config_file:", liteos_config_file)
 
-exec_script("//build/lite/run_shell_cmd.py", [ "which genconfig || pip3 install --user kconfiglib" ])
-
 exec_script("//build/lite/run_shell_cmd.py",
             [
               "env" +
