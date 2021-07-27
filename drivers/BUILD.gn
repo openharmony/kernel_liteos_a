@@ -29,19 +29,16 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-module_switch = defined(LOSCFG_DRIVERS)
 group("drivers") {
-  if (module_switch) {
-    deps = [
-      "block/disk",
-      "char/bch",
-      "char/mem",
-      "char/quickstart",
-      "char/random",
-      "char/video",
-      "mtd/multi_partition",
-    ]
-  }
+  deps = [
+    "block/disk",
+    "char/bch",
+    "char/mem",
+    "char/quickstart",
+    "char/random",
+    "char/video",
+    "mtd/multi_partition",
+  ]
 }
 
 config("public") {
