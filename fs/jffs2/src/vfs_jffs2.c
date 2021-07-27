@@ -123,7 +123,7 @@ int VfsJffs2Bind(struct Mount *mnt, struct Vnode *blkDriver, const void *data)
 
     partNo = p->patitionnum;
 
-    ret = jffs2_mount(partNo, &rootNode);
+    ret = jffs2_mount(partNo, &rootNode, mnt->mountFlags);
     if (ret != 0) {
         LOS_MuxUnlock(&g_jffs2FsLock);
         return ret;
@@ -323,7 +323,7 @@ ssize_t VfsJffs2Write(struct file *filep, const char *buffer, size_t bufLen)
     c = JFFS2_SB_INFO(node->i_sb);
     pos = filep->f_pos;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     struct super_block *sb = node->i_sb;
     UINT16 gcCpuMask = LOS_TaskCpuAffiGet(sb->s_gc_thread);
     UINT32 curTaskId = LOS_CurTaskIDGet();
@@ -717,13 +717,16 @@ ssize_t VfsJffs2Readlink(struct Vnode *vnode, char *buffer, size_t bufLen)
 int VfsJffs2Unlink(struct Vnode *parentVnode, struct Vnode *targetVnode, const char *path)
 {
     int ret;
-    struct jffs2_inode *parentInode = (struct jffs2_inode *)parentVnode->data;
-    struct jffs2_inode *targetInode = (struct jffs2_inode *)targetVnode->data;
+    struct jffs2_inode *parentInode = NULL;
+    struct jffs2_inode *targetInode = NULL;
 
     if (!parentVnode || !targetVnode) {
         PRINTK("%s-%d parentVnode=%x, targetVnode=%x\n", __FUNCTION__, __LINE__, parentVnode, targetVnode);
         return -EINVAL;
     }
+
+    parentInode = (struct jffs2_inode *)parentVnode->data;
+    targetInode = (struct jffs2_inode *)targetVnode->data;
 
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 
@@ -803,6 +806,11 @@ int VfsJffs2Stat(struct Vnode *pVnode, struct stat *buf)
     buf->st_atime = node->i_atime;
     buf->st_mtime = node->i_mtime;
     buf->st_ctime = node->i_ctime;
+
+    /* Adapt to kstat member long tv_sec */
+    buf->__st_atim32.tv_sec = (long)node->i_atime;
+    buf->__st_mtim32.tv_sec = (long)node->i_mtime;
+    buf->__st_ctim32.tv_sec = (long)node->i_ctime;
 
     LOS_MuxUnlock(&g_jffs2FsLock);
 

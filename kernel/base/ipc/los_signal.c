@@ -101,11 +101,13 @@ STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
         case OS_TASK_WAIT_SIGNAL:
             OsSigWaitTaskWake(taskCB, signo);
             break;
+#ifdef LOSCFG_KERNEL_LITEIPC
         case OS_TASK_WAIT_LITEIPC:
             taskCB->ipcStatus &= ~IPC_THREAD_STATUS_PEND;
             OsTaskWakeClearPendMask(taskCB);
             OsSchedTaskWake(taskCB);
             break;
+#endif
         case OS_TASK_WAIT_FUTEX:
             OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
             OsTaskWakeClearPendMask(taskCB);
@@ -132,7 +134,7 @@ int OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info)
     if (masked) {
         /* If signal is in wait list and mask list, need unblock it */
         if (LOS_ListEmpty(&sigcb->waitList)  ||
-           (!LOS_ListEmpty(&sigcb->waitList) && !OsSigIsMember(&sigcb->sigwaitmask, info->si_signo))) {
+            (!LOS_ListEmpty(&sigcb->waitList) && !OsSigIsMember(&sigcb->sigwaitmask, info->si_signo))) {
             OsSigAddSet(&sigcb->sigPendFlag, info->si_signo);
         }
     } else {
@@ -308,7 +310,7 @@ int OsSigProcessSend(LosProcessCB *spcb, siginfo_t *sigInfo)
         .receivedTcb = NULL
     };
 
-    if (info.sigInfo == NULL){
+    if (info.sigInfo == NULL) {
         return -EFAULT;
     }
 
@@ -676,6 +678,7 @@ VOID *OsRestorSignalContext(VOID *sp)
 
     LosProcessCB *process = OsCurrProcessGet();
     VOID *saveContext = sigcb->sigContext;
+    sigcb->sigContext = NULL;
     sigcb->count--;
     process->sigShare = 0;
     OsProcessExitCodeSignalClear(process);

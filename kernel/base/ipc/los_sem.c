@@ -40,7 +40,7 @@
 #include "los_percpu_pri.h"
 
 
-#if (LOSCFG_BASE_IPC_SEM == YES)
+#ifdef LOSCFG_BASE_IPC_SEM
 
 #if (LOSCFG_BASE_IPC_SEM_LIMIT <= 0)
 #error "sem maxnum cannot be zero"
@@ -283,5 +283,5 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPost(UINT32 semHandle)
 
     return ret;
 }
-#endif /* (LOSCFG_BASE_IPC_SEM == YES) */
+#endif /* LOSCFG_BASE_IPC_SEM */
 

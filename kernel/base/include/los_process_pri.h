@@ -36,7 +36,7 @@
 #include "los_sem_pri.h"
 #include "los_process.h"
 #include "los_vm_map.h"
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
 #include "hm_liteipc.h"
 #endif
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -97,12 +97,12 @@ typedef struct ProcessCB {
     volatile UINT32      threadNumber; /**< Number of threads alive under this process */
     UINT32               threadCount;  /**< Total number of threads created under this process */
     LOS_DL_LIST          waitList;     /**< The process holds the waitLits to support wait/waitpid */
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32               timerCpu;     /**< CPU core number of this task is delayed or pended */
 #endif
     UINTPTR              sigHandler;   /**< Signal handler */
     sigset_t             sigShare;     /**< Signal share bit */
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     ProcIpcInfo          ipcInfo;      /**< Memory pool for lite ipc */
 #endif
 #ifdef LOSCFG_KERNEL_VM
@@ -443,7 +443,7 @@ extern UINTPTR __user_init_bss;
 extern UINTPTR __user_init_end;
 extern UINTPTR __user_init_load_addr;
 extern UINT32 OsSystemProcessCreate(VOID);
-extern VOID OsProcessCBRecyleToFree(VOID);
+extern VOID OsProcessCBRecycleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);
 extern VOID OsProcessExit(LosTaskCB *runTask, INT32 status);
 extern UINT32 OsUserInitProcess(VOID);

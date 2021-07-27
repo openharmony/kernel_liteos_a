@@ -34,13 +34,13 @@ VDSO_SO = OHOS-vdso
 VDSO_SRCS := los_vdso_sys.c
 VDSO_INCLUDE := -I $(LITEOSTOPDIR)/kernel/extended/vdso/include \
                 -I $(LITEOSTOPDIR)/kernel/include \
-                -I $(LITEOSTOPDIR)/kernel/common \
+                -I $(LITEOSTOPDIR)/platform \
                 -I $(LITEOSTOPDIR)/bsd/compat/linuxkpi/include
 
 VDSO_CCFLAGS := -nostdlib -fPIC -fno-common -fno-strict-aliasing \
                 $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LITEOS_COPTS_OPTMIZE)
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-VDSO_CCFLAGS += $(LLVM_EXTRA_OPTS) --sysroot=$(SYSROOT_PATH) $(ARCH_CFLAGS)
+VDSO_CCFLAGS += $(LLVM_EXTRA_OPTS) --sysroot=$(SYSROOT_PATH)
 endif
 
 VDSO_LDFLAGS := -shared -s -Bsymbolic -T los_vdso.ld

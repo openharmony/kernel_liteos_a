@@ -34,15 +34,16 @@ LITEOSTOPDIR = $(MKSH_DIR)/../../
 include $(MKSH_DIR)/../config.mk
 
 APPS_OUT := $(OUT)/bin
+ETC_OUT := $(OUT)/etc
 BUILD_DIR := $(MKSH_DIR)/build
 BUILD_LOG := $(MKSH_DIR)/build.log
 TARGET_OS := OpenHarmony
 
 LOCAL_CFLAGS := -flto -fdata-sections -ffunction-sections -Oz -fstack-protector-strong -D_FORTIFY_SOURCE=2
-LOCAL_CFLAGS += --target=arm-liteos $(LLVM_SYSROOT)
+LOCAL_CFLAGS += --target=$(LLVM_TARGET) $(LLVM_SYSROOT)
 LOCAL_CFLAGS += -DMKSH_DISABLE_TTY_WARNING -DMKSH_SMALL=1 -DMKSH_ASSUME_UTF8=1 -DMKSH_SMALL_BUT_FAST=0 -DMKSH_S_NOVI=1 -DHAVE_CAN_FSTACKPROTECTORSTRONG=1
 LOCAL_CFLAGS += -DMKSH_LESS_CMDLINE_EDITING -DMKSH_LESS_BUILDINS -DMKSH_NO_INITCOMS -DADAPT_FOR_LITEOS_A
-LOCAL_LDFLAGS := -Wl,--gc-sections -flto -O2 --target=arm-liteos $(LLVM_SYSROOT)
+LOCAL_LDFLAGS := -Wl,--gc-sections -flto -O2 --target=$(LLVM_TARGET) $(LLVM_SYSROOT)
 
 all:$(MKSH)
 
@@ -61,6 +62,8 @@ endif
 	$(HIDE)$(STRIP) $(MKSH)
 	$(HIDE)mkdir -p $(APPS_OUT)
 	$(HIDE)$(CP) $(MKSH) $(APPS_OUT)
+	$(HIDE)mkdir -p $(ETC_OUT)
+	$(HIDE)$(CP) -rf $(BUILD_DIR)/.mkshrc $(ETC_OUT)/
 
 clean:
 	$(HIDE)$(RM) $(MKSH) $(BUILD_DIR) $(BUILD_LOG)

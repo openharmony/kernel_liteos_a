@@ -137,7 +137,7 @@ constexpr int JFFS_MAX_DEF_BUF_NUM = 21;
 constexpr int JFFS_FILE_LIMITTED_NUM = 200;
 
 constexpr int JFFS_FILE_SIZE_TEST = 100 * 1024 * 1024; // *1024
-constexpr int JFFS_PERFORMANCE_W_R_SIZE = 10 * 1024 * 1024;
+constexpr int JFFS_PERFORMANCE_W_R_SIZE = 5 * 1024 * 1024;
 constexpr int JFFS_FILE_PER_WRITE_SIZE = 5 * 1024 * 1024;
 constexpr int JFFS_PRESSURE_W_R_SIZE1 = 1 * 1024 * 1024;
 constexpr int JFFS_PRESSURE_W_R_SIZE2 = 5 * 1024 * 1024;
@@ -962,6 +962,9 @@ VOID ItFsTestSymlink001(VOID);
 VOID ItFsTestSymlink002(VOID);
 VOID ItFsTestSymlink003(VOID);
 VOID ItFsTestSymlinkat001(VOID);
+VOID ItFsTestMountRdonly001(VOID);
+VOID ItFsTestMountRdonly002(VOID);
+VOID ItFsTestMountRdonly003(VOID);
 #endif
 
 #if defined(LOSCFG_USER_TESTSUIT_SHELL)

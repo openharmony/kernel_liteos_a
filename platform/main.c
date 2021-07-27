@@ -40,13 +40,13 @@
 #include "los_swtmr_pri.h"
 #include "los_task_pri.h"
 
-#if (LOSCFG_KERNEL_SMP == 1)
+#ifdef LOSCFG_KERNEL_SMP
 STATIC Atomic g_ncpu = 1;
 #endif
 
 LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == 1)
+#ifdef LOSCFG_KERNEL_SMP
     UINT32 cpuid = ArchCurrCpuid();
 
     OsCurrTaskSet(OsGetMainTask());
@@ -73,7 +73,7 @@ LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
     OsCurrProcessSet(OS_PCB_FROM_PID(OsGetKernelInitProcessID()));
     OsInitCall(LOS_INIT_LEVEL_KMOD_BASIC);
 
-#if (LOSCFG_BASE_CORE_SWTMR == 1)
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
     OsSwtmrInit();
 #endif
 
@@ -89,7 +89,7 @@ LITE_OS_SEC_TEXT_INIT VOID secondary_cpu_start(VOID)
 #endif
 }
 
-#if (LOSCFG_KERNEL_SMP == 1)
+#ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_TEE_ENABLE
 #define TSP_CPU_ON  0xb2000011UL
 STATIC INT32 raw_smc_send(UINT32 cmd)

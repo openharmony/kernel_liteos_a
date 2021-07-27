@@ -406,7 +406,7 @@ int CopyFdToProc(int fd, unsigned int targetPid)
         return -ESRCH;
     }
 
-    procFd = AssignProcessFd(fdt, 3);
+    procFd = AssignProcessFd(fdt, 3); // minfd is 3
     if (procFd < 0) {
         if (sem_post(&semId) == -1) {
             PRINT_ERR("sem_post error, errno %d \n", get_errno());

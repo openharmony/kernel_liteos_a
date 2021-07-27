@@ -38,7 +38,6 @@
 #include "los_excinfo_pri.h"
 #endif
 #include "los_sys_stack_pri.h"
-#include "los_stackinfo_pri.h"
 #ifdef LOSCFG_COREDUMP
 #include "los_coredump.h"
 #endif
@@ -62,6 +61,9 @@
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif
+#ifdef LOSCFG_BLACKBOX
+#include "los_blackbox.h"
+#endif
 
 
 #define INVALID_CPUID  0xFFFF
@@ -75,7 +77,7 @@ VOID OsExcHook(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr);
 UINT32 g_curNestCount[LOSCFG_KERNEL_CORE_NUM] = { 0 };
 BOOL g_excFromUserMode[LOSCFG_KERNEL_CORE_NUM];
 STATIC EXC_PROC_FUNC g_excHook = (EXC_PROC_FUNC)OsExcHook;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 STATIC SPIN_LOCK_INIT(g_excSerializerSpin);
 STATIC UINT32 g_currHandleExcPID = OS_INVALID_VALUE;
 STATIC UINT32 g_nextExcWaitCpu = INVALID_CPUID;
@@ -531,7 +533,7 @@ STATIC VOID OsExcRestore(VOID)
     g_excFromUserMode[currCpuID] = FALSE;
     g_intCount[currCpuID] = 0;
     g_curNestCount[currCpuID] = 0;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     OsPercpuGet()->excFlag = CPU_RUNNING;
 #endif
     OsPercpuGet()->taskLockCnt = 0;
@@ -548,7 +550,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
         return;
     }
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     LOS_SpinLock(&g_excSerializerSpin);
     if (g_nextExcWaitCpu != INVALID_CPUID) {
         g_currHandleExcCpuID = g_nextExcWaitCpu;
@@ -563,12 +565,15 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
     runProcess->processStatus &= ~OS_PROCESS_FLAG_EXIT;
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_FS_VFS
     OsWakeConsoleSendTask();
 #endif
 #endif
 
+#ifdef LOSCFG_BLACKBOX
+    BBoxNotifyError("USER_CRASH", MODULE_SYSTEM, "Crash in user", 0);
+#endif
     SCHEDULER_LOCK(intSave);
 #ifdef LOSCFG_SAVE_EXCINFO
     OsProcessExitCodeCoreDumpSet(runProcess);
@@ -716,14 +721,14 @@ VOID BackTraceSub(UINTPTR regFP)
     while (IsValidFP(backFP, stackStart, stackEnd, &kvaddr) == TRUE) {
         tmpFP = backFP;
 #ifdef LOSCFG_COMPILER_CLANG_LLVM
-	backFP = *(UINTPTR *)(UINTPTR)kvaddr;
+        backFP = *(UINTPTR *)(UINTPTR)kvaddr;
         if (IsValidFP(tmpFP + POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
             PrintExcInfo("traceback backLR check failed, backLP: 0x%x\n", tmpFP + POINTER_SIZE);
             return;
         }
         backLR = *(UINTPTR *)(UINTPTR)kvaddr;
 #else
-	backLR = *(UINTPTR *)(UINTPTR)kvaddr;
+        backLR = *(UINTPTR *)(UINTPTR)kvaddr;
         if (IsValidFP(tmpFP - POINTER_SIZE, stackStart, stackEnd, &kvaddr) == FALSE) {
             PrintExcInfo("traceback backFP check failed, backFP: 0x%x\n", tmpFP - POINTER_SIZE);
             return;
@@ -909,7 +914,7 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 #endif /* __LINUX_ARM_ARCH__ */
 #endif /* LOSCFG_GDB */
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #define EXC_WAIT_INTER 50U
 #define EXC_WAIT_TIME  2000U
 
@@ -1007,7 +1012,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
 
         OsWaitOtherCoresHandleExcEnd(currCpuID);
     } else {
-        if (g_excFromUserMode[g_currHandleExcCpuID] == TRUE) {
+        if ((g_currHandleExcCpuID < LOSCFG_KERNEL_CORE_NUM) && (g_excFromUserMode[g_currHandleExcCpuID] == TRUE)) {
             g_currHandleExcCpuID = currCpuID;
             LOS_SpinUnlock(&g_excSerializerSpin);
             target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuID));
@@ -1027,7 +1032,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
 
 STATIC VOID OsCheckCpuStatus(VOID)
 {
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     OsCheckAllCpuStatus();
 #else
     g_currHandleExcCpuID = ArchCurrCpuid();
@@ -1048,7 +1053,7 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 
     OsCheckCpuStatus();
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_FS_VFS
     /* Wait for the end of the Console task to avoid multicore printing code */
     OsWaitConsoleSendTaskPend(OsCurrTaskGet()->taskID);
@@ -1058,6 +1063,11 @@ LITE_OS_SEC_TEXT VOID STATIC OsExcPriorDisposal(ExcContext *excBufAddr)
 
 LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
 {
+#ifdef LOSCFG_BLACKBOX
+#ifdef LOSCFG_SAVE_EXCINFO
+    SetExcInfoIndex(0);
+#endif
+#endif
 #ifdef LOSCFG_KERNEL_VM
     /* You are not allowed to add any other print information before this exception information */
     if (g_excFromUserMode[ArchCurrCpuid()] == TRUE) {
@@ -1113,7 +1123,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 
     OsPrintExcHead(far);
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     OsAllCpuStatusOutput();
 #endif
 
@@ -1125,7 +1135,9 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
         if (g_curNestCount[ArchCurrCpuid()] == 1) {
 #ifdef LOSCFG_SAVE_EXCINFO
             if (func != NULL) {
+#ifndef LOSCFG_BLACKBOX
                 SetExcInfoIndex(0);
+#endif
                 OsSysStateSave(&intCount, &lockCount);
                 OsRecordExcInfoTime();
                 OsSysStateRestore(intCount, lockCount);
@@ -1154,6 +1166,9 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
     }
 #endif
 
+#ifdef LOSCFG_BLACKBOX
+    BBoxNotifyError(EVENT_PANIC, MODULE_SYSTEM, "Crash in kernel", 1);
+#endif
     while (1) {}
 }
 
@@ -1168,7 +1183,7 @@ __attribute__((noinline)) VOID LOS_Panic(const CHAR *fmt, ...)
 }
 
 /* stack protector */
-UINT32 __stack_chk_guard = 0xd00a0dff;
+USED UINT32 __stack_chk_guard = 0xd00a0dff;
 
 VOID __stack_chk_fail(VOID)
 {
@@ -1200,7 +1215,11 @@ VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCou
     framePtr = Get_Fp();
     while ((framePtr > stackStart) && (framePtr < stackEnd) && IS_ALIGNED(framePtr, sizeof(CHAR *))) {
         tmpFramePtr = framePtr;
+#ifdef LOSCFG_COMPILER_CLANG_LLVM
+        linkReg = *(UINTPTR *)(tmpFramePtr + sizeof(UINTPTR));
+#else
         linkReg = *(UINTPTR *)framePtr;
+#endif
         if (index >= jumpCount) {
             LR[count++] = linkReg;
             if (count == recordCount) {
@@ -1208,7 +1227,11 @@ VOID LOS_RecordLR(UINTPTR *LR, UINT32 LRSize, UINT32 recordCount, UINT32 jumpCou
             }
         }
         index++;
+#ifdef LOSCFG_COMPILER_CLANG_LLVM
+        framePtr = *(UINTPTR *)framePtr;
+#else
         framePtr = *(UINTPTR *)(tmpFramePtr - sizeof(UINTPTR));
+#endif
     }
 
     /* if linkReg is not enough,clean up the last of the effective LR as the end. */

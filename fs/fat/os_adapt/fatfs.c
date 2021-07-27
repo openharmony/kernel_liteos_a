@@ -46,6 +46,7 @@
 #include "los_tables.h"
 #include "user_copy.h"
 #include "los_vm_filemap.h"
+#include "los_hash.h"
 #include <time.h>
 #include <errno.h>
 #include <dirent.h>
@@ -53,7 +54,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "los_hash.h"
+#include <fcntl.h>
 
 
 struct VnodeOps fatfs_vops; /* forward define */
@@ -190,7 +191,7 @@ static int fatfs_sync(unsigned long mountflags, FATFS *fs)
 {
 #ifdef LOSCFG_FS_FAT_CACHE
     los_part *part = NULL;
-    if (mountflags != MS_NOSYNC) {
+    if (!(mountflags & (MS_NOSYNC | MS_RDONLY))) {
         part = get_part((INT)fs->pdrv);
         if (part == NULL) {
             return -ENODEV;
@@ -238,7 +239,8 @@ static mode_t fatfs_get_mode(BYTE attribute, mode_t fs_mode)
     return fs_mode;
 }
 
-static enum VnodeType fatfstype_2_vnodetype(BYTE type) {
+static enum VnodeType fatfstype_2_vnodetype(BYTE type) 
+{
     switch (type) {
         case AM_ARC:
             return VNODE_TYPE_REG;
@@ -286,7 +288,7 @@ static FRESULT init_cluster(DIR_FILE *pdfp, DIR *dp_new, FATFS *fs, int type, co
     mem_set(dir, 0, SS(fs));
     if (type == AM_LNK && target) {
         /* Write target to symlink */
-        strcpy_s((char *)dir, SS(fs), target);
+        (void)strcpy_s((char *)dir, SS(fs), target);
     } else {
         /* Write the dir cluster */
         mem_set(dir, 0, SS(fs));
@@ -735,6 +737,7 @@ off64_t fatfs_lseek64(struct file *filep, off64_t offset, int whence)
     struct Vnode *vp = filep->f_vnode;
     DIR_FILE *dfp = (DIR_FILE *)vp->data;
     FILINFO *finfo = &(dfp->fno);
+    struct Mount *mount = vp->originMount;
     FSIZE_t fpos;
     FRESULT result;
     int ret;
@@ -771,6 +774,17 @@ off64_t fatfs_lseek64(struct file *filep, off64_t offset, int whence)
     ret = lock_fs(fs);
     if (ret == FALSE) {
         return -EBUSY;
+    }
+
+    if (fpos > finfo->fsize) {
+        if ((filep->f_oflags & O_ACCMODE) == O_RDONLY) {
+            result = FR_DENIED;
+            goto ERROR_EXIT;
+        }
+        if (mount->mountFlags & MS_RDONLY) {
+            result = FR_WRITE_PROTECTED;
+            goto ERROR_EXIT;
+        }
     }
     fp->obj.sclust = finfo->sclst;
     fp->obj.objsize = finfo->fsize;
@@ -903,11 +917,13 @@ int fatfs_fallocate64(struct file *filep, int mode, off64_t offset, off64_t len)
         return -EBUSY;
     }
     result = f_expand(fp, (FSIZE_t)offset, (FSIZE_t)len, 1);
-    if (result == FR_OK && finfo->sclst == 0) {
-        finfo->sclst = fp->obj.sclust;
+    if (result == FR_OK) {
+        if (finfo->sclst == 0) {
+            finfo->sclst = fp->obj.sclust;
+        }
+        result = f_sync(fp);
     }
-    result = f_sync(fp);
-    unlock_fs(fs, FR_OK);
+    unlock_fs(fs, result);
 
     return -fatfs_2_vfs(result);
 }
@@ -1399,6 +1415,9 @@ int fatfs_stat(struct Vnode *vp, struct stat* sp)
     sp->st_blocks = finfo->fsize ? ((finfo->fsize - 1) / SS(fs) / fs->csize + 1) : 0;
     time = fattime_transfer(finfo->fdate, finfo->ftime);
     sp->st_mtime = time;
+
+    /* Adapt to kstat member "long tv_sec" */
+    sp->__st_mtim32.tv_sec = (long)time;
 
     unlock_fs(fs, FR_OK);
     return 0;

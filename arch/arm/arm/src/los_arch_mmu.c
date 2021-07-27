@@ -51,7 +51,7 @@
 __attribute__((aligned(MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS))) \
     __attribute__((section(".bss.prebss.translation_table"))) UINT8 \
     g_firstPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS];
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 __attribute__((aligned(MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS))) \
     __attribute__((section(".bss.prebss.translation_table"))) UINT8 \
     g_tempPageTable[MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS];
@@ -218,7 +218,7 @@ STATIC UINT32 OsCvtSecCacheFlagsToMMUFlags(UINT32 flags)
     switch (flags & VM_MAP_REGION_FLAG_CACHE_MASK) {
         case VM_MAP_REGION_FLAG_CACHED:
             mmuFlags |= MMU_DESCRIPTOR_L1_TYPE_NORMAL_WRITE_BACK_ALLOCATE;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
             mmuFlags |= MMU_DESCRIPTOR_L1_SECTION_SHAREABLE;
 #endif
             break;
@@ -544,7 +544,7 @@ STATIC UINT32 OsCvtPte2CacheFlagsToMMUFlags(UINT32 flags)
 
     switch (flags & VM_MAP_REGION_FLAG_CACHE_MASK) {
         case VM_MAP_REGION_FLAG_CACHED:
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
             mmuFlags |= MMU_DESCRIPTOR_L2_SHAREABLE;
 #endif
             mmuFlags |= MMU_DESCRIPTOR_L2_TYPE_NORMAL_WRITE_BACK_ALLOCATE;
@@ -871,7 +871,7 @@ STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
     kSpace->archMmu.virtTtb = (PTE_T *)g_firstPageTable;
     kSpace->archMmu.physTtb = LOS_PaddrQuery(kSpace->archMmu.virtTtb);
     status = LOS_ArchMmuUnmap(&kSpace->archMmu, virtAddr,
-                               (bssEndBoundary - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT);
+                              (bssEndBoundary - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT);
     if (status != ((bssEndBoundary - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
         VM_ERR("unmap failed, status: %d", status);
         return;
@@ -882,8 +882,8 @@ STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
         flags |= VM_MAP_REGION_FLAG_UNCACHED;
     }
     status = LOS_ArchMmuMap(&kSpace->archMmu, virtAddr, SYS_MEM_BASE,
-                             (textStart - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
-                             flags);
+                            (textStart - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
+                            flags);
     if (status != ((textStart - virtAddr) >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
         VM_ERR("mmap failed, status: %d", status);
         return;
@@ -910,9 +910,9 @@ STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
         flags |= VM_MAP_REGION_FLAG_UNCACHED;
     }
     status = LOS_ArchMmuMap(&kSpace->archMmu, bssEndBoundary,
-                             SYS_MEM_BASE + bssEndBoundary - virtAddr,
-                             kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
-                             flags);
+                            SYS_MEM_BASE + bssEndBoundary - virtAddr,
+                            kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT,
+                            flags);
     if (status != (kmallocLength >> MMU_DESCRIPTOR_L2_SMALL_SHIFT)) {
         VM_ERR("mmap failed, status: %d", status);
         return;

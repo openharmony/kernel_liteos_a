@@ -36,7 +36,7 @@
 #include "los_swtmr.h"
 #include "los_task_pri.h"
 
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
 
 VOID LOS_MpSchedule(UINT32 target)
 {

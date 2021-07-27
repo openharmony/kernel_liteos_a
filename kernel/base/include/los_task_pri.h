@@ -45,7 +45,9 @@
 #include "los_cpup_pri.h"
 #endif
 
+#ifdef LOSCFG_KERNEL_TRACE
 #include "los_trace.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -344,14 +346,14 @@ typedef struct {
     INT32           errorNo;            /**< Error Num */
     UINT32          signal;             /**< Task signal */
     sig_cb          sig;
-#if (LOSCFG_KERNEL_SMP == YES)
+#ifdef LOSCFG_KERNEL_SMP
     UINT16          currCpu;            /**< CPU core number of this task is running on */
     UINT16          lastCpu;            /**< CPU core number of this task is running on last time */
     UINT16          cpuAffiMask;        /**< CPU affinity mask, support up to 16 cores */
-#if (LOSCFG_KERNEL_SMP_TASK_SYNC == YES)
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
     UINT32          syncSignal;         /**< Synchronization for signal handling */
 #endif
-#if (LOSCFG_KERNEL_SMP_LOCKDEP == YES)
+#ifdef LOSCFG_KERNEL_SMP_LOCKDEP
     LockDep         lockDep;
 #endif
 #endif
@@ -368,7 +370,7 @@ typedef struct {
     UINTPTR         waitID;             /**< Wait for the PID or GID of the child process */
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process */
-#if (LOSCFG_KERNEL_LITEIPC == YES)
+#ifdef LOSCFG_KERNEL_LITEIPC
     UINT32          ipcStatus;
     LOS_DL_LIST     msgListHead;
     BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];

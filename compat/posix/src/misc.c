@@ -38,7 +38,7 @@
 #include "mqueue.h"
 #include "semaphore.h"
 #include "los_process_pri.h"
-
+#include "los_hw.h"
 
 /*
  * Supply some suitable values for constants that may not be present
@@ -54,17 +54,27 @@
 int uname(struct utsname *name)
 {
     INT32 ret;
+    const char *cpuInfo = NULL;
+
     if (name == NULL) {
         return -EFAULT;
     }
     (VOID)strncpy_s(name->sysname, sizeof(name->sysname), KERNEL_NAME, strlen(KERNEL_NAME) + 1);
     (VOID)strncpy_s(name->nodename, sizeof(name->nodename), "hisilicon", strlen("hisilicon") + 1);
-    ret = snprintf_s(name->version, sizeof(name->version), sizeof(name->version) - 1, "%s %u.%u.%u.%u %s %s\n",
+    ret = snprintf_s(name->version, sizeof(name->version), sizeof(name->version) - 1, "%s %u.%u.%u.%u %s %s",
                      KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, __DATE__, __TIME__);
     if (ret < 0) {
         return -EIO;
     }
-    name->machine[0] = '\0';
+
+    cpuInfo = LOS_CpuInfo();
+    (VOID)strncpy_s(name->machine, sizeof(name->machine), cpuInfo, sizeof(name->machine));
+    ret = snprintf_s(name->release, sizeof(name->release), sizeof(name->release) - 1, "%u.%u.%u.%u",
+                     KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE);
+    if (ret < 0) {
+        return -EIO;
+    }
+
     name->domainname[0] = '\0';
     return 0;
 }

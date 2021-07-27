@@ -473,7 +473,7 @@ off64_t file_seek64(struct file *filep, off64_t offset, int whence);
  *
  ****************************************************************************/
 
-int files_allocate(struct Vnode *vnode, int oflags, off_t pos,void *priv, int minfd);
+int files_allocate(struct Vnode *vnode, int oflags, off_t pos, void *priv, int minfd);
 
 /****************************************************************************
  * Name: files_close

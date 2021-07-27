@@ -41,50 +41,40 @@ outdir=${8}
 ohos_version=${9}
 sysroot_path=${10}
 arch_cflags=${11}
+device_path=${12}
 
 echo "${board_name}" "${device_company}"
 echo "sh param:" "$@"
 
 function main() {
     destination=".config"
-    config_file=""
     tee=""
-    if [ "${tee_enable}" = "tee" ]; then
+    if [ "${tee_enable}" = "true" ]; then
         tee="_tee"
     fi
+
+    config_file="${product_path}/config/${ohos_build_type}${tee}.config"
+    if [ -f "${config_file}" ]; then
+        cp "${config_file}" "${destination}"
+        return
+    fi
+
     product_name=$(basename "${product_path}")
-    source="tools/build/config/${product_name}_release.config"
+    config_file="${product_name}_release.config"
     if [ "${ohos_build_compiler}" = "clang" ]; then
         if [ "${ohos_build_type}" = "debug" ]; then
-            config_file="${product_name}_${ohos_build_compiler}${tee}.config"
-            source="tools/build/config/debug/${config_file}"
+            config_file="debug/${product_name}_${ohos_build_compiler}${tee}.config"
         else
             config_file="${product_name}_${ohos_build_compiler}_release${tee}.config"
-            source="tools/build/config/${config_file}"
         fi
     elif [ "${ohos_build_compiler}" = "gcc" ]; then
         if [ "${ohos_build_type}" = "debug" ]; then
             config_file="${product_name}_debug_shell${tee}.config"
-            source="tools/build/config/${config_file}"
         else
             config_file="${product_name}_release${tee}.config"
-            source="tools/build/config/${config_file}"
         fi
     fi
-    if [ -d "./out" ]; then
-        rm -rf ./out
-    fi
-    if [ -f "${destination}" ]; then
-        rm -rf ${destination}
-    fi
-    if [ ! -f "${source}" ]; then
-        source="${product_path}/config/sys/${config_file}"
-    fi
-    cp "${source}" ${destination}
-
-    test_info_outdir="../..${root_build_dir}/test_info/gen/kernel/test"
-    mkdir -p "${test_info_outdir}"
-    cp kernel_test.sources "${test_info_outdir}"
+    cp "tools/build/config/${config_file}" "${destination}"
 }
 
 if [ "x" != "x${sysroot_path}" ]; then
@@ -95,6 +85,10 @@ if [ "x" != "x${arch_cflags}" ]; then
     export ARCH_CFLAGS="${arch_cflags}"
 fi
 
+export OUTDIR="${outdir}"
+export PRODUCT_PATH="${product_path}"
+export DEVICE_PATH="${device_path}"
+
 main && \
-make clean OUTDIR="${outdir}" PRODUCT_PATH="${product_path}" && \
-make -j rootfs VERSION="${ohos_version}" OUTDIR="${outdir}" PRODUCT_PATH="${product_path}"
+make clean && \
+make -j rootfs VERSION="${ohos_version}"
