@@ -49,6 +49,7 @@ template("config") {
   config(target_name) {
     if (defined(invoker.module_switch) && !invoker.module_switch && target_name == "public") {
       not_needed(invoker, "*")
+      forward_variables_from(invoker, [ "configs" ])
     } else {
       forward_variables_from(invoker, "*")
     }
