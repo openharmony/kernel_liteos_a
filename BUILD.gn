@@ -142,7 +142,11 @@ config("as_objs_libc_flags") {
 
 config("std_include") {
   std_include = exec_script("//build/lite/run_shell_cmd.py", [ "$cc -print-file-name=include" ], "trim string")
-  include_dirs = [ std_include ]
+  cflags = [
+    "-isystem",
+    std_include,
+  ]
+  asmflags = cflags
 }
 
 config("public") {
