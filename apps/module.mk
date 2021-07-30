@@ -33,8 +33,8 @@ APP_SUBDIRS :=
 
 ifeq ($(LOSCFG_SHELL), y)
 APP_SUBDIRS += shell
-APP_SUBDIRS += mksh
-APP_SUBDIRS += toybox
+#APP_SUBDIRS += mksh
+#APP_SUBDIRS += toybox
 endif
 
 ifeq ($(LOSCFG_USER_INIT_DEBUG), y)
