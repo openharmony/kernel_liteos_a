@@ -30,12 +30,14 @@
  */
 
 #include "sys/types.h"
+#include "sys/resource.h"
 #include "unistd.h"
 #include "stdio.h"
 #include "pthread.h"
 #include "sys/utsname.h"
 #include "mqueue.h"
 #include "semaphore.h"
+#include "los_process_pri.h"
 #include "los_hw.h"
 
 /*
@@ -150,3 +152,47 @@ pid_t getpid(void)
     return ((LosTaskCB *)(OsCurrTaskGet()))->taskID;
 }
 
+int getrlimit(int resource, struct rlimit *rlim)
+{
+    LosProcessCB *pcb = OsCurrProcessGet();
+
+    switch (resource) {
+        case RLIMIT_NOFILE:
+        case RLIMIT_FSIZE:
+            break;
+        default:
+            return -EINVAL;
+    }
+    rlim->rlim_cur = pcb->pl_rlimit[resource].rlim_cur;
+    rlim->rlim_max = pcb->pl_rlimit[resource].rlim_max;
+
+    return 0;
+}
+
+#define FSIZE_RLIMIT 0XFFFFFFFF
+int setrlimit(int resource, const struct rlimit *rlim)
+{
+    LosProcessCB *pcb = OsCurrProcessGet();
+
+    if (rlim->rlim_cur > rlim->rlim_max) {
+        return -EINVAL;
+    }
+    switch (resource) {
+        case RLIMIT_NOFILE:
+            if (rlim->rlim_max > NR_OPEN_DEFAULT) {
+                return -EPERM;
+            }
+            break;
+        case RLIMIT_FSIZE:
+            if (rlim->rlim_max > FSIZE_RLIMIT) {
+                return -EPERM;
+            }
+            break;
+        default:
+            return -EINVAL;
+    }
+    pcb->pl_rlimit[resource].rlim_cur = rlim->rlim_cur;
+    pcb->pl_rlimit[resource].rlim_max = rlim->rlim_max;
+
+    return 0;
+}
