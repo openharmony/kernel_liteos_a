@@ -125,6 +125,7 @@ extern int SysMqTimedSend(mqd_t personal, const char *msg, size_t msgLen, unsign
                           const struct timespec *absTimeout);
 extern ssize_t SysMqTimedReceive(mqd_t personal, char *msg, size_t msgLen, unsigned int *msgPrio,
                                  const struct timespec *absTimeout);
+extern int SysMqNotify(mqd_t personal, const struct sigevent *sigev);
 #endif
 
 extern int SysSigAction(int sig, const sigaction_t *restrict sa, sigaction_t *restrict old, size_t sigsetsize);

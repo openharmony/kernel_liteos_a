@@ -216,6 +216,7 @@ SYSCALL_HAND_DEF(__NR_mq_open, SysMqOpen, mqd_t, ARG_NUM_4)
 SYSCALL_HAND_DEF(__NR_mq_unlink, SysMqUnlink, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_mq_timedsend, SysMqTimedSend, int, ARG_NUM_5)
 SYSCALL_HAND_DEF(__NR_mq_timedreceive, SysMqTimedReceive, ssize_t, ARG_NUM_5)
+SYSCALL_HAND_DEF(__NR_mq_notify, SysMqNotify, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_mq_getsetattr, SysMqGetSetAttr, int, ARG_NUM_3)
 
 #ifdef LOSCFG_NET_LWIP_SACK
