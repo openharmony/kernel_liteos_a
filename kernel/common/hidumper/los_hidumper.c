@@ -71,19 +71,19 @@
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(array)    (sizeof(array) / sizeof(array[0]))
 #endif
-#define REPLACE_INTERFACE(dst, src, type, func) {\
-    if (((type *)src)->func != NULL) {\
-        ((type *)dst)->func = ((type *)src)->func;\
-    } else {\
-        PRINT_ERR("%s->%s is NULL!\n", #src, #func);\
-    }\
+#define REPLACE_INTERFACE(dst, src, type, func) {           \
+    if (((type *)src)->func != NULL) {                      \
+        ((type *)dst)->func = ((type *)src)->func;          \
+    } else {                                                \
+        PRINT_ERR("%s->%s is NULL!\n", #src, #func);        \
+    }                                                       \
 }
-#define INVOKE_INTERFACE(adapter, type, func) {\
-    if (((type *)adapter)->func != NULL) {\
-        ((type *)adapter)->func();\
-    } else {\
-        PRINT_ERR("%s->%s is NULL!\n", #adapter, #func);\
-    }\
+#define INVOKE_INTERFACE(adapter, type, func) {             \
+    if (((type *)adapter)->func != NULL) {                  \
+        ((type *)adapter)->func();                          \
+    } else {                                                \
+        PRINT_ERR("%s->%s is NULL!\n", #adapter, #func);    \
+    }                                                       \
 }
 
 /* ------------ local prototypes ------------ */
@@ -296,36 +296,36 @@ static INT32 HiDumperIoctl(struct file *filep, INT32 cmd, unsigned long arg)
     INT32 ret = 0;
 
     switch (cmd) {
-    case HIDUMPER_DUMP_ALL:
-        INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpSysInfo);
-        INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpCpuUsage);
-        INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpMemUsage);
-        INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpTaskInfo);
-        break;
-    case HIDUMPER_CPU_USAGE:
-        INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpCpuUsage);
-        break;
-    case HIDUMPER_MEM_USAGE:
-        INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpMemUsage);
-        break;
-    case HIDUMPER_TASK_INFO:
-        INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpTaskInfo);
-        break;
-    case HIDUMPER_INJECT_KERNEL_CRASH:
-        INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, InjectKernelCrash);
-        break;
-    case HIDUMPER_DUMP_FAULT_LOG:
-        INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpFaultLog);
-        break;
-    case HIDUMPER_MEM_DATA:
-        if (g_adapter.DumpMemData != NULL) {
-            g_adapter.DumpMemData((struct MemDumpParam *)arg);
-        }
-        break;
-    default:
-        ret = EPERM;
-        PRINTK("Invalid CMD: 0x%x\n", (UINT32)cmd);
-        break;
+        case HIDUMPER_DUMP_ALL:
+            INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpSysInfo);
+            INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpCpuUsage);
+            INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpMemUsage);
+            INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpTaskInfo);
+            break;
+        case HIDUMPER_CPU_USAGE:
+            INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpCpuUsage);
+            break;
+        case HIDUMPER_MEM_USAGE:
+            INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpMemUsage);
+            break;
+        case HIDUMPER_TASK_INFO:
+            INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpTaskInfo);
+            break;
+        case HIDUMPER_INJECT_KERNEL_CRASH:
+            INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, InjectKernelCrash);
+            break;
+        case HIDUMPER_DUMP_FAULT_LOG:
+            INVOKE_INTERFACE(&g_adapter, struct HiDumperAdapter, DumpFaultLog);
+            break;
+        case HIDUMPER_MEM_DATA:
+            if (g_adapter.DumpMemData != NULL) {
+                g_adapter.DumpMemData((struct MemDumpParam *)arg);
+            }
+            break;
+        default:
+            ret = EPERM;
+            PRINTK("Invalid CMD: 0x%x\n", (UINT32)cmd);
+            break;
     }
 
     return ret;

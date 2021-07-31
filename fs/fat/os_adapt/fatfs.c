@@ -239,7 +239,7 @@ static mode_t fatfs_get_mode(BYTE attribute, mode_t fs_mode)
     return fs_mode;
 }
 
-static enum VnodeType fatfstype_2_vnodetype(BYTE type) 
+static enum VnodeType fatfstype_2_vnodetype(BYTE type)
 {
     switch (type) {
         case AM_ARC:
@@ -292,7 +292,8 @@ static FRESULT init_cluster(DIR_FILE *pdfp, DIR *dp_new, FATFS *fs, int type, co
     } else {
         /* Write the dir cluster */
         mem_set(dir, 0, SS(fs));
-        mem_set(dir + DIR_Name, ' ', 11); /* Create "." entry */
+        /* 11, the The max length of of the short file name,  Create "." entry */
+        mem_set(dir + DIR_Name, ' ', 11);
         dir[DIR_Name] = '.';
         dir[DIR_Attr] = AM_DIR;
         st_clust(fs, dir, *clust);

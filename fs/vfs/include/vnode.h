@@ -39,7 +39,7 @@
 typedef LOS_DL_LIST LIST_HEAD;
 typedef LOS_DL_LIST LIST_ENTRY;
 
-#define VNODE_FLAG_MOUNT_NEW      (1 << 0) /* new mount vnode*/
+#define VNODE_FLAG_MOUNT_NEW      (1 << 0) /* new mount vnode */
 #define VNODE_FLAG_MOUNT_ORIGIN   (1 << 1) /* origin vnode */
 
 #define V_CREATE     (1 << 0)
@@ -76,18 +76,17 @@ typedef LOS_DL_LIST LIST_ENTRY;
 #define CHG_MTIME 32
 #define CHG_CTIME 64
 
-struct IATTR
-{
-  /* This structure is used for record vnode attr. */
-  unsigned int attr_chg_valid;
-  unsigned int attr_chg_flags;
-  unsigned attr_chg_mode;
-  unsigned attr_chg_uid;
-  unsigned attr_chg_gid;
-  unsigned attr_chg_size;
-  unsigned attr_chg_atime;
-  unsigned attr_chg_mtime;
-  unsigned attr_chg_ctime;
+struct IATTR {
+    /* This structure is used for record vnode attr. */
+    unsigned int attr_chg_valid;
+    unsigned int attr_chg_flags;
+    unsigned attr_chg_mode;
+    unsigned attr_chg_uid;
+    unsigned attr_chg_gid;
+    unsigned attr_chg_size;
+    unsigned attr_chg_atime;
+    unsigned attr_chg_mtime;
+    unsigned attr_chg_ctime;
 };
 
  /*

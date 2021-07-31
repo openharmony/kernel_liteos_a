@@ -758,5 +758,3 @@ ULONG_T LOS_RbAddNode(LosRbTree *pstTree, LosRbNode *pstNew)
 
     return TRUE;
 }
-
-

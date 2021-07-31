@@ -423,6 +423,7 @@ STATIC VOID EchoToTerminal(CONSOLE_CB *consoleCB, struct file *filep, const stru
 
 STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
 {
+    /* 3, store read char len need to minus \b  */
     if ((readcount == EACH_CHAR) && (consoleCB->fifoIn <= (CONSOLE_FIFO_SIZE - 3))) {
         if (ch == '\b') {
             if (!ConsoleFifoEmpty(consoleCB)) {

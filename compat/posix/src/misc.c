@@ -59,17 +59,17 @@ int uname(struct utsname *name)
     if (name == NULL) {
         return -EFAULT;
     }
-    (VOID)strncpy_s(name->sysname, sizeof(name->sysname), KERNEL_NAME, strlen(KERNEL_NAME) + 1);
-    (VOID)strncpy_s(name->nodename, sizeof(name->nodename), "hisilicon", strlen("hisilicon") + 1);
-    ret = snprintf_s(name->version, sizeof(name->version), sizeof(name->version) - 1, "%s %u.%u.%u.%u %s %s",
+    (VOID)strcpy_s(name->sysname, sizeof(name->sysname), KERNEL_NAME);
+    (VOID)strcpy_s(name->nodename, sizeof(name->nodename), "hisilicon");
+    ret = sprintf_s(name->version, sizeof(name->version), "%s %u.%u.%u.%u %s %s",
                      KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, __DATE__, __TIME__);
     if (ret < 0) {
         return -EIO;
     }
 
     cpuInfo = LOS_CpuInfo();
-    (VOID)strncpy_s(name->machine, sizeof(name->machine), cpuInfo, sizeof(name->machine));
-    ret = snprintf_s(name->release, sizeof(name->release), sizeof(name->release) - 1, "%u.%u.%u.%u",
+    (VOID)strcpy_s(name->machine, sizeof(name->machine), cpuInfo);
+    ret = sprintf_s(name->release, sizeof(name->release), "%u.%u.%u.%u",
                      KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE);
     if (ret < 0) {
         return -EIO;

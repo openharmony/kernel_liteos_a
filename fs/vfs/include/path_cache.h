@@ -43,7 +43,7 @@ struct PathCache {
     LIST_ENTRY hashEntry;         /* list entry for buckets in the hash table */
     uint8_t nameLen;              /* length of path component */
 #ifdef LOSCFG_DEBUG_VERSION
-    int hit;                      /* cache hit count*/
+    int hit;                      /* cache hit count */
 #endif
     char name[0];                 /* path component name */
 };
