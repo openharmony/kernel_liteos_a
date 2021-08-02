@@ -70,4 +70,11 @@ build_ext_component("build_toybox") {
   command += " make toybox"
   command += " && install -D toybox "
   command += rebase_path("$root_out_dir/bin/toybox", exec_path)
+  command += " && install -D generated/unstripped/toybox "
+  command += rebase_path("$root_out_dir/unstripped/bin/toybox", exec_path)
+
+  outputs = [
+    "$root_out_dir/unstripped/bin/toybox",
+    "$root_out_dir/bin/toybox",
+  ]
 }

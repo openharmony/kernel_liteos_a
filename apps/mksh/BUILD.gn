@@ -80,10 +80,16 @@ build_ext_component("build_mksh") {
   # copy mksh and .mkshrc to out dir
   command += " && mkdir -p "
   command += rebase_path("$root_out_dir/bin", exec_path)
-  command += " "
-  command += rebase_path("$root_out_dir/etc", exec_path)
+  command += " && install -D mksh "
+  command += rebase_path("$root_out_dir/unstripped/bin/mksh", exec_path)
   command += " && $ohos_current_strip_command mksh -o "
   command += rebase_path("$root_out_dir/bin/mksh", exec_path)
-  command += " && cp -f .mkshrc "
-  command += rebase_path("$root_out_dir/etc", exec_path)
+  command += " && install -D .mkshrc "
+  command += rebase_path("$root_out_dir/etc/.mkshrc", exec_path)
+
+  outputs = [
+    "$root_out_dir/unstripped/bin/mksh",
+    "$root_out_dir/bin/mksh",
+    "$root_out_dir/etc/.mkshrc",
+  ]
 }
