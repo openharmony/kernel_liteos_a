@@ -27,11 +27,11 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+include $(APPSTOPDIR)/config.mk
+
 MKSH := mksh
 
 MKSH_DIR := $(shell pwd)/
-LITEOSTOPDIR = $(MKSH_DIR)/../../
-include $(MKSH_DIR)/../config.mk
 
 APPS_OUT := $(OUT)/bin
 ETC_OUT := $(OUT)/etc

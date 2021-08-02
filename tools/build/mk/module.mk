@@ -27,14 +27,7 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-ifeq ($(OS), Linux)
 OBJOUT := $(BUILD)$(dir $(subst $(LITEOSTOPDIR),,$(shell pwd)))$(MODULE_NAME)
-LOCAL_PWD := $(shell pwd)
-else
-TEMPLITEOSTOPDIR:=$(shell cygpath -u $(LITEOSTOPDIR))
-OBJOUT := $(BUILD)$(dir $(subst $(TEMPLITEOSTOPDIR),,$(shell pwd)))$(MODULE_NAME)
-LOCAL_PWD := $(shell cygpath -m $(shell pwd))
-endif
 
 ifeq ($(LOCAL_SO), y)
 LIBSO := $(OUT)/lib/lib$(MODULE_NAME).so
@@ -59,7 +52,7 @@ LOCAL_ASMOBJS := $(patsubst %.S,$(OBJOUT)/%.o,$(LOCAL_ASMSRCS))
 LOCAL_ASMOBJS2 := $(patsubst %.s,$(OBJOUT)/%.o,$(LOCAL_ASMSRCS2))
 LOCAL_CCOBJS := $(patsubst %.cc,$(OBJOUT)/%.o,$(LOCAL_CCSRCS))
 
-LOCAL_OBJS := $(LOCAL_COBJS) $(LOCAL_CPPOBJS) $(LOCAL_ASMOBJS) $(LOCAL_ASMOBJS2)$(LOCAL_CCOBJS)
+LOCAL_OBJS := $(LOCAL_COBJS) $(LOCAL_CPPOBJS) $(LOCAL_ASMOBJS) $(LOCAL_ASMOBJS2) $(LOCAL_CCOBJS)
 
 LOCAL_CGCH := $(patsubst %.h,%.h.gch,$(LOCAL_CHS))
 LOCAL_CPPGCH := $(patsubst %.h,%.h.gch,$(LOCAL_CPPHS))

@@ -27,14 +27,9 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-SHELL_DIR := $(dir $(shell pwd))/shell/
+include $(APPSTOPDIR)/config.mk
 
-ifeq ($(APPSTOPDIR), )
-APPSTOPDIR := $(shell pwd)/../
-LITEOSTOPDIR = $(APPSTOPDIR)/../
-endif
-include $(SHELL_DIR)/../config.mk
-APPS_OUT := $(OUT)/bin
+APP_NAME := $(notdir $(shell pwd))
 
 SECUREC_INCLUDE := $(LITEOSTHIRDPARTY)/bounds_checking_function/include
 
@@ -44,35 +39,11 @@ LOCAL_SRCS = $(wildcard src/main.c)\
              $(wildcard src/shcmdparse.c)\
              $(wildcard builtin/cd.c)
 LOCAL_SRCS += $(wildcard $(LITEOSTHIRDPARTY)/bounds_checking_function/src/*.c)
-LOCAL_OBJ := $(LOCAL_SRCS:.c=.o)
 
 LOCAL_INCLUDE := \
-	-I $(SHELL_DIR)/include/ \
+	-I include/ \
 	-I $(SECUREC_INCLUDE)\
 
-LOCAL_FLAGS += $(CFLAGS)
+LOCAL_FLAGS += $(LOCAL_INCLUDE)
 
-LDPATH := -L$(SHELL_DIR)/
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LOCAL_FLAGS += -Wno-shift-op-parentheses -Wno-bitwise-op-parentheses $(LLVM_SYSROOT)
-LDCFLAGS += $(LLVM_EXTRA_LD_OPTS) $(LLVM_SYSROOT)
-endif
-
-SHELLNAME := shell
-
-all: $(SHELLNAME)
-
-$(LOCAL_OBJ): %.o : %.c
-	$(HIDE) $(CC) $(LOCAL_FLAGS) -fPIE $(LOCAL_INCLUDE) -c $< -o $@
-
-$(SHELLNAME): $(LOCAL_OBJ)
-	$(HIDE) $(CC) -pie -s $(LDPATH) $(BASE_OPTS) -o $(SHELLNAME) $^ $(LDCFLAGS)
-	$(HIDE) mkdir -p $(APPS_OUT)
-	$(HIDE) $(MV) $(SHELLNAME) $(APPS_OUT)
-	$(HIDE) $(RM) $(LOCAL_OBJ)
-
-clean:
-	$(HIDE) $(RM) $(LOCAL_OBJ)
-	$(HIDE) $(RM) $(SHELLNAME)
-
-.PHONY: all $(SHELLNAME) clean
+include $(APP)

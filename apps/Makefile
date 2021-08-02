@@ -27,11 +27,12 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-LITEOSTOPDIR := $(shell pwd)/../
+APPSTOPDIR := $(shell pwd)
+LITEOSTOPDIR ?= $(APPSTOPDIR)/..
+export LITEOSTOPDIR
+export APPSTOPDIR
 
-include $(LITEOSTOPDIR)/.config
-include ./config.mk
-include ./module.mk
+include $(APPSTOPDIR)/config.mk
 
 HIDE := @
 APPS := app

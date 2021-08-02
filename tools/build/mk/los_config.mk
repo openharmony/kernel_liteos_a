@@ -27,17 +27,7 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-CONFIG_FILE ?= $(LITEOSTOPDIR)/.config
--include $(CONFIG_FILE)
-LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:"%"=%)
-ifeq ($(wildcard $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) $(LOSCFG_BOARD_CONFIG_PATH)),)
-LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:%/config/board=%/board)
-endif
-ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
-CROSS_COMPILE := arm-linux-ohoseabi-
-else ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-CROSS_COMPILE := llvm-
-endif
+-include $(LITEOS_CONFIG_FILE)
 
 HIDE := @
 CC  :=
@@ -52,13 +42,10 @@ NM :=
 MKDIR = mkdir
 OBJ_MKDIR = if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 RM = -rm -rf
-ECHO = echo
 ifeq ($(OS),)
 OS := $(shell uname -s)
 export OS
 endif
-COMPILE_NAME := $(patsubst %-,%,$(CROSS_COMPILE))
-VERSION_NUM :=
 
 ARFLAGS  := cr
 
@@ -87,7 +74,6 @@ LITEOS_PLATFORM_INCLUDE :=
 LITEOS_CXXINCLUDE :=
 LITEOS_LD_PATH :=
 LITEOS_LD_SCRIPT :=
-LITEOS_MK_PATH :=
 ## c as cxx ld flags ##
 LITEOS_ASFLAGS :=
 LITEOS_CFLAGS :=
@@ -104,26 +90,33 @@ LIB_SUBDIRS :=
 ifeq ($(LITEOSTHIRDPARTY),)
 LITEOSTHIRDPARTY := $(LITEOSTOPDIR)/../../third_party
 endif
+LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:"%"=%)
+ifeq ($(wildcard $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) $(LOSCFG_BOARD_CONFIG_PATH)),)
+LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:%/config/board=%/board)
+endif
+ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
+CROSS_COMPILE ?= arm-linux-ohoseabi-
+LITEOS_COMPILER_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/gcc/linux-x86/arm/arm-linux-ohoseabi-gcc/bin/
+else ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+CROSS_COMPILE ?= llvm-
+LITEOS_COMPILER_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/clang/ohos/linux-x86_64/llvm/bin/
+endif
+ifeq ($(wildcard $(LITEOS_COMPILER_PATH)),)
+LITEOS_COMPILER_PATH := $(patsubst %/$(CROSS_COMPILE)as,%/,$(shell which $(CROSS_COMPILE)as))
+endif
 LITEOS_PLATFORM := $(LOSCFG_PLATFORM:"%"=%)
 ifeq ($(OUTDIR),)
-OUT = $(LITEOSTOPDIR)/out/$(LITEOS_PLATFORM)
-LITEOS_TARGET_DIR = $(OUT)
-KERNEL_COMPILE_ONLY = y
+OUT = $(LITEOSTOPDIR)/out/$(LOSCFG_PRODUCT_NAME:"%"=%)
 else
 OUT = $(OUTDIR)
-LITEOS_TARGET_DIR = $(OUT)/../../../
-KERNEL_COMPILE_ONLY = n
 endif
 BUILD  = $(OUT)/obj
-MK_PATH  = $(LITEOSTOPDIR)/tools/build/mk
 CXX_PATH  = $(LITEOSTOPDIR)/lib/cxxstl
 JFFS_PATH  = $(LITEOSTOPDIR)/fs/jffs2
 LITEOS_SCRIPTPATH ?= $(LITEOSTOPDIR)/tools/scripts
-LITEOS_MENUCONFIG_H ?= $(LITEOSTOPDIR)/config.h
-LOSCFG_ENTRY_SRC    = $(LITEOSTOPDIR)/platform/los_config.c
 
 ### include variable
-MODULE = $(MK_PATH)/module.mk
+MODULE = $(LITEOSTOPDIR)/tools/build/mk/module.mk
 LITEOS_CMACRO      += -D__LITEOS__ -DSECUREC_IN_KERNEL=0
 AS_OBJS_LIBC_FLAGS  = -D__ASSEMBLY__
 
@@ -154,14 +147,8 @@ endif
 ####################################### Kernel Option Begin ###########################################
 LITEOS_BASELIB += -lbase
 LIB_SUBDIRS       += kernel/base
-LITEOS_KERNEL_INCLUDE   := -I $(LITEOSTOPDIR)/kernel/include
-
-LITEOS_BASELIB += -lbsp_config
-LIB_SUBDIRS += $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)
-
-ifeq ($(LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7), y)
-LITEOS_PLATFORM_INCLUDE += -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)/include/
-endif
+LITEOS_KERNEL_INCLUDE   := -I $(LITEOSTOPDIR)/kernel/include \
+                           -I $(LITEOSTOPDIR)/kernel/base/include
 
 ifeq ($(LOSCFG_KERNEL_CPUP), y)
     LITEOS_BASELIB   += -lcpup
@@ -510,38 +497,30 @@ endif
 ############################# Security Option End ##############################
 
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-ifeq ($(LITEOS_COMPILER_PATH),)
-LITEOS_COMPILER_PATH := $(shell $(LITEOSTOPDIR)/tools/build/mk/get_llvm_compiler_path.sh "$(CROSS_COMPILE)" "$(LITEOSTOPDIR)")
-export LITEOS_COMPILER_PATH
-endif
-CC  = $(LITEOS_COMPILER_PATH)/bin/clang
-AS  = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)as
-AR  = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)ar
-LD  = $(LITEOS_COMPILER_PATH)/bin/ld.lld
-GPP = $(LITEOS_COMPILER_PATH)/bin/clang++
-OBJCOPY = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)objcopy -R .bss
-OBJDUMP = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)objdump
-SIZE = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)size
-NM = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)nm
-STRIP = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)strip
+CC  = $(LITEOS_COMPILER_PATH)clang
+AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
+AR  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ar
+LD  = $(LITEOS_COMPILER_PATH)ld.lld
+GPP = $(LITEOS_COMPILER_PATH)clang++
+OBJCOPY = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objcopy -R .bss
+OBJDUMP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objdump
+SIZE = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)size
+NM = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)nm
+STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
 LLVM_TARGET := arm-liteos
 LLVM_EXTRA_OPTS := -target $(LLVM_TARGET) -fms-extensions -Wno-address-of-packed-member
 LLVM_EXTRA_LD_OPTS := -fuse-ld=lld --rtlib=compiler-rt
 else
-ifeq ($(LITEOS_COMPILER_PATH),)
-LITEOS_COMPILER_PATH := $(shell $(LITEOSTOPDIR)/tools/build/mk/get_compiler_path.sh "$(CROSS_COMPILE)" "$(LITEOSTOPDIR)")
-export LITEOS_COMPILER_PATH
-endif
-CC  = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)gcc
-AS  = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)as
-AR  = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)ar
-LD  = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)ld
-GPP = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)g++
-OBJCOPY = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)objcopy
-OBJDUMP = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)objdump
-SIZE = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)size
-NM = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)nm
-STRIP = $(LITEOS_COMPILER_PATH)/bin/$(CROSS_COMPILE)strip
+CC  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)gcc
+AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
+AR  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ar
+LD  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ld
+GPP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)g++
+OBJCOPY = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objcopy
+OBJDUMP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objdump
+SIZE = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)size
+NM = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)nm
+STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
 endif
 
 FP = -fno-omit-frame-pointer
@@ -552,7 +531,7 @@ LITEOS_CXXOPTS_BASE  += -std=c++11 -nostdlib -nostdinc -nostdinc++ -fexceptions 
 LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCLUDE) \
                               $(LITEOS_TICKLESS_INCLUDE)   $(LITEOS_TRACE_INCLUDE) \
                               $(LITEOS_VDSO_INCLUDE)       $(LITEOS_LITEIPC_INCLUDE) \
-                              $(LITEOS_PIPE_INCLUDE)
+                              $(LITEOS_PIPE_INCLUDE)       $(LITEOS_CPUP_INCLUDE)
 LITEOS_COMPAT_INCLUDE      := $(LITEOS_POSIX_INCLUDE) $(LITEOS_LINUX_INCLUDE) \
                               $(LITEOS_BSD_INCLUDE)
 LITEOS_FS_INCLUDE          := $(LITEOS_VFS_INCLUDE)        $(LITEOS_FAT_CACHE_INCLUDE) \
@@ -635,12 +614,6 @@ LITEOS_BASELIB     += $(shell $(_CC) "-print-file-name=libgcc_eh.a")
 endif
 LITEOS_BASELIB     += $(shell $(_CC) "-print-libgcc-file-name")
 LITEOS_LIB_INCLUDE += -isystem $(shell $(_CC) "-print-file-name=include")
-
-# temporary
-LITEOS_PLATFORM_INCLUDE += \
-        -I $(LITEOSTOPDIR)/kernel/base/include \
-        -I $(LITEOSTOPDIR)/kernel/extended/cpup \
-        -I $(LITEOSTOPDIR)/kernel/extended/trace
 
 LITEOS_CXXINCLUDE = $(LITEOS_INCLUDE)
 

@@ -53,7 +53,6 @@ shared_library("OHOS-vdso") {
   defines = [ "_XOPEN_SOURCE=700" ]
 
   ldflags = [
-    "-Wl,-s",
     "-Wl,-Bsymbolic",
     "-Wl,-T" + rebase_path("los_vdso.ld", root_build_dir),
   ]

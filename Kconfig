@@ -193,8 +193,8 @@ config DEBUG_VERSION
     default n
     help
       If you do not select this option that means you enable a release version for LiteOS.
-      It also means you do not want to use debug modules, like shell,telnet,tftp,
-      ,nfs,ramfs proc and memory check.
+      It also means you do not want to use debug modules, like shell,telnet,tftp,nfs and
+      memory check, etc.
       If you select this option that means you enable a debug version for LiteOS.
       That means you want a opposite behaviour compared to release version.
 

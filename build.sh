@@ -42,16 +42,19 @@ ohos_version=${9}
 sysroot_path=${10}
 arch_cflags=${11}
 device_path=${12}
+compile_prefix=${13}
 
 echo "${board_name}" "${device_company}"
 echo "sh param:" "$@"
 
-destination="defconfig"
+destination="${outdir}/defconfig"
 function main() {
     tee=""
     if [ "${tee_enable}" = "true" ]; then
         tee="_tee"
     fi
+
+    mkdir -p "${destination%/*}"
 
     config_file="${product_path}/kernel_configs/${ohos_build_type}${tee}.config"
     if [ -f "${config_file}" ]; then
@@ -88,9 +91,13 @@ fi
 export PRODUCT_PATH="${product_path}"
 export DEVICE_PATH="${device_path}"
 
-OUTDIR="${outdir}"
-CONFIG="$(realpath ${destination})"
+export OUTDIR="${outdir}"
+export KCONFIG_CONFIG="${destination}"
+export LITEOS_MENUCONFIG_H="${destination%/*}/config.h"
+export LITEOS_CONFIG_FILE="${destination%/*}/.config"
+export LITEOS_COMPILER_PATH="${compile_prefix%/*}/"
+export CROSS_COMPILE="${compile_prefix##*/}"
 
 main && \
-make clean CONFIG="$CONFIG" OUTDIR="$OUTDIR" && \
-make -j all VERSION="${ohos_version}" CONFIG="$CONFIG" OUTDIR="$OUTDIR"
+make clean && \
+make -j all VERSION="${ohos_version}"
