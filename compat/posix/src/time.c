@@ -452,11 +452,25 @@ int clock_settime(clockid_t clockID, const struct timespec *tp)
 }
 
 #ifdef LOSCFG_KERNEL_CPUP
+inline UINT32 GetTidFromClockID(clockid_t clockID)
+{
+    // In musl/src/thread/pthread_getcpuclockid.c, we know 'clockid = (-tid - 1) * 8 + 6' 
+    UINT32 tid = -(clockID - 6) / 8 - 1; // 6 8 1 inverse operation from clockID to tid
+    return tid;
+}
+
+inline const pid_t GetPidFromClockID(clockid_t clockID)
+{
+    // In musl/src/time/clock_getcpuclockid.c, we know 'clockid = (-pid - 1) * 8 + 2'
+    const pid_t pid = -(clockID - 2) / 8 - 1; // 2 8 1 inverse operation from clockID to pid
+    return pid;
+}
+
 static int PthreadGetCputime(clockid_t clockID, struct timespec *ats)
 {
     uint64_t runtime;
     UINT32 intSave;
-    UINT32 tid = ((UINT32) ~((UINT32)(clockID) >> CPUCLOCK_ID_OFFSET));
+    UINT32 tid = GetTidFromClockID(clockID);
 
     if (OS_TID_CHECK_INVALID(tid)) {
         return -EINVAL;
@@ -482,7 +496,7 @@ static int ProcessGetCputime(clockid_t clockID, struct timespec *ats)
 {
     UINT64 runtime;
     UINT32 intSave;
-    const pid_t pid = ((pid_t) ~((UINT32)(clockID) >> CPUCLOCK_ID_OFFSET));
+    const pid_t pid = GetPidFromClockID(clockID);
     LosProcessCB *spcb = NULL;
 
     if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
@@ -524,7 +538,7 @@ static int GetCputime(clockid_t clockID, struct timespec *tp)
 static int CheckClock(const clockid_t clockID)
 {
     int error = 0;
-    const pid_t pid = ((pid_t) ~((UINT32)(clockID) >> CPUCLOCK_ID_OFFSET));
+    const pid_t pid = GetPidFromClockID(clockID);
 
     if (!((UINT32)clockID & CPUCLOCK_PERTHREAD_MASK)) {
         LosProcessCB *spcb = NULL;
