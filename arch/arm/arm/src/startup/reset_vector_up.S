@@ -54,6 +54,7 @@
     .extern __stack_chk_guard_setup
     .extern g_firstPageTable
     .extern g_mmuJumpPageTable
+    .extern g_archMmuInitMapping
 
     .equ MPIDR_CPUID_MASK, 0xffU
 
@@ -77,14 +78,6 @@
     bl      excstack_magic
 .endm
 
-/* param0 is physical address, param1 virtual address, param2 is sizes, param3 is flag */
-.macro PAGE_TABLE_SET param0, param1, param2, param3
-    ldr     r6, =\param0
-    ldr     r7, =\param1
-    ldr     r8, =\param2
-    ldr     r10, =\param3
-    bl      page_table_build
-.endm
     .code   32
     .section ".vectors","ax"
 
@@ -161,12 +154,15 @@ reloc_img_to_bottom_done:
     mov     r2, #MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS
     bl      memset_optimized                    /* optimized memset since r0 is 64-byte aligned */
 
-    PAGE_TABLE_SET SYS_MEM_BASE, KERNEL_VMM_BASE, KERNEL_VMM_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
-    PAGE_TABLE_SET SYS_MEM_BASE, UNCACHED_VMM_BASE, UNCACHED_VMM_SIZE, MMU_INITIAL_MAP_NORMAL_NOCACHE
-    PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_DEVICE_BASE, PERIPH_DEVICE_SIZE, MMU_INITIAL_MAP_DEVICE
-    PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_CACHED_BASE, PERIPH_CACHED_SIZE, MMU_DESCRIPTOR_KERNEL_L1_PTE_FLAGS
-    PAGE_TABLE_SET PERIPH_PMM_BASE, PERIPH_UNCACHED_BASE, PERIPH_UNCACHED_SIZE, MMU_INITIAL_MAP_STRONGLY_ORDERED
-
+    ldr     r5, =g_archMmuInitMapping
+    add     r5, r5, r11
+init_mmu_loop:
+    ldmia   r5!, {r6-r10}                       /* r6 = phys, r7 = virt, r8 = size, r9 = mmu_flags, r10 = name */
+    cmp     r8, 0                               /* if size = 0, the mmu init done */
+    beq     init_mmu_done
+    bl      page_table_build
+    b       init_mmu_loop
+init_mmu_done:
     orr     r8, r4, #MMU_TTBRx_FLAGS            /* r8 = r4 and set cacheable attributes on translation walk */
     ldr     r4, =g_mmuJumpPageTable             /* r4: jump pagetable vaddr */
     add     r4, r4, r11
@@ -230,9 +226,6 @@ warm_reset:
 
     LDR    r0, =__exception_handlers
     MCR    p15, 0, r0, c12, c0, 0
-
-    cmp    r11, #0
-    bne    cpu_start
 
 clear_bss:
     ldr    r0, =__bss_start
@@ -310,11 +303,6 @@ reset_platform:
     mov    r0, #0
     mov    pc, r0   // Jump to reset vector
 #endif
-cpu_start:
-    bl     secondary_cpu_start
-    b      .
-
-
 
 /*
  * set sp for current cpu
@@ -336,9 +324,9 @@ sp_set:
  */
 #ifdef LOSCFG_KERNEL_MMU
 page_table_build:
-    mov     r9, r6
-    bfc     r9, #20, #12                        /* r9: pa % MB */
-    add     r8, r8, r9
+    mov     r10, r6
+    bfc     r10, #20, #12                       /* r9: pa % MB */
+    add     r8, r8, r10
     add     r8, r8, #(1 << 20)
     sub     r8, r8, #1
     lsr     r6, #20                             /* r6 = physical address / MB */
@@ -346,7 +334,7 @@ page_table_build:
     lsr     r8, #20                             /* r8 = roundup(size, MB) */
 
 page_table_build_loop:
-    orr     r12, r10, r6, lsl #20               /* r12: flags | physAddr */
+    orr     r12, r9, r6, lsl #20                /* r12: flags | physAddr */
     str     r12, [r4, r7, lsl #2]               /* gPgTable[l1Index] = physAddr | flags */
     add     r6, #1                              /* physAddr+ */
     add     r7, #1                              /* l1Index++ */
@@ -386,24 +374,6 @@ excstack_magic_loop:
     add     r3, r3, #1
     cmp     r3, #CORE_NUM
     blt     excstack_magic_loop
-    bx      lr
-
-/*
- * 0xe51ff004 = "ldr  pc, [pc, #-4]"
- * next addr value will be the real booting addr
- */
-_bootaddr_setup:
-    mov     r0, #0
-    ldr     r1, =0xe51ff004
-    str     r1, [r0]
-
-    add     r0, r0, #4
-    ldr     r1, =SYS_MEM_BASE
-    str     r1, [r0]
-
-    dsb
-    isb
-
     bx      lr
 
 #ifdef LOSCFG_KERNEL_MMU

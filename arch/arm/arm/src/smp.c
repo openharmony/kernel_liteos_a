@@ -29,22 +29,78 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "los_config.h"
-#include "los_sched_pri.h"
+#include "smp.h"
+#include "arch_config.h"
+#include "los_base.h"
+#include "los_hw.h"
+#include "los_atomic.h"
+#include "los_arch_mmu.h"
+#include "los_init_pri.h"
+#include "gic_common.h"
+#include "los_task_pri.h"
 
-LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
+#ifdef LOSCFG_KERNEL_SMP
+
+extern VOID reset_vector(VOID);
+
+struct OsCpuInit {
+    ArchCpuStartFunc cpuStart;
+    VOID *arg;
+    Atomic initFlag;
+};
+
+STATIC struct OsCpuInit g_cpuInit[CORE_NUM - 1] = {0};
+
+VOID HalArchCpuOn(UINT32 cpuNum, ArchCpuStartFunc func, struct SmpOps *ops, VOID *arg)
 {
-    UINT32 uwRet;
+    struct OsCpuInit *cpuInit = &g_cpuInit[cpuNum - 1];
+    UINTPTR startEntry = (UINTPTR)&reset_vector - KERNEL_VMM_BASE + SYS_MEM_BASE;
+    INT32 ret = 0;
 
-    uwRet = OsMain();
-    if (uwRet != LOS_OK) {
-        return LOS_NOK;
+    cpuInit->cpuStart = func;
+    cpuInit->arg = arg;
+    cpuInit->initFlag = 0;
+
+    DCacheFlushRange((UINTPTR)cpuInit, (UINTPTR)cpuInit + sizeof(struct OsCpuInit));
+
+    LOS_ASSERT(ops != NULL);
+
+
+    ret = ops->SmpCpuOn(cpuNum, startEntry);
+    if (ret < 0) {
+        PRINT_ERR("cpu start failed, cpu num: %u, ret: %d\n", cpuNum, ret);
+        return;
     }
-    CPU_MAP_SET(0, OsHwIDGet());
 
-    OsSchedStart();
-
-    while (1) {
-        __asm volatile("wfi");
+    while (!LOS_AtomicRead(&cpuInit->initFlag)) {
+        WFE;
     }
 }
+
+VOID HalSecondaryCpuStart(VOID)
+{
+    UINT32 cpuid = ArchCurrCpuid();
+    struct OsCpuInit *cpuInit = &g_cpuInit[cpuid - 1];
+
+    OsCurrTaskSet(OsGetMainTask());
+
+    LOS_AtomicSet(&cpuInit->initFlag, 1);
+    SEV;
+
+#ifdef LOSCFG_KERNEL_MMU
+    OsArchMmuInitPerCPU();
+#endif
+
+    /* store each core's hwid */
+    CPU_MAP_SET(cpuid, OsHwIDGet());
+    HalIrqInitPercpu();
+    OsInitCall(LOS_INIT_LEVEL_ARCH);
+
+    cpuInit->cpuStart(cpuInit->arg);
+
+    while (1) {
+        WFI;
+    }
+}
+#endif
+

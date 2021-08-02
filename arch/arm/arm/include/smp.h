@@ -29,22 +29,30 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef _ARCH_SMP_H
+#define _ARCH_SMP_H
+
 #include "los_config.h"
-#include "los_sched_pri.h"
 
-LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
-{
-    UINT32 uwRet;
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+#endif /* __cplusplus */
 
-    uwRet = OsMain();
-    if (uwRet != LOS_OK) {
-        return LOS_NOK;
-    }
-    CPU_MAP_SET(0, OsHwIDGet());
+struct SmpOps {
+    INT32 (*SmpCpuOn)(UINT32 cpuNum, UINTPTR startEntry);  /* The startEntry is physical addr. */
+};
 
-    OsSchedStart();
+typedef VOID (*ArchCpuStartFunc)(VOID *arg);
 
-    while (1) {
-        __asm volatile("wfi");
-    }
+VOID HalArchCpuOn(UINT32 cpuNum, ArchCpuStartFunc func, struct SmpOps *ops, VOID *arg);
+
+#ifdef __cplusplus
+#if __cplusplus
 }
+#endif /* __cplusplus */
+#endif /* __cplusplus */
+
+#endif /* _ARCH_SMP_H */
+
