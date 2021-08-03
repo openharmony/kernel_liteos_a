@@ -61,9 +61,9 @@ ifeq ($(TEE:1=y),y)
 tee = _tee
 endif
 ifeq ($(RELEASE:1=y),y)
-CONFIG ?= $(PRODUCT_PATH)/config/release$(tee).config
+CONFIG ?= $(PRODUCT_PATH)/kernel_configs/release$(tee).config
 else
-CONFIG ?= $(PRODUCT_PATH)/config/debug$(tee).config
+CONFIG ?= $(PRODUCT_PATH)/kernel_configs/debug$(tee).config
 endif
 
 $(shell env CONFIG_=$(CONFIG_) DEVICE_PATH=$(DEVICE_PATH) olddefconfig >/dev/null)

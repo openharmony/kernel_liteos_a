@@ -63,7 +63,7 @@ if (ohos_build_compiler == "clang") {
 liteos_config_file = rebase_path("tools/build/config/$config_file")
 
 # we prefer use product specified config file
-f = "$product_path/config/${ohos_build_type}${tee}.config"
+f = "$product_path/kernel_configs/${ohos_build_type}${tee}.config"
 if (exec_script("//build/lite/run_shell_cmd.py", [ "if [ -f $f ]; then echo true; else echo false; fi" ], "value")) {
   liteos_config_file = f
 }
