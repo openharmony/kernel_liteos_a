@@ -132,6 +132,11 @@ struct sq_queue_s {
 };
 typedef struct sq_queue_s sq_queue_t;
 
+typedef struct SigInfoListNode {
+    struct SigInfoListNode *next;
+    siginfo_t info;
+} SigInfoListNode;
+
 typedef struct {
     sigset_t sigFlag;
     sigset_t sigPendFlag;
@@ -140,6 +145,7 @@ typedef struct {
     LOS_DL_LIST waitList;
     sigset_t sigwaitmask; /* Waiting for pending signals */
     siginfo_t sigunbinfo; /* Signal info when task unblocked */
+    SigInfoListNode *tmpInfoListHead; /* Signal info List */
     unsigned int sigIntLock;
     void *sigContext;
     unsigned int count;
@@ -167,6 +173,7 @@ int OsSigSuspend(const sigset_t *set);
 VOID OsSigIntLock(VOID);
 VOID OsSigIntUnlock(VOID);
 INT32 OsTaskKillUnsafe(UINT32 taskID, INT32 signo);
+VOID OsClearSigInfoTmpList(sig_cb *sigcb);
 
 #ifdef __cplusplus
 #if __cplusplus
