@@ -28,69 +28,60 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/times.h>
+#include <errno.h>
 #include "lt_clock_test.h"
+#include <osTest.h>
 
-static void *ThreadFuncTest(void *arg)
-{
-    printf("Subthread starting infinite loop\n");
-    while (1) {
-    }
-}
-
-static int ThreadClock(const char *msg, clockid_t cid)
-{
-    struct timespec ts;
-    int ret;
-
-    printf("%s", msg);
-    ret = clock_gettime(cid, &ts);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    printf("%4jd.%03ld\n", ts.tv_sec, ts.tv_nsec / 1000000); // 1000000, 1ms.
-    return 0;
-}
-
+/* When clock time is changed, timers for a relative interval are unaffected,
+ * but timers for an absolute point in time are affected.
+ */
 static int ClockTest(void)
 {
-    pthread_t thread;
-    clockid_t clockid;
+    clockid_t clk = CLOCK_REALTIME;
+    struct timespec res, tp, oldtp;
     int ret;
-    struct timespec ts;
+    int passflag = 0;
 
-    /* check param invalid */
-    ret = clock_gettime(-2050, &ts); // 2050, clock id.
-    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
+    /* get clock resolution */
+    ret = clock_getres(clk, &res);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(res.tv_sec, CLOCK_RES_SEC, res.tv_sec);
+    ICUNIT_ASSERT_EQUAL(res.tv_nsec, CLOCK_RES_NSEC, res.tv_nsec);
 
-    ret = pthread_create(&thread, NULL, ThreadFuncTest, 0);
+    /* get current real time */
+    ret = clock_gettime(clk, &oldtp);
+    printf("The current real time: sec is %lld, nsec is %ld\n", oldtp.tv_sec, oldtp.tv_nsec);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    printf("Main thread sleeping\n");
-    sleep(1);
+    printf("sleep 2 seconds\n");
+    sleep(2); // 2, seconds.
 
-    printf("Main thread consuming some CPU time...\n");
-    for (int j = 0; j < 4000000; j++) { // 4000000, The loop frequency.
-        getppid();
-    }
-
-    /* get current pthread clockid */
-    ret = pthread_getcpuclockid(pthread_self(), &clockid);
+    tp.tv_sec = oldtp.tv_sec + 2; // 2, use for testing clock setting
+    tp.tv_nsec = oldtp.tv_nsec;
+    
+    /* set real time */
+    ret = clock_settime(clk, &tp);
+    printf("Setting time: sec is %lld, nsec is %ld\n", tp.tv_sec, tp.tv_nsec);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    ret = ThreadClock("Main thread CPU time:   ", clockid);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    printf("get real time clock again\n");
 
-    /* get create pthread clockid */
-    ret = pthread_getcpuclockid(thread, &clockid);
+    /* get current real time again */
+    ret = clock_gettime(clk, &tp);
+    printf("Obtaining the current time after setting: sec = %lld, nsec = %ld\n", tp.tv_sec, tp.tv_nsec);
+    passflag = (tp.tv_sec >= 2 + oldtp.tv_sec) && (tp.tv_sec <= 2 + oldtp.tv_sec + 1); // 2, use for testing clock setting
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    ret = ThreadClock("Subthread CPU time: 1    ", clockid);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(passflag, true, passflag);
 
     return 0;
 }
 
-void ClockTest011(void)
+void ClockTest001(void)
 {
     TEST_ADD_CASE(__FUNCTION__, ClockTest, TEST_POSIX, TEST_TIMES, TEST_LEVEL0, TEST_FUNCTION);
 }

@@ -30,24 +30,40 @@
  */
 #include "lt_clock_test.h"
 
-static int CpuClockTest(void)
+static int ClockSmokeTest(void)
 {
-    int pid = 0;
+    clockid_t clk = CLOCK_REALTIME;
+    struct timespec res = {0,0}, setts = {0,0}, oldtp = {0,0}, ts = {0,0};
     int ret;
-    clockid_t clockid;
-    struct timespec ts;
+    int passflag = 0;
 
-    /* CLOCK_PROCESS_CPUTIME_ID if pid == 0 */
-    ret = clock_getcpuclockid(pid, &clockid);
+    /* get clock resolution */
+    ret = clock_getres(clk, &res);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(res.tv_sec, CLOCK_RES_SEC, res.tv_sec);
+    ICUNIT_ASSERT_EQUAL(res.tv_nsec, CLOCK_RES_NSEC, res.tv_nsec);
+
+    /* get clock realtime */
+    ret = clock_gettime(clk, &oldtp);
+    printf("the clock current time: %lld second, %ld nanosecond\n", oldtp.tv_sec, oldtp.tv_nsec);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
-    ret = clock_gettime(clockid, &ts);
+    /* set clock realtime */
+    setts.tv_sec = oldtp.tv_sec + 1;
+    setts.tv_nsec = oldtp.tv_nsec;
+    printf("the clock setting time: %lld second, %ld nanosecond\n", setts.tv_sec, setts.tv_nsec);
+    ret = clock_settime(CLOCK_REALTIME, &setts);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
+    ret = clock_gettime(clk, &ts);
+    printf("obtaining the current time after setting: %lld second, %ld nanosecond\n", ts.tv_sec, ts.tv_nsec);
+    passflag = (ts.tv_sec >= setts.tv_sec) && (ts.tv_sec <= setts.tv_sec + 1); // 1, means obtaining time's errno is 1 second.
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(passflag, true, passflag);
     return 0;
 }
 
-void ClockTest004(void)
+void ClockTestSmoke(void)
 {
-    TEST_ADD_CASE(__FUNCTION__, CpuClockTest, TEST_POSIX, TEST_TIMES, TEST_LEVEL0, TEST_FUNCTION);
+    TEST_ADD_CASE(__FUNCTION__, ClockSmokeTest, TEST_POSIX, TEST_TIMES, TEST_LEVEL0, TEST_FUNCTION);
 }
+

@@ -35,42 +35,20 @@ static int ClockTest(void)
     clockid_t clockid;
     struct timespec ts;
     int ret;
+    pid_t pid = 0;
 
     /* check param invalid */
-    ret = clock_getcpuclockid(0, &clockid);
+    ret = clock_getcpuclockid(pid, &clockid);
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
 
-    ret = clock_getcpuclockid(65, &clockid); // 65, pthread id.
+    pid = 65; // 65, non existent process id.
+    ret = clock_getcpuclockid(pid, &clockid);
     ICUNIT_ASSERT_EQUAL(ret, EINVAL, ret);
-
-    /* get user process2 clockid */
-    ret = clock_getcpuclockid(2, &clockid);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    /* get clockid time */
-    ret = clock_gettime(clockid, &ts);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    /* get kernel process1 clockid */
-    ret = clock_getcpuclockid(1, &clockid);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    /* get clockid time */
-    ret = clock_gettime(clockid, &ts);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    /* get current process clockid */
-    ret = clock_getcpuclockid(getpid(), &clockid);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    /* get clockid time */
-    ret = clock_gettime(clockid, &ts);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     return 0;
 }
 
-void ClockTest012(void)
+void ClockTest005(void)
 {
     TEST_ADD_CASE(__FUNCTION__, ClockTest, TEST_POSIX, TEST_TIMES, TEST_LEVEL0, TEST_FUNCTION);
 }

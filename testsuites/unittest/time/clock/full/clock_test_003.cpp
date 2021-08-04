@@ -28,53 +28,53 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/times.h>
-#include <errno.h>
 #include "lt_clock_test.h"
-#include <osTest.h>
 
-/* When clock time is changed, timers for a relative interval are unaffected,
- * but timers for an absolute point in time are affected.
- */
 static int ClockTest(void)
 {
-    clockid_t clk = CLOCK_MONOTONIC_RAW;
-    struct timespec res, tp, oldtp;
+    clockid_t clockid;
+    struct timespec ts;
     int ret;
+    pid_t pid = 0;
+    int passflag = 0;
 
-    /* get clock resolution */
-    ret = clock_getres(clk, &res);
+    /* get kernel process 1 clockid */
+    pid = 1;
+    ret = clock_getcpuclockid(1, &clockid);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(clockid, CLOCK_GET_CPU_CLOCKID(pid), clockid);
 
-    /* get current monotonic raw time */
-    ret = clock_gettime(clk, &oldtp);
+    /* get clockid time */
+    ret = clock_gettime(clockid, &ts);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    printf("Obtaining the process running time: %lld second, %ld nanosecond\n", ts.tv_sec, ts.tv_nsec);
 
-    LogPrintln("sleep 2 seconds\n");
-    sleep(2); // 2, seconds.
-
-    tp.tv_sec = 5 * res.tv_sec; // 5, times the number of seconds.
-    tp.tv_nsec = 5 * res.tv_nsec; // 5, times the number of nseconds.
-
-    /* set monotonic raw time */
-    ret = clock_settime(clk, &tp);
-    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EOPNOTSUPP, errno);
-
-    LogPrintln("get monotonic raw time clock again\n");
-
-    /* get current monotonic raw time again */
-    ret = clock_gettime(clk, &tp);
+    /* get user process 2 clockid */
+    pid = 2; // 2, test the process 2 (An existent pid)
+    ret = clock_getcpuclockid(2, &clockid);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(clockid, CLOCK_GET_CPU_CLOCKID(pid), clockid);
+
+    /* get clockid time */
+    ret = clock_gettime(clockid, &ts);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    printf("Obtaining the process running time: %lld second, %ld nanosecond\n", ts.tv_sec, ts.tv_nsec);
+
+    /* get current process clockid */
+    pid = getpid();
+    ret = clock_getcpuclockid(getpid(), &clockid);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(clockid, CLOCK_GET_CPU_CLOCKID(pid), clockid);
+
+    /* get clockid time */
+    ret = clock_gettime(clockid, &ts);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    printf("Obtaining the process running time: %lld second, %ld nanosecond\n", ts.tv_sec, ts.tv_nsec);
 
     return 0;
 }
 
-void ClockTest009(void)
+void ClockTest003(void)
 {
     TEST_ADD_CASE(__FUNCTION__, ClockTest, TEST_POSIX, TEST_TIMES, TEST_LEVEL0, TEST_FUNCTION);
 }
