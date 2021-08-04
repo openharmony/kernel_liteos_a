@@ -80,10 +80,16 @@ static void FormatErrorInfo(struct ErrorInfo *info,
     }
 
     (void)memset_s(info, sizeof(*info), 0, sizeof(*info));
-    (void)strncpy_s(info->event, sizeof(info->event), event, Min(strlen(event), sizeof(info->event) - 1));
-    (void)strncpy_s(info->module, sizeof(info->module), module, Min(strlen(module), sizeof(info->module) - 1));
-    (void)strncpy_s(info->errorDesc, sizeof(info->errorDesc), errorDesc,
-        Min(strlen(errorDesc), sizeof(info->errorDesc) - 1));
+    if (strncpy_s(info->event, sizeof(info->event), event, Min(strlen(event), sizeof(info->event) - 1)) != EOK) {
+        BBOX_PRINT_ERR("info->event is not enough or strncpy_s failed!\n");
+    }
+    if (strncpy_s(info->module, sizeof(info->module), module, Min(strlen(module), sizeof(info->module) - 1)) != EOK) {
+        BBOX_PRINT_ERR("info->module is not enough or strncpy_s failed!\n");
+    }
+    if (strncpy_s(info->errorDesc, sizeof(info->errorDesc), errorDesc,
+        Min(strlen(errorDesc), sizeof(info->errorDesc) - 1)) != EOK) {
+        BBOX_PRINT_ERR("info->errorDesc is not enough or strncpy_s failed!\n");
+    }
 }
 
 #ifdef LOSCFG_FS_VFS
@@ -351,7 +357,11 @@ int BBoxRegisterModuleOps(struct ModuleOps *ops)
         return -1;
     }
     (void)memset_s(newOps, sizeof(*newOps), 0, sizeof(*newOps));
-    (void)memcpy_s(&newOps->ops, sizeof(newOps->ops), ops, sizeof(*ops));
+    if (memcpy_s(&newOps->ops, sizeof(newOps->ops), ops, sizeof(*ops)) != EOK) {
+        BBOX_PRINT_ERR("newOps->ops is not enough or memcpy_s failed!\n");
+        (void)LOS_MemFree(m_aucSysMem1, newOps);
+        return -1;
+    }
     if (LOS_SemPend(g_opsListSem, LOS_WAIT_FOREVER) != LOS_OK) {
         BBOX_PRINT_ERR("Request g_opsListSem failed!\n");
         (void)LOS_MemFree(m_aucSysMem1, newOps);
