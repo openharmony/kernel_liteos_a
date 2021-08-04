@@ -113,10 +113,14 @@ int SaveBasicErrorInfo(const char *filePath, struct ErrorInfo *info)
         return -1;
     }
     (void)memset_s(buf, ERROR_INFO_MAX_LEN, 0, ERROR_INFO_MAX_LEN);
-    (void)snprintf_s(buf, ERROR_INFO_MAX_LEN, ERROR_INFO_MAX_LEN - 1,
-        ERROR_INFO_HEADER_FORMAT, info->event, info->module, info->errorDesc);
-    *(buf + ERROR_INFO_MAX_LEN - 1) = '\0';
-    (void)FullWriteFile(filePath, buf, strlen(buf), 0);
+    if (snprintf_s(buf, ERROR_INFO_MAX_LEN, ERROR_INFO_MAX_LEN - 1,
+        ERROR_INFO_HEADER_FORMAT, info->event, info->module, info->errorDesc) != -1) {
+        *(buf + ERROR_INFO_MAX_LEN - 1) = '\0';
+        (void)FullWriteFile(filePath, buf, strlen(buf), 0);
+    } else {
+        BBOX_PRINT_ERR("buf is not enough or snprintf_s failed!\n");
+    }
+
     (void)LOS_MemFree(m_aucSysMem1, buf);
 
     return 0;
