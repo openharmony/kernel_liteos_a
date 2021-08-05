@@ -180,12 +180,12 @@ $(APPS): $(LITEOS_TARGET) sysroot
 prepare:
 	$(HIDE)mkdir -p $(OUT)/musl
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-	$(HIDE)cp -f $$($(CC) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
-	$(HIDE)cp -f $$($(GPP) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl
+	$(HIDE)cp -fp $$($(CC) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
+	$(HIDE)cp -fp $$($(GPP) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl
 else
-	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/target/usr/lib/libc.so $(OUT)/musl
-	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libstdc++.so.6 $(OUT)/musl
-	$(HIDE)cp -f $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libgcc_s.so.1 $(OUT)/musl
+	$(HIDE)cp -fp $(LITEOS_COMPILER_PATH)/target/usr/lib/libc.so $(OUT)/musl
+	$(HIDE)cp -fp $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libstdc++.so.6 $(OUT)/musl
+	$(HIDE)cp -fp $(LITEOS_COMPILER_PATH)/arm-linux-musleabi/lib/libgcc_s.so.1 $(OUT)/musl
 	$(STRIP) $(OUT)/musl/*
 endif
 
