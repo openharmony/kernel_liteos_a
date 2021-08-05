@@ -125,12 +125,16 @@ struct Vnode {
     LIST_ENTRY actFreeEntry;            /* vnode active/free list entry */
     struct Mount *originMount;          /* fs info about this vnode */
     struct Mount *newMount;             /* fs info about who mount on this vnode */
+    char *filePath;                     /* file path of the vnode */
+    struct page_mapping mapping;        /* page mapping of the vnode */
 };
 
 struct VnodeOps {
     int (*Create)(struct Vnode *parent, const char *name, int mode, struct Vnode **vnode);
     int (*Lookup)(struct Vnode *parent, const char *name, int len, struct Vnode **vnode);
     int (*Open)(struct Vnode *vnode, int fd, int mode, int flags);
+    ssize_t (*ReadPage)(struct Vnode *vnode, char *buffer, off_t pos);
+    ssize_t (*WritePage)(struct Vnode *vnode, char *buffer, off_t pos, size_t buflen);
     int (*Close)(struct Vnode *vnode);
     int (*Reclaim)(struct Vnode *vnode);
     int (*Unlink)(struct Vnode *parent, struct Vnode *vnode, const char *fileName);
