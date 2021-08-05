@@ -172,17 +172,17 @@ VOID OsVmmFileRemove(LosVmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T pg
     UINT32 intSave;
     vaddr_t vaddr;
     paddr_t paddr = 0;
-    struct file *file = NULL;
+    struct Vnode *vnode = NULL;
     struct page_mapping *mapping = NULL;
     LosFilePage *fpage = NULL;
     LosFilePage *tmpPage = NULL;
     LosVmPage *mapPage = NULL;
 
-    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.file->f_mapping == NULL)) {
+    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.vnode == NULL)) {
         return;
     }
-    file = region->unTypeData.rf.file;
-    mapping = file->f_mapping;
+    vnode = region->unTypeData.rf.vnode;
+    mapping = &vnode->mapping;
     vaddr = region->range.base + ((UINT32)(pgoff - region->pgOff) << PAGE_SHIFT);
 
     status_t status = LOS_ArchMmuQuery(archMmu, vaddr, &paddr, NULL);
@@ -232,15 +232,15 @@ VOID OsMarkPageDirty(LosFilePage *fpage, LosVmMapRegion *region, INT32 off, INT3
     }
 }
 
-STATIC UINT32 GetDirtySize(LosFilePage *fpage, struct file *file)
+STATIC UINT32 GetDirtySize(LosFilePage *fpage, struct Vnode *vnode)
 {
     UINT32 fileSize;
     UINT32 dirtyBegin;
     UINT32 dirtyEnd;
     struct stat buf_stat;
 
-    if (stat(file->f_path, &buf_stat) != OK) {
-        VM_ERR("FlushDirtyPage get file size failed. (filepath=%s)", file->f_path);
+    if (stat(vnode->filePath, &buf_stat) != OK) {
+        VM_ERR("FlushDirtyPage get file size failed. (filePath=%s)", vnode->filePath);
         return 0;
     }
 
@@ -264,31 +264,29 @@ STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
     UINT32 ret;
     size_t len;
     char *buff = NULL;
-    VM_OFFSET_T oldPos;
-    struct file *file = fpage->mapping->host;
-    if ((file == NULL) || (file->f_vnode == NULL)) {
-        VM_ERR("page cache file error");
+    struct Vnode *vnode = fpage->mapping->host;
+    if (vnode == NULL) {
+        VM_ERR("page cache vnode error");
         return LOS_NOK;
     }
 
-    oldPos = file_seek(file, 0, SEEK_CUR);
-    buff = (char *)OsVmPageToVaddr(fpage->vmPage);
-    file_seek(file, (((UINT32)fpage->pgoff << PAGE_SHIFT) + fpage->dirtyOff), SEEK_SET);
     len = fpage->dirtyEnd - fpage->dirtyOff;
-    len = (len == 0) ? GetDirtySize(fpage, file) : len;
+    len = (len == 0) ? GetDirtySize(fpage, vnode) : len;
     if (len == 0) {
         OsCleanPageDirty(fpage->vmPage);
-        (VOID)file_seek(file, oldPos, SEEK_SET);
         return LOS_OK;
     }
 
-    ret = file_write(file, (VOID *)buff, len);
+    buff = (char *)OsVmPageToVaddr(fpage->vmPage);
+
+    /* actually, we did not update the fpage->dirtyOff */
+    ret = vnode->vop->WritePage(vnode, (VOID *)buff, fpage->pgoff, len);
     if (ret <= 0) {
         VM_ERR("WritePage error ret %d", ret);
+    } else {
+        OsCleanPageDirty(fpage->vmPage);
     }
     ret = (ret <= 0) ? LOS_NOK : LOS_OK;
-    OsCleanPageDirty(fpage->vmPage);
-    (VOID)file_seek(file, oldPos, SEEK_SET);
 
     return ret;
 }
@@ -336,15 +334,17 @@ VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
     UINT32 intSave;
     LosMapInfo *info = NULL;
     LosFilePage *fpage = NULL;
+    struct page_mapping *mapping = NULL;
 
-    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.file->f_mapping == NULL) || (vmf == NULL)) {
+    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.vnode == NULL) || (vmf == NULL)) {
         return;
     }
 
-    LOS_SpinLockSave(&region->unTypeData.rf.file->f_mapping->list_lock, &intSave);
-    fpage = OsFindGetEntry(region->unTypeData.rf.file->f_mapping, vmf->pgoff);
+    mapping = &region->unTypeData.rf.vnode->mapping;
+    LOS_SpinLockSave(&mapping->list_lock, &intSave);
+    fpage = OsFindGetEntry(mapping, vmf->pgoff);
     if (fpage == NULL) {
-        LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
+        LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
         return;
     }
 
@@ -356,31 +356,30 @@ VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *vmf, BOOL cleanDirty)
         fpage->n_maps--;
         LOS_ListDelete(&info->node);
         LOS_AtomicDec(&fpage->vmPage->refCounts);
-        LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
+        LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
         LOS_MemFree(m_aucSysMem0, info);
         return;
     }
-    LOS_SpinUnlockRestore(&region->unTypeData.rf.file->f_mapping->list_lock, intSave);
+    LOS_SpinUnlockRestore(&mapping->list_lock, intSave);
 }
 
 INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
 {
     INT32 ret;
-    VM_OFFSET_T oldPos;
     VOID *kvaddr = NULL;
 
     UINT32 intSave;
     bool newCache = false;
-    struct file *file = NULL;
+    struct Vnode *vnode = NULL;
     struct page_mapping *mapping = NULL;
     LosFilePage *fpage = NULL;
 
-    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.file->f_mapping == NULL) || (vmf == NULL)) {
+    if (!LOS_IsRegionFileValid(region) || (region->unTypeData.rf.vnode == NULL) || (vmf == NULL)) {
         VM_ERR("Input param is NULL");
         return LOS_NOK;
     }
-    file = region->unTypeData.rf.file;
-    mapping = file->f_mapping;
+    vnode = region->unTypeData.rf.vnode;
+    mapping = &vnode->mapping;
 
     /* get or create a new cache node */
     LOS_SpinLockSave(&mapping->list_lock, &intSave);
@@ -404,10 +403,7 @@ INT32 OsVmmFileFault(LosVmMapRegion *region, LosVmPgFault *vmf)
 
     /* read file to new page cache */
     if (newCache) {
-        oldPos = file_seek(file, 0, SEEK_CUR);
-        file_seek(file, fpage->pgoff << PAGE_SHIFT, SEEK_SET);
-        ret = file_read(file, kvaddr, PAGE_SIZE);
-        file_seek(file, oldPos, SEEK_SET);
+        ret = vnode->vop->ReadPage(vnode, kvaddr, fpage->pgoff << PAGE_SHIFT);
         if (ret == 0) {
             VM_ERR("Failed to read from file!");
             OsReleaseFpage(mapping, fpage);
@@ -505,8 +501,9 @@ LosVmFileOps g_commVmOps = {
 INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 {
     region->unTypeData.rf.vmFOps = &g_commVmOps;
-    region->unTypeData.rf.file = filep;
-    region->unTypeData.rf.fileMagic = filep->f_magicnum;
+    region->unTypeData.rf.vnode = filep->f_vnode;
+    region->unTypeData.rf.f_oflags = filep->f_oflags;
+
     return ENOERR;
 }
 
@@ -516,11 +513,11 @@ STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region)
     if (filep == NULL) {
         return LOS_ERRNO_VM_MAP_FAILED;
     }
+    file_hold(filep);
     vnode = filep->f_vnode;
-    if (vnode == NULL) {
-        return LOS_ERRNO_VM_MAP_FAILED;
-    }
-
+    VnodeHold();
+    vnode->useCount++;
+    VnodeDrop();
     if (filep->ops != NULL && filep->ops->mmap != NULL) {
         if (vnode->type == VNODE_TYPE_CHR || vnode->type == VNODE_TYPE_BLK) {
             LOS_SetRegionTypeDev(region);
@@ -529,12 +526,15 @@ STATUS_T OsNamedMMap(struct file *filep, LosVmMapRegion *region)
         }
         int ret = filep->ops->mmap(filep, region);
         if (ret != LOS_OK) {
+            file_release(filep);
             return LOS_ERRNO_VM_MAP_FAILED;
         }
     } else {
         VM_ERR("mmap file type unknown");
+        file_release(filep);
         return LOS_ERRNO_VM_MAP_FAILED;
     }
+    file_release(filep);
     return LOS_OK;
 }
 
@@ -600,40 +600,7 @@ LosFilePage *OsPageCacheAlloc(struct page_mapping *mapping, VM_OFFSET_T pgoff)
     return fpage;
 }
 
-#ifdef LOSCFG_FS_VFS
-VOID OsVmmFileRegionFree(struct file *filep, LosProcessCB *processCB)
-{
-    int ret;
-    LosVmSpace *space = NULL;
-    LosVmMapRegion *region = NULL;
-    LosRbNode *pstRbNode = NULL;
-    LosRbNode *pstRbNodeTmp = NULL;
-
-    if (processCB == NULL) {
-        processCB = OsCurrProcessGet();
-    }
-
-    space = processCB->vmSpace;
-    if (space != NULL) {
-        (VOID)LOS_MuxAcquire(&space->regionMux);
-        /* free the regions associated with filep */
-        RB_SCAN_SAFE(&space->regionRbTree, pstRbNode, pstRbNodeTmp)
-            region = (LosVmMapRegion *)pstRbNode;
-            if (LOS_IsRegionFileValid(region)) {
-                if (region->unTypeData.rf.file != filep) {
-                    continue;
-                }
-                ret = LOS_RegionFree(space, region);
-                if (ret != LOS_OK) {
-                    VM_ERR("free region error, space %p, region %p", space, region);
-                }
-            }
-        RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNode, pstRbNodeTmp)
-        (VOID)LOS_MuxRelease(&space->regionMux);
-    }
-}
-#endif
-#else
+#ifndef LOSCFG_FS_VFS
 INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 {
     UNUSED(filep);
@@ -642,3 +609,4 @@ INT32 OsVfsFileMmap(struct file *filep, LosVmMapRegion *region)
 }
 #endif
 
+#endif

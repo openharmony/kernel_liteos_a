@@ -276,8 +276,8 @@ STATIC const CHAR *g_excTypeString[] = {
 #ifdef LOSCFG_KERNEL_VM
 STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProcess)
 {
-    struct file *curFilep = NULL;
-    struct file *lastFilep = NULL;
+    struct Vnode *curVnode = NULL;
+    struct Vnode *lastVnode = NULL;
     LosVmMapRegion *curRegion = NULL;
     LosVmMapRegion *lastRegion = NULL;
 
@@ -296,9 +296,9 @@ STATIC VADDR_T OsGetTextRegionBase(LosVmMapRegion *region, LosProcessCB *runProc
         if ((lastRegion == NULL) || !LOS_IsRegionFileValid(lastRegion)) {
             goto DONE;
         }
-        curFilep = curRegion->unTypeData.rf.file;
-        lastFilep = lastRegion->unTypeData.rf.file;
-    } while (!strcmp(curFilep->f_path, lastFilep->f_path));
+        curVnode = curRegion->unTypeData.rf.vnode;
+        lastVnode = lastRegion->unTypeData.rf.vnode;
+    } while (curVnode == lastVnode);
 
 DONE:
 #ifdef LOSCFG_KERNEL_DYNLOAD

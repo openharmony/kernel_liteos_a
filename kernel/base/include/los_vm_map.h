@@ -44,6 +44,8 @@
 #include "los_vm_zone.h"
 #include "los_vm_common.h"
 
+struct Vnode;
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -91,8 +93,8 @@ struct VmMapRegion {
     UINT8               regionType;     /**< vm region type: ANON, FILE, DEV */
     union {
         struct VmRegionFile {
-            unsigned int fileMagic;
-            struct file *file;
+            int f_oflags;
+            struct Vnode *vnode;
             const LosVmFileOps *vmFOps;
         } rf;
         struct VmRegionAnon {

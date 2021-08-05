@@ -526,7 +526,7 @@ STATIC INT32 OsMmapELFFile(INT32 procfd, const LD_ELF_PHDR *elfPhdr, const LD_EL
     return LOS_OK;
 }
 
-STATIC INT32 OsLoadInterpBinary(const ELFLoadInfo *loadInfo, UINTPTR *interpMapBase)
+STATIC INT32 OsLoadInterpBinary(ELFLoadInfo *loadInfo, UINTPTR *interpMapBase)
 {
     UINTPTR loadBase = 0;
     UINT32 mapSize;
@@ -542,10 +542,11 @@ STATIC INT32 OsLoadInterpBinary(const ELFLoadInfo *loadInfo, UINTPTR *interpMapB
                         interpMapBase, mapSize, &loadBase);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
-        return ret;
     }
 
-    return LOS_OK;
+    OsELFClose(loadInfo->interpInfo.procfd);
+    loadInfo->interpInfo.procfd = INVALID_FD;
+    return ret;
 }
 
 STATIC CHAR *OsGetParamPtr(CHAR * const *ptr, INT32 index)
@@ -929,6 +930,8 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 
     ret = OsMmapELFFile(loadInfo->execInfo.procfd, loadInfo->execInfo.elfPhdr, &loadInfo->execInfo.elfEhdr,
                         &loadInfo->loadAddr, mapSize, &loadBase);
+    OsELFClose(loadInfo->execInfo.procfd);
+    loadInfo->execInfo.procfd = INVALID_FD;
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return ret;
