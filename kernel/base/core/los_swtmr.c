@@ -181,7 +181,7 @@ ERROR:
 LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
 {
     UINT32 ticks;
-    UINT64 currTime = OsGerCurrSchedTimeCycle();
+    UINT64 currTime = OsGetCurrSchedTimeCycle();
 
     if ((swtmr->uwOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_OPP) ||
@@ -264,7 +264,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
     }
     SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
 
-    UINT64 currTime = OsGerCurrSchedTimeCycle();
+    UINT64 currTime = OsGetCurrSchedTimeCycle();
     while (sortList->responseTime <= currTime) {
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
         OsDeleteNodeSortLink(swtmrSortLink, sortList);
@@ -306,7 +306,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
     swtmr->uwOverrun = 0;
 
     if (OS_SCHEDULER_ACTIVE) {
-        OsSchedUpdateExpireTime(OsGerCurrSchedTimeCycle());
+        OsSchedUpdateExpireTime(OsGetCurrSchedTimeCycle());
     }
 }
 
