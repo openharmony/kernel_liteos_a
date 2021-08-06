@@ -37,7 +37,7 @@
 
 LITE_OS_SEC_TEXT_MINOR UINT64 LOS_TickCountGet(VOID)
 {
-    return OsGerCurrSchedTimeCycle() / OS_CYCLE_PER_TICK;
+    return OsGetCurrSchedTimeCycle() / OS_CYCLE_PER_TICK;
 }
 
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_CyclePerTickGet(VOID)

@@ -50,7 +50,7 @@ typedef BOOL (*SchedScan)(VOID);
 
 extern UINT64 g_sysSchedStartTime;
 
-STATIC INLINE UINT64 OsGerCurrSchedTimeCycle(VOID)
+STATIC INLINE UINT64 OsGetCurrSchedTimeCycle(VOID)
 {
     if (g_sysSchedStartTime == 0) {
         return g_sysSchedStartTime;
@@ -62,13 +62,13 @@ STATIC INLINE UINT64 OsGerCurrSchedTimeCycle(VOID)
 STATIC INLINE VOID OsSchedIrqUpdateUsedTime(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
-    runTask->irqUsedTime = OsGerCurrSchedTimeCycle() - runTask->irqStartTime;
+    runTask->irqUsedTime = OsGetCurrSchedTimeCycle() - runTask->irqStartTime;
 }
 
 STATIC INLINE VOID OsSchedIrqStartTime(VOID)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
-    runTask->irqStartTime = OsGerCurrSchedTimeCycle();
+    runTask->irqStartTime = OsGetCurrSchedTimeCycle();
 }
 
 /*

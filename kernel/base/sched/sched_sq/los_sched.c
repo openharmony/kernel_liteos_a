@@ -104,7 +104,7 @@ VOID OsSchedDebugRecordData(VOID)
 {
     SchedTickDebug *schedDebug = &g_schedTickDebug[ArchCurrCpuid()];
     if (schedDebug->index < OS_SCHED_DEBUG_DATA_NUM) {
-        UINT64 currTime = OsGerCurrSchedTimeCycle();
+        UINT64 currTime = OsGetCurrSchedTimeCycle();
         schedDebug->tickResporeTime[schedDebug->index] = currTime - schedDebug->oldResporeTime;
         schedDebug->oldResporeTime = currTime;
         schedDebug->index++;
@@ -487,7 +487,7 @@ STATIC INLINE BOOL OsSchedScanTimerList(VOID)
     }
 
     SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-    UINT64 currTime = OsGerCurrSchedTimeCycle();
+    UINT64 currTime = OsGetCurrSchedTimeCycle();
     while (sortList->responseTime <= currTime) {
         LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(sortList, LosTaskCB, sortList);
         OsDeleteNodeSortLink(taskSortLink, &taskCB->sortList);
@@ -594,7 +594,7 @@ VOID OsSchedTaskEnQueue(LosTaskCB *taskCB)
     LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
 #ifdef LOSCFG_SCHED_DEBUG
     if (!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
-        taskCB->startTime = OsGerCurrSchedTimeCycle();
+        taskCB->startTime = OsGetCurrSchedTimeCycle();
     }
 #endif
     OsSchedEnTaskQueue(taskCB, processCB);
@@ -624,7 +624,7 @@ VOID OsSchedYield(VOID)
 
     runTask->timeSlice = 0;
 
-    runTask->startTime = OsGerCurrSchedTimeCycle();
+    runTask->startTime = OsGetCurrSchedTimeCycle();
     OsSchedTaskEnQueue(runTask);
     OsSchedResched();
 }
@@ -674,7 +674,7 @@ VOID OsSchedTaskWake(LosTaskCB *resumedTask)
 
     if (!(resumedTask->taskStatus & OS_TASK_STATUS_SUSPENDED)) {
 #ifdef LOSCFG_SCHED_DEBUG
-        resumedTask->schedStat.pendTime += OsGerCurrSchedTimeCycle() - resumedTask->startTime;
+        resumedTask->schedStat.pendTime += OsGetCurrSchedTimeCycle() - resumedTask->startTime;
         resumedTask->schedStat.pendCount++;
 #endif
         OsSchedTaskEnQueue(resumedTask);
@@ -867,7 +867,7 @@ VOID OsSchedStart(VOID)
     newProcess->processStatus = OS_PROCESS_RUNTASK_COUNT_ADD(newProcess->processStatus);
 
     OsSchedSetStartTime(HalClockGetCycles());
-    newTask->startTime = OsGerCurrSchedTimeCycle();
+    newTask->startTime = OsGetCurrSchedTimeCycle();
 
 #ifdef LOSCFG_KERNEL_SMP
     /*
@@ -984,7 +984,7 @@ STATIC VOID OsSchedTaskSwicth(LosTaskCB *runTask, LosTaskCB *newTask)
         newTask->startTime = runTask->startTime;
     } else {
         /* The currently running task is blocked */
-        newTask->startTime = OsGerCurrSchedTimeCycle();
+        newTask->startTime = OsGetCurrSchedTimeCycle();
         /* The task is in a blocking state and needs to update its time slice before pend */
         OsTimeSliceUpdate(runTask, newTask->startTime);
 
@@ -1015,7 +1015,7 @@ VOID OsSchedIrqEndCheckNeedSched(VOID)
     Percpu *percpu = OsPercpuGet();
     LosTaskCB *runTask = OsCurrTaskGet();
 
-    OsTimeSliceUpdate(runTask, OsGerCurrSchedTimeCycle());
+    OsTimeSliceUpdate(runTask, OsGetCurrSchedTimeCycle());
     if (runTask->timeSlice <= OS_TIME_SLICE_MIN) {
         percpu->schedFlag = INT_PEND_RESCH;
     }
@@ -1080,7 +1080,7 @@ VOID LOS_Schedule(VOID)
      */
     SCHEDULER_LOCK(intSave);
 
-    OsTimeSliceUpdate(runTask, OsGerCurrSchedTimeCycle());
+    OsTimeSliceUpdate(runTask, OsGetCurrSchedTimeCycle());
 
     /* add run task back to ready queue */
     OsSchedTaskEnQueue(runTask);

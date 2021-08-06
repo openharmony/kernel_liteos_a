@@ -231,7 +231,7 @@ UINT64 OsGetNextExpireTime(UINT64 startTime)
 
 UINT32 OsSortLinkGetTargetExpireTime(const SortLinkList *targetSortList)
 {
-    UINT64 currTimes = OsGerCurrSchedTimeCycle();
+    UINT64 currTimes = OsGetCurrSchedTimeCycle();
     if (currTimes >= targetSortList->responseTime) {
         return 0;
     }
