@@ -276,6 +276,7 @@ typedef struct tagSwTmrCtrl {
                              that handles software timer timeout is called */
     SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */
     UINT32          uwOwnerPid; /** Owner of this software timer */
+    UINT64 startTime;  /**< Software timer start time */
 } SWTMR_CTRL_S;
 
 /**

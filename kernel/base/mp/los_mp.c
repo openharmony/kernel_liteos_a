@@ -56,7 +56,7 @@ VOID OsMpScheduleHandler(VOID)
      * set schedule flag to differ from wake function,
      * so that the scheduler can be triggered at the end of irq.
      */
-    OsPercpuGet()->schedFlag = INT_PEND_RESCH;
+    OsPercpuGet()->schedFlag |= INT_PEND_RESCH;
 }
 
 VOID OsMpHaltHandler(VOID)

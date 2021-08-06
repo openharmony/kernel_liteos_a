@@ -178,10 +178,9 @@ ERROR:
  * Description: Start Software Timer
  * Input      : swtmr --- Need to start software timer
  */
-LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
+LITE_OS_SEC_TEXT VOID OsSwtmrStart(UINT64 currTime, SWTMR_CTRL_S *swtmr)
 {
     UINT32 ticks;
-    UINT64 currTime = OsGetCurrSchedTimeCycle();
 
     if ((swtmr->uwOverrun == 0) && ((swtmr->ucMode == LOS_SWTMR_MODE_ONCE) ||
         (swtmr->ucMode == LOS_SWTMR_MODE_OPP) ||
@@ -192,10 +191,8 @@ LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
     }
     swtmr->ucState = OS_SWTMR_STATUS_TICKING;
 
-    OsAdd2SortLink(&swtmr->stSortList, currTime, ticks, OS_SORT_LINK_SWTMR);
-    if (OS_SCHEDULER_ACTIVE) {
-        OsSchedUpdateExpireTime(currTime);
-    }
+    OsAdd2SortLink(&swtmr->stSortList, swtmr->startTime, ticks, OS_SORT_LINK_SWTMR);
+    OsSchedUpdateExpireTime(currTime);
     return;
 }
 
@@ -211,7 +208,7 @@ STATIC INLINE VOID OsSwtmrDelete(SWTMR_CTRL_S *swtmr)
     swtmr->uwOwnerPid = 0;
 }
 
-STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, SWTMR_CTRL_S *swtmr)
+STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, UINT64 currTime, SWTMR_CTRL_S *swtmr)
 {
     LOS_SpinLock(&g_swtmrSpin);
     SwtmrHandlerItemPtr swtmrHandler = (SwtmrHandlerItemPtr)LOS_MemboxAlloc(g_swtmrHandlerPool);
@@ -236,7 +233,7 @@ STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, SWTMR_CTRL_S *swtmr)
         swtmr->ucState = OS_SWTMR_STATUS_CREATED;
     } else {
         swtmr->uwOverrun++;
-        OsSwtmrStart(swtmr);
+        OsSwtmrStart(currTime, swtmr);
     }
 
     LOS_SpinUnlock(&g_swtmrSpin);
@@ -267,12 +264,12 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
     UINT64 currTime = OsGetCurrSchedTimeCycle();
     while (sortList->responseTime <= currTime) {
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-        OsDeleteNodeSortLink(swtmrSortLink, sortList);
-
         SWTMR_CTRL_S *swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
+        swtmr->startTime = GET_SORTLIST_VALUE(sortList);
+        OsDeleteNodeSortLink(swtmrSortLink, sortList);
         LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 
-        OsWakePendTimeSwtmr(cpu, swtmr);
+        OsWakePendTimeSwtmr(cpu, currTime, swtmr);
 
         LOS_SpinLock(&cpu->swtmrSortLinkSpin);
         if (LOS_ListEmpty(listObject)) {
@@ -305,9 +302,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
     swtmr->ucState = OS_SWTMR_STATUS_CREATED;
     swtmr->uwOverrun = 0;
 
-    if (OS_SCHEDULER_ACTIVE) {
-        OsSchedUpdateExpireTime(OsGetCurrSchedTimeCycle());
-    }
+    OsSchedUpdateExpireTime(OsGetCurrSchedTimeCycle());
 }
 
 /*
@@ -403,7 +398,8 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
             OsSwtmrStop(swtmr);
             /* fall-through */
         case OS_SWTMR_STATUS_CREATED:
-            OsSwtmrStart(swtmr);
+            swtmr->startTime = OsGetCurrSchedTimeCycle();
+            OsSwtmrStart(swtmr->startTime, swtmr);
             break;
         default:
             ret = LOS_ERRNO_SWTMR_STATUS_INVALID;
