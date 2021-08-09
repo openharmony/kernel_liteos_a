@@ -456,7 +456,6 @@ extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBas
 extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
 extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy);
 extern INT32 OsGetProcessPriority(INT32 which, INT32 pid);
-extern VOID *OsUserStackAlloc(UINT32 processID, UINT32 *size);
 extern UINT32 OsGetUserInitProcessID(VOID);
 extern UINT32 OsGetIdleProcessID(VOID);
 extern INT32 OsSetProcessGroupID(UINT32 pid, UINT32 gid);
