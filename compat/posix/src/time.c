@@ -964,11 +964,11 @@ int timer_getoverrun(timer_t timerID)
     return (overRun > DELAYTIMER_MAX) ? DELAYTIMER_MAX : overRun;
 }
 
-STATIC INT32 DoNanoSleep(UINT64 useconds)
+STATIC INT32 DoNanoSleep(UINT64 nanoseconds)
 {
     UINT32 ret;
 
-    ret = LOS_TaskDelay(OsUS2Tick(useconds));
+    ret = LOS_TaskDelay(OsNS2Tick(nanoseconds));
     if (ret == LOS_OK || ret == LOS_ERRNO_TSK_YIELD_NOT_ENOUGH_TASK) {
         return 0;
     }
@@ -977,12 +977,12 @@ STATIC INT32 DoNanoSleep(UINT64 useconds)
 
 int usleep(unsigned useconds)
 {
-    return DoNanoSleep((UINT64)useconds);
+    return DoNanoSleep((UINT64)useconds * OS_SYS_NS_PER_US);
 }
 
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
-    UINT64 useconds;
+    UINT64 nanoseconds;
     INT32 ret = -1;
 
     (VOID)rmtp;
@@ -993,14 +993,14 @@ int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
         return ret;
     }
 
-    useconds = (UINT64)rqtp->tv_sec * OS_SYS_US_PER_SECOND + rqtp->tv_nsec / OS_SYS_NS_PER_US;
+    nanoseconds = (UINT64)rqtp->tv_sec * OS_SYS_NS_PER_SECOND + rqtp->tv_nsec;
 
-    return DoNanoSleep(useconds);
+    return DoNanoSleep(nanoseconds);
 }
 
 unsigned int sleep(unsigned int seconds)
 {
-    return DoNanoSleep((UINT64)seconds * OS_SYS_US_PER_SECOND);
+    return DoNanoSleep((UINT64)seconds * OS_SYS_NS_PER_SECOND);
 }
 
 double difftime(time_t time2, time_t time1)
