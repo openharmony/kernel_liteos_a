@@ -2268,6 +2268,34 @@ OUT:
     return ret;
 }
 
+int SysFchmod(int fd, mode_t mode)
+{
+    int ret;
+    int sysFd;
+    struct IATTR attr = {
+        .attr_chg_mode = mode,
+        .attr_chg_valid = CHG_MODE, /* change mode */
+    };
+    struct file *file = NULL;
+
+    sysFd = GetAssociatedSystemFd(fd);
+    if (sysFd < 0) {
+        return -EBADF;
+    }
+
+    ret = fs_getfilep(sysFd, &file);
+    if (ret < 0) {
+        return -get_errno();
+    }
+
+    ret = chattr(file->f_path, &attr);
+    if (ret < 0) {
+        return -get_errno();
+    }
+
+    return ret;
+}
+
 int SysFchownat(int fd, const char *path, uid_t owner, gid_t group, int flag)
 {
     int ret;
