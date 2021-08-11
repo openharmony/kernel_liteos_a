@@ -45,6 +45,10 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#define OS_SCHED_MINI_PERIOD       (OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI)
+#define OS_TICK_RESPONSE_PRECISION (UINT32)((OS_SCHED_MINI_PERIOD * 75) / 100)
+#define OS_SCHED_MAX_RESPONSE_TIME (UINT64)(((UINT64)-1) - 1U)
+
 extern UINT32 g_taskScheduled;
 typedef BOOL (*SchedScan)(VOID);
 
@@ -86,8 +90,9 @@ STATIC INLINE VOID OsSchedIrqStartTime(VOID)
 #define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))
 
 typedef enum {
-    INT_NO_RESCH = 0,   /* no needs to schedule */
-    INT_PEND_RESCH,     /* pending schedule flag */
+    INT_NO_RESCH = 0x0,   /* no needs to schedule */
+    INT_PEND_RESCH = 0x1, /* pending schedule flag */
+    INT_PEND_TICK = 0x2,  /* pending tick */
 } SchedFlag;
 
 /* Check if preemptable with counter flag */
@@ -102,7 +107,7 @@ STATIC INLINE BOOL OsPreemptable(VOID)
     BOOL preemptable = (OsPercpuGet()->taskLockCnt == 0);
     if (!preemptable) {
         /* Set schedule flag if preemption is disabled */
-        OsPercpuGet()->schedFlag = INT_PEND_RESCH;
+        OsPercpuGet()->schedFlag |= INT_PEND_RESCH;
     }
     LOS_IntRestore(intSave);
     return preemptable;
@@ -124,7 +129,7 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
 #endif
     if (!preemptable) {
         /* Set schedule flag if preemption is disabled */
-        OsPercpuGet()->schedFlag = INT_PEND_RESCH;
+        OsPercpuGet()->schedFlag |= INT_PEND_RESCH;
     }
 
     return preemptable;
@@ -139,8 +144,8 @@ STATIC INLINE VOID OsCpuSchedUnlock(Percpu *cpu, UINT32 intSave)
 {
     if (cpu->taskLockCnt > 0) {
         cpu->taskLockCnt--;
-        if ((cpu->taskLockCnt == 0) && (cpu->schedFlag == INT_PEND_RESCH) && OS_SCHEDULER_ACTIVE) {
-            cpu->schedFlag = INT_NO_RESCH;
+        if ((cpu->taskLockCnt == 0) && (cpu->schedFlag & INT_PEND_RESCH) && OS_SCHEDULER_ACTIVE) {
+            cpu->schedFlag &= ~INT_PEND_RESCH;
             LOS_IntRestore(intSave);
             LOS_Schedule();
             return;

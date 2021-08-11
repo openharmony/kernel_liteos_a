@@ -54,6 +54,9 @@ LITE_OS_SEC_DATA_MINOR STATIC CHAR g_shellSwtmrStatus[][SWTMR_STRLEN] = {
 
 STATIC VOID OsPrintSwtmrMsg(const SWTMR_CTRL_S *swtmr)
 {
+    UINT32 ticks = 0;
+    (VOID)LOS_SwtmrTimeGet(swtmr->usTimerID, &ticks);
+
     PRINTK("0x%08x  "
            "%-7s  "
            "%-6s   "
@@ -65,7 +68,7 @@ STATIC VOID OsPrintSwtmrMsg(const SWTMR_CTRL_S *swtmr)
            g_shellSwtmrStatus[swtmr->ucState],
            g_shellSwtmrMode[swtmr->ucMode],
            swtmr->uwInterval,
-           swtmr->uwCount,
+           ticks,
            swtmr->uwArg,
            swtmr->pfnHandler);
 }
