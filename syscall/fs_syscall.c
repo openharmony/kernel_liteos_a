@@ -2444,4 +2444,47 @@ OUT:
 
     return ret;
 }
+
+int SysFstatfs(int fd, struct statfs *buf)
+{
+    int ret;
+    struct file *filep = NULL;
+    struct statfs bufRet = {0};
+
+    /* Process fd convert to system global fd */
+    fd = GetAssociatedSystemFd(fd);
+
+    ret = fs_getfilep(fd, &filep);
+    if (ret < 0) {
+        ret = -get_errno();
+        return ret;
+    }
+
+    ret = statfs(filep->f_path, &bufRet);
+    if (ret < 0) {
+        ret = -get_errno();
+        return ret;
+    }
+
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct statfs));
+    if (ret != 0) {
+        ret = -EFAULT;
+    }
+
+    return ret;
+}
+
+int SysFstatfs64(int fd, size_t sz, struct statfs *buf)
+{
+    int ret = 0;
+
+    if (sz != sizeof(struct statfs)) {
+        ret = -EINVAL;
+        return ret;
+    }
+
+    ret = SysFstatfs(fd, buf);
+
+    return ret;
+}
 #endif

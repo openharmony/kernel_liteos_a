@@ -258,6 +258,8 @@ extern int SysTruncate(const char *path, off_t length);
 extern int SysFtruncate(int fd, off_t length);
 extern int SysStatfs(const char *path, struct statfs *buf);
 extern int SysStatfs64(const char *path, size_t sz, struct statfs *buf);
+extern int SysFstatfs(int fd, struct statfs *buf);
+extern int SysFstatfs64(int fd, size_t sz, struct statfs *buf);
 
 extern int SysStat(const char *path, struct kstat *buf);
 extern int SysLstat(const char *path, struct kstat *buffer);

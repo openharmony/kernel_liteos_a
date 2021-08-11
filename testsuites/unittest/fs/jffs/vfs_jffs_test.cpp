@@ -1000,6 +1000,50 @@ public:
 };
 #if defined(LOSCFG_USER_TEST_FULL)
 /* *
+ * @tc.name: ItTestFsJffs001
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs001, TestSize.Level0)
+{
+    ItTestFsJffs001();
+}
+
+/* *
+ * @tc.name: ItTestFsJffs002
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs002, TestSize.Level0)
+{
+    ItTestFsJffs002();
+}
+
+/* *
+ * @tc.name: ItTestFsJffs003
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs003, TestSize.Level0)
+{
+    ItTestFsJffs003();
+}
+
+/* *
+ * @tc.name: ItTestFsJffs004
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs004, TestSize.Level0)
+{
+    ItTestFsJffs004();
+}
+
+/* *
  * @tc.name: IT_JFFS_002
  * @tc.desc: function for VfsJffsTest
  * @tc.type: FUNC
