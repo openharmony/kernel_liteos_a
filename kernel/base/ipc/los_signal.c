@@ -351,6 +351,10 @@ static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
 
 int OsDispatch(pid_t pid, siginfo_t *info, int permission)
 {
+    if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
+        return -ESRCH;
+    }
+
     LosProcessCB *spcb = OS_PCB_FROM_PID(pid);
     if (OsProcessIsUnused(spcb)) {
         return -ESRCH;
@@ -382,11 +386,8 @@ int OsKill(pid_t pid, int sig, int permission)
     int ret;
 
     /* Make sure that the para is valid */
-    if (!GOOD_SIGNO(sig) || pid < 0) {
+    if (!GOOD_SIGNO(sig)) {
         return -EINVAL;
-    }
-    if (OsProcessIDUserCheckInvalid(pid)) {
-        return -ESRCH;
     }
 
     /* Create the siginfo structure */
@@ -394,8 +395,18 @@ int OsKill(pid_t pid, int sig, int permission)
     info.si_code = SI_USER;
     info.si_value.sival_ptr = NULL;
 
-    /* Send the signal */
-    ret = OsDispatch(pid, &info, permission);
+    if (pid > 0) {
+        /* Send the signal to the specify process */
+        ret = OsDispatch(pid, &info, permission);
+    } else if (pid == -1) {
+        /* Send SIG to all processes */
+        ret = OsSendSignalToAllProcess(&info, permission);
+    } else {
+        /* Send SIG to all processes in process group PGRP.
+           If PGRP is zero, send SIG to all processes in
+           the current process's process group. */
+        ret = OsSendSignalToProcessGroup(pid, &info, permission);
+    }
     return ret;
 }
 

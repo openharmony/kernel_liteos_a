@@ -408,12 +408,24 @@ STATIC INLINE User *OsCurrUserGet(VOID)
  * if this option is not specified.
  */
 #define LOS_WAIT_WUNTRACED (1 << 1U)
+#define LOS_WAIT_WSTOPPED (1 << 1U)
+
+/*
+ * Wait for exited processes
+ */
+#define LOS_WAIT_WEXITED (1 << 2U)
 
 /*
  * return if a stopped child has been resumed by delivery of SIGCONT.
  * (For Linux-only options, see below.)
  */
 #define LOS_WAIT_WCONTINUED (1 << 3U)
+
+/*
+ * Leave the child in a waitable state;
+ * a later wait call can be used to again retrieve the child status information.
+ */
+#define LOS_WAIT_WNOWAIT (1 << 24U)
 
 /*
  * Indicates that you are already in a wait state
@@ -464,6 +476,8 @@ extern UINT32 OsGetKernelInitProcessID(VOID);
 extern VOID OsSetSigHandler(UINTPTR addr);
 extern UINTPTR OsGetSigHandler(VOID);
 extern VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID);
+extern INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission);
+extern INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission);
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -81,6 +81,7 @@ extern int SysSchedGetPriorityMin(int policy);
 extern int SysSchedGetPriorityMax(int policy);
 extern int SysSchedRRGetInterval(int pid, struct timespec *tp);
 extern int SysWait(int pid, USER int *status, int options, void *rusage);
+extern int SysWaitid(idtype_t type, int pid, USER siginfo_t *info, int options, void *rusage);
 extern int SysFork(void);
 extern int SysVfork(void);
 extern unsigned int SysGetPID(void);
