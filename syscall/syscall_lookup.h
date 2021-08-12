@@ -50,6 +50,7 @@ SYSCALL_HAND_DEF(__NR_sysinfo, SysInfo, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_chdir, SysChdir, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_utimensat, SysUtimensat, int, ARG_NUM_4)
 SYSCALL_HAND_DEF(__NR_fchmodat, SysFchmodat, int, ARG_NUM_4)
+SYSCALL_HAND_DEF(__NR_fchmod, SysFchmod, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_utimensat, SysUtimensat, int, ARG_NUM_4)
 SYSCALL_HAND_DEF(__NR_chmod, SysChmod, int, ARG_NUM_2)
 SYSCALL_HAND_DEF(__NR_lseek, SysLseek, off_t, ARG_NUM_7) /* current only support 32bit max 4G file */

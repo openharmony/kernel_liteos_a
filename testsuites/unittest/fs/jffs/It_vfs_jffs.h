@@ -271,6 +271,8 @@ void ItTestFsJffs001(void);
 void ItTestFsJffs002(void);
 void ItTestFsJffs003(void);
 void ItTestFsJffs004(void);
+void ItTestFsJffs102(void);
+void ItTestFsJffs103(void);
 VOID ItJffs001(VOID);
 VOID ItJffs002(VOID);
 VOID ItJffs003(VOID);

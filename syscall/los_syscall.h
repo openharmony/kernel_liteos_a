@@ -234,6 +234,7 @@ extern int SysExecve(const char *fileName, char *const *argv, char *const *envp)
 extern int SysChdir(const char *path);
 extern int SysUtimensat(int fd, const char *path, struct timespec times[2], int flag);
 extern int SysFchmodat(int fd, const char *path, mode_t mode, int flag);
+extern int SysFchmod(int fd, mode_t mode);
 extern int SysChmod(const char *path, mode_t mode);
 extern int SysFchownat(int fd, const char *path, uid_t owner, gid_t group, int flag);
 extern int SysFchown(int fd, uid_t owner, gid_t group);
