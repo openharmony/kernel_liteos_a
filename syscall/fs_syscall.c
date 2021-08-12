@@ -52,7 +52,6 @@
 #include "los_vm_map.h"
 #include "los_memory.h"
 #include "los_strncpy_from_user.h"
-#include "fs/file.h"
 #include "capability_type.h"
 #include "capability_api.h"
 #include "sys/statfs.h"
@@ -229,29 +228,6 @@ static int UserPoll(struct pollfd *fds, nfds_t nfds, int timeout)
     return ret;
 }
 
-static int FcntlDupFd(int sysfd, void *arg)
-{
-    int leastFd = (intptr_t)arg;
-
-    if ((sysfd < 0) || (sysfd >= CONFIG_NFILE_DESCRIPTORS)) {
-        return -EBADF;
-    }
-
-    if (CheckProcessFd(leastFd) != OK) {
-        return -EINVAL;
-    }
-
-    int procFd = AllocLowestProcessFd(leastFd);
-    if (procFd < 0) {
-        return -EMFILE;
-    }
-
-    files_refer(sysfd);
-    AssociateSystemFd(procFd, sysfd);
-
-    return procFd;
-}
-
 int SysClose(int fd)
 {
     int ret;
@@ -303,9 +279,8 @@ ssize_t SysWrite(int fd, const void *buf, size_t nbytes)
     }
 
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
-
-    ret = write(fd, buf, nbytes);
+    int sysfd = GetAssociatedSystemFd(fd);
+    ret = write(sysfd, buf, nbytes);
     if (ret < 0) {
         return -get_errno();
     }
@@ -322,7 +297,7 @@ int SysOpen(const char *path, int oflags, ...)
     if (path != NULL) {
         ret = UserPathCopy(path, &pathRet);
         if (ret != 0) {
-            goto ERROUT_PATH_FREE;
+            return ret;
         }
     }
 
@@ -330,6 +305,10 @@ int SysOpen(const char *path, int oflags, ...)
     if (procFd < 0) {
         ret = -EMFILE;
         goto ERROUT;
+    }
+
+    if (oflags & O_CLOEXEC) {
+        SetCloexecFlag(procFd);
     }
 
     if ((unsigned int)oflags & O_DIRECTORY) {
@@ -357,17 +336,12 @@ int SysOpen(const char *path, int oflags, ...)
     return procFd;
 
 ERROUT:
-    if (ret >= 0) {
-        AssociateSystemFd(procFd, ret);
-        ret = procFd;
-    } else {
+    if (pathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    if (procFd >= 0) {
         FreeProcessFd(procFd);
     }
-ERROUT_PATH_FREE:
-    if (pathRet != NULL) {
-        LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
-    }
-
     return ret;
 }
 
@@ -922,13 +896,13 @@ int SysIoctl(int fd, int req, void *arg)
 int SysFcntl(int fd, int cmd, void *arg)
 {
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
+    int sysfd = GetAssociatedSystemFd(fd);
 
-    if (cmd == F_DUPFD) {
-        return FcntlDupFd(fd, arg);
+    int ret = VfsFcntl(fd, cmd, arg);
+    if (ret == CONTINE_NUTTX_FCNTL) {
+        ret = fcntl(sysfd, cmd, arg);
     }
 
-    int ret = fcntl(fd, cmd, arg);
     if (ret < 0) {
         return -get_errno();
     }
@@ -1010,6 +984,9 @@ int SysDup2(int fd1, int fd2)
 
     files_refer(sysfd1);
     AssociateSystemFd(fd2, sysfd1);
+
+    /* if fd1 is not equal to fd2, the FD_CLOEXEC flag associated with fd2 shall be cleared */
+    ClearCloexecFlag(fd2);
     return fd2;
 }
 
@@ -1421,9 +1398,9 @@ ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt)
     struct iovec *iovRet = NULL;
 
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
+    int sysfd = GetAssociatedSystemFd(fd);
     if ((iov == NULL) || (iovcnt <= 0) || (iovcnt > IOV_MAX)) {
-        ret = writev(fd, iov, iovcnt);
+        ret = writev(sysfd, iov, iovcnt);
         return -get_errno();
     }
 
@@ -1437,7 +1414,7 @@ ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt)
         goto OUT_FREE;
     }
 
-    ret = writev(fd, iovRet, valid_iovcnt);
+    ret = writev(sysfd, iovRet, valid_iovcnt);
     if (ret < 0) {
         ret = -get_errno();
     }
@@ -1698,6 +1675,10 @@ int SysOpenat(int dirfd, const char *path, int oflags, ...)
     if (procFd < 0) {
         ret = -EMFILE;
         goto ERROUT;
+    }
+
+    if (oflags & O_CLOEXEC) {
+        SetCloexecFlag(procFd);
     }
 
     if (dirfd != AT_FDCWD) {
@@ -2094,13 +2075,13 @@ int SysFstat64(int fd, struct stat64 *buf)
 int SysFcntl64(int fd, int cmd, void *arg)
 {
     /* Process fd convert to system global fd */
-    fd = GetAssociatedSystemFd(fd);
+    int sysfd = GetAssociatedSystemFd(fd);
 
-    if (cmd == F_DUPFD) {
-        return FcntlDupFd(fd, arg);
+    int ret = VfsFcntl(fd, cmd, arg);
+    if (ret == CONTINE_NUTTX_FCNTL) {
+        ret = fcntl64(sysfd, cmd, arg);
     }
 
-    int ret = fcntl64(fd, cmd, arg);
     if (ret < 0) {
         return -get_errno();
     }

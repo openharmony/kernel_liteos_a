@@ -46,6 +46,7 @@ struct fd_table_s {
     unsigned int max_fds;
     struct file_table_s *ft_fds; /* process fd array associate with system fd */
     fd_set *proc_fds;
+    fd_set *cloexec_fds;
     sem_t ft_sem; /* manage access to the file table */
 };
 
@@ -70,7 +71,7 @@ struct files_struct *dup_fd(struct files_struct *oldf);
 
 struct files_struct *alloc_files(void);
 
-void delete_files(LosProcessCB *processCB, struct files_struct *files);
+void delete_files(struct files_struct *files);
 
 struct files_struct *create_files_snapshot(const struct files_struct *oldf);
 
@@ -79,4 +80,10 @@ void delete_files_snapshot(struct files_struct *files);
 int alloc_fd(int minfd);
 
 void alloc_std_fd(struct fd_table_s *fdt);
+
+void FileTableLock(struct fd_table_s *fdt);
+
+void FileTableUnLock(struct fd_table_s *fdt);
+
+struct fd_table_s *GetFdTable(void);
 #endif

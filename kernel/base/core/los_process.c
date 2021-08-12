@@ -39,6 +39,7 @@
 #include "asm/page.h"
 #ifdef LOSCFG_FS_VFS
 #include "fs/fd_table.h"
+#include "fs/fs_operation.h"
 #endif
 #include "time.h"
 #include "user_copy.h"
@@ -290,7 +291,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 
 #ifdef LOSCFG_FS_VFS
     if (OsProcessIsUserMode(processCB)) {
-        delete_files(processCB, processCB->files);
+        delete_files(processCB->files);
     }
     processCB->files = NULL;
 #endif
@@ -1306,8 +1307,8 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
 
     LOS_VmSpaceFree(oldSpace);
 #ifdef LOSCFG_FS_VFS
-    delete_files(OsCurrProcessGet(), (struct files_struct *)oldFiles);
-    alloc_std_fd(OsCurrProcessGet()->files->fdt);
+    CloseOnExec((struct files_struct *)oldFiles);
+    delete_files_snapshot((struct files_struct *)oldFiles);
 #endif
 
     OsSwtmrRecycle(processCB->processID);
