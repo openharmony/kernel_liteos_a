@@ -68,26 +68,27 @@ OpenHarmony LiteOS-A內核是基於Huawei LiteOS內核演進發展的新一代�
 
 ## 使用說明<a name="section741617511812"></a>
 
-OpenHarmony LiteOS-A內核支持Hi3518EV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3518%E5%BC%80%E5%8F%91%E6%9D%BF%E4%BB%8B%E7%BB%8D.md)）、Hi3516DV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3516%E5%BC%80%E5%8F%91%E6%9D%BF%E4%BB%8B%E7%BB%8D.md)）單板，開發者可基於兩種單板開發運行自己的應用程序。
+OpenHarmony LiteOS-A內核支持Hi3518EV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/oem_minitinier_des_3518.md)）、Hi3516DV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/oem_minitinier_des_3516.md)）單板，開發者可基於兩種單板開發運行自己的應用程序。
 
 ### 準備<a name="section1579912573329"></a>
 
 開發者需要在Linux上搭建編譯環境：
 
-- Hi3518EV300單板：參考[環境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3516%E5%BC%80%E5%8F%91%E6%9D%BF%E4%BB%8B%E7%BB%8D.md)；
-- Hi3516DV300單板：參考[環境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Hi3516%E6%90%AD%E5%BB%BA%E7%8E%AF%E5%A2%83.md)。
+- [Ubuntu編譯環境凖備](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-env-setup-linux.md);
+- Hi3518EV300單板：參考[環境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3518-setting.md)；
+- Hi3516DV300單板：參考[環境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3516-setting.md)。
 
 ### 獲取源碼<a name="section11443189655"></a>
 
-在Linux服務器上下載並解壓一套源代碼，獲取源碼（[下載鏈結](https://repo.huaweicloud.com/harmonyos/os/1.0.1/code-1.0.1.tar.gz)）。更多源碼獲取方式，參考[源碼獲取](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/get-code/%E6%BA%90%E7%A0%81%E8%8E%B7%E5%8F%96.md)。
+在Linux服務器上下載並解壓一套源代碼，源碼獲取方式參考[源碼獲取](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/get-code/sourcecode-acquire.md)。
 
 ### 編譯構建<a name="section2081013992812"></a>
 
 開發者開發第一個應用程序可參考：
 
-- [helloworld for Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E5%BC%80%E5%8F%91Hi3518%E7%AC%AC%E4%B8%80%E4%B8%AA%E7%A4%BA%E4%BE%8B%E7%A8%8B%E5%BA%8F.md)；
+- [helloworld for Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3518-running.md)；
 
-- [helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/%E5%BC%80%E5%8F%91Hi3516%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B.md)。
+- [helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3516-running.md)。
 
 ## 相關倉<a name="section1371113476307"></a>
 

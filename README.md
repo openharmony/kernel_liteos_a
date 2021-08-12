@@ -67,26 +67,27 @@ The OpenHarmony LiteOS Cortex-A is a new-generation kernel developed based on th
 
 ## Usage<a name="section741617511812"></a>
 
-OpenHarmony LiteOS Cortex-A supports the  [Hi3518E V300](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/introduction-to-the-hi3518-development-board.md)  and  [Hi3516D V300](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/introduction-to-the-hi3516-development-board.md). You can develop and run your applications based on both development boards.
+OpenHarmony LiteOS Cortex-A supports the  [Hi3518E V300](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-introduction-hi3518.md)  and  [Hi3516D V300](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-introduction-hi3516.md). You can develop and run your applications based on both development boards.
 
 ### Preparations<a name="section1579912573329"></a>
 
 You need to set up the compilation environment on Linux.
 
--   For Hi3518E V300, see  [Setting Up the Hi3518 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/setting-up-the-hi3518-development-environment.md).
--   For Hi3516D V300, see  [Setting Up the Hi3516 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/setting-up-the-hi3516-development-environment.md).
+-   [Compilation environment on Linux](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-env-setup-lin.md)
+-   For Hi3518E V300, see  [Setting Up the Hi3518 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-board3518-setting.md).
+-   For Hi3516D V300, see  [Setting Up the Hi3516 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-board3516-setting.md).
 
 ### Source Code Acquisition<a name="section11443189655"></a>
 
-Download and decompress a set of source code on a Linux server to acquire the  [source code](https://repo.huaweicloud.com/harmonyos/os/1.0.1/code-1.0.1.tar.gz). For more acquisition methods, see  [Source Code Acquisition](https://gitee.com/openharmony/docs/blob/master/en/device-dev/get-code/source-code-acquisition.md).
+Download and decompress a set of source code on a Linux server to acquire the  [source code](https://gitee.com/openharmony/docs/blob/master/en/device-dev/get-code/sourcecode-acquire.md).
 
 ### Compilation and Building<a name="section2081013992812"></a>
 
 For details about how to develop the first application, see:
 
--   [Developing the First Example Program Running on Hi3518](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/developing-the-first-example-program-running-on-hi3518.md)
+-   [Developing the First Example Program Running on Hi3518](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-board3518-running.md)
 
--   [Developing the First Example Program Running on Hi3516](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/developing-the-first-example-program-running-on-hi3516.md)
+-   [Developing the First Example Program Running on Hi3516](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-board3516-running.md)
 
 ## Repositories Involved<a name="section1371113476307"></a>
 
