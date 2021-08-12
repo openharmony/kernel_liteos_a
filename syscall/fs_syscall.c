@@ -502,6 +502,30 @@ int SysExecve(const char *fileName, char *const *argv, char *const *envp)
 }
 #endif
 
+int SysFchdir(int fd)
+{
+    int ret;
+    int sysFd;
+    struct file *file = NULL;
+
+    sysFd = GetAssociatedSystemFd(fd);
+    if (sysFd < 0) {
+        return -EBADF;
+    }
+
+    ret = fs_getfilep(sysFd, &file);
+    if (ret < 0) {
+        return -get_errno();
+    }
+
+    ret = chdir(file->f_path);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+    return ret;
+}
+
 int SysChdir(const char *path)
 {
     int ret;

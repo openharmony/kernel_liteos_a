@@ -1044,6 +1044,28 @@ HWTEST_F(VfsJffsTest, ItTestFsJffs004, TestSize.Level0)
 }
 
 /* *
+ * @tc.name: ItTestFsJffs100
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs100, TestSize.Level0)
+{
+    ItTestFsJffs100();
+}
+
+/* *
+ * @tc.name: ItTestFsJffs101
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs101, TestSize.Level0)
+{
+    ItTestFsJffs101();
+}
+
+/* *
  * @tc.name: ItTestFsJffs102
  * @tc.desc: function for VfsJffsTest
  * @tc.type: FUNC
@@ -1064,6 +1086,40 @@ HWTEST_F(VfsJffsTest, ItTestFsJffs103, TestSize.Level0)
 {
     ItTestFsJffs103();
 }
+
+/* *
+ * @tc.name: ItTestFsJffs106
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs106, TestSize.Level0)
+{
+    ItTestFsJffs106();
+}
+
+/* *
+ * @tc.name: ItTestFsJffs112
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs112, TestSize.Level0)
+{
+    ItTestFsJffs112();
+}
+
+/* *
+ * @tc.name: ItTestFsJffs113
+ * @tc.desc: function for VfsJffsTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(VfsJffsTest, ItTestFsJffs113, TestSize.Level0)
+{
+    ItTestFsJffs113();
+}
+
 /* *
  * @tc.name: IT_JFFS_002
  * @tc.desc: function for VfsJffsTest

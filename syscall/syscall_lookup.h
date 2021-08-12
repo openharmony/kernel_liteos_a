@@ -47,6 +47,7 @@ SYSCALL_HAND_DEF(__NR_execve, SysExecve, int, ARG_NUM_3)
 #endif
 
 SYSCALL_HAND_DEF(__NR_sysinfo, SysInfo, int, ARG_NUM_1)
+SYSCALL_HAND_DEF(__NR_fchdir, SysFchdir, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_chdir, SysChdir, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_utimensat, SysUtimensat, int, ARG_NUM_4)
 SYSCALL_HAND_DEF(__NR_fchmodat, SysFchmodat, int, ARG_NUM_4)

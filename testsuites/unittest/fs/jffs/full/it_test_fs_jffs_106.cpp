@@ -28,7 +28,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "It_fs_jffs.h"
+#include "It_vfs_jffs.h"
 
 #define TEST_STR "abcdefghijk"
 
@@ -41,20 +41,30 @@ static int TestCase(void)
     CHAR buf[JFFS_STANDARD_NAME_LENGTH] = TEST_STR;
     CHAR str[JFFS_STANDARD_NAME_LENGTH] = "";
     FILE *ptr = NULL;
-    fd = open(pathname1, O_CREAT | O_RDWR, 0777);
+
+    fd = open(pathname1, O_CREAT, 0777);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT);
-    len = write(fd, buf, JFFS_STANDARD_NAME_LENGTH);
-    ICUNIT_GOTO_NOT_EQUAL(len, -1, len, EXIT);
+
     ret = close(fd);
     ICUNIT_GOTO_NOT_EQUAL(ret, -1, ret, EXIT1);
-    ptr = freopen(pathname1, "rb", stdin);
+
+    ptr = freopen(pathname1, "w+", stdin);
     ICUNIT_GOTO_NOT_EQUAL(ptr, NULL, ptr, EXIT1);
-    ret = scanf_s("%s", JFFS_STANDARD_NAME_LENGTH, str); 
-    ICUNIT_GOTO_NOT_EQUAL(ret, 0, ret, EXIT1);
-    ret = strcmp(buf, str);
+
+    ret = fwrite(buf, JFFS_STANDARD_NAME_LENGTH, 1, ptr);
+    ICUNIT_GOTO_NOT_EQUAL(ret, -1, ret, EXIT1);
+
+    ret = fclose(ptr);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
-    fclose(ptr);
+    fd = open(pathname1, O_RDWR, 0777);
+    ret = read(fd, str, JFFS_STANDARD_NAME_LENGTH);
+
+    ret = close(fd);
+    ICUNIT_GOTO_NOT_EQUAL(ret, -1, ret, EXIT1);
+
+    ret = strcmp(buf, str);
+    ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
     ret = unlink(pathname1);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
