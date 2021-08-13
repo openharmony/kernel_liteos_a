@@ -318,7 +318,7 @@ static void FdRefer(int sysFd)
 #endif
 #if defined(LOSCFG_COMPAT_POSIX)
     if ((sysFd >= MQUEUE_FD_OFFSET) && (sysFd < (MQUEUE_FD_OFFSET + CONFIG_NQUEUE_DESCRIPTORS))) {
-        mqueue_refer(sysFd);
+        MqueueRefer(sysFd);
     }
 #endif
 }
