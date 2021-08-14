@@ -48,7 +48,6 @@
 #endif
 
 #define OS_32BIT_MAX               0xFFFFFFFFUL
-#define OS_64BIT_MAX               0xFFFFFFFFFFFFFFFFULL
 #define OS_SCHED_FIFO_TIMEOUT      0x7FFFFFFF
 #define OS_PRIORITY_QUEUE_NUM      32
 #define PRIQUEUE_PRIOR0_BIT        0x80000000U
@@ -73,7 +72,7 @@ typedef struct {
 
 STATIC Sched *g_sched = NULL;
 STATIC UINT64 g_schedTickMaxResponseTime;
-UINT64 g_sysSchedStartTime = 0;
+UINT64 g_sysSchedStartTime = OS_64BIT_MAX;
 
 #ifdef LOSCFG_SCHED_TICK_DEBUG
 #define OS_SCHED_DEBUG_DATA_NUM  1000
@@ -253,7 +252,7 @@ UINT32 OsSchedSetTickTimerType(UINT32 timerType)
 
 STATIC VOID OsSchedSetStartTime(UINT64 currCycle)
 {
-    if (g_sysSchedStartTime == 0) {
+    if (g_sysSchedStartTime == OS_64BIT_MAX) {
         g_sysSchedStartTime = currCycle;
     }
 }
@@ -889,7 +888,9 @@ VOID OsSchedStart(VOID)
 
     SCHEDULER_LOCK(intSave);
 
-    OsTickStart();
+    if (cpuid == 0) {
+        OsTickStart();
+    }
 
     LosTaskCB *newTask = OsGetTopTask();
     LosProcessCB *newProcess = OS_PCB_FROM_PID(newTask->processID);
