@@ -58,7 +58,6 @@ endif
 	LDFLAGS="$(LDFLAGS)" STRIP="$(STRIP)" \
 	make -C $(BUILD_DIR) toybox -j> $(BUILD_LOG) 2>&1
 	$(HIDE)$(CP) $(BUILD_DIR)/$(TOYBOX) .
-	$(HIDE)$(STRIP) $(TOYBOX)
 	$(HIDE)mkdir -p $(APPS_OUT)
 	$(HIDE)$(CP) $(TOYBOX) $(APPS_OUT)
 	$(HIDE)$(RM) $(BUILD_DIR) $(BUILD_LOG)
