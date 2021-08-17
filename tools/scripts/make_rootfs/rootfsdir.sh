@@ -53,7 +53,7 @@ fi
 cp -f ${LIB_DIR}/* ${ROOTFS_DIR}/lib
 cp -u ${LIB_DIR}/* ${OUT_DIR}/libs
 
-if [ -e ${ETC_DIR} ]; then
+if [ -e ${ETC_DIR}/.mkshrc ]; then
 cp -f ${ETC_DIR}/.mkshrc ${ROOTFS_DIR}/etc
 cp -u ${ETC_DIR}/.mkshrc ${OUT_DIR}/etc
 fi
