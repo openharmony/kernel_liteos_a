@@ -213,8 +213,7 @@ ifeq ($(LOSCFG_LIB_LIBC), y)
     LIB_SUBDIRS           += lib/libc
     LITEOS_BASELIB        += -lc
     LITEOS_LIBC_INCLUDE   += \
-        -I $(LITEOSTOPDIR)/lib/libc/include \
-        -I $(LITEOSTHIRDPARTY)/musl/porting/liteos_a/kernel/include \
+        -isystem $(LITEOSTHIRDPARTY)/musl/porting/liteos_a/kernel/include
 
     LIB_SUBDIRS           += lib/libsec
     LITEOS_BASELIB        += -lsec

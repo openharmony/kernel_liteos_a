@@ -138,3 +138,8 @@ int __sched_cpucount(size_t set_size, const cpu_set_t* set)
     return count;
 }
 
+int sched_yield()
+{
+    (void)LOS_TaskYield();
+    return 0;
+}

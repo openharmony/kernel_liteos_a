@@ -102,7 +102,6 @@ FSTYPE = jffs2
 endif
 ROOTFS_DIR = $(OUT)/rootfs
 ROOTFS_ZIP = $(OUT)/rootfs.zip
-VERSION =
 
 define HELP =
 -------------------------------------------------------
@@ -117,8 +116,6 @@ Targets:
     $(LITEOS_LIBS_TARGET):       compile all kernel modules (libraries)
     $(LITEOS_TARGET):     make liteos kernel image
     update_config:  update product kernel config (use menuconfig)
-    test:       make the testsuits_app and put it into the rootfs dir
-    test_apps:  make a rootfs img with the testsuits_app in it
 
 Parameters:
     FSTYPE:     value should be one of (jffs2 vfat yaffs2)
