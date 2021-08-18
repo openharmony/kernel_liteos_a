@@ -45,6 +45,7 @@ struct Mount {
     const struct MountOps *ops;        /* operations of mount */
     struct Vnode *vnodeBeCovered;      /* vnode we mounted on */
     struct Vnode *vnodeCovered;        /* syncer vnode */
+    struct Vnode *vnodeDev;            /* dev vnode */
     LIST_HEAD vnodeList;               /* list of vnodes */
     int vnodeSize;                     /* size of vnode list */
     LIST_HEAD activeVnodeList;         /* list of active vnodes */
@@ -70,4 +71,5 @@ typedef int (*foreach_mountpoint_t)(const char *devpoint,
 struct Mount* MountAlloc(struct Vnode* vnode, struct MountOps* mop);
 LIST_HEAD* GetMountList(void);
 int foreach_mountpoint(foreach_mountpoint_t handler, void *arg);
+int ForceUmountDev(struct Vnode *dev);
 #endif
