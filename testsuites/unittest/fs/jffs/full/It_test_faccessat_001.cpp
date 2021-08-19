@@ -28,31 +28,42 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "It_fs_jffs.h"
+#include "It_vfs_jffs.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
 
-static UINT32 testcase(VOID)
+static UINT32 Testcase(VOID)
 {
     int ret = 0;
+    int argc = 2;
+    char *argv[2];
 
-    ret = faccessat(AT_FDCWD, FILEPATH_000, R_OK, AT_EACCESS);
+    argv[1] = (char *)"/lib/libc.so";
+
+    if (argc != 2) {
+        printf("Usage: %s <pathname>\n", argv[0]);
+        exit(1);
+    }
+
+    ret = faccessat(AT_FDCWD, argv[1], R_OK, AT_EACCESS);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-    TEST_PRINT("[INFO]%s:%d,%s,ret=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, ret, errno, strerror(errno));
-    ICUNIT_GOTO_EQUAL(errno, 0, errno, OUT);
+    if (ret < 0) {
+        printf("faccessat error for %s\n", argv[1]);
+    } else {
+        printf("read access OK\n");
+    }
 
-    ret = open(FILEPATH_000, O_RDONLY);
-    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    TEST_PRINT("[INFO]%s:%d,%s,ret=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, ret, errno, strerror(errno));
-    ICUNIT_GOTO_EQUAL(errno, 0, errno, OUT);
+    if (open(argv[1], O_RDONLY) < 0) {
+        printf("open error for %s\n", argv[1]);
+    } else {
+        printf("open for reading OK\n");
+    }
 
     return LOS_OK;
-OUT:
-    return LOS_NOK;
 }
 
-VOID IO_TEST_FACCESSAT_002(void)
+VOID IO_TEST_FACCESSAT_001(void)
 {
-    TEST_ADD_CASE(__FUNCTION__, testcase, TEST_LIB, TEST_LIBC, TEST_LEVEL1, TEST_FUNCTION);
+    TEST_ADD_CASE(__FUNCTION__, Testcase, TEST_LIB, TEST_LIBC, TEST_LEVEL1, TEST_FUNCTION);
 }

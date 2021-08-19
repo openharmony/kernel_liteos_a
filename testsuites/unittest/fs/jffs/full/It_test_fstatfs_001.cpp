@@ -29,7 +29,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "It_fs_jffs.h"
+#include "It_vfs_jffs.h"
 #include <stdlib.h>
 #include "fcntl.h"
 #include "sys/vfs.h"
@@ -45,10 +45,10 @@ static UINT32 testcase1(VOID)
     ret = fstatfs(fd, &buf);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, OUT);
     TEST_PRINT("[INFO]The \"/lib/libc.so\" 's,buf->f_type=0x%x\n", buf.f_type);
-    TEST_PRINT("[INFO]Check the file's filesystem type:./musl/kernel/include/sys/statfs.h:#define JFFS2_SUPER_MAGIC 0x72b6\n");
+    TEST_PRINT("[INFO]Check the file's filesystem type:./musl/kernel/include/sys/statfs.h:#define JFFS2_SUPER_MAGIC 0x72b6,#define MSDOS_SUPER_MAGIC 0x4d44\n");
     TEST_PRINT("[INFO]%s:%d,%s,ret=%d,errno=%d,errstr=%s\n", __FILE__, __LINE__, __func__, ret, errno, strerror(errno));
-    ICUNIT_ASSERT_EQUAL(buf.f_type, 0x72b6, -1);
-    ICUNIT_GOTO_EQUAL(buf.f_type, 0x72b6, -1, OUT);
+    ICUNIT_ASSERT_EQUAL(buf.f_type, 0x4d44, -1);
+    ICUNIT_GOTO_EQUAL(buf.f_type, 0x4d44, -1, OUT);
 
     return LOS_OK;
 OUT:
