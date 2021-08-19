@@ -53,5 +53,6 @@ LOCAL_FLAGS +=-Wno-char-subscripts -Wno-unknown-pragmas
 else
 LOCAL_FLAGS += -frounding-math -Wno-unused-but-set-variable -Wno-unknown-pragmas
 endif
+LOCAL_FLAGS += -Wno-shift-op-parentheses -Wno-logical-op-parentheses -Wno-bitwise-op-parentheses
 
 include $(MODULE)

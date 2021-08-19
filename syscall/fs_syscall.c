@@ -149,7 +149,7 @@ static int UserIovCopy(struct iovec **iovBuf, const struct iovec *iov, const int
 {
     int ret;
     int bufLen = iovcnt * sizeof(struct iovec);
-    if (bufLen <= 0) {
+    if (bufLen < 0) {
         return -EINVAL;
     }
 
@@ -528,90 +528,27 @@ OUT:
 
 off_t SysLseek(int fd, off_t offset, int whence)
 {
-    int ret;
-    struct file *filep = NULL;
-
     /* Process fd convert to system global fd */
     fd = GetAssociatedSystemFd(fd);
 
-    /* Get the file structure corresponding to the file descriptor. */
-    ret = fs_getfilep(fd, &filep);
-    if (ret < 0) {
-        /* The errno value has already been set */
-        return (off_t)-get_errno();
-    }
-
-    /* libc seekdir function should set the whence to SEEK_SET, so we can discard
-     * the whence argument here */
-    if (filep->f_oflags & O_DIRECTORY) {
-        /* defensive coding */
-        if (filep->f_dir == NULL) {
-            return (off_t)-EINVAL;
-        }
-        if (offset == 0) {
-            rewinddir(filep->f_dir);
-        } else {
-            seekdir(filep->f_dir, offset);
-        }
-        ret = telldir(filep->f_dir);
-        if (ret < 0) {
-            return (off_t)-get_errno();
-        }
-        return ret;
-    }
-
-    /* Then let file_seek do the real work */
-    ret = file_seek(filep, offset, whence);
-    if (ret < 0) {
-        return -get_errno();
-    }
-    return ret;
+    return _lseek(fd, offset, whence);
 }
 
 off64_t SysLseek64(int fd, int offsetHigh, int offsetLow, off64_t *result, int whence)
 {
     off64_t ret;
+    off64_t res;
     int retVal;
-    struct file *filep = NULL;
-    off64_t offset = ((off64_t)((UINT64)offsetHigh << 32)) + (uint)offsetLow; /* 32: offsetHigh is high 32 bits */
 
     /* Process fd convert to system global fd */
     fd = GetAssociatedSystemFd(fd);
 
-    /* Get the file structure corresponding to the file descriptor. */
-    ret = fs_getfilep(fd, &filep);
-    if (ret < 0) {
-        /* The errno value has already been set */
-        return (off64_t)-get_errno();
+    ret = _lseek64(fd, offsetHigh, offsetLow, &res, whence);
+    if (ret != 0) {
+        return ret;
     }
 
-    /* libc seekdir function should set the whence to SEEK_SET, so we can discard
-     * the whence argument here */
-    if (filep->f_oflags & O_DIRECTORY) {
-        /* defensive coding */
-        if (filep->f_dir == NULL) {
-            return (off64_t)-EINVAL;
-        }
-        if (offsetLow == 0) {
-            rewinddir(filep->f_dir);
-        } else {
-            seekdir(filep->f_dir, offsetLow);
-        }
-        ret = telldir(filep->f_dir);
-        if (ret < 0) {
-            return (off64_t)-get_errno();
-        }
-        goto out;
-    }
-
-    /* Then let file_seek do the real work */
-    ret = file_seek64(filep, offset, whence);
-    if (ret < 0) {
-        return (off64_t)-get_errno();
-    }
-
-out:
-    retVal = LOS_ArchCopyToUser(result, &ret, sizeof(off64_t));
+    retVal = LOS_ArchCopyToUser(result, &res, sizeof(off64_t));
     if (retVal != 0) {
         return -EFAULT;
     }
@@ -1399,9 +1336,11 @@ ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt)
 
     /* Process fd convert to system global fd */
     int sysfd = GetAssociatedSystemFd(fd);
-    if ((iov == NULL) || (iovcnt <= 0) || (iovcnt > IOV_MAX)) {
-        ret = writev(sysfd, iov, iovcnt);
-        return -get_errno();
+    if ((iovcnt < 0) || (iovcnt > IOV_MAX)) {
+        return -EINVAL;
+    }
+    if (iov == NULL) {
+        return -EFAULT;
     }
 
     ret = UserIovCopy(&iovRet, iov, iovcnt, &valid_iovcnt);
