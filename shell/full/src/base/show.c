@@ -157,6 +157,12 @@ INT32 OsShellDeinit(INT32 consoleId)
         return -1;
     }
 
+#if defined(LOSCFG_PLATFORM_ROOTFS)
+    if (consoleId == CONSOLE_SERIAL){
+        return 0;
+    }
+#endif
+
     (VOID)LOS_TaskDelete(shellCB->shellEntryHandle);
     (VOID)LOS_EventWrite(&shellCB->shellEvent, CONSOLE_SHELL_KEY_EVENT);
 
