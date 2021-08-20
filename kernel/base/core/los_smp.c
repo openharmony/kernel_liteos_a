@@ -29,22 +29,56 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "los_config.h"
+#include "los_smp.h"
+#include "arch_config.h"
+#include "los_atomic.h"
+#include "los_task_pri.h"
+#include "los_init_pri.h"
+#include "los_process_pri.h"
 #include "los_sched_pri.h"
+#include "los_swtmr_pri.h"
 
-LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
+#ifdef LOSCFG_KERNEL_SMP
+STATIC struct SmpOps *g_smpOps = NULL;
+
+STATIC VOID OsSmpSecondaryInit(VOID *arg)
 {
-    UINT32 uwRet;
+    UNUSED(arg);
+    OsInitCall(LOS_INIT_LEVEL_PLATFORM);
 
-    uwRet = OsMain();
-    if (uwRet != LOS_OK) {
-        return LOS_NOK;
-    }
-    CPU_MAP_SET(0, OsHwIDGet());
+    OsCurrProcessSet(OS_PCB_FROM_PID(OsGetKernelInitProcessID()));
+    OsInitCall(LOS_INIT_LEVEL_KMOD_BASIC);
+
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
+    OsSwtmrInit();
+#endif
+
+    OsInitCall(LOS_INIT_LEVEL_KMOD_EXTENDED);
+
+    OsIdleTaskCreate();
+    OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);
 
     OsSchedStart();
-
-    while (1) {
-        __asm volatile("wfi");
-    }
 }
+
+VOID LOS_SmpOpsSet(struct SmpOps *ops)
+{
+    g_smpOps = ops;
+}
+
+VOID OsSmpInit(VOID)
+{
+    UINT32 cpuNum = 1;  /* Start the secondary cpus. */
+
+    if (g_smpOps == NULL) {
+        PRINT_ERR("Must call the interface(LOS_SmpOpsSet) to register smp operations firstly!\n");
+        return;
+    }
+
+    for (; cpuNum < CORE_NUM; cpuNum++) {
+        HalArchCpuOn(cpuNum, OsSmpSecondaryInit, g_smpOps, 0);
+    }
+
+    return;
+}
+#endif

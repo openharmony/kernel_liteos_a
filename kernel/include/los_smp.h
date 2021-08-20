@@ -29,22 +29,25 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "los_config.h"
-#include "los_sched_pri.h"
+#ifndef _LOS_SMP_H
+#define _LOS_SMP_H
 
-LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
-{
-    UINT32 uwRet;
+#include "smp.h"
 
-    uwRet = OsMain();
-    if (uwRet != LOS_OK) {
-        return LOS_NOK;
-    }
-    CPU_MAP_SET(0, OsHwIDGet());
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+#endif /* __cplusplus */
 
-    OsSchedStart();
+VOID LOS_SmpOpsSet(struct SmpOps *ops);
+VOID OsSmpInit(VOID);
 
-    while (1) {
-        __asm volatile("wfi");
-    }
+#ifdef __cplusplus
+#if __cplusplus
 }
+#endif /* __cplusplus */
+#endif /* __cplusplus */
+
+#endif /* _LOS_SMP_H */
+

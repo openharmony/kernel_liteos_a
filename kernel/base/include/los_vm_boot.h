@@ -57,6 +57,8 @@ typedef struct ArchMmuInitMapping {
     const char *name;
 } LosArchMmuInitMapping;
 
+extern LosArchMmuInitMapping g_archMmuInitMapping[];
+
 extern UINTPTR g_vmBootMemBase;
 extern BOOL g_kHeapInited;
 
