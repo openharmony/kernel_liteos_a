@@ -32,6 +32,7 @@ import("//build/lite/config/component/lite_component.gni")
 declare_args() {
   tee_enable = false
   liteos_name = "OHOS_Image"
+  liteos_skip_make = false
 }
 
 cmd = "if [ -f $device_path/BUILD.gn ]; then echo true; else echo false; fi"
@@ -189,6 +190,9 @@ config("los_common") {
   ]
 
   defines = [ "__LITEOS__" ]
+  if (!defined(LOSCFG_DEBUG_VERSION)) {
+    defines += [ "NDEBUG" ]
+  }
 
   cflags_c = [ "-std=c99" ]
 
@@ -262,6 +266,11 @@ config("los_common") {
       "-mthumb",
       "-Wa,-mimplicit-it=thumb",
     ]
+    if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
+      # llvm-as do not support "-mimplicit-it=thumb" option currently,
+      # so we remove it temporary.
+      cflags -= [ "-Wa,-mimplicit-it=thumb" ]
+    }
   }
 
   asmflags = cflags
@@ -375,7 +384,11 @@ build_ext_component("make") {
   outdir = rebase_path(get_path_info(".", "out_dir"))
   sysroot_path = rebase_path(ohos_current_sysroot)
   arch_cflags = string_join(" ", target_arch_cflags)
-  command = "./build.sh ${board_name} ${ohos_build_compiler} ${root_build_dir} ${ohos_build_type} \"${tee_enable}\""
-  command += " \"${device_company}\" \"${product_path}\" $outdir \"${ohos_version}\" ${sysroot_path} \"${arch_cflags}\""
-  command += " \"${device_path}\""
+  command = "./build.sh \"$board_name\" \"$ohos_build_compiler\" \"$root_build_dir\" \"$ohos_build_type\" \"$tee_enable\""
+  command += " \"$device_company\" \"$product_path\" \"$outdir\" \"$ohos_version\" \"$sysroot_path\" \"$arch_cflags\""
+  command += " \"$device_path\" \"$compile_prefix\""
+  if (liteos_skip_make) {
+    print("build_ext_component \"$target_name\" skipped:", command)
+    command = "true"
+  }
 }

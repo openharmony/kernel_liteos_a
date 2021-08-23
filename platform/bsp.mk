@@ -41,7 +41,7 @@ USB_SRC     :=
 
 ########################## Qemu ARM Virt Options##############################
 
-LITEOS_BASELIB       += -lbsp
+LITEOS_BASELIB       += -lbsp -lbsp_config
 
 PLATFORM_BSP_BASE := $(LITEOSTOPDIR)/platform
 
@@ -53,5 +53,5 @@ PLATFORM_INCLUDE := -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) \
                     -I $(PLATFORM_BSP_BASE)/hw/include \
                     -I $(PLATFORM_BSP_BASE)/include
 
-LIB_SUBDIRS             += $(PLATFORM_BSP_BASE)
+LIB_SUBDIRS             += $(PLATFORM_BSP_BASE) $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)
 LITEOS_PLATFORM_INCLUDE += $(PLATFORM_INCLUDE)

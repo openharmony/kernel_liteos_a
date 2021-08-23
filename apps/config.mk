@@ -27,30 +27,19 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# common dir config
 include $(LITEOSTOPDIR)/config.mk
 
-# output dir config
-OBJOUT := $(APPSTOPDIR)/out
-APPSOUT := $(OBJOUT)/apps
-LIBSOUT := $(OBJOUT)/libs
-IMGOUT  := $(OUT)
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+LLVM_SYSROOT := --sysroot=$(SYSROOT_PATH) $(ARCH_CFLAGS)
+endif
 
 # common flags config
 BASE_OPTS := -ffunction-sections -fdata-sections -fno-omit-frame-pointer -fno-common -fno-strict-aliasing -D_GNU_SOURCE \
-             $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(LITEOS_GCOV_OPTS)
+             $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(LLVM_SYSROOT) $(LITEOS_GCOV_OPTS)
 
-CFLAGS := -std=c99 -fno-exceptions $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-CXXFLAGS := -std=c++11 -fexceptions -fpermissive -frtti $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-LDCFLAGS  := -lc
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LLVM_SYSROOT := --sysroot=$(SYSROOT_PATH) $(ARCH_CFLAGS)
-LDCXXFLGS := -lc++ -lc++abi -lc
-else
-BASE_OPTS += -Wl,-z,relro,-z,now
-LDCXXFLGS := -lstdc++ -lsupc++ -lc
-endif
-COMMON_INCLUDE := -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
+CFLAGS := -std=c99 -fPIE -fno-exceptions $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
+CXXFLAGS := -std=c++11 -fPIE -fexceptions -fpermissive -frtti $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
+LDFLAGS  := -pie -s -Wl,-z,relro,-z,now $(BASE_OPTS) $(LLVM_EXTRA_LD_OPTS)
 
 # alias variable config
 HIDE := @
@@ -58,3 +47,22 @@ MAKE := make
 RM := rm -rf
 CP := cp -rf
 MV := mv -f
+
+APP := $(APPSTOPDIR)/app.mk
+APP_SUBDIRS :=
+
+##build modules config##
+
+ifeq ($(LOSCFG_SHELL), y)
+APP_SUBDIRS += shell
+#APP_SUBDIRS += mksh
+#APP_SUBDIRS += toybox
+endif
+
+ifeq ($(LOSCFG_USER_INIT_DEBUG), y)
+APP_SUBDIRS += init
+endif
+
+ifeq ($(LOSCFG_NET_LWIP_SACK_TFTP), y)
+APP_SUBDIRS += tftp
+endif
