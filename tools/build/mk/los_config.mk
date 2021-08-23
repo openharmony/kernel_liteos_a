@@ -56,16 +56,11 @@ LITEOS_CPU_TYPE :=
 LITEOS_ASOPTS :=
 LITEOS_COPTS_BASE :=
 LITEOS_COPTS_EXTRA :=
-LITEOS_COPTS_EXTRA_INTERWORK :=
 LITEOS_COPTS_DEBUG :=
-LITEOS_COPTS_NODEBUG :=
-LITEOS_INTERWORK :=
 LITEOS_CXXOPTS :=
 LITEOS_CXXOPTS_BASE :=
 LITEOS_LD_OPTS :=
 LITEOS_GCOV_OPTS :=
-## dynload ld options ##
-LITEOS_DYNLOADOPTS :=
 ## macro define ##
 LITEOS_CMACRO :=
 LITEOS_CXXMACRO :=
@@ -77,7 +72,6 @@ LITEOS_LD_SCRIPT :=
 ## c as cxx ld flags ##
 LITEOS_ASFLAGS :=
 LITEOS_CFLAGS :=
-LITEOS_CFLAGS_INTERWORK :=
 LITEOS_LDFLAGS :=
 LITEOS_CXXFLAGS :=
 ## depended lib ##
@@ -395,7 +389,7 @@ endif
 ifeq ($(LOSCFG_DRIVERS_VIDEO), y)
     LITEOS_BASELIB += -lvideo
     LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/video
-    LITEOS_VIDEO_INCLUDE += -I $(LITEOSTOPDIR)/../../third_party/NuttX/include/nuttx/video
+    LITEOS_VIDEO_INCLUDE += -I $(LITEOSTHIRDPARTY)/NuttX/include/nuttx/video
 endif
 
 ############################## Driver Option End #######################################
@@ -426,6 +420,10 @@ ifeq ($(LOSCFG_COMPRESS), y)
     LIB_SUBDIRS       += tools/compress
 endif
 
+ifneq ($(LOSCFG_DEBUG_VERSION), y)
+    LITEOS_COPTS_DEBUG  += -DNDEBUG
+endif
+
 ifeq ($(LOSCFG_COMPILE_DEBUG), y)
     LITEOS_COPTS_OPTMIZE = -O0
     LITEOS_COPTS_OPTION  = -g -gdwarf-2
@@ -435,13 +433,10 @@ else
     else
         LITEOS_COPTS_OPTMIZE = -O2
     endif
-    LITEOS_COPTS_OPTMIZE_NODEBUG = -O0
 endif
     LITEOS_COPTS_DEBUG  += $(LITEOS_COPTS_OPTION) $(LITEOS_COPTS_OPTMIZE)
-    LITEOS_INTERWORK += $(LITEOS_COPTS_OPTION) $(LITEOS_COPTS_OPTMIZE)
     LITEOS_CXXOPTS_BASE += $(LITEOS_COPTS_OPTION) $(LITEOS_COPTS_OPTMIZE)
     LITEOS_ASOPTS   += $(LITEOS_COPTS_OPTION)
-    LITEOS_NODEBUG  += $(LITEOS_COPTS_OPTMIZE_NODEBUG)
 
 ifeq ($(LOSCFG_SHELL), y)
     LITEOS_BASELIB += -lshell
@@ -577,11 +572,11 @@ endif
 endif
 LITEOS_COPTS_EXTRA += -fno-short-enums
 ifeq ($(LOSCFG_THUMB), y)
-LITEOS_COPTS_EXTRA_INTERWORK := $(LITEOS_COPTS_EXTRA) -mthumb -Wa,-mimplicit-it=thumb
-LITEOS_CMACRO     += -DLOSCFG_INTERWORK_THUMB
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+LITEOS_CFLAGS_INTERWORK := -mthumb -mimplicit-it=thumb
 else
-LITEOS_COPTS_EXTRA_INTERWORK := $(LITEOS_COPTS_EXTRA)
-#-fno-inline
+LITEOS_CFLAGS_INTERWORK := -mthumb -Wa,-mimplicit-it=thumb
+endif
 endif
 
 # kernel configuration macros
@@ -591,12 +586,7 @@ ifneq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LITEOS_LD_OPTS += -nostartfiles
 endif
 LITEOS_LD_OPTS += -static --gc-sections
-LITEOS_LD_OPTS += $(LITEOS_DYNLOADOPTS)
 LITEOS_LD_PATH += -L$(OUT)/lib
-ifeq ($(LOSCFG_VENDOR) ,y)
-LITEOS_LD_PATH +=  -L$(OUT)/lib/rdk -L$(OUT)/lib/sdk \
-                   -L$(OUT)/lib/main_server
-endif
 
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LITEOS_LD_SCRIPT := -T$(LITEOSTOPDIR)/tools/build/liteos_llvm.ld
@@ -614,17 +604,3 @@ LITEOS_BASELIB     += $(shell $(_CC) "-print-file-name=libgcc_eh.a")
 endif
 LITEOS_BASELIB     += $(shell $(_CC) "-print-libgcc-file-name")
 LITEOS_LIB_INCLUDE += -isystem $(shell $(_CC) "-print-file-name=include")
-
-LITEOS_CXXINCLUDE = $(LITEOS_INCLUDE)
-
-LITEOS_COPTS_NODEBUG    := $(LITEOS_NODEBUG) $(LITEOS_COPTS_BASE) $(LITEOS_COPTS_EXTRA)
-LITEOS_COPTS_INTERWORK  := $(LITEOS_INTERWORK) $(LITEOS_COPTS_BASE) $(LITEOS_COPTS_EXTRA_INTERWORK)
-LITEOS_BASE_INCLUDE := $(LITEOS_KERNEL_INCLUDE) $(LITEOS_PLATFORM_INCLUDE) \
-                       $(LITEOS_LIB_INCLUDE) $(LITEOS_FS_INCLUDE) \
-                       $(LITEOS_EXTKERNEL_INCLUDE) \
-                       $(LITEOS_COMPAT_INCLUDE) $(LITEOS_DRIVERS_INCLUDE) \
-                       $(LOSCFG_TOOLS_DEBUG_INCLUDE) $(LITEOS_NET_INCLUDE)
-LITEOS_CFLAGS_INTERWORK := $(LITEOS_COPTS_INTERWORK) $(LITEOS_CMACRO) \
-                           $(LITEOS_IMAGE_MACRO) $(LITEOS_BASE_INCLUDE)
-LITEOS_CFLAGS_NODEBUG := $(LITEOS_COPTS_NODEBUG) $(LITEOS_CMACRO) \
-                         $(LITEOS_IMAGE_MACRO) $(LITEOS_BASE_INCLUDE)

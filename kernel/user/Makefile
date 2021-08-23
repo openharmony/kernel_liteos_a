@@ -32,17 +32,8 @@ include $(LITEOSTOPDIR)/config.mk
 MODULE_NAME := userinit
 
 LOCAL_INCLUDE := \
-    -I $(LITEOSTOPDIR)/kernel/base/include\
-    -I $(LITEOSTOPDIR)/kernel/include \
-    -I $(LITEOSTOPDIR)/kernel/extended/include \
     -I $(LITEOSTOPDIR)/syscall \
-    -I $(LITEOSTOPDIR)/fs/vfs \
-    -I $(LITEOSTHIRDPARTY)/FatFs/source \
-    -I $(LITEOSTOPDIR)/fs/proc/include \
-    -I $(LITEOSTOPDIR)/fs/jffs2/include\
-    -I $(LITEOSTOPDIR)/fs/nfs/include\
-    -I $(LITEOSTOPDIR)/bsd/compat/linuxkpi/include \
-    -I $(LITEOSTOPDIR)/kernel/user/include
+    -I include
 
 LOCAL_SRCS := $(wildcard src/*.c) \
               $(wildcard src/*.S)
