@@ -262,14 +262,11 @@ config("los_common") {
   }
 
   if (defined(LOSCFG_THUMB)) {
-    cflags += [
-      "-mthumb",
-      "-Wa,-mimplicit-it=thumb",
-    ]
+    cflags += [ "-mthumb" ]
     if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
-      # llvm-as do not support "-mimplicit-it=thumb" option currently,
-      # so we remove it temporary.
-      cflags -= [ "-Wa,-mimplicit-it=thumb" ]
+      cflags += [ "-mimplicit-it=thumb" ]
+    } else {
+      cflags += [ "-Wa,-mimplicit-it=thumb" ]
     }
   }
 

@@ -28,6 +28,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 LITEOSTOPDIR := $(realpath $(dir $(firstword $(MAKEFILE_LIST))))
+export LITEOSTOPDIR
 
 APPS = apps
 ROOTFS = rootfs
@@ -64,7 +65,6 @@ LITEOS_MENUCONFIG_H ?= $(LITEOSTOPDIR)/config.h
 LITEOS_CONFIG_FILE ?= $(LITEOSTOPDIR)/.config
 
 # export los_config.mk related environment variables
-export LITEOSTOPDIR
 export LITEOS_MENUCONFIG_H
 export LITEOS_CONFIG_FILE
 
