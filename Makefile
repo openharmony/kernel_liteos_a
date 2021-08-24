@@ -180,8 +180,8 @@ else
 	$(HIDE)cp -fp $$($(CC) $(LITEOS_CFLAGS) -print-file-name=libgcc_s.so.1) $(OUT)/musl
 	$(HIDE)cp -fp $$($(GPP) $(LITEOS_CXXFLAGS) -print-file-name=libstdc++.so.6) $(OUT)/musl
 endif
-	$(HIDE)$(STRIP) $(OUT)/musl/*
 	$(HIDE)$(LITEOS_SCRIPTPATH)/make_rootfs/rootfsdir.sh $(OUT) $(ROOTFS_DIR)
+	$(HIDE)shopt -s nullglob && $(STRIP) $(ROOTFS_DIR)/bin/* $(ROOTFS_DIR)/lib/*
 ifneq ($(VERSION),)
 	$(HIDE)$(LITEOS_SCRIPTPATH)/make_rootfs/releaseinfo.sh "$(VERSION)" $(ROOTFS_DIR)
 endif
