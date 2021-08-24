@@ -28,53 +28,24 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/times.h>
-#include <errno.h>
 #include "lt_clock_test.h"
-#include <osTest.h>
 
-/* When clock time is changed, timers for a relative interval are unaffected,
- * but timers for an absolute point in time are affected.
- */
 static int ClockTest(void)
 {
-    clockid_t clk = CLOCK_MONOTONIC_COARSE;
-    struct timespec res, tp, oldtp;
+    pthread_t thread;
+    clockid_t clockid;
     int ret;
+    struct timespec ts;
 
-    /* get clock resolution */
-    ret = clock_getres(clk, &res);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    /* get current monotonic coarse time */
-    ret = clock_gettime(clk, &oldtp);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    LogPrintln("sleep 2 seconds\n");
-    sleep(2); // 2, seconds.
-
-    tp.tv_sec = 5 * res.tv_sec; // 5, times the number of seconds.
-    tp.tv_nsec = 5 * res.tv_nsec; // 5, times the number of nseconds.
-
-    /* set monotonic coarse time */
-    ret = clock_settime(clk, &tp);
+    /* check param invalid */
+    ret = clock_gettime(-2050, &ts); // 2050, clock id.
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EOPNOTSUPP, errno);
-
-    LogPrintln("get coarse monotonic time clock again\n");
-
-    /* get current monotonic coarse time again */
-    ret = clock_gettime(clk, &tp);
-    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
 
     return 0;
 }
 
-void ClockTest007(void)
+void ClockTest004(void)
 {
     TEST_ADD_CASE(__FUNCTION__, ClockTest, TEST_POSIX, TEST_TIMES, TEST_LEVEL0, TEST_FUNCTION);
 }

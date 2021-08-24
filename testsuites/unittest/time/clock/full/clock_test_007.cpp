@@ -42,39 +42,42 @@
  */
 static int ClockTest(void)
 {
-    clockid_t clk = CLOCK_MONOTONIC;
+    clockid_t clk = CLOCK_MONOTONIC_COARSE;
     struct timespec res, tp, oldtp;
     int ret;
-
+    int passflag = 0;
     /* get clock resolution */
     ret = clock_getres(clk, &res);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(res.tv_sec, CLOCK_COARSE_RES_SEC, res.tv_sec);
+    ICUNIT_ASSERT_EQUAL(res.tv_nsec, CLOCK_COARSE_RES_NSEC, res.tv_nsec);
 
-    /* get current monotonic time */
+    /* get current monotonic coarse time */
     ret = clock_gettime(clk, &oldtp);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
-
-    LogPrintln("sleep 2 seconds\n");
-    sleep(2); // 2, seconds.
+    printf("The current monotonic coarse time: sec is %lld, nsec is %ld\n", oldtp.tv_sec, oldtp.tv_nsec);
 
     tp.tv_sec = 5 * res.tv_sec; // 5, times the number of seconds.
-    tp.tv_nsec = 5 * res.tv_nsec; // 5, times the number of nseconds.
+    tp.tv_nsec = res.tv_nsec;
 
-    /* set real time */
+    /* set monotonic coarse time */
     ret = clock_settime(clk, &tp);
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
-    ICUNIT_ASSERT_EQUAL(errno, EINVAL, errno);
+    ICUNIT_ASSERT_EQUAL(errno, EOPNOTSUPP, errno);
 
-    LogPrintln("get monotonic time clock again\n");
+    printf("get coarse monotonic time clock again\n");
 
-    /* get current monotonic time again */
+    /* get current monotonic coarse time again */
     ret = clock_gettime(clk, &tp);
+    passflag = (tp.tv_sec >= oldtp.tv_sec) && (tp.tv_sec <= oldtp.tv_sec + 1);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(passflag, 1, passflag);
+    printf("The current monotonic coarse time again: sec is %lld, nsec is %ld\n", tp.tv_sec, tp.tv_nsec);
 
     return 0;
 }
 
-void ClockTest008(void)
+void ClockTest007(void)
 {
     TEST_ADD_CASE(__FUNCTION__, ClockTest, TEST_POSIX, TEST_TIMES, TEST_LEVEL0, TEST_FUNCTION);
 }

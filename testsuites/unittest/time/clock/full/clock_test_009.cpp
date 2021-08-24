@@ -28,21 +28,57 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/times.h>
+#include <errno.h>
 #include "lt_clock_test.h"
+#include <osTest.h>
 
-static int ClockMonotonicTest(void)
+/* When clock time is changed, timers for a relative interval are unaffected,
+ * but timers for an absolute point in time are affected.
+ */
+static int ClockTest(void)
 {
-    clockid_t clk = CLOCK_MONOTONIC;
-    struct timespec res, ts;
+    clockid_t clk = CLOCK_MONOTONIC_RAW;
+    struct timespec res, tp, oldtp;
     int ret;
+    int passflag = 0;
 
-    ret = clock_gettime(clk, &ts);
+    /* get clock resolution */
+    ret = clock_getres(clk, &res);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(res.tv_sec, CLOCK_RES_SEC, res.tv_sec);
+    ICUNIT_ASSERT_EQUAL(res.tv_nsec, CLOCK_RES_NSEC, res.tv_nsec);
+
+    /* get current monotonic raw time */
+    ret = clock_gettime(clk, &oldtp);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    printf("The current monotonic raw time: sec is %lld, nsec is %ld\n", oldtp.tv_sec, oldtp.tv_nsec);
+
+    tp.tv_sec = 5 * res.tv_sec; // 5, times the number of seconds.
+    tp.tv_nsec = res.tv_nsec;
+
+    /* set monotonic raw time */
+    ret = clock_settime(clk, &tp);
+    ICUNIT_ASSERT_EQUAL(ret, -1, ret);
+    ICUNIT_ASSERT_EQUAL(errno, EOPNOTSUPP, errno);
+
+    printf("get monotonic raw time clock again\n");
+
+    /* get current monotonic raw time again */
+    ret = clock_gettime(clk, &tp);
+    passflag = (tp.tv_sec >= oldtp.tv_sec) && (tp.tv_sec <= oldtp.tv_sec + 1);
+    ICUNIT_ASSERT_EQUAL(ret, 0, ret);
+    ICUNIT_ASSERT_EQUAL(passflag, 1, passflag);
+    printf("The current monotonic raw time again: sec is %lld, nsec is %ld\n", tp.tv_sec, tp.tv_nsec);
 
     return 0;
 }
 
-void ClockTest002(void)
+void ClockTest009(void)
 {
-    TEST_ADD_CASE(__FUNCTION__, ClockMonotonicTest, TEST_POSIX, TEST_TIMES, TEST_LEVEL0, TEST_FUNCTION);
+    TEST_ADD_CASE(__FUNCTION__, ClockTest, TEST_POSIX, TEST_TIMES, TEST_LEVEL0, TEST_FUNCTION);
 }
