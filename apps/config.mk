@@ -30,16 +30,24 @@
 include $(LITEOSTOPDIR)/config.mk
 
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LLVM_SYSROOT := --sysroot=$(SYSROOT_PATH) $(ARCH_CFLAGS)
+LLVM_SYSROOT := --sysroot=$(SYSROOT_PATH)
 endif
 
 # common flags config
-BASE_OPTS := -ffunction-sections -fdata-sections -fno-omit-frame-pointer -fno-common -fno-strict-aliasing -D_GNU_SOURCE \
-             $(LITEOS_SSP) $(LITEOS_CORE_COPTS) $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(LLVM_SYSROOT) $(LITEOS_GCOV_OPTS)
+BASE_OPTS := -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE
+BASE_OPTS += -ffunction-sections -fdata-sections -fno-omit-frame-pointer -fno-common -fno-strict-aliasing
+BASE_OPTS += -fstack-protector-strong -Wall -Werror -flto
+BASE_OPTS += $(LITEOS_CORE_COPTS) $(LLVM_EXTRA_OPTS) $(LLVM_SYSROOT) $(LITEOS_GCOV_OPTS)
 
-CFLAGS := -std=c99 -fPIE -fno-exceptions $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-CXXFLAGS := -std=c++11 -fPIE -fexceptions -fpermissive -frtti $(BASE_OPTS) $(LITEOS_COPTS_OPTMIZE)
-LDFLAGS  := -pie -s -Wl,-z,relro,-z,now $(BASE_OPTS) $(LLVM_EXTRA_LD_OPTS)
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+OPTMIZE_OPTS = -Oz
+else
+OPTMIZE_OPTS = -O2
+endif
+
+CFLAGS := -std=c99 -fPIE -fno-exceptions $(BASE_OPTS) $(OPTMIZE_OPTS)
+CXXFLAGS := -std=c++11 -fPIE -fexceptions -fpermissive -frtti $(BASE_OPTS) $(OPTMIZE_OPTS)
+LDFLAGS  := -pie -Wl,-z,relro,-z,now -O2 $(BASE_OPTS) $(LLVM_EXTRA_LD_OPTS)
 
 # alias variable config
 HIDE := @
@@ -55,8 +63,8 @@ APP_SUBDIRS :=
 
 ifeq ($(LOSCFG_SHELL), y)
 APP_SUBDIRS += shell
-#APP_SUBDIRS += mksh
-#APP_SUBDIRS += toybox
+APP_SUBDIRS += mksh
+APP_SUBDIRS += toybox
 endif
 
 ifeq ($(LOSCFG_USER_INIT_DEBUG), y)

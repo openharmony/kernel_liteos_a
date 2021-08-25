@@ -595,12 +595,9 @@ LITEOS_LD_SCRIPT := -T$(LITEOSTOPDIR)/tools/build/liteos.ld
 endif
 
 ##compiler##
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-_CC = $(CC) $(LLVM_EXTRA_OPTS) $(LLVM_EXTRA_LD_OPTS) $(LITEOS_CORE_COPTS)
-LITEOS_BASELIB     += $(shell $(_CC) "-print-file-name=libunwind.a") --no-dependent-libraries
-else
 _CC = $(CC) $(LITEOS_CORE_COPTS)
-LITEOS_BASELIB     += $(shell $(_CC) "-print-file-name=libgcc_eh.a")
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+_CC += $(LLVM_EXTRA_OPTS) $(LLVM_EXTRA_LD_OPTS)
 endif
 LITEOS_BASELIB     += $(shell $(_CC) "-print-libgcc-file-name")
 LITEOS_LIB_INCLUDE += -isystem $(shell $(_CC) "-print-file-name=include")

@@ -29,40 +29,25 @@
 
 include $(APPSTOPDIR)/config.mk
 
-TOYBOX:= toybox
+BUILD_DIR := $(OUT)/toybox_build
+BUILD_LOG := $(BUILD_DIR)/build.log
 
-TOYBOX_DIR := $(shell pwd)
+CFLAGS += -Wno-error
 
-APPS_OUT := $(OUT)/bin
-BUILD_DIR := $(TOYBOX_DIR)/build
-BUILD_LOG := $(TOYBOX_DIR)/build.log
-OUTNAME := $(TOYBOX)
-
-CFLAGS := -D_FORTIFY_SOURCE=2 -fstack-protector-strong
-LDFLAGS :=
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-CFLAGS += --target=$(LLVM_TARGET) $(LLVM_SYSROOT)
-LDFLAGS += --target=$(LLVM_TARGET) $(LLVM_SYSROOT)
-endif
-
-$(TOYBOX):
+all:
 ifneq ($(wildcard $(BUILD_DIR)),)
-	$(HIDE)echo "not clean, rebuilding now";
+	$(HIDE)echo "not clean, rebuilding now"
 else
-	$(HIDE)mkdir $(BUILD_DIR)
-	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/$(TOYBOX)/. $(BUILD_DIR)
-	$(HIDE)$(CP) -p $(LITEOSTHIRDPARTY)/$(TOYBOX)/porting/liteos_a/. $(BUILD_DIR)
+	$(HIDE)mkdir -p $(BUILD_DIR)
+	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/toybox/. $(BUILD_DIR)
+	$(HIDE)$(CP) $(LITEOSTHIRDPARTY)/toybox/porting/liteos_a/. $(BUILD_DIR)
+	$(HIDE)$(CP) liteos_a_custom.config $(BUILD_DIR)/../
 endif
-
-	$(HIDE)CFLAGS="$(CFLAGS)" CC="$(CC)" OUTNAME="$(OUTNAME)" \
-	LDFLAGS="$(LDFLAGS)" STRIP="$(STRIP)" \
+	$(HIDE)unset KCONFIG_CONFIG CROSS_COMPILE && \
+	env CC="$(CC)" OUTNAME="$(OUT)/bin/toybox" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" STRIP="$(STRIP)" \
 	make -C $(BUILD_DIR) toybox -j> $(BUILD_LOG) 2>&1
-	$(HIDE)$(CP) $(BUILD_DIR)/$(TOYBOX) .
-	$(HIDE)mkdir -p $(APPS_OUT)
-	$(HIDE)$(CP) $(TOYBOX) $(APPS_OUT)
-	$(HIDE)$(RM) $(BUILD_DIR) $(BUILD_LOG)
 
 clean:
-	$(HIDE)$(RM) $(TOYBOX) $(BUILD_DIR) $(BUILD_LOG)
+	$(HIDE)$(RM) $(BUILD_DIR)
 
-.PHONY: all $(TOYBOX) clean
+.PHONY: all clean

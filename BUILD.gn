@@ -378,7 +378,7 @@ group("liteos_a") {
 
 build_ext_component("make") {
   exec_path = rebase_path(".", root_build_dir)
-  outdir = rebase_path(get_path_info(".", "out_dir"))
+  outdir = rebase_path("$target_out_dir/${target_name}_out")
   sysroot_path = rebase_path(ohos_current_sysroot)
   arch_cflags = string_join(" ", target_arch_cflags)
   command = "./build.sh \"$board_name\" \"$ohos_build_compiler\" \"$root_build_dir\" \"$ohos_build_type\" \"$tee_enable\""
