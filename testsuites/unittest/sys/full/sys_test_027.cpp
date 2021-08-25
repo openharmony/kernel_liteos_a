@@ -41,7 +41,7 @@ static UINT32 TestCase(VOID)
     int id1 = 1;
     int id2 = 2;
     char *str1 = "/storage/1.txt";
-    char *str2 = "/storage/2.txt";
+    char *str2 = "/etc/2.txt";
 
     fd = open(str1, O_CREAT);
     if (fd < 0) {
