@@ -1279,7 +1279,7 @@ OUT:
     return ret;
 }
 
-int SysFstat(int fd, struct stat *buf)
+int SysFstat(int fd, struct kstat *buf)
 {
     int ret;
     struct stat bufRet = {0};
@@ -1302,7 +1302,7 @@ int SysFstat(int fd, struct stat *buf)
         return -get_errno();
     }
 
-    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct stat));
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         return -EFAULT;
     }
@@ -2068,7 +2068,7 @@ OUT:
 }
 #endif
 
-int SysFstat64(int fd, struct stat64 *buf)
+int SysFstat64(int fd, struct kstat *buf)
 {
     int ret;
     struct stat64 bufRet = {0};
@@ -2081,7 +2081,7 @@ int SysFstat64(int fd, struct stat64 *buf)
         return -get_errno();
     }
 
-    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct stat64));
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         return -EFAULT;
     }
@@ -2385,7 +2385,7 @@ OUT:
     return ret;
 }
 
-int SysFstatat64(int dirfd, const char *restrict path, struct stat *restrict buf, int flag)
+int SysFstatat64(int dirfd, const char *restrict path, struct kstat *restrict buf, int flag)
 {
     int ret;
     struct stat bufRet = {0};
@@ -2415,7 +2415,7 @@ int SysFstatat64(int dirfd, const char *restrict path, struct stat *restrict buf
         goto OUT;
     }
 
-    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct stat));
+    ret = LOS_ArchCopyToUser(buf, &bufRet, sizeof(struct kstat));
     if (ret != 0) {
         ret = -EFAULT;
         goto OUT;
