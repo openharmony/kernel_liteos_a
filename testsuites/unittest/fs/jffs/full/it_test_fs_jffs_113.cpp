@@ -28,15 +28,15 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "It_fs_jffs.h"
+#include "It_vfs_jffs.h"
+#include <pthread.h>
 
 static FILE *g_filep;
 #define NUM 64
 #define COUNT 10
 
-void *DoChild()
+void *DoChild(void *)
 {
-    int fd = 0;
     int ret, count;
     char buf[NUM];
 

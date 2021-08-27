@@ -231,6 +231,7 @@ extern int SysSymlinkat(const char *target, int dirfd, const char *linkpath);
 extern ssize_t SysReadlinkat(int dirfd, const char *pathname, char *buf, size_t bufsize);
 extern int SysUnlink( const char *pathname);
 extern int SysExecve(const char *fileName, char *const *argv, char *const *envp);
+extern int SysFchdir(int fd);
 extern int SysChdir(const char *path);
 extern int SysUtimensat(int fd, const char *path, struct timespec times[2], int flag);
 extern int SysFchmodat(int fd, const char *path, mode_t mode, int flag);

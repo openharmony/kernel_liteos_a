@@ -28,70 +28,59 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "It_fs_jffs.h"
-
-#define TEST_STRLEN 30
+#include "It_vfs_jffs.h"
 
 static int TestCase(void)
 {
+    CHAR pathname1[JFFS_STANDARD_NAME_LENGTH] = JFFS_MAIN_DIR0;
+    CHAR pathname2[JFFS_STANDARD_NAME_LENGTH] = JFFS_MAIN_DIR0;
+    CHAR *dname = NULL;
+    INT32 ret;
     INT32 fd = 0;
-    INT32 ret = 0;
-    CHAR pathname[TEST_STRLEN] = JFFS_MAIN_DIR0;
-    CHAR pathname1[TEST_STRLEN] = JFFS_PATH_NAME0;
-    CHAR pathname2[TEST_STRLEN] = JFFS_PATH_NAME0;
-    CHAR *pathname3 = NULL;
-    CHAR buf1[TEST_STRLEN] = "";
-    CHAR buf2[TEST_STRLEN] = "";
-    CHAR *pret = NULL;
-    DIR *dir = NULL;
+    DIR *dir1 = NULL;
+    DIR *dir2 = NULL;
 
-    ret = mkdir(pathname1, 0777);
+    dir1 = opendir(pathname1);
+    ICUNIT_GOTO_NOT_EQUAL(dir1, NULL, dir1, EXIT);
+
+    ret = closedir(dir1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    pathname3 = pathname2;
-    strcat_s(pathname2, TEST_STRLEN, "/test1");
+    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test123");
     ret = mkdir(pathname2, 0777);
-    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+    ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT1);
 
     fd = open(pathname2, O_DIRECTORY);
-    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
+    ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT1);
 
-    pret = getcwd(buf1, TEST_STRLEN);
-    ICUNIT_GOTO_NOT_EQUAL(pret, NULL, pret, EXIT1);
-    ICUNIT_GOTO_STRING_EQUAL(buf1, pathname, buf1, EXIT1);
+    dir2 = fdopendir(fd);
+    ICUNIT_GOTO_NOT_EQUAL(dir2, NULL, dir2, EXIT2);
 
-    ret = fchdir(fd);
-    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
-
-    pret = getcwd(buf2, TEST_STRLEN);
-    ICUNIT_GOTO_NOT_EQUAL(pret, NULL, pret, EXIT1);
-    ICUNIT_GOTO_STRING_EQUAL(buf2, pathname3, buf2, EXIT1);
-
-    ret = chdir(pathname);
-    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
-
-    ret = close(fd);
-    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
+    ret = closedir(dir2);
+    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT2);
 
     ret = rmdir(pathname2);
-    ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
-
-    ret = rmdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
     return JFFS_NO_ERROR;
-EXIT1:
-    if (fd > 0) {
+EXIT2:
+    if (fd) {
         close(fd);
     }
-    unlink(pathname2);
+    if (dir2) {
+        closedir(dir2);
+    }
+EXIT1:
+    remove(pathname2);
+    return JFFS_IS_ERROR;
 EXIT:
-    rmdir(pathname2);
-    rmdir(pathname1);
+    if (dir1) {
+        closedir(dir1);
+    }
     return JFFS_IS_ERROR;
 }
 
-void ItTestFsJffs101(void)
+void ItTestFsJffs112(void)
 {
-    TEST_ADD_CASE("It_Test_Fs_Jffs_101", TestCase, TEST_VFS, TEST_JFFS, TEST_LEVEL0, TEST_FUNCTION);
+    TEST_ADD_CASE("It_Test_Fs_Jffs_112", TestCase, TEST_VFS, TEST_JFFS, TEST_LEVEL0, TEST_FUNCTION);
 }
