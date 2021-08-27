@@ -207,6 +207,12 @@ sources_pressure = [
 ]
 
 sources_full = [
+  "jffs/full/It_test_faccessat_001.cpp",
+  "jffs/full/It_test_faccessat_002.cpp",
+  "jffs/full/It_test_fstatat_001.cpp",
+  "jffs/full/It_test_fstatat_002.cpp",
+  "jffs/full/It_test_fstatfs_001.cpp",
+  "jffs/full/It_test_fstatfs_002.cpp",
   "jffs/full/it_test_fs_jffs_001.cpp",
   "jffs/full/it_test_fs_jffs_002.cpp",
   "jffs/full/it_test_fs_jffs_003.cpp",
