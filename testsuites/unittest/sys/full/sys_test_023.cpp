@@ -57,10 +57,12 @@ static UINT32 TestCase(VOID)
     ICUNIT_ASSERT_EQUAL(grp3->gr_gid, 2, -1);
 
     setgrent();
+
     grp4 = getgrent();
     ICUNIT_ASSERT_NOT_EQUAL(grp4, nullptr, -1);
     ICUNIT_ASSERT_STRING_EQUAL(grp1->gr_name, grp4->gr_name, -1);
 
+    setgrent();
     return 0;
 }
 
