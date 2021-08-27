@@ -46,9 +46,8 @@ userinit = "lib$module_name.O"
 executable(userinit) {
   output_dir = target_out_dir
   deps = [ ":$module_name" ]
-  configs = []
-  configs += [ "$LITEOSTOPDIR:los_config" ]
   ldflags = [
+    "-nostdlib",
     "-static",
     "-Wl,-r",
   ]

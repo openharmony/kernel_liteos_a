@@ -85,7 +85,7 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     taskContext->LR = (UINTPTR)OsTaskExit;  /* LR should be kept, to distinguish it's THUMB or ARM instruction */
     taskContext->R0 = taskID;               /* R0 */
 
-#ifdef LOSCFG_INTERWORK_THUMB
+#ifdef LOSCFG_THUMB
     taskContext->regCPSR = PSR_MODE_SVC_THUMB; /* CPSR (Enable IRQ and FIQ interrupts, THUMNB-mode) */
 #else
     taskContext->regCPSR = PSR_MODE_SVC_ARM;   /* CPSR (Enable IRQ and FIQ interrupts, ARM-mode) */
@@ -123,7 +123,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR tas
 {
     LOS_ASSERT(context != NULL);
 
-#ifdef LOSCFG_INTERWORK_THUMB
+#ifdef LOSCFG_THUMB
     context->regCPSR = PSR_MODE_USR_THUMB;
 #else
     context->regCPSR = PSR_MODE_USR_ARM;

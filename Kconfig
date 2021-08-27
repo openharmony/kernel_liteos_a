@@ -26,27 +26,56 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-#
-# For a description of the syntax of this configuration file,
-# see extra/config/Kconfig-language.txt
-#
+
 mainmenu "Huawei LiteOS Configuration"
 
 menu "Compiler"
 choice
-    prompt "LiteOS_Compiler_Type"
+    prompt "Compiler type"
     default COMPILER_CLANG_LLVM
     help
-      Enable arm-himix100 or aarch64-himix100 or compiler.
+      Choose compiler type.
 
-config COMPILER_HIMIX_32
-    bool "arm-linux-ohoseabi"
+config COMPILER_GCC
+    bool "GCC"
+
+config CROSS_COMPILE
+    string "GCC cross-compile toolchain prefix"
+    depends on COMPILER_GCC
+    default "arm-linux-ohoseabi-" if ARCH_ARM_AARCH32
 
 config COMPILER_CLANG_LLVM
-    bool "clang-llvm"
+    bool "Clang"
+
+config LLVM_TARGET
+    string "Clang LLVM target"
+    depends on COMPILER_CLANG_LLVM
+    default "arm-liteos" if ARCH_ARM_AARCH32
 
 endchoice
+
+config COMPILE_DEBUG
+    bool "Enable debug options"
+    default n
+    help
+      Answer Y to add -g option in compile command.
+
+config COMPILE_OPTIMIZE
+    bool "Enable code optimization options"
+    default y
+    help
+      Answer Y to add optimization options for efficient code.
+      The final binary size will be smaller and execute faster.
+      But the debugging experience may be worst somehow.
+
+config COMPILE_OPTIMIZE_SIZE
+    bool "Enable code size optimization options" if COMPILE_OPTIMIZE
+    default y
+    help
+      Answer Y to add optimization options for small code size.
+      The final binary size will be smaller.
+      But the compile time may be much longer.
+
 endmenu
 
 menu "Platform"
@@ -123,11 +152,11 @@ source "net/Kconfig"
 
 ######################## config options of debug ########################
 menu "Debug"
-config COMPILE_DEBUG
-    bool "Enable GCC -g Option"
+config GDB
+    bool "Enable gdb functions"
     default n
     help
-      Answer Y to add -g option in gcc command. But the LiteOS size will be much larger.
+      Answer Y to enable gdb functions.
 
 config PLATFORM_ADAPT
     bool "Enable Os_adapt"
@@ -164,15 +193,9 @@ config ENABLE_MAGICKEY
 config THUMB
     bool "Enable Thumb"
     default n
-    select INTERWORK_THUMB
+    depends on ARCH_ARM
     help
       Answer Y to build thumb version.  This will make LiteOS smaller.
-
-config INTERWORK_THUMB
-    bool "Enable interwork Thumb" if THUMB
-    default n
-    help
-      Answer Y to enable interwork thumb.
 
 config PLATFORM_DVFS
     bool "Enable Dvfs"

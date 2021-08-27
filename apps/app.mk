@@ -52,6 +52,17 @@ LOCAL_CPPGCH := $(patsubst %.h,%.h.gch,$(LOCAL_CPPHS))
 
 all : $(APP)
 
+define ECHO =
+ifeq ($$(HIDE),@)
+_$(1) := $($(1))
+$(1) = echo "  $(1)" $$(patsubst $$(OUT)/%,%,$$@) && $$(_$(1))
+endif
+endef
+$(foreach cmd,CC GPP AS,$(eval $(call ECHO,$(cmd))))
+
+LOCAL_FLAGS += -MD -MP
+-include $(LOCAL_OBJS:%.o=%.d)
+
 $(LOCAL_COBJS): $(OBJOUT)/%.o: %.c
 	$(HIDE)$(OBJ_MKDIR)
 	$(HIDE)$(CC) $(CFLAGS) $(LOCAL_FLAGS) $(LOCAL_CFLAGS) -c $< -o $@
@@ -83,7 +94,7 @@ LOCAL_GCH := $(LOCAL_CGCH) $(LOCAL_CPPGCH)
 $(LOCAL_OBJS): $(LOCAL_GCH)
 $(APP): $(LOCAL_OBJS)
 	$(HIDE)$(OBJ_MKDIR)
-	$(HIDE)$(GPP) $(LDFLAGS) $^ -o $@
+	$(HIDE)$(GPP) $(LDFLAGS) -o $@ $^
 
 clean:
 	$(HIDE)$(RM) $(APP) $(OBJOUT) $(LOCAL_GCH) *.bak *~

@@ -51,3 +51,11 @@ LITEOS_CXXFLAGS := $(LITEOS_CXXOPTS)     $(LITEOS_CXXMACRO) \
 LITEOS_LDFLAGS  := $(LITEOS_LD_OPTS)     $(LITEOS_LD_PATH) \
                    $(LITEOS_LD_SCRIPT)
 
+# clear all local variables
+LOCAL_FLAGS    :=
+LOCAL_CFLAGS   :=
+LOCAL_CPPFLAGS :=
+LOCAL_ASFLAGS  :=
+LOCAL_SRCS     :=
+LOCAL_CHS      :=
+LOCAL_CPPHS    :=

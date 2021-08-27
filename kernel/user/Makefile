@@ -42,15 +42,14 @@ LOCAL_FLAGS :=  $(LOCAL_INCLUDE)
 
 include $(MODULE)
 
-LIBO := $(OUT)/lib/lib$(MODULE_NAME).O
+USERINIT := $(OUT)/lib/lib$(MODULE_NAME).O
 
-$(LIBO): $(LIBA)
-	$(HIDE) $(LD) -r -o $@ --whole-archive $< --no-whole-archive
-	$(HIDE) $(RM) $<
+$(USERINIT): $(MODULE)
+	$(HIDE)$(LD) -r -o $@ --whole-archive $< --no-whole-archive
 
-clean2:
-	$(HIDE) $(RM) $(LIBO)
+clean_userinit:
+	$(HIDE)$(RM) $(USERINIT)
 
-all: $(LIBO)
-clean: clean2
-.PHONY: clean2
+all: $(USERINIT)
+clean: clean_userinit
+.PHONY: clean_userinit
