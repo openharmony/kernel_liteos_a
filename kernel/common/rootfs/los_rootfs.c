@@ -81,6 +81,17 @@ STATIC INT32 AddEmmcParts(INT32 rootAddr, INT32 rootSize, INT32 userAddr, INT32 
         return LOS_NOK;
     }
 
+#ifdef LOSCFG_PLATFORM_PATCHFS
+    UINT64 patchStartCnt = userAddr / EMMC_SEC_SIZE;
+    UINT64 patchSizeCnt = PATCH_SIZE / EMMC_SEC_SIZE;
+    ret = add_mmc_partition(emmc, patchStartCnt, patchSizeCnt);
+    if (ret != LOS_OK) {
+        PRINT_ERR("Failed to add mmc patch partition!\n");
+        return LOS_NOK;
+    }
+    userAddr += PATCH_SIZE;
+#endif
+
     UINT64 storageStartCnt = userAddr / EMMC_SEC_SIZE;
     UINT64 storageSizeCnt = userSize / EMMC_SEC_SIZE;
     UINT64 userdataStartCnt = storageStartCnt + storageSizeCnt;
@@ -234,6 +245,35 @@ STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags)
         PRINT_ERR("Failed to mount %s, rootDev %s, errno %d: %s\n", ROOT_DIR_NAME, ROOT_DEV_NAME, err, strerror(err));
         return ret;
     }
+
+#ifdef LOSCFG_STORAGE_EMMC
+#ifdef LOSCFG_PLATFORM_PATCHFS
+    /* Mount patch */
+    ret = mkdir(PATCH_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);
+    if ((ret != LOS_OK) && ((err = get_errno()) != EEXIST)) {
+        PRINT_ERR("Failed to mkdir %s, errno %d: %s\n", PATCH_DIR_NAME, err, strerror(err));
+        return ret;
+    }
+
+    ret = mount(PATCH_DEV_NAME, PATCH_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);
+    if ((ret != LOS_OK) && ((err = get_errno()) == ENOTSUP)) {
+        ret = format(PATCH_DEV_NAME, 0, FM_FAT32);
+        if (ret != LOS_OK) {
+            PRINT_ERR("Failed to format %s\n", PATCH_DEV_NAME);
+            return ret;
+        }
+
+        ret = mount(PATCH_DEV_NAME, PATCH_DIR_NAME, fsType, 0, DEFAULT_MOUNT_DATA);
+        if (ret != LOS_OK) {
+            err = get_errno();
+        }
+    }
+    if (ret != LOS_OK) {
+        PRINT_ERR("Failed to mount %s, errno %d: %s\n", PATCH_DIR_NAME, err, strerror(err));
+        return ret;
+    }
+#endif
+#endif
 
     /* Mount userfs */
     ret = mkdir(STORAGE_DIR_NAME, DEFAULT_MOUNT_DIR_MODE);

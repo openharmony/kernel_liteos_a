@@ -38,6 +38,9 @@
 #define STORAGE_DIR_NAME        "/storage"
 #ifdef LOSCFG_STORAGE_EMMC
 #define USERDATA_DIR_NAME       "/userdata"
+#ifdef LOSCFG_PLATFORM_PATCHFS
+#define PATCH_DIR_NAME          "/patch"
+#endif
 #endif
 #define DEFAULT_MOUNT_DIR_MODE  0755
 #define DEFAULT_MOUNT_DATA      NULL
@@ -64,11 +67,20 @@
 #define USERFS_SIZE             (CFIFLASH_CAPACITY - ROOTFS_ADDR - ROOTFS_SIZE)
 #elif defined (LOSCFG_STORAGE_EMMC)
 #define ROOT_DEV_NAME           "/dev/mmcblk0p0"
+#ifdef LOSCFG_PLATFORM_PATCHFS
+#define PATCH_DEV_NAME          "/dev/mmcblk0p1"
+#define USER_DEV_NAME           "/dev/mmcblk0p2"
+#define USERDATA_DEV_NAME       "/dev/mmcblk0p3"
+#else
 #define USER_DEV_NAME           "/dev/mmcblk0p1"
 #define USERDATA_DEV_NAME       "/dev/mmcblk0p2"
+#endif
 #define ROOTFS_ADDR             0xA00000
 #define ROOTFS_SIZE             0x1400000
 #define USERFS_SIZE             0x3200000
+#ifdef LOSCFG_PLATFORM_PATCHFS
+#define PATCH_SIZE              0x200000
+#endif
 #ifdef DEFAULT_MOUNT_DIR_MODE
 #undef DEFAULT_MOUNT_DIR_MODE
 #endif
