@@ -277,6 +277,8 @@ extern int SysFstat64(int fd, struct stat64 *buf);
 extern int SysFstatat64(int fd, const char *restrict path, struct stat *restrict buf, int flag);
 extern int SysFcntl64(int fd, int cmd, void *arg);
 extern int SysPoll(struct pollfd *fds, nfds_t nfds, int timeout);
+extern int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p,
+		                    const sigset_t *sigmask, int nsig);
 extern int SysPrctl(int option, ...);
 extern ssize_t SysPread64(int fd, void *buf, size_t nbytes, off64_t offset);
 extern ssize_t SysPwrite64(int fd, const void *buf, size_t nbytes, off64_t offset);

@@ -2459,4 +2459,39 @@ int SysFstatfs64(int fd, size_t sz, struct statfs *buf)
 
     return ret;
 }
+
+int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p, const sigset_t *sigMask, int nsig)
+{
+    int timeout;
+    int ret;
+    sigset_t_l origMask;
+    sigset_t_l setl;
+
+    if (sigMask == NULL) {
+        ret = -EINVAL;
+        return ret;
+    }
+
+    CHECK_ASPACE(tmo_p, sizeof(struct timespec));
+    CHECK_ASPACE(sigMask, sizeof(sigset_t));
+    CPY_FROM_USER(tmo_p);
+    CPY_FROM_USER(sigMask);
+
+    timeout = (tmo_p == NULL) ? -1 : (tmo_p->tv_sec * OS_SYS_US_PER_MS + tmo_p->tv_nsec / OS_SYS_NS_PER_MS);
+    if (timeout & 0x80000000) {
+        ret = -EINVAL;
+	return ret;
+    }
+    setl.sig[0] = *sigMask;
+    OsSigprocMask(SIG_SETMASK, &setl, &origMask);
+    ret = SysPoll(fds, nfds, timeout);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+    OsSigprocMask(SIG_SETMASK, &origMask, NULL);
+
+    PointerFree(tmo_pbak);
+    PointerFree(sigMaskbak);
+    return (ret == -1) ? -get_errno() : ret;
+}
 #endif
