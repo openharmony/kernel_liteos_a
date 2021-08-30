@@ -40,9 +40,6 @@ if (defined(LOSCFG_ARCH_ARM_AARCH32)) {
   ARCH = "aarch64"
 }
 
-assert(ARCH != "", "ARCH not set!")
-assert(ARCH == arch, "ARCH not match! details: $ARCH != $arch")
-
 template("kernel_module") {
   current_dir_name = get_path_info(rebase_path("."), "file")
   if (target_name != current_dir_name) {

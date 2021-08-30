@@ -74,6 +74,14 @@ config COMPILE_OPTIMIZE_SIZE
     help
       Answer Y to add optimization options for small code size.
       The final binary size will be smaller.
+      But the compile time may be a bit longer.
+
+config COMPILE_LTO
+    bool "Enable link time optimization (LTO)" if COMPILE_OPTIMIZE_SIZE
+    default y
+    help
+      Answer Y to add lto options for more smaller code size.
+      The final binary size will be smaller.
       But the compile time may be much longer.
 
 endmenu
