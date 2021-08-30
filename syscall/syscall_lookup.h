@@ -83,6 +83,7 @@ SYSCALL_HAND_DEF(__NR_fstatat64, SysFstatat64, int, ARG_NUM_4)
 SYSCALL_HAND_DEF(__NR_fsync, SysFsync, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR__llseek, SysLseek64, off64_t, ARG_NUM_5) /* current only support 32bit max 4G file */
 SYSCALL_HAND_DEF(__NR__newselect, SysSelect, int, ARG_NUM_5)
+SYSCALL_HAND_DEF(__NR_pselect6, SysPselect6, int, ARG_NUM_6)
 SYSCALL_HAND_DEF(__NR_readv, SysReadv, ssize_t, ARG_NUM_3)
 SYSCALL_HAND_DEF(__NR_writev, SysWritev, ssize_t, ARG_NUM_3)
 SYSCALL_HAND_DEF(__NR_poll, SysPoll, int, ARG_NUM_3)
