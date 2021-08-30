@@ -2,7 +2,6 @@ include $(LITEOSTOPDIR)/config.mk
 
 MODULE_NAME := c
 
-ARCH = arm
 TOPDIR = $(LITEOSTOPDIR)/../..
 MUSLDIR = $(TOPDIR)/third_party/musl
 MUSLPORTINGDIR = $(MUSLDIR)/porting/liteos_a/kernel

@@ -60,7 +60,7 @@ CONFIG ?= $(PRODUCT_PATH)/kernel_configs/debug$(tee).config
 endif
 
 KCONFIG_CONFIG ?= $(CONFIG)
-SYSROOT_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot
+SYSROOT_PATH ?= $(OUT)/sysroot
 LITEOS_MENUCONFIG_H ?= $(LITEOSTOPDIR)/config.h
 LITEOS_CONFIG_FILE ?= $(LITEOSTOPDIR)/.config
 
@@ -95,7 +95,6 @@ ROOTFS_DIR = $(OUT)/rootfs
 ROOTFS_ZIP = $(OUT)/rootfs.zip
 
 define HELP =
--------------------------------------------------------
 Usage: make [TARGET]... [PARAMETER=VALUE]...
 
 Targets:
@@ -116,7 +115,6 @@ Parameters:
     RELEASE:    boolean value(1 or y for true), build release version
     CONFIG:     kernel config file to be use
     args:       arguments for xxconfig command
--------------------------------------------------------
 endef
 export HELP
 
@@ -126,11 +124,21 @@ help:
 	$(HIDE)echo "$$HELP"
 
 sysroot:
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-ifeq ($(wildcard $(SYSROOT_PATH)/usr/include/$(LLVM_TARGET)/),)
-	$(HIDE)$(MAKE) -C $(SYSROOT_PATH)/build TARGETS=liteos_a_user
-endif
 	$(HIDE)echo "sysroot:" $(abspath $(SYSROOT_PATH))
+ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+ifeq ($(origin SYSROOT_PATH),file)
+	$(HIDE)mkdir -p $(SYSROOT_PATH)/build && cd $(SYSROOT_PATH)/build && \
+	ln -snf $(LITEOSTOPDIR)/../../prebuilts/lite/sysroot/build/Makefile && \
+	$(MAKE) TARGETS=liteos_a_user \
+		ARCH=$(ARCH) \
+		TARGET=$(LOSCFG_LLVM_TARGET) \
+		ARCH_CFLAGS="$(LITEOS_CORE_COPTS) -w" \
+		TOPDIR="$(LITEOSTOPDIR)/../.." \
+		SYSROOTDIR="$(SYSROOT_PATH)" \
+		CLANG="$(LITEOS_COMPILER_PATH)clang" \
+		BUILD_ALL_MULTILIB=false \
+		BUILD_DEBUG=$(if $(patsubst y,,$(or $(RELEASE:1=y),n)),true,false)
+endif
 endif
 
 $(KCONFIG_CMDS):
@@ -142,7 +150,7 @@ $(LITEOS_CONFIG_FILE): $(KCONFIG_CONFIG)
 update_config:
 	$(HIDE)test -f "$(CONFIG)" && cp -v "$(CONFIG)" .config && menuconfig && savedefconfig --out "$(CONFIG)"
 
-$(LITEOS_LIBS_TARGET):
+$(LITEOS_LIBS_TARGET): sysroot
 	$(HIDE)for dir in $(LIB_SUBDIRS); do $(MAKE) -C $$dir all || exit 1; done
 
 $(LITEOS_TARGET): $(OUT)/$(LITEOS_TARGET)
@@ -167,14 +175,14 @@ $(OUT)/$(LITEOS_TARGET).asm: $(OUT)/$(LITEOS_TARGET)
 $(OUT)/$(LITEOS_TARGET).size: $(OUT)/$(LITEOS_TARGET)
 	$(NM) -S --size-sort $< >$@
 
-$(APPS):
+$(APPS): sysroot
 	$(HIDE)$(MAKE) -C apps all
 
 $(ROOTFS): $(APPS)
 	$(HIDE)mkdir -p $(OUT)/musl
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-	$(HIDE)cp -fp $$($(CC) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
-	$(HIDE)cp -fp $$($(GPP) --target=$(LLVM_TARGET) --sysroot=$(SYSROOT_PATH) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl
+	$(HIDE)cp -fp $$($(CC) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
+	$(HIDE)cp -fp $$($(GPP) $(LITEOS_CXXFLAGS) -print-file-name=libc++.so) $(OUT)/musl
 else
 	$(HIDE)cp -fp $$($(CC) $(LITEOS_CFLAGS) -print-file-name=libc.so) $(OUT)/musl
 	$(HIDE)cp -fp $$($(CC) $(LITEOS_CFLAGS) -print-file-name=libgcc_s.so.1) $(OUT)/musl
@@ -189,6 +197,7 @@ endif
 	$(HIDE)cd $(ROOTFS_DIR)/.. && zip -r $(ROOTFS_ZIP) $(ROOTFS)
 
 clean:
+	$(HIDE)if [ -d $(SYSROOT_PATH)/build ]; then $(MAKE) -C $(SYSROOT_PATH)/build clean; fi
 	$(HIDE)for dir in $(LIB_SUBDIRS) apps; do $(MAKE) -C $$dir clean || exit 1; done
 	$(HIDE)$(RM) $(LITEOS_MENUCONFIG_H)
 	$(HIDE)echo "clean $(LOSCFG_PLATFORM) finish"

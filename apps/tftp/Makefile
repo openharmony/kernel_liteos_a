@@ -34,14 +34,11 @@ APP_NAME := $(notdir $(shell pwd))
 SECUREC_DIR := $(LITEOSTHIRDPARTY)/bounds_checking_function
 
 LOCAL_SRCS = $(wildcard src/*.c)
-LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/strncpy_s.c)
-LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/memcpy_s.c)
-LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/memset_s.c)
-LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/strncat_s.c)
+LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/*.c)
 
 LOCAL_INCLUDE := \
-	-I include/ \
-	-I $(SECUREC_DIR)/include/\
+	-I include \
+	-I $(SECUREC_DIR)/include
 
 LOCAL_FLAGS += $(LOCAL_INCLUDE)
 

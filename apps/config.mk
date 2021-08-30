@@ -29,25 +29,16 @@
 
 include $(LITEOSTOPDIR)/config.mk
 
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LLVM_SYSROOT := --sysroot=$(SYSROOT_PATH)
-endif
-
 # common flags config
-BASE_OPTS := -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE
-BASE_OPTS += -ffunction-sections -fdata-sections -fno-omit-frame-pointer -fno-common -fno-strict-aliasing
-BASE_OPTS += -fstack-protector-strong -Wall -Werror -flto
-BASE_OPTS += $(LITEOS_CORE_COPTS) $(LLVM_EXTRA_OPTS) $(LLVM_SYSROOT) $(LITEOS_GCOV_OPTS)
+BASE_OPTS := -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE $(LITEOS_GCOV_OPTS)
 
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-OPTMIZE_OPTS = -Oz
-else
-OPTMIZE_OPTS = -O2
-endif
+ASFLAGS   :=
+CFLAGS    := $(LITEOS_COPTS) $(BASE_OPTS) -fPIE
+CXXFLAGS  := $(LITEOS_CXXOPTS) $(BASE_OPTS) -fPIE
+LDFLAGS   := $(LITEOS_CORE_COPTS) -pie -Wl,-z,relro,-z,now -O2
 
-CFLAGS := -std=c99 -fPIE -fno-exceptions $(BASE_OPTS) $(OPTMIZE_OPTS)
-CXXFLAGS := -std=c++11 -fPIE -fexceptions -fpermissive -frtti $(BASE_OPTS) $(OPTMIZE_OPTS)
-LDFLAGS  := -pie -Wl,-z,relro,-z,now -O2 $(BASE_OPTS) $(LLVM_EXTRA_LD_OPTS)
+CFLAGS    := $(filter-out -fno-pic -fno-builtin -nostdinc -nostdlib,$(CFLAGS))
+CXXFLAGS  := $(filter-out -fno-pic -fno-builtin -nostdinc -nostdlib -nostdinc++,$(CXXFLAGS))
 
 # alias variable config
 HIDE := @
@@ -57,9 +48,9 @@ CP := cp -rf
 MV := mv -f
 
 APP := $(APPSTOPDIR)/app.mk
-APP_SUBDIRS :=
 
 ##build modules config##
+APP_SUBDIRS :=
 
 ifeq ($(LOSCFG_SHELL), y)
 APP_SUBDIRS += shell
@@ -74,3 +65,12 @@ endif
 ifeq ($(LOSCFG_NET_LWIP_SACK_TFTP), y)
 APP_SUBDIRS += tftp
 endif
+
+# clear all local variables
+LOCAL_FLAGS    :=
+LOCAL_CFLAGS   :=
+LOCAL_CPPFLAGS :=
+LOCAL_ASFLAGS  :=
+LOCAL_SRCS     :=
+LOCAL_CHS      :=
+LOCAL_CPPHS    :=

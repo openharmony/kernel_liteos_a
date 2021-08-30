@@ -60,7 +60,6 @@ kernel_module(module_name) {
 
 group("platform") {
   public_deps = [ ":$module_name" ]
-  deps = [ ":board.ld" ]
 }
 
 config("public") {

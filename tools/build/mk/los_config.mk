@@ -50,8 +50,9 @@ endif
 ARFLAGS  := cr
 
 ## platform relative ##
-LITEOS_ARM_ARCH :=
-LITEOS_CPU_TYPE :=
+ifeq ($(ARCH),)
+ARCH = $(error ARCH not set!)
+endif
 ## c as cxx ld options ##
 LITEOS_ASOPTS :=
 LITEOS_COPTS_BASE :=
@@ -88,14 +89,20 @@ LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:"%"=%)
 ifeq ($(wildcard $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH) $(LOSCFG_BOARD_CONFIG_PATH)),)
 LOSCFG_BOARD_CONFIG_PATH := $(LOSCFG_BOARD_CONFIG_PATH:%/config/board=%/board)
 endif
-ifeq ($(LOSCFG_COMPILER_HIMIX_32), y)
-CROSS_COMPILE ?= arm-linux-ohoseabi-
+ifeq ($(LOSCFG_COMPILER_GCC), y)
+CROSS_COMPILE ?= $(LOSCFG_CROSS_COMPILE)
 LITEOS_COMPILER_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/gcc/linux-x86/arm/arm-linux-ohoseabi-gcc/bin/
 else ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 CROSS_COMPILE ?= llvm-
 LITEOS_COMPILER_PATH ?= $(LITEOSTOPDIR)/../../prebuilts/clang/ohos/linux-x86_64/llvm/bin/
+ifneq ($(LOSCFG_LLVM_TARGET),)
+LLVM_TARGET = -target $(LOSCFG_LLVM_TARGET)
 endif
-ifeq ($(wildcard $(LITEOS_COMPILER_PATH)),)
+ifneq ($(SYSROOT_PATH),)
+LLVM_SYSROOT = --sysroot=$(SYSROOT_PATH)
+endif
+endif
+ifeq ($(wildcard $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as),)
 LITEOS_COMPILER_PATH := $(patsubst %/$(CROSS_COMPILE)as,%/,$(shell which $(CROSS_COMPILE)as))
 endif
 LITEOS_PLATFORM := $(LOSCFG_PLATFORM:"%"=%)
@@ -425,17 +432,21 @@ ifneq ($(LOSCFG_DEBUG_VERSION), y)
 endif
 
 ifeq ($(LOSCFG_COMPILE_DEBUG), y)
-    LITEOS_COPTS_OPTMIZE = -O0
+    LITEOS_COPTS_OPTIMIZE = -O0
     LITEOS_COPTS_OPTION  = -g -gdwarf-2
-else
+endif
+ifeq ($(LOSCFG_COMPILE_OPTIMIZE), y)
+    LITEOS_COPTS_OPTIMIZE = -O2
+endif
+ifeq ($(LOSCFG_COMPILE_OPTIMIZE_SIZE), y)
     ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-        LITEOS_COPTS_OPTMIZE = -Oz -flto
+        LITEOS_COPTS_OPTIMIZE = -Oz -flto
     else
-        LITEOS_COPTS_OPTMIZE = -O2
+        LITEOS_COPTS_OPTIMIZE = -Os -flto
     endif
 endif
-    LITEOS_COPTS_DEBUG  += $(LITEOS_COPTS_OPTION) $(LITEOS_COPTS_OPTMIZE)
-    LITEOS_CXXOPTS_BASE += $(LITEOS_COPTS_OPTION) $(LITEOS_COPTS_OPTMIZE)
+    LITEOS_COPTS_DEBUG  += $(LITEOS_COPTS_OPTION) $(LITEOS_COPTS_OPTIMIZE)
+    LITEOS_CXXOPTS_BASE += $(LITEOS_COPTS_OPTION) $(LITEOS_COPTS_OPTIMIZE)
     LITEOS_ASOPTS   += $(LITEOS_COPTS_OPTION)
 
 ifeq ($(LOSCFG_SHELL), y)
@@ -450,10 +461,6 @@ ifeq ($(LOSCFG_NET_TELNET), y)
     LIB_SUBDIRS       += net/telnet
     LITEOS_TELNET_INCLUDE   += \
         -I $(LITEOSTOPDIR)/net/telnet/include
-endif
-
-ifeq ($(LOSCFG_3RDPARTY), y)
-    -include $(LITEOSTOPDIR)/3rdParty/3rdParty.mk
 endif
 
 ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
@@ -492,19 +499,16 @@ endif
 ############################# Security Option End ##############################
 
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-CC  = $(LITEOS_COMPILER_PATH)clang
+CC  = $(LITEOS_COMPILER_PATH)clang $(LLVM_TARGET) $(LLVM_SYSROOT)
 AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
 AR  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)ar
 LD  = $(LITEOS_COMPILER_PATH)ld.lld
-GPP = $(LITEOS_COMPILER_PATH)clang++
+GPP = $(LITEOS_COMPILER_PATH)clang++ $(LLVM_TARGET) $(LLVM_SYSROOT)
 OBJCOPY = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objcopy -R .bss
 OBJDUMP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)objdump
 SIZE = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)size
 NM = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)nm
 STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
-LLVM_TARGET := arm-liteos
-LLVM_EXTRA_OPTS := -target $(LLVM_TARGET) -fms-extensions -Wno-address-of-packed-member
-LLVM_EXTRA_LD_OPTS := -fuse-ld=lld --rtlib=compiler-rt
 else
 CC  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)gcc
 AS  = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)as
@@ -517,11 +521,6 @@ SIZE = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)size
 NM = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)nm
 STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
 endif
-
-FP = -fno-omit-frame-pointer
-LITEOS_CXXOPTS_BASE  += -std=c++11 -nostdlib -nostdinc -nostdinc++ -fexceptions -fpermissive -fno-use-cxa-atexit \
-                        -fno-builtin -frtti -fno-pic -Winvalid-pch $(WARNING_AS_ERROR) $(LLVM_EXTRA_OPTS) $(FP)
-
 
 LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCLUDE) \
                               $(LITEOS_TICKLESS_INCLUDE)   $(LITEOS_TRACE_INCLUDE) \
@@ -557,20 +556,22 @@ LITEOS_SECURITY_INCLUDE    := $(LITEOS_SECURITY_CAP_INC) $(LITEOS_SECURITY_VID_I
 LOSCFG_TOOLS_DEBUG_INCLUDE := $(LITEOS_SHELL_INCLUDE)  $(LITEOS_UART_INCLUDE) \
                               $(LITEOS_TELNET_INCLUDE)
 
-LITEOS_COPTS_BASE  := -fno-pic -fno-builtin -nostdinc -nostdlib $(WARNING_AS_ERROR) $(LITEOS_SSP) $(LLVM_EXTRA_OPTS) \
-                      -fno-strict-aliasing -fno-common -fsigned-char
+LITEOS_COMMON_OPTS  := -fno-pic -fno-builtin -nostdinc -nostdlib $(WARNING_AS_ERROR) -fms-extensions -fno-omit-frame-pointer -Wno-address-of-packed-member -Winvalid-pch
+
+LITEOS_CXXOPTS_BASE += $(LITEOS_COMMON_OPTS) -std=c++11 -nostdinc++ -fexceptions -fpermissive -fno-use-cxa-atexit -frtti
+
+LITEOS_COPTS_BASE   += $(LITEOS_COMMON_OPTS) $(LITEOS_SSP) -fno-strict-aliasing -fno-common -fsigned-char -mno-unaligned-access
 ifneq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LITEOS_COPTS_BASE += -fno-aggressive-loop-optimizations
+LITEOS_COPTS_BASE   += -fno-aggressive-loop-optimizations
 endif
-LITEOS_COPTS_EXTRA := -std=c99 -Wpointer-arith -Wstrict-prototypes -Winvalid-pch \
-                      -ffunction-sections -fdata-sections -fno-exceptions $(FP)
-ifneq ($(LOSCFG_ARCH_ARM_AARCH64), y)
+
+LITEOS_COPTS_EXTRA  += -std=c99 -Wpointer-arith -Wstrict-prototypes -ffunction-sections -fdata-sections -fno-exceptions -fno-short-enums
+ifeq ($(LOSCFG_ARCH_ARM_AARCH32), y)
 ifneq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-LITEOS_COPTS_BASE += -mno-unaligned-access
-LITEOS_COPTS_EXTRA += -mthumb-interwork
+LITEOS_COPTS_EXTRA  += -mthumb-interwork
 endif
 endif
-LITEOS_COPTS_EXTRA += -fno-short-enums
+
 ifeq ($(LOSCFG_THUMB), y)
 ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
 LITEOS_CFLAGS_INTERWORK := -mthumb -mimplicit-it=thumb
@@ -595,9 +596,5 @@ LITEOS_LD_SCRIPT := -T$(LITEOSTOPDIR)/tools/build/liteos.ld
 endif
 
 ##compiler##
-_CC = $(CC) $(LITEOS_CORE_COPTS)
-ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-_CC += $(LLVM_EXTRA_OPTS) $(LLVM_EXTRA_LD_OPTS)
-endif
-LITEOS_BASELIB     += $(shell $(_CC) "-print-libgcc-file-name")
-LITEOS_LIB_INCLUDE += -isystem $(shell $(_CC) "-print-file-name=include")
+LITEOS_BASELIB     += $(shell $(CC) $(LITEOS_CORE_COPTS) "-print-libgcc-file-name")
+LITEOS_LIB_INCLUDE += -isystem $(shell $(CC) $(LITEOS_CORE_COPTS) "-print-file-name=include")

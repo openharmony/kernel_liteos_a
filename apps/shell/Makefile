@@ -31,18 +31,14 @@ include $(APPSTOPDIR)/config.mk
 
 APP_NAME := $(notdir $(shell pwd))
 
-SECUREC_INCLUDE := $(LITEOSTHIRDPARTY)/bounds_checking_function/include
+SECUREC_DIR := $(LITEOSTHIRDPARTY)/bounds_checking_function
 
-LOCAL_SRCS = $(wildcard src/main.c)\
-             $(wildcard src/shcmd.c)\
-             $(wildcard src/shmsg.c)\
-             $(wildcard src/shcmdparse.c)\
-             $(wildcard builtin/cd.c)
-LOCAL_SRCS += $(wildcard $(LITEOSTHIRDPARTY)/bounds_checking_function/src/*.c)
+LOCAL_SRCS = $(wildcard src/*.c builtin/*.c)
+LOCAL_SRCS += $(wildcard $(SECUREC_DIR)/src/*.c)
 
 LOCAL_INCLUDE := \
-	-I include/ \
-	-I $(SECUREC_INCLUDE)\
+	-I include \
+	-I $(SECUREC_DIR)/include
 
 LOCAL_FLAGS += $(LOCAL_INCLUDE)
 
