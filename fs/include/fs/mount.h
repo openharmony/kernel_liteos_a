@@ -61,6 +61,7 @@ struct MountOps {
     int (*Mount)(struct Mount *mount, struct Vnode *vnode, const void *data);
     int (*Unmount)(struct Mount *mount, struct Vnode **blkdriver);
     int (*Statfs)(struct Mount *mount, struct statfs *sbp);
+    int (*Sync)(struct Mount *mount);
 };
 
 typedef int (*foreach_mountpoint_t)(const char *devpoint,
