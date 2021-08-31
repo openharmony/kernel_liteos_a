@@ -360,14 +360,21 @@ STEP_FINISH:
     return ret;
 }
 
-int VnodeLookup(const char *path, struct Vnode **result, uint32_t flags)
+int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struct Vnode *orgVnode)
 {
+    int ret;
     struct Vnode *startVnode = NULL;
     char *normalizedPath = NULL;
 
-    int ret = PreProcess(path, &startVnode, &normalizedPath);
-    if (ret != LOS_OK) {
-        goto OUT_FREE_PATH;
+    if (orgVnode != NULL) {
+        startVnode = orgVnode;
+        normalizedPath = strdup(path);
+    } else {
+        ret = PreProcess(path, &startVnode, &normalizedPath);
+        if (ret != LOS_OK) {
+            PRINT_ERR("[VFS]lookup failed, invalid path err = %d\n", ret);
+            goto OUT_FREE_PATH;
+        }
     }
 
     if (normalizedPath[0] == '/' && normalizedPath[1] == '\0') {
@@ -402,6 +409,11 @@ OUT_FREE_PATH:
     }
 
     return ret;
+}
+
+int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags)
+{
+    return VnodeLookupAt(path, vnode, flags, NULL);
 }
 
 static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
