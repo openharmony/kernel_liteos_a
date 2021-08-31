@@ -30,16 +30,6 @@
 -include $(LITEOS_CONFIG_FILE)
 
 HIDE := @
-CC  :=
-AS  :=
-AR  :=
-LD  :=
-GPP :=
-OBJCOPY :=
-OBJDUMP :=
-SIZE :=
-NM :=
-MKDIR = mkdir
 OBJ_MKDIR = if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 RM = -rm -rf
 ifeq ($(OS),)
@@ -121,12 +111,6 @@ MODULE = $(LITEOSTOPDIR)/tools/build/mk/module.mk
 LITEOS_CMACRO      += -D__LITEOS__ -DSECUREC_IN_KERNEL=0
 AS_OBJS_LIBC_FLAGS  = -D__ASSEMBLY__
 
-ifeq ($(LOSCFG_QUICK_START), y)
-WARNING_AS_ERROR   := -Wall
-else
-WARNING_AS_ERROR   := -Wall -Werror
-endif
-
 ####################################### CPU Option Begin #########################################
 include $(LITEOSTOPDIR)/arch/cpu.mk
 ####################################### CPU Option End #########################################
@@ -137,6 +121,7 @@ include $(LITEOSTOPDIR)/platform/bsp.mk
 ifeq ($(LOSCFG_PLATFORM_ROOTFS), y)
     LITEOS_BASELIB  += -lrootfs
     LIB_SUBDIRS     += $(LITEOSTOPDIR)/kernel/common/rootfs
+    LITEOS_PLATFORM_INCLUDE     += -I $(LITEOSTOPDIR)/kernel/common/rootfs
 endif
 
 ifeq ($(LOSCFG_PLATFORM_PATCHFS), y)
@@ -440,9 +425,16 @@ ifeq ($(LOSCFG_COMPILE_OPTIMIZE), y)
 endif
 ifeq ($(LOSCFG_COMPILE_OPTIMIZE_SIZE), y)
     ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
-        LITEOS_COPTS_OPTIMIZE = -Oz -flto
+        LITEOS_COPTS_OPTIMIZE = -Oz
     else
-        LITEOS_COPTS_OPTIMIZE = -Os -flto
+        LITEOS_COPTS_OPTIMIZE = -Os
+    endif
+endif
+ifeq ($(LOSCFG_COMPILE_LTO), y)
+    ifeq ($(LOSCFG_COMPILER_CLANG_LLVM), y)
+        LITEOS_COPTS_OPTIMIZE += -flto=thin
+    else
+        LITEOS_COPTS_OPTIMIZE += -flto
     endif
 endif
     LITEOS_COPTS_DEBUG  += $(LITEOS_COPTS_OPTION) $(LITEOS_COPTS_OPTIMIZE)
@@ -556,7 +548,7 @@ LITEOS_SECURITY_INCLUDE    := $(LITEOS_SECURITY_CAP_INC) $(LITEOS_SECURITY_VID_I
 LOSCFG_TOOLS_DEBUG_INCLUDE := $(LITEOS_SHELL_INCLUDE)  $(LITEOS_UART_INCLUDE) \
                               $(LITEOS_TELNET_INCLUDE)
 
-LITEOS_COMMON_OPTS  := -fno-pic -fno-builtin -nostdinc -nostdlib $(WARNING_AS_ERROR) -fms-extensions -fno-omit-frame-pointer -Wno-address-of-packed-member -Winvalid-pch
+LITEOS_COMMON_OPTS  := -fno-pic -fno-builtin -nostdinc -nostdlib -Wall -Werror -fms-extensions -fno-omit-frame-pointer -Wno-address-of-packed-member -Winvalid-pch
 
 LITEOS_CXXOPTS_BASE += $(LITEOS_COMMON_OPTS) -std=c++11 -nostdinc++ -fexceptions -fpermissive -fno-use-cxa-atexit -frtti
 
