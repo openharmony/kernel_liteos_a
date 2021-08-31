@@ -85,6 +85,7 @@ sources_full = [
   "full/IO_test_strncasecmp_l_002.cpp",
   "full/IO_test_ppoll_001.cpp",
   "full/IO_test_ppoll_002.cpp",
+  "full/IO_test_ppoll_003.cpp",
   "full/IO_test_pselect_001.cpp",
   "full/IO_test_pselect_002.cpp",
 ]
