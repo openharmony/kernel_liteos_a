@@ -66,6 +66,10 @@ ifeq ($(LOSCFG_NET_LWIP_SACK_TFTP), y)
 APP_SUBDIRS += tftp
 endif
 
+ifeq ($(LOSCFG_DRIVERS_TRACE), y)
+APP_SUBDIRS += trace
+endif
+
 # clear all local variables
 LOCAL_FLAGS    :=
 LOCAL_CFLAGS   :=

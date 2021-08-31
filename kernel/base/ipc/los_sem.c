@@ -38,7 +38,7 @@
 #include "los_spinlock.h"
 #include "los_mp.h"
 #include "los_percpu_pri.h"
-
+#include "los_hook.h"
 
 #ifdef LOSCFG_BASE_IPC_SEM
 
@@ -118,7 +118,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSemCreate(UINT16 count, UINT16 maxCount, UINT32 *
     semCreated->maxSemCount = maxCount;
     LOS_ListInit(&semCreated->semList);
     *semHandle = semCreated->semID;
-
+    OsHookCall(LOS_HOOK_TYPE_SEM_CREATE, semCreated);
     OsSemDbgUpdateHook(semCreated->semID, OsCurrTaskGet()->taskEntry, count);
     return LOS_OK;
 
@@ -165,6 +165,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SemDelete(UINT32 semHandle)
     semDeleted->semStat = OS_SEM_UNUSED;
     semDeleted->semID = SET_SEM_ID(GET_SEM_COUNT(semDeleted->semID) + 1, GET_SEM_INDEX(semDeleted->semID));
 
+    OsHookCall(LOS_HOOK_TYPE_SEM_DELETE, semDeleted);
     OsSemDbgUpdateHook(semDeleted->semID, NULL, 0);
 
     SCHEDULER_UNLOCK(intSave);
@@ -203,12 +204,12 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
         retErr = LOS_ERRNO_SEM_INVALID;
         goto OUT;
     }
-
     /* Update the operate time, no matter the actual Pend success or not */
     OsSemDbgTimeUpdateHook(semHandle);
 
     if (semPended->semCount > 0) {
         semPended->semCount--;
+        OsHookCall(LOS_HOOK_TYPE_SEM_PEND, semPended, runTask, timeout);
         goto OUT;
     } else if (!timeout) {
         retErr = LOS_ERRNO_SEM_UNAVAILABLE;
@@ -222,6 +223,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
         goto OUT;
     }
 
+    OsHookCall(LOS_HOOK_TYPE_SEM_PEND, semPended, runTask, timeout);
     OsTaskWaitSetPendMask(OS_TASK_WAIT_SEM, semPended->semID, timeout);
     retErr = OsSchedTaskWait(&semPended->semList, timeout, TRUE);
     if (retErr == LOS_ERRNO_TSK_TIMEOUT) {
@@ -259,7 +261,7 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
     } else {
         semPosted->semCount++;
     }
-
+    OsHookCall(LOS_HOOK_TYPE_SEM_POST, semPosted, resumedTask);
     return LOS_OK;
 }
 

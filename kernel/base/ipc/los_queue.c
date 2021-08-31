@@ -36,7 +36,7 @@
 #include "los_spinlock.h"
 #include "los_mp.h"
 #include "los_percpu_pri.h"
-
+#include "los_hook.h"
 
 #ifdef LOSCFG_BASE_IPC_QUEUE
 #if (LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0)
@@ -137,6 +137,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32
     SCHEDULER_UNLOCK(intSave);
 
     *queueID = queueCB->queueID;
+    OsHookCall(LOS_HOOK_TYPE_QUEUE_CREATE, queueCB);
     return LOS_OK;
 }
 
@@ -263,6 +264,7 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
     UINT32 ret;
     UINT32 readWrite = OS_QUEUE_READ_WRITE_GET(operateType);
     UINT32 intSave;
+    OsHookCall(LOS_HOOK_TYPE_QUEUE_READ, (LosQueueCB *)GET_QUEUE_HANDLE(queueID), operateType, *bufferSize, timeout);
 
     SCHEDULER_LOCK(intSave);
     queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);
@@ -435,7 +437,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueDelete(UINT32 queueID)
 
     LOS_ListTailInsert(&g_freeQueueList, &queueCB->readWriteList[OS_QUEUE_WRITE]);
     SCHEDULER_UNLOCK(intSave);
-
+    OsHookCall(LOS_HOOK_TYPE_QUEUE_DELETE, queueCB);
     ret = LOS_MemFree(m_aucSysMem1, (VOID *)queue);
     return ret;
 

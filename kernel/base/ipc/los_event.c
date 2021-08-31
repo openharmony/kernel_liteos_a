@@ -35,6 +35,7 @@
 #include "los_mp.h"
 #include "los_percpu_pri.h"
 #include "los_sched_pri.h"
+#include "los_hook.h"
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #include "los_exc.h"
 #endif
@@ -51,6 +52,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventInit(PEVENT_CB_S eventCB)
     eventCB->uwEventID = 0;
     LOS_ListInit(&eventCB->stEventList);
     LOS_IntRestore(intSave);
+    OsHookCall(LOS_HOOK_TYPE_EVENT_INIT, eventCB);
     return LOS_OK;
 }
 
@@ -126,6 +128,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventM
 {
     UINT32 ret = 0;
     LosTaskCB *runTask = OsCurrTaskGet();
+    OsHookCall(LOS_HOOK_TYPE_EVENT_READ, eventCB, eventMask, mode, timeout);
 
     if (once == FALSE) {
         ret = OsEventPoll(&eventCB->uwEventID, eventMask, mode);
@@ -193,7 +196,7 @@ LITE_OS_SEC_TEXT VOID OsEventWriteUnsafe(PEVENT_CB_S eventCB, UINT32 events, BOO
     LosTaskCB *resumedTask = NULL;
     LosTaskCB *nextTask = NULL;
     BOOL schedFlag = FALSE;
-
+    OsHookCall(LOS_HOOK_TYPE_EVENT_WRITE, eventCB, events);
     eventCB->uwEventID |= events;
     if (!LOS_ListEmpty(&eventCB->stEventList)) {
         for (resumedTask = LOS_DL_LIST_ENTRY((&eventCB->stEventList)->pstNext, LosTaskCB, pendList);
@@ -292,7 +295,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_EventDestroy(PEVENT_CB_S eventCB)
     eventCB->uwEventID = 0;
     LOS_ListDelInit(&eventCB->stEventList);
     SCHEDULER_UNLOCK(intSave);
-
+    OsHookCall(LOS_HOOK_TYPE_EVENT_DESTROY, eventCB);
     return LOS_OK;
 }
 
@@ -303,6 +306,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 LOS_EventClear(PEVENT_CB_S eventCB, UINT32 eventMa
     if (eventCB == NULL) {
         return LOS_ERRNO_EVENT_PTR_NULL;
     }
+    OsHookCall(LOS_HOOK_TYPE_EVENT_CLEAR, eventCB, eventMask);
     SCHEDULER_LOCK(intSave);
     eventCB->uwEventID &= eventMask;
     SCHEDULER_UNLOCK(intSave);
