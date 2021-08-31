@@ -226,7 +226,7 @@ int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
     unsigned int intSave;
     sigset_t set;
     int retVal;
-
+    
     if (setl != NULL) {
         retVal = LOS_ArchCopyFromUser(&set, &(setl->sig[0]), sizeof(sigset_t));
         if (retVal != 0) {
