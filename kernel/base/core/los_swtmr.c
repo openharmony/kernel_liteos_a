@@ -36,7 +36,7 @@
 #include "los_sched_pri.h"
 #include "los_sortlink_pri.h"
 #include "los_task_pri.h"
-
+#include "los_hook.h"
 
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #if (LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0)
@@ -268,7 +268,8 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
         swtmr->startTime = GET_SORTLIST_VALUE(sortList);
         OsDeleteNodeSortLink(swtmrSortLink, sortList);
         LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
-
+        
+        OsHookCall(LOS_HOOK_TYPE_SWTMR_EXPIRED, swtmr);
         OsWakePendTimeSwtmr(cpu, currTime, swtmr);
 
         LOS_SpinLock(&cpu->swtmrSortLinkSpin);
@@ -362,7 +363,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
     swtmr->ucState = OS_SWTMR_STATUS_CREATED;
     SET_SORTLIST_VALUE(&swtmr->stSortList, OS_SORT_LINK_INVALID_TIME);
     *swtmrID = swtmr->usTimerID;
-
+    OsHookCall(LOS_HOOK_TYPE_SWTMR_CREATE, swtmr);
     return LOS_OK;
 }
 
@@ -407,6 +408,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
     }
 
     SWTMR_UNLOCK(intSave);
+    OsHookCall(LOS_HOOK_TYPE_SWTMR_START, swtmr);
     return ret;
 }
 
@@ -446,6 +448,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStop(UINT16 swtmrID)
     }
 
     SWTMR_UNLOCK(intSave);
+    OsHookCall(LOS_HOOK_TYPE_SWTMR_STOP, swtmr);
     return ret;
 }
 
@@ -526,6 +529,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrDelete(UINT16 swtmrID)
     }
 
     SWTMR_UNLOCK(intSave);
+    OsHookCall(LOS_HOOK_TYPE_SWTMR_DELETE, swtmr);
     return ret;
 }
 

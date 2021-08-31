@@ -360,14 +360,6 @@ extern UINT32 __heap_end;
 #define LOSCFG_KERNEL_CPU_MASK                          ((1 << LOSCFG_KERNEL_CORE_NUM) - 1)
 
 /**
- * @ingroup los_trace
- * It's the total size of trace buffer. It's in the unit of char
- */
-#ifdef LOSCFG_KERNEL_TRACE
-#define LOS_TRACE_BUFFER_SIZE                           (1024 * 512)
-#endif
-
-/**
  * @ingroup los_config
  * Version number
  */

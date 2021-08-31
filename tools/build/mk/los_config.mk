@@ -156,9 +156,14 @@ ifeq ($(LOSCFG_KERNEL_VDSO), y)
 endif
 
 ifeq ($(LOSCFG_KERNEL_TRACE), y)
-    LITEOS_BASELIB += -ltrace
+    LITEOS_BASELIB    += -ltrace
     LIB_SUBDIRS       += kernel/extended/trace
-    LITEOS_TRACE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/trace
+endif
+
+ifeq ($(LOSCFG_KERNEL_HOOK), y)
+    LITEOS_BASELIB += -lhook
+    LIB_SUBDIRS       += kernel/extended/hook
+    LITEOS_HOOK_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/hook/include
 endif
 
 ifeq ($(LOSCFG_KERNEL_LITEIPC), y)
@@ -357,6 +362,11 @@ ifeq ($(LOSCFG_DRIVERS_MEM), y)
     LITEOS_DEV_MEM_INCLUDE = -I $(LITEOSTOPDIR)/drivers/char/mem/include
 endif
 
+ifeq ($(LOSCFG_DRIVERS_TRACE), y)
+    LITEOS_BASELIB += -ltrace_dev
+    LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/trace
+endif
+
 ifeq ($(LOSCFG_DRIVERS_QUICKSTART), y)
     LITEOS_BASELIB += -lquickstart
     LIB_SUBDIRS       += $(LITEOSTOPDIR)/drivers/char/quickstart
@@ -515,7 +525,7 @@ STRIP = $(LITEOS_COMPILER_PATH)$(CROSS_COMPILE)strip
 endif
 
 LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCLUDE) \
-                              $(LITEOS_TICKLESS_INCLUDE)   $(LITEOS_TRACE_INCLUDE) \
+                              $(LITEOS_TICKLESS_INCLUDE)   $(LITEOS_HOOK_INCLUDE)\
                               $(LITEOS_VDSO_INCLUDE)       $(LITEOS_LITEIPC_INCLUDE) \
                               $(LITEOS_PIPE_INCLUDE)       $(LITEOS_CPUP_INCLUDE)
 LITEOS_COMPAT_INCLUDE      := $(LITEOS_POSIX_INCLUDE) $(LITEOS_LINUX_INCLUDE) \

@@ -29,40 +29,78 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/statfs.h>
-#include <sys/mount.h>
-#include "proc_fs.h"
+#ifndef _TRACE_PIPELINE_H
+#define _TRACE_PIPELINE_H
 
-#ifdef LOSCFG_KERNEL_TRACE
-#include "los_trace.h"
-static int KernelTraceProcFill(struct SeqBuf *m, void *v)
-{
-    (void)v;
-    if (m == NULL) {
-        return -LOS_EPERM;
-    }
+#include "los_typedef.h"
 
-    if (m->buf == NULL) {
-        m->buf = (char *)LOS_TraceBufDataGet(&(m->size), &(m->count));
-    }
-    return 0;
-}
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+#endif /* __cplusplus */
 
-static const struct ProcFileOperations KERNEL_TRACE_PROC_FOPS = {
-    .read       = KernelTraceProcFill,
+typedef struct {
+    UINT32 (*init)(VOID);
+    VOID (*dataSend)(UINT16 len, UINT8 *data);
+    UINT32 (*dataRecv)(UINT8 *data, UINT32 size, UINT32 timeout);
+    UINT32 (*wait)(VOID);
+} TracePipelineOps;
+
+/* used as tlv's tag */
+enum TraceMsgType {
+    NOTIFY,
+    HEAD,
+    OBJ,
+    EVENT,
+    TRACE_MSG_MAX,
 };
-#endif
 
-void ProcKernelTraceInit(void)
-{
-#ifdef LOSCFG_KERNEL_TRACE
-    struct ProcDirEntry *pde = CreateProcEntry("ktrace", 0, NULL);
-    if (pde == NULL) {
-        PRINT_ERR("create /proc/ktrace error!\n");
-        return;
-    }
+enum TraceNotifySubType {
+    CMD = 0x1,
+    PARAMS,
+};
 
-    pde->procFileOps = &KERNEL_TRACE_PROC_FOPS;
-#endif
+enum TraceHeadSubType {
+    ENDIAN = 0x1,
+    VERSION,
+    OBJ_SIZE,
+    OBJ_COUNT,
+    CUR_INDEX,
+    MAX_RECODE,
+    CUR_OBJ_INDEX,
+    CLOCK_FREQ,
+};
+
+enum TraceObjSubType {
+    ADDR = 0x1,
+    PRIO,
+    NAME,
+};
+
+enum TraceEvtSubType {
+    CORE = 0x1,
+    EVENT_CODE,
+    CUR_TIME,
+    EVENT_COUNT,
+    CUR_TASK,
+    IDENTITY,
+    EVENT_PARAMS,
+    CUR_PID,
+    EVENT_LR,
+};
+
+extern VOID OsTracePipelineReg(const TracePipelineOps *ops);
+extern UINT32 OsTracePipelineInit(VOID);
+
+extern VOID OsTraceDataSend(UINT8 type, UINT16 len, UINT8 *data);
+extern UINT32 OsTraceDataRecv(UINT8 *data, UINT32 size, UINT32 timeout);
+extern UINT32 OsTraceDataWait(VOID);
+
+#ifdef __cplusplus
+#if __cplusplus
 }
+#endif /* __cplusplus */
+#endif /* __cplusplus */
 
+#endif /* _TRACE_PIPELINE_H */

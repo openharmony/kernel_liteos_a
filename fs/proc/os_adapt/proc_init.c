@@ -63,7 +63,6 @@ void ProcFsInit(void)
 #endif
     ProcProcessInit();
     ProcUptimeInit();
-    ProcKernelTraceInit();
     ProcFsCacheInit();
     ProcFdInit();
 #ifdef LOSCFG_KERNEL_PM

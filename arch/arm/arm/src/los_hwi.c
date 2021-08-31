@@ -36,7 +36,7 @@
 #include "los_cpup_pri.h"
 #endif
 #include "los_sched_pri.h"
-
+#include "los_hook.h"
 
 /* spinlock for hwi module, only available on SMP mode */
 LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_hwiSpin);
@@ -84,7 +84,7 @@ VOID OsInterrupt(UINT32 intNum)
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
     OsCpupIrqStart();
 #endif
-
+    OsHookCall(LOS_HOOK_TYPE_ISR_ENTER, intNum);
     hwiForm = (&g_hwiForm[intNum]);
 #ifndef LOSCFG_NO_SHARED_IRQ
     while (hwiForm->pstNext != NULL) {
@@ -107,6 +107,7 @@ VOID OsInterrupt(UINT32 intNum)
 #endif
     ++g_hwiFormCnt[intNum];
 
+    OsHookCall(LOS_HOOK_TYPE_ISR_EXIT, intNum);
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
     OsCpupIrqEnd(intNum);
 #endif
