@@ -89,7 +89,7 @@ typedef struct {
     LD_ELF_EHDR  elfEhdr;
     LD_ELF_PHDR  *elfPhdr;
     UINT32       fileLen;
-    INT32        fd;
+    INT32        procfd;
 } ELFInfo;
 
 typedef struct {

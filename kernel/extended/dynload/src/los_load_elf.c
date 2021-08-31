@@ -68,6 +68,20 @@ static int OsELFOpen(const CHAR *fileName, INT32 oflags)
     }
 
     AssociateSystemFd(procFd, ret);
+    return procFd;
+}
+
+static int OsELFClose(int procFd)
+{
+    int ret;
+    /* Process procfd convert to system global procfd */
+    int sysfd = DisassociateProcessFd(procFd);
+    ret = close(sysfd);
+    if (ret < 0) {
+        AssociateSystemFd(procFd, sysfd);
+        return -get_errno();
+    }
+    FreeProcessFd(procFd);
     return ret;
 }
 
@@ -101,10 +115,11 @@ STATIC INT32 OsGetFileLength(UINT32 *fileLen, const CHAR *fileName)
     return LOS_OK;
 }
 
-STATIC INT32 OsReadELFInfo(INT32 fd, UINT8 *buffer, size_t readSize, off_t offset)
+STATIC INT32 OsReadELFInfo(INT32 procfd, UINT8 *buffer, size_t readSize, off_t offset)
 {
     ssize_t byteNum;
     off_t returnPos;
+    INT32 fd = GetAssociatedSystemFd(procfd);
 
     if (readSize > 0) {
         returnPos = lseek(fd, offset, SEEK_SET);
@@ -178,8 +193,8 @@ STATIC VOID OsLoadInit(ELFLoadInfo *loadInfo)
 #else
     loadInfo->oldFiles = NULL;
 #endif
-    loadInfo->execInfo.fd = INVALID_FD;
-    loadInfo->interpInfo.fd = INVALID_FD;
+    loadInfo->execInfo.procfd = INVALID_FD;
+    loadInfo->interpInfo.procfd = INVALID_FD;
 }
 
 STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
@@ -196,17 +211,17 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
         PRINT_ERR("%s[%d], Failed to open ELF file: %s!\n", __FUNCTION__, __LINE__, fileName);
         return ret;
     }
-    elfInfo->fd = ret;
+    elfInfo->procfd = ret;
 
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     if (isExecFile) {
-        ret = fs_getfilep(elfInfo->fd, &OsCurrProcessGet()->execFile);
+        ret = fs_getfilep(GetAssociatedSystemFd(elfInfo->procfd), &OsCurrProcessGet()->execFile);
         if (ret) {
             PRINT_ERR("%s[%d], Failed to get struct file %s!\n", __FUNCTION__, __LINE__, fileName);
         }
     }
 #endif
-    ret = OsReadELFInfo(elfInfo->fd, (UINT8 *)&elfInfo->elfEhdr, sizeof(LD_ELF_EHDR), 0);
+    ret = OsReadELFInfo(elfInfo->procfd, (UINT8 *)&elfInfo->elfEhdr, sizeof(LD_ELF_EHDR), 0);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return -EIO;
@@ -246,7 +261,7 @@ STATIC INT32 OsReadPhdrs(ELFInfo *elfInfo, BOOL isExecFile)
         return -ENOMEM;
     }
 
-    ret = OsReadELFInfo(elfInfo->fd, (UINT8 *)elfInfo->elfPhdr, size, elfEhdr->elfPhoff);
+    ret = OsReadELFInfo(elfInfo->procfd, (UINT8 *)elfInfo->elfPhdr, size, elfEhdr->elfPhoff);
     if (ret != LOS_OK) {
         (VOID)LOS_MemFree(m_aucSysMem0, elfInfo->elfPhdr);
         elfInfo->elfPhdr = NULL;
@@ -287,7 +302,7 @@ STATIC INT32 OsReadInterpInfo(ELFLoadInfo *loadInfo)
             return -ENOMEM;
         }
 
-        ret = OsReadELFInfo(loadInfo->execInfo.fd, (UINT8 *)elfInterpName, elfPhdr->fileSize, elfPhdr->offset);
+        ret = OsReadELFInfo(loadInfo->execInfo.procfd, (UINT8 *)elfInterpName, elfPhdr->fileSize, elfPhdr->offset);
         if (ret != LOS_OK) {
             PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
             ret = -EIO;
@@ -450,13 +465,14 @@ STATIC INT32 OsSetBss(const LD_ELF_PHDR *elfPhdr, INT32 fd, UINTPTR bssStart, UI
     return LOS_OK;
 }
 
-STATIC INT32 OsMmapELFFile(INT32 fd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EHDR *elfEhdr, UINTPTR *elfLoadAddr,
+STATIC INT32 OsMmapELFFile(INT32 procfd, const LD_ELF_PHDR *elfPhdr, const LD_ELF_EHDR *elfEhdr, UINTPTR *elfLoadAddr,
                            UINT32 mapSize, UINTPTR *loadBase)
 {
     const LD_ELF_PHDR *elfPhdrTemp = elfPhdr;
     UINTPTR vAddr, mapAddr, bssStart;
     UINT32 bssEnd, elfProt, elfFlags;
     INT32 ret, i;
+    INT32 fd = GetAssociatedSystemFd(procfd);
 
     for (i = 0; i < elfEhdr->elfPhNum; ++i, ++elfPhdrTemp) {
         if (elfPhdrTemp->type != LD_PT_LOAD) {
@@ -522,7 +538,7 @@ STATIC INT32 OsLoadInterpBinary(const ELFLoadInfo *loadInfo, UINTPTR *interpMapB
         return -EINVAL;
     }
 
-    ret = OsMmapELFFile(loadInfo->interpInfo.fd, loadInfo->interpInfo.elfPhdr, &loadInfo->interpInfo.elfEhdr,
+    ret = OsMmapELFFile(loadInfo->interpInfo.procfd, loadInfo->interpInfo.elfPhdr, &loadInfo->interpInfo.elfEhdr,
                         interpMapBase, mapSize, &loadBase);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
@@ -911,14 +927,14 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
         }
     }
 
-    ret = OsMmapELFFile(loadInfo->execInfo.fd, loadInfo->execInfo.elfPhdr, &loadInfo->execInfo.elfEhdr,
+    ret = OsMmapELFFile(loadInfo->execInfo.procfd, loadInfo->execInfo.elfPhdr, &loadInfo->execInfo.elfEhdr,
                         &loadInfo->loadAddr, mapSize, &loadBase);
     if (ret != LOS_OK) {
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
         return ret;
     }
 
-    if (loadInfo->interpInfo.fd != INVALID_FD) {
+    if (loadInfo->interpInfo.procfd != INVALID_FD) {
         ret = OsLoadInterpBinary(loadInfo, &interpMapBase);
         if (ret != LOS_OK) {
             return ret;
@@ -974,12 +990,12 @@ STATIC VOID OsDeInitLoadInfo(ELFLoadInfo *loadInfo)
 
 STATIC VOID OsDeInitFiles(ELFLoadInfo *loadInfo)
 {
-    if (loadInfo->execInfo.fd != INVALID_FD) {
-        (VOID)close(loadInfo->execInfo.fd);
+    if (loadInfo->execInfo.procfd != INVALID_FD) {
+        (VOID)OsELFClose(loadInfo->execInfo.procfd);
     }
 
-    if (loadInfo->interpInfo.fd != INVALID_FD) {
-        (VOID)close(loadInfo->interpInfo.fd);
+    if (loadInfo->interpInfo.procfd != INVALID_FD) {
+        (VOID)OsELFClose(loadInfo->interpInfo.procfd);
     }
 #ifdef LOSCFG_FS_VFS
     delete_files_snapshot((struct files_struct *)loadInfo->oldFiles);
