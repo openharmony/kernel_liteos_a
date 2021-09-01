@@ -334,7 +334,7 @@ source "bsd/dev/usb/Kconfig"
 source "../../drivers/adapter/khdf/liteos/Kconfig"
 
 # Device driver Kconfig import
-osource "$(DEVICE_PATH)/drivers/Kconfig"
+source "$(DEVICE_PATH)/drivers/Kconfig"
 
 source "drivers/char/mem/Kconfig"
 source "drivers/char/quickstart/Kconfig"
