@@ -45,30 +45,7 @@ if (tee_enable) {
   tee = "_tee"
 }
 
-productName = get_path_info(product_path, "file")
-config_file = "${productName}_release.config"
-if (ohos_build_compiler == "clang") {
-  if (ohos_build_type == "debug") {
-    config_file = "debug/${productName}_${ohos_build_compiler}${tee}.config"
-  } else {
-    config_file = "${productName}_${ohos_build_compiler}_release${tee}.config"
-  }
-} else if (ohos_build_compiler == "gcc") {
-  if (ohos_build_type == "debug") {
-    config_file = "${productName}_debug_shell${tee}.config"
-  } else {
-    config_file = "${productName}_release${tee}.config"
-  }
-}
-
-liteos_config_file = rebase_path("tools/build/config/$config_file")
-
-# we prefer use product specified config file
-f = "$product_path/kernel_configs/${ohos_build_type}${tee}.config"
-if (exec_script("//build/lite/run_shell_cmd.py", [ "if [ -f $f ]; then echo true; else echo false; fi" ], "value")) {
-  liteos_config_file = f
-}
-
+liteos_config_file = "$product_path/kernel_configs/${ohos_build_type}${tee}.config"
 print("liteos_config_file:", liteos_config_file)
 
 exec_script("//build/lite/run_shell_cmd.py",
@@ -412,7 +389,7 @@ build_ext_component("make") {
   arch_cflags = string_join(" ", target_arch_cflags)
   command = "./build.sh \"$board_name\" \"$ohos_build_compiler\" \"$root_build_dir\" \"$ohos_build_type\" \"$tee_enable\""
   command += " \"$device_company\" \"$product_path\" \"$outdir\" \"$ohos_version\" \"$sysroot_path\" \"$arch_cflags\""
-  command += " \"$device_path\" \"$compile_prefix\""
+  command += " \"$device_path\" \"$compile_prefix\" \"$liteos_config_file\""
   if (liteos_skip_make) {
     print("build_ext_component \"$target_name\" skipped:", command)
     command = "true"

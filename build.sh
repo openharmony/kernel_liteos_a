@@ -43,42 +43,9 @@ sysroot_path=${10}
 arch_cflags=${11}
 device_path=${12}
 compile_prefix=${13}
+liteos_config_file=${14}
 
-echo "${board_name}" "${device_company}"
 echo "sh param:" "$@"
-
-destination="${outdir}/defconfig"
-function main() {
-    tee=""
-    if [ "${tee_enable}" = "true" ]; then
-        tee="_tee"
-    fi
-
-    mkdir -p "${destination%/*}"
-
-    config_file="${product_path}/kernel_configs/${ohos_build_type}${tee}.config"
-    if [ -f "${config_file}" ]; then
-        cp "${config_file}" "${destination}"
-        return
-    fi
-
-    product_name=$(basename "${product_path}")
-    config_file="${product_name}_release.config"
-    if [ "${ohos_build_compiler}" = "clang" ]; then
-        if [ "${ohos_build_type}" = "debug" ]; then
-            config_file="debug/${product_name}_${ohos_build_compiler}${tee}.config"
-        else
-            config_file="${product_name}_${ohos_build_compiler}_release${tee}.config"
-        fi
-    elif [ "${ohos_build_compiler}" = "gcc" ]; then
-        if [ "${ohos_build_type}" = "debug" ]; then
-            config_file="${product_name}_debug_shell${tee}.config"
-        else
-            config_file="${product_name}_release${tee}.config"
-        fi
-    fi
-    cp "tools/build/config/${config_file}" "${destination}"
-}
 
 if [ "x" != "x${sysroot_path}" ]; then
     export SYSROOT_PATH=${sysroot_path}
@@ -92,12 +59,11 @@ export PRODUCT_PATH="${product_path}"
 export DEVICE_PATH="${device_path}"
 
 export OUTDIR="${outdir}"
-export KCONFIG_CONFIG="${destination}"
-export LITEOS_MENUCONFIG_H="${destination%/*}/config.h"
-export LITEOS_CONFIG_FILE="${destination%/*}/.config"
+export KCONFIG_CONFIG="${liteos_config_file}"
+export LITEOS_MENUCONFIG_H="${outdir}/config.h"
+export LITEOS_CONFIG_FILE="${outdir}/.config"
 export LITEOS_COMPILER_PATH="${compile_prefix%/*}/"
 export CROSS_COMPILE="${compile_prefix##*/}"
 
-main && \
-make clean && \
+mkdir -p "${outdir}"
 make -j all VERSION="${ohos_version}"
