@@ -45,7 +45,11 @@ if (tee_enable) {
   tee = "_tee"
 }
 
-liteos_config_file = "$product_path/kernel_configs/${ohos_build_type}${tee}.config"
+declare_args() {
+  liteos_config_file = "${ohos_build_type}${tee}.config"
+}
+
+liteos_config_file = rebase_path(liteos_config_file, "", "$product_path/kernel_configs")
 print("liteos_config_file:", liteos_config_file)
 
 exec_script("//build/lite/run_shell_cmd.py",
