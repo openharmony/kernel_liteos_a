@@ -48,7 +48,7 @@ STATIC CHAR *g_cmdLine = NULL;
 STATIC UINT64 g_alignSize = 0;
 STATIC struct BootArgs g_bootArgs[MAX_ARGS_NUM] = {0};
 
-INT32 LOS_GetCmdLine()
+INT32 LOS_GetCmdLine(VOID)
 {
     int ret;
 
@@ -118,7 +118,7 @@ ERROUT:
     return LOS_NOK;
 }
 
-VOID LOS_FreeCmdLine()
+VOID LOS_FreeCmdLine(VOID)
 {
     if (g_cmdLine != NULL) {
         free(g_cmdLine);
@@ -155,7 +155,7 @@ STATIC INT32 GetBootargs(CHAR **args)
 #endif
 }
 
-INT32 LOS_ParseBootargs()
+INT32 LOS_ParseBootargs(VOID)
 {
     INT32 idx = 0;
     INT32 ret;
@@ -204,7 +204,7 @@ INT32 LOS_GetArgValue(CHAR *argName, CHAR **argValue)
     return LOS_NOK;
 }
 
-UINT64 LOS_GetAlignsize()
+UINT64 LOS_GetAlignsize(VOID)
 {
     return g_alignSize;
 }

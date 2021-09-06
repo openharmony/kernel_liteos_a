@@ -37,10 +37,6 @@ ifneq ($(LOSCFG_HRTIMER_ENABLE), y)
 LOCAL_SRCS := $(filter-out src/linux_hrtimer.c, $(LOCAL_SRCS))
 endif
 
-LOCAL_INCLUDE := \
-        -I $(LITEOSTOPDIR)/kernel/base/include \
-        -I $(LITEOSTOPDIR)/bsd/compat/linuxkpi/include
-
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LITEOS_GCOV_OPTS)
 
 include $(MODULE)

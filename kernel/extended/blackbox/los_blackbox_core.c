@@ -70,9 +70,9 @@ struct ErrorInfo *g_tempErrInfo;
 
 /* ------------ function definitions ------------ */
 static void FormatErrorInfo(struct ErrorInfo *info,
-    const char event[EVENT_MAX_LEN],
-    const char module[MODULE_MAX_LEN],
-    const char errorDesc[ERROR_DESC_MAX_LEN])
+                            const char event[EVENT_MAX_LEN],
+                            const char module[MODULE_MAX_LEN],
+                            const char errorDesc[ERROR_DESC_MAX_LEN])
 {
     if (info == NULL || event == NULL || module == NULL || errorDesc == NULL) {
         BBOX_PRINT_ERR("info: %p, event: %p, module: %p, errorDesc: %p!\n", info, event, module, errorDesc);
@@ -136,7 +136,7 @@ static bool FindModuleOps(struct ErrorInfo *info, BBoxOps **ops)
     return found;
 }
 
-static void InvokeModuleOps(struct ErrorInfo *info, BBoxOps *ops)
+static void InvokeModuleOps(struct ErrorInfo *info, const BBoxOps *ops)
 {
     if (info == NULL || ops == NULL) {
         BBOX_PRINT_ERR("info: %p, ops: %p!\n", info, ops);
@@ -203,7 +203,7 @@ static void SaveLastLog(const char *logDir)
             }
         } else {
             BBOX_PRINT_ERR("module [%s], GetLastLogInfo: %p, SaveLastLog: %p!\n",
-                 ops->ops.module, ops->ops.GetLastLogInfo, ops->ops.SaveLastLog);
+                           ops->ops.module, ops->ops.GetLastLogInfo, ops->ops.SaveLastLog);
         }
     }
     (void)LOS_SemPost(g_opsListSem);

@@ -30,7 +30,9 @@
  */
 
 #include "los_seq_buf.h"
+#include "los_typedef.h"
 #include <stdlib.h>
+#include "securec.h"
 
 static int ExpandSeqBuf(struct SeqBuf *seqBuf, size_t oldCount)
 {

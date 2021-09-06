@@ -27,27 +27,20 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//kernel/liteos_a/liteos.gni")
+include $(LITEOSTOPDIR)/config.mk
 
-module_switch = defined(LOSCFG_SHELL)
-module_name = get_path_info(rebase_path("."), "name")
-kernel_module(module_name) {
-  sources = [
-    "full/src/base/shcmd.c",
-    "full/src/base/shcmdparse.c",
-    "full/src/base/shell_lk.c",
-    "full/src/base/shmsg.c",
-    "full/src/base/show.c",
-    "full/src/cmds/date_shellcmd.c",
-    "full/src/cmds/dmesg.c",
-    "full/src/cmds/hwi_shellcmd.c",
-    "full/src/cmds/shell_shellcmd.c",
-    "full/src/cmds/watch_shellcmd.c",
-  ]
+MODULE_NAME := common
 
-  public_configs = [ ":public" ]
-}
+LOCAL_SRCS = $(wildcard ./main.c)
 
-config("public") {
-  include_dirs = [ "full/include" ]
-}
+LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/compat/posix/src \
+                 -I $(LITEOSTOPDIR)/bsd/dev/random
+
+LOCAL_SRCS += $(wildcard *.c)	
+ifneq ($(LOSCFG_FS_VFS), y)
+LOCAL_SRCS := $(filter-out console.c virtual_serial.c, $(LOCAL_SRCS))
+endif
+
+LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+
+include $(MODULE)

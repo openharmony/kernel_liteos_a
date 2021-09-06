@@ -31,14 +31,14 @@
 #ifndef LOS_BLACKBOX_H
 #define LOS_BLACKBOX_H
 
+#include "stdarg.h"
+#include "los_typedef.h"
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-#include "stdarg.h"
-#include "los_typedef.h"
 
 #define PATH_MAX_LEN          256
 #define EVENT_MAX_LEN         32

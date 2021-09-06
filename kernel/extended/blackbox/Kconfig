@@ -1,6 +1,7 @@
 config BLACKBOX
     bool "Enable BlackBox"
     default n
+    depends on KERNEL_EXTKERNEL
     help
       Answer Y to enable LiteOS support blackbox
 

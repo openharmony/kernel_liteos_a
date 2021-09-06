@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,11 +28,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __LOS_SEQ_BUF_H__
-#define __LOS_SEQ_BUF_H__
+#ifndef LOS_BLACKBOX_DETECTOR_H
+#define LOS_BLACKBOX_DETECTOR_H
 
 #include "los_typedef.h"
-#include "pthread.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -41,20 +39,8 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define SEQBUF_PAGE_SIZE  4096
-#define SEQBUF_LIMIT_SIZE (256 * SEQBUF_PAGE_SIZE)
-
-struct SeqBuf {
-    char *buf;
-    size_t size;
-    size_t count;
-    void *private;
-};
-
-struct SeqBuf *LosBufCreat(void);
-int LosBufPrintf(struct SeqBuf *seqBuf, const char *fmt, ...);
-int LosBufVprintf(struct SeqBuf *seqBuf, const char *fmt, va_list argList);
-int LosBufRelease(struct SeqBuf *seqBuf);
+int UploadEventByFile(const char *filePath);
+int UploadEventByStream(const char *buf, size_t bufSize);
 
 #ifdef __cplusplus
 #if __cplusplus

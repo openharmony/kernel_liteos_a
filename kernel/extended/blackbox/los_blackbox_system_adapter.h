@@ -28,8 +28,11 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOS_BLACKBOX_COMMON_H
-#define LOS_BLACKBOX_COMMON_H
+#ifndef LOS_BLACKBOX_SYSTEM_ADAPTER_H
+#define LOS_BLACKBOX_SYSTEM_ADAPTER_H
+
+#include "los_blackbox.h"
+#include "los_blackbox_common.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -37,21 +40,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#include "los_blackbox.h"
-#include "los_printf.h"
-#include "los_typedef.h"
-
-#define ERROR_INFO_HEADER_FORMAT     "#### error info ####\nevent: %s\nmodule: %s\nerrorDesc: %s\n"
-#define ERROR_INFO_MAX_LEN           768
-#define Min(a, b)                    (((a) > (b)) ? (b) : (a))
-#define BBOX_PRINT_ERR(format, ...)  PRINTK("bbox: func: %s, line: %d, Err: " \
-    format, __func__, __LINE__, ##__VA_ARGS__)
-#define BBOX_PRINT_INFO(format, ...) PRINTK("bbox: Info: " format, ##__VA_ARGS__)
-
-int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isAppend);
-int SaveBasicErrorInfo(const char *filePath, struct ErrorInfo *info);
-int CreateLogDir(const char *dirPath);
-bool IsLogPartReady(void);
+int OsBBoxSystemAdapterInit(void);
 
 #ifdef __cplusplus
 #if __cplusplus

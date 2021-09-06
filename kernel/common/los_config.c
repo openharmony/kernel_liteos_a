@@ -51,6 +51,9 @@
 #include "los_tick.h"
 #include "los_vm_boot.h"
 #include "los_smp.h"
+#ifdef LOSCFG_ENABLE_KERNEL_TEST
+#include "los_test_pri.h"
+#endif
 
 STATIC SystemRebootFunc g_rebootHook = NULL;
 
@@ -294,7 +297,6 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
 #ifndef LOSCFG_ENABLE_KERNEL_TEST
     sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;
 #else
-    extern void TestSystemInit(void);
     sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)TestSystemInit;
 #endif
     sysTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;

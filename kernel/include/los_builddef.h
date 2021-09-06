@@ -29,10 +29,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_TIMER_PRI_H
-#define _LOS_TIMER_PRI_H
-
-#include "los_typedef.h"
+#ifndef _LOS_BUILDEF_H
+#define _LOS_BUILDEF_H
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -40,11 +38,66 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-extern VOID OsAdjTime(VOID);
+#define OS_LITTLE_ENDIAN 0x1234 /* Little endian */
+#define OS_BIG_ENDIAN    0x4321 /* Big endian */
+
+#ifndef OS_BYTE_ORDER
+#define OS_BYTE_ORDER OS_LITTLE_ENDIAN
+#endif
+
+/* Define OS code data sections */
+/* The indicator function is inline */
+#ifndef LITE_OS_SEC_ALW_INLINE
+#define LITE_OS_SEC_ALW_INLINE  /* __attribute__((always_inline)) */
+#endif
+
+#ifndef LITE_OS_SEC_TEXT
+#define LITE_OS_SEC_TEXT        /* __attribute__((section(".text.sram"))) */
+#endif
+
+#ifndef LITE_OS_SEC_TEXT_MINOR
+#define LITE_OS_SEC_TEXT_MINOR  /* __attribute__((section(".text.ddr"))) */
+#endif
+
+#ifndef LITE_OS_SEC_TEXT_INIT
+#define LITE_OS_SEC_TEXT_INIT   /* __attribute__((section(".text.init"))) */
+#endif
+
+#ifndef LITE_OS_SEC_DATA
+#define LITE_OS_SEC_DATA        /* __attribute__((section(".data.sram"))) */
+#endif
+
+#ifndef LITE_OS_SEC_DATA_MINOR
+#define LITE_OS_SEC_DATA_MINOR  /* __attribute__((section(".data.ddr"))) */
+#endif
+
+#ifndef LITE_OS_SEC_DATA_INIT
+#define LITE_OS_SEC_DATA_INIT   /* __attribute__((section(".data.init"))) */
+#endif
+
+#ifndef LITE_OS_SEC_BSS
+#define LITE_OS_SEC_BSS         /* __attribute__((section(".bss.sram"))) */
+#endif
+
+#ifndef LITE_OS_SEC_BSS_MINOR
+#define LITE_OS_SEC_BSS_MINOR   /* __attribute__((section(".bss.ddr"))) */
+#endif
+
+#ifndef LITE_OS_SEC_BSS_INIT
+#define LITE_OS_SEC_BSS_INIT    /* __attribute__((section(".bss.init"))) */
+#endif
+
+#ifndef LITE_OS_SEC_ITCM
+#define LITE_OS_SEC_ITCM        /* __attribute__((section(".itcm "))) */
+#endif
+#ifndef LITE_OS_SEC_DTCM
+#define LITE_OS_SEC_DTCM        /* __attribute__((section(".dtcm"))) */
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
 }
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-#endif /* _LOS_TIMER_PRI_H */
+
+#endif /* _LOS_BUILDEF_H */

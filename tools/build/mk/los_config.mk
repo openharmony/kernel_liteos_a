@@ -114,17 +114,6 @@ include $(LITEOSTOPDIR)/arch/cpu.mk
 
 ############################# Platform Option Begin#################################
 include $(LITEOSTOPDIR)/platform/bsp.mk
-
-ifeq ($(LOSCFG_PLATFORM_ROOTFS), y)
-    LITEOS_BASELIB  += -lrootfs
-    LIB_SUBDIRS     += $(LITEOSTOPDIR)/kernel/common/rootfs
-    LITEOS_PLATFORM_INCLUDE     += -I $(LITEOSTOPDIR)/kernel/common/rootfs
-endif
-
-ifeq ($(LOSCFG_PLATFORM_PATCHFS), y)
-    LITEOS_BASELIB  += -lpatchfs
-    LIB_SUBDIRS     += $(LITEOSTOPDIR)/kernel/common/patchfs
-endif
 ############################# Platform Option End #################################
 
 ####################################### Kernel Option Begin ###########################################
@@ -132,6 +121,16 @@ LITEOS_BASELIB += -lbase
 LIB_SUBDIRS       += kernel/base
 LITEOS_KERNEL_INCLUDE   := -I $(LITEOSTOPDIR)/kernel/include \
                            -I $(LITEOSTOPDIR)/kernel/base/include
+
+LITEOS_BASELIB += -lcommon
+LIB_SUBDIRS       += kernel/common
+LITEOS_KERNEL_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/common
+
+ifeq ($(LOSCFG_KERNEL_CPPSUPPORT), y)
+    LITEOS_BASELIB += -lcppsupport
+    LIB_SUBDIRS       += kernel/extended/cppsupport
+    LITEOS_CPPSUPPORT_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/cppsupport
+endif
 
 ifeq ($(LOSCFG_KERNEL_CPUP), y)
     LITEOS_BASELIB   += -lcpup
@@ -181,9 +180,19 @@ ifeq ($(LOSCFG_KERNEL_PM), y)
     LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/power
 endif
 
+ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
+    LITEOS_BASELIB += -lsyscall
+    LIB_SUBDIRS += syscall
+endif
+LIB_SUBDIRS += kernel/user
+
 ################################### Kernel Option End ################################
 
 #################################### Lib Option Begin ###############################
+LITEOS_BASELIB   += -lscrew
+LIB_SUBDIRS         += lib/libscrew
+LITEOS_LIBSCREW_INCLUDE += -I $(LITEOSTOPDIR)/lib/libscrew/include
+
 ifeq ($(LOSCFG_LIB_LIBC), y)
     LIB_SUBDIRS           += lib/libc
     LITEOS_BASELIB        += -lc
@@ -195,16 +204,6 @@ ifeq ($(LOSCFG_LIB_LIBC), y)
     LITEOS_LIBC_INCLUDE   += \
         -I $(LITEOSTHIRDPARTY)/bounds_checking_function/include
     LITEOS_CMACRO         += -DSECUREC_IN_KERNEL=0
-endif
-
-    LITEOS_BASELIB   += -lscrew
-    LIB_SUBDIRS         += lib/libscrew
-    LITEOS_LIBSCREW_INCLUDE += -I $(LITEOSTOPDIR)/lib/libscrew/include
-
-ifeq ($(LOSCFG_KERNEL_CPPSUPPORT), y)
-    LITEOS_BASELIB += -lcppsupport
-    LIB_SUBDIRS       += kernel/extended/cppsupport
-    LITEOS_CPPSUPPORT_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/cppsupport
 endif
 
 ifeq ($(LOSCFG_LIB_ZLIB), y)
@@ -301,6 +300,17 @@ ifeq ($(LOSCFG_FS_JFFS), y)
     LIB_SUBDIRS     += fs/jffs2
 endif
 
+ifeq ($(LOSCFG_PLATFORM_ROOTFS), y)
+    LITEOS_BASELIB  += -lrootfs
+    LIB_SUBDIRS     += fs/rootfs
+    LITEOS_PLATFORM_INCLUDE     += -I $(LITEOSTOPDIR)/fs/rootfs
+endif
+
+ifeq ($(LOSCFG_PLATFORM_PATCHFS), y)
+    LITEOS_BASELIB  += -lpatchfs
+    LIB_SUBDIRS     += fs/patchfs
+endif
+
 ifeq ($(LOSCFG_FS_ZPFS), y)
     LITEOS_BASELIB  += -lzpfs
     LIB_SUBDIRS     += fs/zpfs
@@ -380,6 +390,7 @@ ifeq ($(LOSCFG_DRIVERS_USB), y)
     LITEOS_BASELIB  += -lusb_base
     LIB_SUBDIRS     += $(LITEOSTOPDIR)/bsd/dev/usb
     LITEOS_USB_INCLUDE += -I $(LITEOSTOPDIR)/bsd/dev/usb
+    LITEOS_CMACRO   += -DUSB_DEBUG_VAR=5
 endif
 
 ifeq ($(LOSCFG_DRIVERS_VIDEO), y)
@@ -392,20 +403,22 @@ endif
 
 ############################## Dfx Option Begin#######################################
 ifeq ($(LOSCFG_BASE_CORE_HILOG), y)
-    LITEOS_BASELIB     += -lhilog
-    LIB_SUBDIRS           += $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/frameworks/featured
+    LITEOS_BASELIB      += -lhilog
+    LIB_SUBDIRS         += $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/frameworks/featured
+    LIB_SUBDIRS         += $(LITEOSTOPDIR)/kernel/extended/hilog
     LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/interfaces/native/kits
     LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/../../base/hiviewdfx/hilog_lite/interfaces/native/kits/hilog
+    LITEOS_HILOG_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/extended/hilog
 endif
 ifeq ($(LOSCFG_BLACKBOX), y)
     LITEOS_BASELIB     += -lblackbox
-    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/common/blackbox
-    LITEOS_BLACKBOX_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/common/blackbox
+    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/extended/blackbox
+    LITEOS_BLACKBOX_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/extended/blackbox
 endif
 ifeq ($(LOSCFG_HIDUMPER), y)
     LITEOS_BASELIB     += -lhidumper
-    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/common/hidumper
-    LITEOS_HIDUMPER_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/common/hidumper
+    LIB_SUBDIRS           += $(LITEOSTOPDIR)/kernel/extended/hidumper
+    LITEOS_HIDUMPER_INCLUDE  += -I $(LITEOSTOPDIR)/kernel/extended/hidumper
 endif
 ############################## Dfx Option End #######################################
 
@@ -457,13 +470,6 @@ ifeq ($(LOSCFG_NET_TELNET), y)
     LITEOS_TELNET_INCLUDE   += \
         -I $(LITEOSTOPDIR)/net/telnet/include
 endif
-
-ifeq ($(LOSCFG_KERNEL_SYSCALL), y)
-LITEOS_BASELIB += -lsyscall
-LIB_SUBDIRS += syscall
-endif
-LIB_SUBDIRS += kernel/user
-
 ############################# Tools && Debug Option End #################################
 
 ############################# Security Option Begin ##############################
@@ -481,13 +487,13 @@ ifeq ($(LOSCFG_CC_STACKPROTECTOR_ALL), y)
 endif
 
 ifeq ($(LOSCFG_SECURITY), y)
-LIB_SUBDIRS += security
-LITEOS_BASELIB += -lsecurity
+    LIB_SUBDIRS += security
+    LITEOS_BASELIB += -lsecurity
 ifeq ($(LOSCFG_SECURITY_CAPABILITY), y)
-LITEOS_SECURITY_CAP_INC := -I $(LITEOSTOPDIR)/security/cap
+    LITEOS_SECURITY_CAP_INC := -I $(LITEOSTOPDIR)/security/cap
 endif
 ifeq ($(LOSCFG_SECURITY_VID), y)
-LITEOS_SECURITY_VID_INC := -I $(LITEOSTOPDIR)/security/vid
+    LITEOS_SECURITY_VID_INC := -I $(LITEOSTOPDIR)/security/vid
 endif
 endif
 

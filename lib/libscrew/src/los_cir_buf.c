@@ -29,7 +29,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "los_cir_buf_pri.h"
+#include "los_cir_buf.h"
 
 
 UINT32 LOS_CirBufUsedSize(CirBuf *cirbufCB)
