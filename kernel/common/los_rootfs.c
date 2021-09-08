@@ -246,6 +246,7 @@ STATIC INT32 GetArgs(CHAR **args)
     }
 
 #ifdef LOSCFG_STORAGE_EMMC
+    (void)DiskEventRead();
     g_emmcDisk = GetMmcDisk(EMMC);
     if (g_emmcDisk == NULL) {
         PRINT_ERR("Get EMMC disk failed!\n");

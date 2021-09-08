@@ -700,6 +700,8 @@ INT32 los_alloc_diskid_byname(const CHAR *diskName);
  *
  */
 INT32 los_get_diskid_byname(const CHAR *diskName);
+INT32 DiskEventRead(void);
+INT32 DiskEventInit(void);
 
 #ifdef __cplusplus
 #if __cplusplus
