@@ -80,6 +80,7 @@ $(LITEOSTHIRDPARTY)/NuttX/fs/dirent/fs_telldir.c \
 \
 $(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_mount.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_umount.c \
+$(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_sync.c \
 \
 $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_blockproxy.c \
 $(LITEOSTHIRDPARTY)/NuttX/fs/mount/fs_foreachmountpoint.c \
