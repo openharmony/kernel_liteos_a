@@ -58,6 +58,10 @@ spinlock_t g_diskFatBlockSpinlock;
 
 UINT32 g_usbMode = 0;
 
+#ifdef LOSCFG_STORAGE_EMMC
+static struct tagEvent g_diskInitEvent;
+#endif
+
 #define MEM_ADDR_ALIGN_BYTE  64
 #define RWE_RW_RW            0755
 
@@ -1360,6 +1364,16 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
     } else {
         disk->type = OTHERS;
     }
+#ifdef LOSCFG_STORAGE_EMMC
+    ret = LOS_EventWrite(&g_diskInitEvent, 1);
+    if (ret < 0) {
+        PRINT_ERR("Disk initialization event write fail \n");
+        (void)unregister_blockdriver(diskName);
+        disk->disk_status = STAT_UNUSED;
+        return VFS_ERROR;
+    }
+#endif
+
     return ENOERR;
 
 DISK_BLKDRIVER_ERROR:
@@ -1368,6 +1382,24 @@ DISK_BLKDRIVER_ERROR:
 DISK_FIND_ERROR:
     (VOID)unregister_blockdriver(diskName);
     return VFS_ERROR;
+}
+
+INT32 DiskEventInit(void)
+{
+#ifdef LOSCFG_STORAGE_EMMC
+    return LOS_EventInit(&g_diskInitEvent);
+#else
+    return LOS_OK;
+#endif
+}
+
+INT32 DiskEventRead(void)
+{
+#ifdef LOSCFG_STORAGE_EMMC
+    return LOS_EventRead(&g_diskInitEvent, 1, LOS_WAITMODE_OR, LOS_WAIT_FOREVER);
+#else
+    return LOS_OK;
+#endif
 }
 
 INT32 los_disk_deinit(INT32 diskID)
