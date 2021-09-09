@@ -683,12 +683,12 @@ int SysGetGroupID(void)
 }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
-static int SetGroups(int listSize, const int *safeList, int size)
+static int SetGroups(int size, const int *safeList)
 {
     User *oldUser = NULL;
     unsigned int intSave;
 
-    User *newUser = LOS_MemAlloc(m_aucSysMem1, sizeof(User) + listSize * sizeof(int));
+    User *newUser = LOS_MemAlloc(m_aucSysMem1, sizeof(User) + size * sizeof(int));
     if (newUser == NULL) {
         return -ENOMEM;
     }
@@ -696,14 +696,11 @@ static int SetGroups(int listSize, const int *safeList, int size)
     SCHEDULER_LOCK(intSave);
     oldUser = OsCurrUserGet();
     (VOID)memcpy_s(newUser, sizeof(User), oldUser, sizeof(User));
-    if (safeList != NULL) {
+    if (size != 0) {
         (VOID)memcpy_s(newUser->groups, size * sizeof(int), safeList, size * sizeof(int));
     }
-    if (listSize == size) {
-        newUser->groups[listSize] = oldUser->gid;
-    }
-
-    newUser->groupNumber = listSize + 1;
+    
+    newUser->groupNumber = size;
     OsCurrProcessGet()->user = newUser;
     SCHEDULER_UNLOCK(intSave);
 
@@ -724,7 +721,7 @@ static int GetGroups(int size, int list[])
     SCHEDULER_UNLOCK(intSave);
 
     listSize = groupCount * sizeof(int);
-    if (size == 0) {
+    if ((size == 0) || (groupCount == 0)) {
         return groupCount;
     } else if (list == NULL) {
         return -EFAULT;
@@ -782,7 +779,6 @@ int SysSetGroups(int size, const int list[])
 #ifdef LOSCFG_SECURITY_CAPABILITY
     int ret;
     int gid;
-    int listSize = size;
     unsigned int count;
     int *safeList = NULL;
 #endif
@@ -813,16 +809,14 @@ int SysSetGroups(int size, const int list[])
         }
         gid = OsCurrUserGet()->gid;
         for (count = 0; count < size; count++) {
-            if (safeList[count] == gid) {
-                listSize = size - 1;
-            } else if (safeList[count] < 0) {
+            if (safeList[count] < 0) {
                 ret = -EINVAL;
                 goto EXIT;
             }
         }
     }
 
-    ret = SetGroups(listSize, safeList, size);
+    ret = SetGroups(size, safeList);
 EXIT:
     if (safeList != NULL) {
         (void)LOS_MemFree(m_aucSysMem1, safeList);
