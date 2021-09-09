@@ -1279,19 +1279,19 @@ static INT32 DiskDeinit(los_disk *disk)
 #endif
 
     disk->dev = NULL;
-    DISK_UNLOCK(&disk->disk_mutex);
+
     (VOID)unregister_blockdriver(disk->disk_name);
     if (disk->disk_name != NULL) {
         LOS_MemFree(m_aucSysMem0, disk->disk_name);
         disk->disk_name = NULL;
     }
+    DISK_UNLOCK(&disk->disk_mutex);
+    disk->disk_status = STAT_UNUSED;
     ret = pthread_mutex_destroy(&disk->disk_mutex);
     if (ret != 0) {
         PRINT_ERR("%s %d, mutex destroy failed, ret = %d\n", __FUNCTION__, __LINE__, ret);
         return -EFAULT;
     }
-
-    disk->disk_status = STAT_UNUSED;
 
     return ENOERR;
 }
