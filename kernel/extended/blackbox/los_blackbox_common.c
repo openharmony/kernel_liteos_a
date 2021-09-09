@@ -98,7 +98,7 @@ int FullWriteFile(const char *filePath, const char *buf, size_t bufSize, int isA
 #endif
 }
 
-int SaveBasicErrorInfo(const char *filePath, struct ErrorInfo *info)
+int SaveBasicErrorInfo(const char *filePath, const struct ErrorInfo *info)
 {
     char *buf = NULL;
 

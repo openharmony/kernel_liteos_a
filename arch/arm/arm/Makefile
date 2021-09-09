@@ -32,11 +32,6 @@ include $(LITEOSTOPDIR)/config.mk
 MODULE_NAME := $(LOSCFG_ARCH_CPU)
 
 LOCAL_SRCS := $(wildcard src/*.c) $(wildcard src/*.S)
-LOCAL_INCLUDE := \
-	-I $(LITEOSTOPDIR)/kernel/base/include \
-	-I $(LITEOSTOPDIR)/kernel/extended/include \
-	-I $(LITEOSTOPDIR)/kernel/extended/dynload/include \
-	-I $(LITEOSTOPDIR)/arch/arm/arm/include \
 
 ifeq ($(LOSCFG_ARCH_ARM_VER), "armv7-a")
 LOCAL_SRCS += $(wildcard src/armv7a/*.S)
@@ -48,7 +43,7 @@ else
 LOCAL_SRCS += src/startup/reset_vector_up.S
 endif
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LITEOS_GCOV_OPTS)
 
 AS_OBJS_LIBC_FLAGS  = -D__ASSEMBLY__
 # linux style macros

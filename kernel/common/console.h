@@ -40,7 +40,7 @@
 #include "telnet_dev.h"
 #endif
 #include "virtual_serial.h"
-#include "los_cir_buf_pri.h"
+#include "los_cir_buf.h"
 #endif
 
 #ifdef __cplusplus

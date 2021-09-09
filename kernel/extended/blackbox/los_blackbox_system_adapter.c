@@ -218,7 +218,7 @@ static int SaveLastLog(const char *logDir, struct ErrorInfo *info)
 #ifdef LOSCFG_BLACKBOX_TEST
 static void BBoxTest(void)
 {
-      struct ModuleOps ops = {
+    struct ModuleOps ops = {
         .module = "MODULE_TEST",
         .Dump = NULL,
         .Reset = NULL,

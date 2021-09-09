@@ -321,7 +321,6 @@ STATIC INT32 MountPartitions(CHAR *fsType, UINT32 mountFlags)
 STATIC INT32 CheckValidation(UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, UINT64 userSize)
 {
     UINT64 alignSize = LOS_GetAlignsize();
-
     if (alignSize == 0) {
         return LOS_OK;
     }

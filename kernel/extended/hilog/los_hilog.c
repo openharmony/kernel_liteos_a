@@ -126,7 +126,7 @@ static void HiLogBufferDec(size_t sz)
     }
 }
 
-static int HiLogBufferCopy(unsigned char *dst, unsigned dstLen, unsigned char *src, size_t srcLen)
+static int HiLogBufferCopy(unsigned char *dst, unsigned dstLen, const unsigned char *src, size_t srcLen)
 {
     int retval = -1;
     size_t minLen = (dstLen > srcLen) ? srcLen : dstLen;

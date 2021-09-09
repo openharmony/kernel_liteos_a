@@ -38,7 +38,6 @@
 
 #include "los_tick.h"
 #include "los_vm_zone.h"
-#include "sys_config.h"
 
 #ifdef __cplusplus
 #if __cplusplus

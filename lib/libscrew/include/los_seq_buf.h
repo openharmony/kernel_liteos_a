@@ -29,8 +29,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_BUILDEF_H
-#define _LOS_BUILDEF_H
+#ifndef __LOS_SEQ_BUF_H__
+#define __LOS_SEQ_BUF_H__
+
+#include "stdarg.h"
+#include "stddef.h"
+
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -38,63 +42,20 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_LITTLE_ENDIAN 0x1234 /* Little endian */
-#define OS_BIG_ENDIAN    0x4321 /* Big endian */
+#define SEQBUF_PAGE_SIZE  4096
+#define SEQBUF_LIMIT_SIZE (256 * SEQBUF_PAGE_SIZE)
 
-#ifndef OS_BYTE_ORDER
-#define OS_BYTE_ORDER OS_LITTLE_ENDIAN
-#endif
+struct SeqBuf {
+    char *buf;
+    size_t size;
+    size_t count;
+    void *private;
+};
 
-/* Define OS code data sections */
-/* The indicator function is inline */
-#ifndef LITE_OS_SEC_ALW_INLINE
-#define LITE_OS_SEC_ALW_INLINE  /* __attribute__((always_inline)) */
-#endif
-
-#ifndef LITE_OS_SEC_TEXT
-#define LITE_OS_SEC_TEXT        /* __attribute__((section(".text.sram"))) */
-#endif
-
-#ifndef LITE_OS_SEC_TEXT_MINOR
-#define LITE_OS_SEC_TEXT_MINOR  /* __attribute__((section(".text.ddr"))) */
-#endif
-
-#ifndef LITE_OS_SEC_TEXT_INIT
-#define LITE_OS_SEC_TEXT_INIT   /* __attribute__((section(".text.init"))) */
-#endif
-
-#ifndef LITE_OS_SEC_DATA
-#define LITE_OS_SEC_DATA        /* __attribute__((section(".data.sram"))) */
-#endif
-
-#ifndef LITE_OS_SEC_DATA_MINOR
-#define LITE_OS_SEC_DATA_MINOR  /* __attribute__((section(".data.ddr"))) */
-#endif
-
-#ifndef LITE_OS_SEC_DATA_INIT
-#define LITE_OS_SEC_DATA_INIT   /* __attribute__((section(".data.init"))) */
-#endif
-
-#ifndef LITE_OS_SEC_BSS
-#define LITE_OS_SEC_BSS         /* __attribute__((section(".bss.sram"))) */
-#endif
-
-#ifndef LITE_OS_SEC_BSS_MINOR
-#define LITE_OS_SEC_BSS_MINOR   /* __attribute__((section(".bss.ddr"))) */
-#endif
-
-#ifndef LITE_OS_SEC_BSS_INIT
-#define LITE_OS_SEC_BSS_INIT    /* __attribute__((section(".bss.init"))) */
-#endif
-
-#ifndef LITE_OS_SEC_ITCM
-#define LITE_OS_SEC_ITCM        /* __attribute__((section(".itcm "))) */
-#endif
-#ifndef LITE_OS_SEC_DTCM
-#define LITE_OS_SEC_DTCM        /* __attribute__((section(".dtcm"))) */
-#endif
-
-#define PACK1
+struct SeqBuf *LosBufCreat(void);
+int LosBufPrintf(struct SeqBuf *seqBuf, const char *fmt, ...);
+int LosBufVprintf(struct SeqBuf *seqBuf, const char *fmt, va_list argList);
+int LosBufRelease(struct SeqBuf *seqBuf);
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -102,4 +63,4 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#endif /* _LOS_BUILDEF_H */
+#endif
