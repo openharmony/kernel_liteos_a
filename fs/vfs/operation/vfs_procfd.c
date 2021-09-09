@@ -59,10 +59,6 @@ void FileTableUnLock(struct fd_table_s *fdt)
 
 static int AssignProcessFd(const struct fd_table_s *fdt, int minFd)
 {
-    if (fdt == NULL) {
-        return VFS_ERROR;
-    }
-
     if (minFd >= fdt->max_fds) {
         set_errno(EINVAL);
         return VFS_ERROR;

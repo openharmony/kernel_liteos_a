@@ -450,7 +450,15 @@ OUT:
 int SysSymlink(const char *target, const char *linkpath)
 {
     int ret;
+    char *targetRet = NULL;
     char *pathRet = NULL;
+
+    if (target != NULL) {
+        ret = UserPathCopy(target, &targetRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
 
     if (linkpath != NULL) {
         ret = UserPathCopy(linkpath, &pathRet);
@@ -459,7 +467,7 @@ int SysSymlink(const char *target, const char *linkpath)
         }
     }
 
-    ret = symlink(target, pathRet);
+    ret = symlink(targetRet, pathRet);
     if (ret < 0) {
         ret = -get_errno();
     }
@@ -467,6 +475,10 @@ int SysSymlink(const char *target, const char *linkpath)
 OUT:
     if (pathRet != NULL) {
         (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+
+    if (targetRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, targetRet);
     }
     return ret;
 }
@@ -606,6 +618,7 @@ int SysMount(const char *source, const char *target, const char *filesystemtype,
     int ret;
     char *sourceRet = NULL;
     char *targetRet = NULL;
+    char *dataRet = NULL;
     char fstypeRet[FILESYSTEM_TYPE_MAX + 1] = {0};
 
     if (!IsCapPermit(CAP_FS_MOUNT)) {
@@ -642,7 +655,14 @@ int SysMount(const char *source, const char *target, const char *filesystemtype,
 #endif
     }
 
-    ret = mount(sourceRet, targetRet, (filesystemtype ? fstypeRet : NULL), mountflags, data);
+    if (data != NULL) {
+        ret = UserPathCopy(data, &dataRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    ret = mount(sourceRet, targetRet, (filesystemtype ? fstypeRet : NULL), mountflags, dataRet);
     if (ret < 0) {
         ret = -get_errno();
     }
@@ -653,6 +673,9 @@ OUT:
     }
     if (targetRet != NULL) {
         (void)LOS_MemFree(OS_SYS_MEM_ADDR, targetRet);
+    }
+    if (dataRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, dataRet);
     }
     return ret;
 }
@@ -1327,9 +1350,12 @@ ssize_t SysReadv(int fd, const struct iovec *iov, int iovcnt)
 
     /* Process fd convert to system global fd */
     fd = GetAssociatedSystemFd(fd);
-    if ((iov == NULL) || (iovcnt <= 0) || (iovcnt > IOV_MAX)) {
-        ret = vfs_readv(fd, iov, iovcnt, NULL);
-        return -get_errno();
+    if ((iov == NULL) || (iovcnt < 0) || (iovcnt > IOV_MAX)) {
+        return -EINVAL;
+    }
+
+    if (iovcnt == 0) {
+        return 0;
     }
 
     ret = UserIovCopy(&iovRet, iov, iovcnt, &valid_iovcnt);
@@ -1363,6 +1389,11 @@ ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt)
     if ((iovcnt < 0) || (iovcnt > IOV_MAX)) {
         return -EINVAL;
     }
+
+    if (iovcnt == 0) {
+        return 0;
+    }
+
     if (iov == NULL) {
         return -EFAULT;
     }
@@ -1545,21 +1576,26 @@ char *SysGetcwd(char *buf, size_t n)
 {
     char *ret = NULL;
     char *bufRet = NULL;
+    size_t bufLen = n;
     int retVal;
 
-    bufRet = (char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, n);
+    if (bufLen > PATH_MAX) {
+        bufLen = PATH_MAX;
+    }
+
+    bufRet = (char *)LOS_MemAlloc(OS_SYS_MEM_ADDR, bufLen);
     if (bufRet == NULL) {
         return (char *)(intptr_t)-ENOMEM;
     }
-    (void)memset_s(bufRet, n, 0, n);
+    (void)memset_s(bufRet, bufLen, 0, bufLen);
 
-    ret = getcwd((buf ? bufRet : NULL), n);
+    ret = getcwd((buf ? bufRet : NULL), bufLen);
     if (ret == NULL) {
         (void)LOS_MemFree(OS_SYS_MEM_ADDR, bufRet);
         return (char *)(intptr_t)-get_errno();
     }
 
-    retVal = LOS_ArchCopyToUser(buf, bufRet, n);
+    retVal = LOS_ArchCopyToUser(buf, bufRet, bufLen);
     if (retVal != 0) {
         (void)LOS_MemFree(OS_SYS_MEM_ADDR, bufRet);
         return (char *)(intptr_t)-EFAULT;
@@ -1749,6 +1785,14 @@ int SysSymlinkat(const char *target, int dirfd, const char *linkpath)
 {
     int ret;
     char *pathRet = NULL;
+    char *targetRet = NULL;
+
+    if (target != NULL) {
+        ret = UserPathCopy(target, &targetRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
 
     if (linkpath != NULL) {
         ret = UserPathCopy(linkpath, &pathRet);
@@ -1762,7 +1806,7 @@ int SysSymlinkat(const char *target, int dirfd, const char *linkpath)
         dirfd = GetAssociatedSystemFd(dirfd);
     }
 
-    ret = symlinkat(target, dirfd, pathRet);
+    ret = symlinkat(targetRet, dirfd, pathRet);
     if (ret < 0) {
         ret = -get_errno();
     }
@@ -1770,6 +1814,10 @@ int SysSymlinkat(const char *target, int dirfd, const char *linkpath)
 OUT:
     if (pathRet != NULL) {
         (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+
+    if (targetRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, targetRet);
     }
     return ret;
 }
@@ -1924,9 +1972,12 @@ ssize_t SysPreadv(int fd, const struct iovec *iov, int iovcnt, long loffset, lon
 
     /* Process fd convert to system global fd */
     fd = GetAssociatedSystemFd(fd);
-    if ((iov == NULL) || (iovcnt <= 0) || (iovcnt > IOV_MAX)) {
-        ret = preadv(fd, iov, iovcnt, offsetflag);
-        return -get_errno();
+    if ((iov == NULL) || (iovcnt < 0) || (iovcnt > IOV_MAX)) {
+        return -EINVAL;
+    }
+
+    if (iovcnt == 0) {
+        return 0;
     }
 
     ret = UserIovCopy(&iovRet, iov, iovcnt, &valid_iovcnt);
@@ -1959,9 +2010,12 @@ ssize_t SysPwritev(int fd, const struct iovec *iov, int iovcnt, long loffset, lo
 
     /* Process fd convert to system global fd */
     fd = GetAssociatedSystemFd(fd);
-    if ((iov == NULL) || (iovcnt <= 0) || (iovcnt > IOV_MAX)) {
-        ret = pwritev(fd, iov, iovcnt, offsetflag);
-        return -get_errno();
+    if ((iov == NULL) || (iovcnt < 0) || (iovcnt > IOV_MAX)) {
+        return -EINVAL;
+    }
+
+    if (iovcnt == 0) {
+        return 0;
     }
 
     ret = UserIovCopy(&iovRet, iov, iovcnt, &valid_iovcnt);
@@ -2480,7 +2534,7 @@ int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p, cons
     timeout = (tmo_p == NULL) ? -1 : (tmo_p->tv_sec * OS_SYS_US_PER_MS + tmo_p->tv_nsec / OS_SYS_NS_PER_MS);
     if (timeout & 0x80000000) {
         ret = -EINVAL;
-	return ret;
+        return ret;
     }
     setl.sig[0] = *sigMask;
     OsSigprocMask(SIG_SETMASK, &setl, &origMask);
