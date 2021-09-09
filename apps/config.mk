@@ -69,12 +69,3 @@ endif
 ifeq ($(LOSCFG_DRIVERS_TRACE), y)
 APP_SUBDIRS += trace
 endif
-
-# clear all local variables
-LOCAL_FLAGS    :=
-LOCAL_CFLAGS   :=
-LOCAL_CPPFLAGS :=
-LOCAL_ASFLAGS  :=
-LOCAL_SRCS     :=
-LOCAL_CHS      :=
-LOCAL_CPPHS    :=
