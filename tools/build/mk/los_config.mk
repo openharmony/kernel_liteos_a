@@ -36,14 +36,9 @@ endif
 ## variable define ##
 HIDE = @
 RM = -rm -rf
-ARFLAGS = cr
-OS := $(shell uname -s)
-OBJ_MKDIR = if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 OUT = $(or $(OUTDIR),$(LITEOSTOPDIR)/out/$(LOSCFG_PRODUCT_NAME:"%"=%))
-BUILD  = $(OUT)/obj
 MODULE = $(LITEOSTOPDIR)/tools/build/mk/module.mk
 LITEOS_SCRIPTPATH = $(LITEOSTOPDIR)/tools/scripts
-LITEOS_PLATFORM = $(LOSCFG_PLATFORM:"%"=%)
 LITEOSTHIRDPARTY = $(LITEOSTOPDIR)/../../third_party
 
 ## compiler relative ##
@@ -328,8 +323,6 @@ ifeq ($(LOSCFG_NET_LWIP_SACK_2_1), y)
         -I $(LITEOSTOPDIR)/net/lwip-2.1/porting/include \
         -I $(LWIPDIR)/include \
         -I $(LITEOSTOPDIR)/net/mac
-
-    LITEOS_CMACRO     +=  $(LWIP_MACROS)
 else ifeq ($(LOSCFG_NET_LWIP_SACK_2_0), y)
     LWIPDIR := $(LITEOSTHIRDPARTY)/lwip_enhanced/src
     LITEOS_BASELIB += -llwip
@@ -337,8 +330,7 @@ else ifeq ($(LOSCFG_NET_LWIP_SACK_2_0), y)
     LITEOS_LWIP_SACK_INCLUDE   += \
         -I $(LWIPDIR)/include \
         -I $(LITEOSTOPDIR)/net/mac
-    LWIP_MACROS += -DLWIP_CONFIG_FILE=\"lwip/lwipopts.h\" -DLWIP_LITEOS_A_COMPAT
-    LITEOS_CMACRO     +=  $(LWIP_MACROS)
+    LITEOS_CMACRO += -DLWIP_CONFIG_FILE=\"lwip/lwipopts.h\" -DLWIP_LITEOS_A_COMPAT
 else
     $(error "unknown lwip version")
 endif

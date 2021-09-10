@@ -74,12 +74,3 @@ ARCH_INCLUDE            := -I $(LITEOSTOPDIR)/arch/arm/include \
                            -I $(LITEOSTOPDIR)/arch/arm/$(ARCH)/src/include
 
 LITEOS_PLATFORM_INCLUDE += $(ARCH_INCLUDE)
-
-# expose FPU info to assembly code
-ifeq ($(LOSCFG_ARCH_FPU_DISABLE), y)
-    LITEOS_CMACRO       += -DLOSCFG_ARCH_FPU_DISABLE
-else ifeq ($(LOSCFG_ARCH_FPU_VFP_D16), y)
-    LITEOS_CMACRO       += -DLOSCFG_ARCH_FPU_VFP_D16
-else ifeq ($(LOSCFG_ARCH_FPU_VFP_D32), y)
-    LITEOS_CMACRO       += -DLOSCFG_ARCH_FPU_VFP_D32
-endif
