@@ -1,5 +1,5 @@
-# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2013-2019, Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2020, Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -26,12 +26,12 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 include $(LITEOSTOPDIR)/config.mk
 
 MODULE_NAME := $(notdir $(shell pwd))
 
-LOCAL_SRCS :=  $(wildcard src/*.c)
+LOCAL_DIR := $(LITEOSTOPDIR)/../../third_party/NuttX/drivers/pipes
+
+LOCAL_SRCS := $(wildcard $(LOCAL_DIR)/*.c)
 
 include $(MODULE)
-

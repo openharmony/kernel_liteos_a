@@ -166,7 +166,7 @@ endif
 ifeq ($(LOSCFG_KERNEL_PIPE), y)
     LITEOS_BASELIB     += -lpipes
     LIB_SUBDIRS           += kernel/extended/pipes
-    LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/pipes
+    LITEOS_PIPE_INCLUDE   += -I $(LITEOSTOPDIR)/../../third_party/NuttX/drivers/pipes
 endif
 
 ifeq ($(LOSCFG_KERNEL_PM), y)
@@ -241,7 +241,6 @@ endif
                             -I $(LITEOSTOPDIR)/fs/vfs/include
     LITEOS_VFS_INCLUDE   += -I $(LITEOSTOPDIR)/fs/vfs/include/operation
     LITEOS_VFS_MTD_INCLUDE := -I $(LITEOSTOPDIR)/drivers/mtd/multi_partition/include
-    LITEOS_VFS_DISK_INCLUDE := -I $(LITEOSTOPDIR)/drivers/block/disk/include
 endif
 
 ifeq ($(LOSCFG_FS_FAT), y)
@@ -259,6 +258,7 @@ endif
 ifeq ($(LOSCFG_FS_FAT_DISK), y)
     LITEOS_BASELIB += -ldisk
     LIB_SUBDIRS += $(LITEOSTOPDIR)/drivers/block/disk
+    LITEOS_VFS_DISK_INCLUDE := -I $(LITEOSTOPDIR)/drivers/block/disk/include
 endif
 
 ifeq ($(LOSCFG_FS_FAT_CACHE), y)

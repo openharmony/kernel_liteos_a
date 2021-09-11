@@ -37,6 +37,4 @@ ifneq ($(LOSCFG_HRTIMER_ENABLE), y)
 LOCAL_SRCS := $(filter-out src/linux_hrtimer.c, $(LOCAL_SRCS))
 endif
 
-LOCAL_FLAGS := $(LITEOS_GCOV_OPTS)
-
 include $(MODULE)

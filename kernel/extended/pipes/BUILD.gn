@@ -27,11 +27,20 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-include $(LITEOSTOPDIR)/config.mk
+import("//kernel/liteos_a/liteos.gni")
 
-MODULE_NAME := $(notdir $(shell pwd))
+module_switch = defined(LOSCFG_KERNEL_PIPE)
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
+  sources = [
+    "//third_party/NuttX/drivers/pipes/fifo.c",
+    "//third_party/NuttX/drivers/pipes/pipe.c",
+    "//third_party/NuttX/drivers/pipes/pipe_common.c",
+  ]
 
-LOCAL_SRCS :=  $(wildcard src/*.c)
+  public_configs = [ ":public" ]
+}
 
-include $(MODULE)
-
+config("public") {
+  include_dirs = [ "//third_party/NuttX/drivers/pipes" ]
+}

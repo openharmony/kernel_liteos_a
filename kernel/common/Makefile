@@ -41,6 +41,6 @@ ifneq ($(LOSCFG_FS_VFS), y)
 LOCAL_SRCS := $(filter-out console.c virtual_serial.c, $(LOCAL_SRCS))
 endif
 
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)

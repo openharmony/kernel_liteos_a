@@ -33,6 +33,4 @@ MODULE_NAME := $(notdir $(shell pwd))
 
 LOCAL_SRCS :=  $(wildcard src/*.c)
 
-LOCAL_FLAGS := $(LITEOS_GCOV_OPTS)
-
 include $(MODULE)

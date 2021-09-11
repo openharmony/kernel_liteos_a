@@ -95,19 +95,10 @@ $(LITEOSTHIRDPARTY)/NuttX/fs/driver/fs_unregisterdriver.c \
 $(wildcard vfs_cmd/*.c)
 
 LOCAL_INCLUDE := \
-	-I $(LITEOSTOPDIR)/fs/vfs/include \
-	-I $(LITEOSTOPDIR)/fs/vfs/include/bcache\
-	-I $(LITEOSTOPDIR)/drivers/block/disk/include\
 	-I $(LITEOSTOPDIR)/drivers/char/bch/include\
-	-I $(LITEOSTOPDIR)/drivers/mtd/multi_partition/include\
-	-I $(LITEOSTOPDIR)/fs/vfs/include/operation\
 	-I $(LITEOSTOPDIR)/syscall\
 	-I $(LITEOSTOPDIR)/fs/zpfs/include
 
-ifeq ($(LOSCFG_FS_FAT), y)
-LOCAL_INCLUDE += -I $(LITEOSTHIRDPARTY)/FatFs/source
-endif
-
-LOCAL_FLAGS := $(LOCAL_INCLUDE) $(LITEOS_GCOV_OPTS)
+LOCAL_FLAGS := $(LOCAL_INCLUDE)
 
 include $(MODULE)
