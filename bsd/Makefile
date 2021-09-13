@@ -43,6 +43,4 @@ LOCAL_SRCS += $(wildcard crypto/rijndael/*.c) \
               $(wildcard libkern/*.c)
 endif
 
-LOCAL_FLAGS := $(LITEOS_GCOV_OPTS)
-
 include $(MODULE)
