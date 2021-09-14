@@ -147,6 +147,14 @@ OsIrqHandler:
     /* disable irq, switch to svc mode */
     CPSID   i, #0x13
 
+#ifdef LOSCFG_KERNEL_PERF
+    PUSH    {R0-R3, R12, LR}
+    MOV     R0, LR
+    MOV     R1, FP
+    BL      OsPerfSetIrqRegs
+    POP     {R0-R3, R12, LR}
+#endif
+
     STMFD   SP!, {R0-R3, R12, LR}
     STMFD   SP, {R13, R14}^
     SUB     SP, SP, #(4 * 4)

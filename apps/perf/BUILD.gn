@@ -29,68 +29,35 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-module_name = LOSCFG_ARCH_CPU
-kernel_module(module_name) {
+executable("perf") {
   sources = [
-    "src/arm_generic_timer.c",
-    "src/clear_user.S",
-    "src/hw_user_get.S",
-    "src/hw_user_put.S",
-    "src/jmp.S",
-    "src/los_arch_mmu.c",
-    "src/los_asid.c",
-    "src/los_dispatch.S",
-    "src/los_exc.c",
-    "src/los_hw.c",
-    "src/los_hw_exc.S",
-    "src/los_hw_runstop.S",
-    "src/los_hw_tick.c",
-    "src/los_hwi.c",
-    "src/smp.c",
-    "src/strncpy_from_user.c",
-    "src/strnlen_user.c",
-    "src/user_copy.c",
+    "src/main.c",
+    "src/option.c",
+    "src/perf.c",
+    "src/perf_list.c",
+    "src/perf_record.c",
+    "src/perf_stat.c",
   ]
-
-  if (LOSCFG_ARCH_ARM_VER == "armv7-a") {
-    sources += [ "src/armv7a/cache.S" ]
-  }
-
-  if (defined(LOSCFG_KERNEL_SMP)) {
-    sources += [ "src/startup/reset_vector_mp.S" ]
-  } else {
-    sources += [ "src/startup/reset_vector_up.S" ]
-  }
-
-  include_dirs = [ "src/include" ]
+  include_dirs = [ "include" ]
+  defines = []
 
   if (defined(LOSCFG_PERF_HW_PMU)) {
-    sources += [ "src/pmu/armv7_pmu.c" ]
+    defines += [ "LOSCFG_PERF_HW_PMU" ]
   }
 
-  if (defined(LOSCFG_GDB)) {
-    configs += [ ":as_objs_libc_flags" ]
+  if (defined(LOSCFG_PERF_TIMED_PMU)) {
+    defines += [ "LOSCFG_PERF_TIMED_PMU" ]
   }
 
-  public_configs = [ ":public" ]
-}
-
-config("public") {
-  include_dirs = [
-    "include",
-    "src/include",
-  ]
-}
-
-config("as_objs_libc_flags") {
-  defines = [ "__ASSEMBLY__" ]
-
-  # linux style macros
-  if (defined(LOSCFG_ARCH_ARM_V7A) || defined(LOSCFG_ARCH_ARM_V7R) ||
-      defined(LOSCFG_ARCH_ARM_V7M)) {
-    defines += [ "__LINUX_ARM_ARCH__=7" ]
-  } else if (defined(LOSCFG_ARCH_ARM_V8A) || defined(LOSCFG_ARCH_ARM_V8R) ||
-             defined(LOSCFG_ARCH_ARM_V8M)) {
-    defines += [ "__LINUX_ARM_ARCH__=8" ]
+  if (defined(LOSCFG_PERF_SW_PMU)) {
+    defines += [ "LOSCFG_PERF_SW_PMU" ]
   }
+
+  if (defined(LOSCFG_FS_VFS)) {
+    defines += [ "LOSCFG_FS_VFS" ]
+  }
+
+  defines += [ "LOSCFG_PERF_BUFFER_SIZE=$LOSCFG_PERF_BUFFER_SIZE" ]
+
+  deps = [ "$LITEOSTHIRDPARTY/bounds_checking_function:libsec_static" ]
 }

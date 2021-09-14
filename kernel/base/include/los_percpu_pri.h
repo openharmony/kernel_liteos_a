@@ -69,6 +69,9 @@ typedef struct {
     UINT32            schedFlag;             /* pending scheduler flag */
 #ifdef LOSCFG_KERNEL_SMP
     UINT32            excFlag;               /* cpu halt or exc flag */
+#ifdef LOSCFG_KERNEL_SMP_CALL
+    LOS_DL_LIST       funcLink;              /* mp function call link */
+#endif
 #endif
 } Percpu;
 

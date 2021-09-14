@@ -29,68 +29,28 @@
 
 import("//kernel/liteos_a/liteos.gni")
 
-module_name = LOSCFG_ARCH_CPU
+module_switch = defined(LOSCFG_KERNEL_PERF)
+module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
   sources = [
-    "src/arm_generic_timer.c",
-    "src/clear_user.S",
-    "src/hw_user_get.S",
-    "src/hw_user_put.S",
-    "src/jmp.S",
-    "src/los_arch_mmu.c",
-    "src/los_asid.c",
-    "src/los_dispatch.S",
-    "src/los_exc.c",
-    "src/los_hw.c",
-    "src/los_hw_exc.S",
-    "src/los_hw_runstop.S",
-    "src/los_hw_tick.c",
-    "src/los_hwi.c",
-    "src/smp.c",
-    "src/strncpy_from_user.c",
-    "src/strnlen_user.c",
-    "src/user_copy.c",
+    "los_perf.c",
+    "perf_output.c",
+    "perf_pmu.c",
   ]
 
-  if (LOSCFG_ARCH_ARM_VER == "armv7-a") {
-    sources += [ "src/armv7a/cache.S" ]
-  }
-
-  if (defined(LOSCFG_KERNEL_SMP)) {
-    sources += [ "src/startup/reset_vector_mp.S" ]
-  } else {
-    sources += [ "src/startup/reset_vector_up.S" ]
-  }
-
-  include_dirs = [ "src/include" ]
-
   if (defined(LOSCFG_PERF_HW_PMU)) {
-    sources += [ "src/pmu/armv7_pmu.c" ]
+    sources += [ "pmu/perf_hw_pmu.c" ]
   }
 
-  if (defined(LOSCFG_GDB)) {
-    configs += [ ":as_objs_libc_flags" ]
+  if (defined(LOSCFG_PERF_TIMED_PMU)) {
+    sources += [ "pmu/perf_timed_pmu.c" ]
   }
 
-  public_configs = [ ":public" ]
+  if (defined(LOSCFG_PERF_SW_PMU)) {
+    sources += [ "pmu/perf_sw_pmu.c" ]
+  }
 }
 
 config("public") {
-  include_dirs = [
-    "include",
-    "src/include",
-  ]
-}
-
-config("as_objs_libc_flags") {
-  defines = [ "__ASSEMBLY__" ]
-
-  # linux style macros
-  if (defined(LOSCFG_ARCH_ARM_V7A) || defined(LOSCFG_ARCH_ARM_V7R) ||
-      defined(LOSCFG_ARCH_ARM_V7M)) {
-    defines += [ "__LINUX_ARM_ARCH__=7" ]
-  } else if (defined(LOSCFG_ARCH_ARM_V8A) || defined(LOSCFG_ARCH_ARM_V8R) ||
-             defined(LOSCFG_ARCH_ARM_V8M)) {
-    defines += [ "__LINUX_ARM_ARCH__=8" ]
-  }
+  include_dirs = [ "." ]
 }
