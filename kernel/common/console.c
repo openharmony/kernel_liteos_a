@@ -1044,39 +1044,24 @@ STATIC INT32 OsConsoleFileInit(CONSOLE_CB *consoleCB)
     INT32 ret;
     struct Vnode *vnode = NULL;
     struct file *filep = NULL;
-    CHAR *fullpath = NULL;
-
-    ret = vfs_normalize_path(NULL, consoleCB->name, &fullpath);
-    if (ret < 0) {
-        return EINVAL;
-    }
 
     VnodeHold();
-    ret = VnodeLookup(fullpath, &vnode, 0);
+    ret = VnodeLookup(consoleCB->name, &vnode, 0);
     if (ret != LOS_OK) {
         ret = EACCES;
-        goto ERROUT_WITH_FULLPATH;
+        goto ERROUT;
     }
 
-    consoleCB->fd = files_allocate(vnode, O_RDWR, (off_t)0, consoleCB, STDERR_FILENO + 1);
-    if (consoleCB->fd < 0) {
+    filep = files_allocate(vnode, O_RDWR, 0, consoleCB, FILE_START_FD);
+    if (filep == NULL) {
         ret = EMFILE;
-        goto ERROUT_WITH_FULLPATH;
+        goto ERROUT;
     }
-
-    ret = fs_getfilep(consoleCB->fd, &filep);
-    if (ret < 0) {
-        ret = EPERM;
-        goto ERROUT_WITH_FULLPATH;
-    }
-    filep->f_path = fullpath;
     filep->ops = (struct file_operations_vfs *)((struct drv_data *)vnode->data)->ops;
-    VnodeDrop();
-    return LOS_OK;
+    consoleCB->fd = filep->fd;
 
-ERROUT_WITH_FULLPATH:
+ERROUT:
     VnodeDrop();
-    free(fullpath);
     return ret;
 }
 

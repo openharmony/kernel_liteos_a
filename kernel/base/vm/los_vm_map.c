@@ -42,6 +42,7 @@
 #include "los_process_pri.h"
 #ifdef LOSCFG_FS_VFS
 #include "fs/file.h"
+#include "vnode.h"
 #endif
 #include "los_task.h"
 #include "los_memory_pri.h"
@@ -308,12 +309,12 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
 #ifdef LOSCFG_FS_VFS
             if (LOS_IsRegionFileValid(oldRegion)) {
                 LosFilePage *fpage = NULL;
-                LOS_SpinLockSave(&oldRegion->unTypeData.rf.file->f_mapping->list_lock, &intSave);
-                fpage = OsFindGetEntry(oldRegion->unTypeData.rf.file->f_mapping, newRegion->pgOff + i);
+                LOS_SpinLockSave(&oldRegion->unTypeData.rf.vnode->mapping.list_lock, &intSave);
+                fpage = OsFindGetEntry(&oldRegion->unTypeData.rf.vnode->mapping, newRegion->pgOff + i);
                 if ((fpage != NULL) && (fpage->vmPage == page)) { /* cow page no need map */
                     OsAddMapInfo(fpage, &newVmSpace->archMmu, vaddr);
                 }
-                LOS_SpinUnlockRestore(&oldRegion->unTypeData.rf.file->f_mapping->list_lock, intSave);
+                LOS_SpinUnlockRestore(&oldRegion->unTypeData.rf.vnode->mapping.list_lock, intSave);
             }
 #endif
         }
@@ -436,13 +437,9 @@ VADDR_T OsAllocSpecificRange(LosVmSpace *vmSpace, VADDR_T vaddr, size_t len, UIN
 
 BOOL LOS_IsRegionFileValid(LosVmMapRegion *region)
 {
-    struct file *filep = NULL;
     if ((region != NULL) && (LOS_IsRegionTypeFile(region)) &&
-        (region->unTypeData.rf.file != NULL)) {
-        filep = region->unTypeData.rf.file;
-        if (region->unTypeData.rf.fileMagic == filep->f_magicnum) {
-            return TRUE;
-        }
+        (region->unTypeData.rf.vnode != NULL)) {
+        return TRUE;
     }
     return FALSE;
 }
@@ -465,6 +462,7 @@ LosVmMapRegion *OsCreateRegion(VADDR_T vaddr, size_t len, UINT32 regionFlags, un
         return region;
     }
 
+    memset_s(region, sizeof(LosVmMapRegion), 0, sizeof(LosVmMapRegion));
     region->range.base = vaddr;
     region->range.size = len;
     region->pgOff = offset;
@@ -624,6 +622,9 @@ STATUS_T LOS_RegionFree(LosVmSpace *space, LosVmMapRegion *region)
 #ifdef LOSCFG_FS_VFS
     if (LOS_IsRegionFileValid(region)) {
         OsFilePagesRemove(space, region);
+        VnodeHold();
+        region->unTypeData.rf.vnode->useCount--;
+        VnodeDrop();
     } else
 #endif
 
@@ -675,8 +676,11 @@ LosVmMapRegion *OsVmRegionDup(LosVmSpace *space, LosVmMapRegion *oldRegion, VADD
 #ifdef LOSCFG_FS_VFS
     if (LOS_IsRegionTypeFile(oldRegion)) {
         newRegion->unTypeData.rf.vmFOps = oldRegion->unTypeData.rf.vmFOps;
-        newRegion->unTypeData.rf.file = oldRegion->unTypeData.rf.file;
-        newRegion->unTypeData.rf.fileMagic = oldRegion->unTypeData.rf.fileMagic;
+        newRegion->unTypeData.rf.vnode = oldRegion->unTypeData.rf.vnode;
+        newRegion->unTypeData.rf.f_oflags = oldRegion->unTypeData.rf.f_oflags;
+        VnodeHold();
+        newRegion->unTypeData.rf.vnode->useCount++;
+        VnodeDrop();
     }
 #endif
 
