@@ -41,8 +41,6 @@
 #include "los_tables.h"
 #include "internal.h"
 
-#define PROCFS_DEFAULT_MODE 0555
-
 #ifdef LOSCFG_FS_PROC
 static struct VnodeOps g_procfsVops;
 static struct file_operations_vfs g_procfsFops;
