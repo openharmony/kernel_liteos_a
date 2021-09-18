@@ -544,8 +544,6 @@ STATIC INT32 OsLoadInterpBinary(ELFLoadInfo *loadInfo, UINTPTR *interpMapBase)
         PRINT_ERR("%s[%d]\n", __FUNCTION__, __LINE__);
     }
 
-    OsELFClose(loadInfo->interpInfo.procfd);
-    loadInfo->interpInfo.procfd = INVALID_FD;
     return ret;
 }
 
@@ -939,6 +937,8 @@ STATIC INT32 OsLoadELFSegment(ELFLoadInfo *loadInfo)
 
     if (loadInfo->interpInfo.procfd != INVALID_FD) {
         ret = OsLoadInterpBinary(loadInfo, &interpMapBase);
+        OsELFClose(loadInfo->interpInfo.procfd);
+        loadInfo->interpInfo.procfd = INVALID_FD;
         if (ret != LOS_OK) {
             return ret;
         }
