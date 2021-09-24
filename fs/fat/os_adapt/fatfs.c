@@ -1873,6 +1873,7 @@ int fatfs_mkfs (struct Vnode *device, int sectors, int option)
     BYTE *work_buff = NULL;
     los_part *part = NULL;
     FRESULT result;
+    MKFS_PARM opt = {0};
     int ret;
 
     part = los_part_find(device);
@@ -1897,7 +1898,9 @@ int fatfs_mkfs (struct Vnode *device, int sectors, int option)
         return -ENOMEM;
     }
 
-    result = _mkfs(part, sectors, option, work_buff, FF_MAX_SS);
+    opt.n_sect = sectors;
+    opt.fmt = (BYTE)option;
+    result = _mkfs(part, &opt, work_buff, FF_MAX_SS);
     free(work_buff);
     if (result != FR_OK) {
         return -fatfs_2_vfs(result);
