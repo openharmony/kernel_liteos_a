@@ -756,7 +756,7 @@ static VOID SwtmrProc(UINTPTR tmrArg)
     }
     return;
 EXIT:
-    PRINT_ERR("Dsipatch signals failed!, ret: %d\r\n", ret);
+    PRINT_ERR("Dispatch signals failed!, ret: %d\r\n", ret);
     return;
 }
 
