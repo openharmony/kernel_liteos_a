@@ -76,6 +76,10 @@ static int OsELFClose(int procFd)
     int ret;
     /* Process procfd convert to system global procfd */
     int sysfd = DisassociateProcessFd(procFd);
+    if (sysfd < 0) {
+        return -EBADF;
+    }
+
     ret = close(sysfd);
     if (ret < 0) {
         AssociateSystemFd(procFd, sysfd);
@@ -120,6 +124,10 @@ STATIC INT32 OsReadELFInfo(INT32 procfd, UINT8 *buffer, size_t readSize, off_t o
     ssize_t byteNum;
     off_t returnPos;
     INT32 fd = GetAssociatedSystemFd(procfd);
+    if (fd < 0) {
+        PRINT_ERR("%s[%d], Invalid procfd!\n", __FUNCTION__, __LINE__);
+        return LOS_NOK;
+    }
 
     if (readSize > 0) {
         returnPos = lseek(fd, offset, SEEK_SET);
@@ -218,6 +226,8 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
         ret = fs_getfilep(GetAssociatedSystemFd(elfInfo->procfd), &OsCurrProcessGet()->execFile);
         if (ret) {
             PRINT_ERR("%s[%d], Failed to get struct file %s!\n", __FUNCTION__, __LINE__, fileName);
+            /* File will be closed by OsLoadELFFile */
+            return ret;
         }
     }
 #endif

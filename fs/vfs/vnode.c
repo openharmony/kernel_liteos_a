@@ -404,6 +404,8 @@ int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struc
             *result = currentVnode;
             if (currentVnode->filePath == NULL) {
                 currentVnode->filePath = normalizedPath;
+            } else {
+                free(normalizedPath);
             }
             return ret;
         } else if (VfsVnodePermissionCheck(currentVnode, EXEC_OP)) {
