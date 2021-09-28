@@ -67,9 +67,6 @@ SystemRebootFunc OsGetRebootHook(VOID)
     return g_rebootHook;
 }
 
-extern UINT32 OsSystemInit(VOID);
-extern VOID SystemInit(VOID);
-
 LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
 {
     /* Must be placed at the beginning of the boot process */
@@ -286,6 +283,8 @@ STATIC VOID SystemInit(VOID)
 {
     PRINTK("dummy: *** %s ***\n", __FUNCTION__);
 }
+#else
+extern VOID SystemInit(VOID);
 #endif
 
 STATIC UINT32 OsSystemInitTaskCreate(VOID)
@@ -309,8 +308,7 @@ STATIC UINT32 OsSystemInitTaskCreate(VOID)
     return LOS_TaskCreate(&taskID, &sysTask);
 }
 
-
-UINT32 OsSystemInit(VOID)
+STATIC UINT32 OsSystemInit(VOID)
 {
     UINT32 ret;
 
