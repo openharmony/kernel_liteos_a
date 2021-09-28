@@ -342,6 +342,12 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
                   OsCurrProcessGet()->processID, processCB->processID);
     }
 
+#ifdef LOSCFG_KERNEL_VM
+    if (OsProcessIsUserMode(processCB)) {
+        (VOID)OsVmSpaceRegionFree(processCB->vmSpace);
+    }
+#endif
+
 #ifdef LOSCFG_FS_VFS
     if (OsProcessIsUserMode(processCB)) {
         delete_files(processCB->files);
@@ -546,11 +552,11 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecycleToFree(VOID)
             /* Clear the bottom 4 bits of process status */
             OsInsertPCBToFreeList(processCB);
         }
-        SCHEDULER_UNLOCK(intSave);
 #ifdef LOSCFG_KERNEL_VM
+        SCHEDULER_UNLOCK(intSave);
         (VOID)LOS_VmSpaceFree(space);
-#endif
         SCHEDULER_LOCK(intSave);
+#endif
     }
 
     SCHEDULER_UNLOCK(intSave);
