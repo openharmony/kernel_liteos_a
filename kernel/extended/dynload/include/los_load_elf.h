@@ -79,6 +79,7 @@ extern "C" {
 #endif
 
 #define STACK_ALIGN_SIZE                    0x10
+#define RANDOM_VECTOR_SIZE                  1
 
 /* The permissions on sections in the program header. */
 #define PF_R                                0x4
@@ -99,23 +100,22 @@ typedef struct {
     CHAR         *execName;
     INT32        argc;
     INT32        envc;
-    CHAR *const  *argv;
-    CHAR *const  *envp;
+    CHAR * const  *argv;
+    CHAR * const  *envp;
     UINTPTR      stackTop;
     UINTPTR      stackTopMax;
     UINTPTR      stackBase;
     UINTPTR      stackParamBase;
     UINT32       stackSize;
     INT32        stackProt;
+    UINTPTR      argStart;
     UINTPTR      loadAddr;
     UINTPTR      elfEntry;
     UINTPTR      topOfMem;
     UINTPTR      oldFiles;
     LosVmSpace   *newSpace;
     LosVmSpace   *oldSpace;
-#ifdef LOSCFG_ASLR
     INT32        randomDevFD;
-#endif
 } ELFLoadInfo;
 
 STATIC INLINE BOOL OsIsBadUserAddress(VADDR_T vaddr)
