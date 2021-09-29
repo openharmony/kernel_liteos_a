@@ -94,7 +94,7 @@ STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
 
     for (;;) {
         cnt = write(STDOUT_FILENO, str + writen, (size_t)toWrite);
-        if ((cnt < 0) || (toWrite == cnt)) {
+        if ((cnt < 0) || ((cnt == 0) && (OS_INT_ACTIVE)) || (toWrite == cnt)) {
             break;
         }
         writen += cnt;
