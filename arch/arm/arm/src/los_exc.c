@@ -1053,10 +1053,12 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
         g_currHandleExcCpuID = currCpuID;
         g_currHandleExcPID = OsCurrProcessGet()->processID;
         LOS_SpinUnlock(&g_excSerializerSpin);
+#ifndef LOSCFG_SAVE_EXCINFO
         if (g_excFromUserMode[currCpuID] == FALSE) {
             target = (UINT32)(OS_MP_CPU_ALL & ~CPUID_TO_AFFI_MASK(currCpuID));
             HalIrqSendIpi(target, LOS_MP_IPI_HALT);
         }
+#endif
     } else if (g_excFromUserMode[currCpuID] == TRUE) {
         /* Both cores raise exceptions, and the current core is a user-mode exception.
          * Both cores are abnormal and come from the same process
@@ -1081,11 +1083,12 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
             while (1) {}
         }
     }
-
+#ifndef LOSCFG_SAVE_EXCINFO
     /* use halt ipi to stop other active cores */
     if (g_excFromUserMode[ArchCurrCpuid()] == FALSE) {
         WaitAllCpuStop(currCpuID);
     }
+#endif
 }
 #endif
 
