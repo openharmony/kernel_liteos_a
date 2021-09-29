@@ -29,72 +29,53 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_MP_H
-#define _LOS_MP_H
 
-#include "los_config.h"
-#include "los_list.h"
+#ifndef _OPTION_H
+#define _OPTION_H
 
-#ifdef __cplusplus
-#if __cplusplus
+#include "perf.h"
+
+#ifdef  __cplusplus
+#if  __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_MP_CPU_ALL       LOSCFG_KERNEL_CPU_MASK
+#define CMD_MAX_PARAMS 10
+typedef int (*CALL_BACK)(const char *argv);
 
-#define OS_MP_GC_PERIOD     100 /* ticks */
+enum OptionType {
+    OPTION_TYPE_UINT,
+    OPTION_TYPE_STRING,
+    OPTION_TYPE_CALLBACK,
+};
 
-typedef enum {
-    LOS_MP_IPI_WAKEUP,
-    LOS_MP_IPI_SCHEDULE,
-    LOS_MP_IPI_HALT,
-#ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_MP_IPI_FUNC_CALL,
-#endif
-} MP_IPI_TYPE;
-
-typedef VOID (*SMP_FUNC_CALL)(VOID *args);
-
-#ifdef LOSCFG_KERNEL_SMP
-extern VOID LOS_MpSchedule(UINT32 target);
-extern VOID OsMpWakeHandler(VOID);
-extern VOID OsMpScheduleHandler(VOID);
-extern VOID OsMpHaltHandler(VOID);
-extern UINT32 OsMpInit(VOID);
-#else
-STATIC INLINE VOID LOS_MpSchedule(UINT32 target)
-{
-    (VOID)target;
-}
-#endif
-
-#ifdef LOSCFG_KERNEL_SMP_CALL
 typedef struct {
-    LOS_DL_LIST node;
-    SMP_FUNC_CALL func;
-    VOID *args;
-} MpCallFunc;
+    int type;
+    const char *name;
+    const char **str;
+    unsigned int *value;
+    CALL_BACK cb;
+} PerfOption;
 
-/**
- * It is used to call function on target cpus by sending ipi, and the first param is target cpu mask value.
- */
-extern VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args);
-extern VOID OsMpFuncCallHandler(VOID);
-#else
-INLINE VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
-{
-    (VOID)target;
-    if (func != NULL) {
-        func(args);
-    }
-}
-#endif /* LOSCFG_KERNEL_SMP_CALL */
+typedef struct {
+    const char *path;
+    char *params[CMD_MAX_PARAMS];
+} SubCmd;
+
+#define OPTION_END()          {.name = ""}
+#define OPTION_UINT(n, v)     {.type = OPTION_TYPE_UINT,     .name = (n), .value = (v)}
+#define OPTION_STRING(n, s)   {.type = OPTION_TYPE_STRING,   .name = (n), .str = (s)}
+#define OPTION_CALLBACK(n, c) {.type = OPTION_TYPE_CALLBACK, .name = (n), .cb = (c)}
+
+int ParseOptions(int argc, char **argv, PerfOption *opt, SubCmd *cmd);
+int ParseEvents(const char *argv, PerfEventConfig *eventsCfg, unsigned int *len);
+int ParseIds(const char *argv, int *arr, unsigned int *len);
 
 #ifdef __cplusplus
 #if __cplusplus
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#endif
+#endif
 
-#endif /* _LOS_MP_H_ */
+#endif /* _OPTION_H */

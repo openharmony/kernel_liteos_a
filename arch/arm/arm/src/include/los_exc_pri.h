@@ -44,10 +44,24 @@ extern "C" {
 #define OS_SYSTEM_EXC_CURR_CPU  1
 #define OS_SYSTEM_EXC_OTHER_CPU 2
 
+#define REGION_PATH_MAX 32
+
+typedef struct {
+#ifdef LOSCFG_KERNEL_VM
+    UINTPTR ip;
+    UINT32 len; /* f_path length */
+    CHAR f_path[REGION_PATH_MAX];
+#else
+    UINTPTR ip;
+#endif
+} IpInfo;
+
 extern UINT32 OsGetSystemStatus(VOID);
 extern VOID BackTraceSub(UINTPTR regFP);
 extern VOID OsExcInit(VOID);
 extern BOOL OsSystemExcIsReset(VOID);
+extern UINT32 BackTraceGet(UINTPTR regFP, IpInfo *callChain, UINT32 maxDepth);
+extern BOOL OsGetUsrIpInfo(UINTPTR ip, IpInfo *info);
 
 #ifdef __cplusplus
 #if __cplusplus

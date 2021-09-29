@@ -29,72 +29,54 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_MP_H
-#define _LOS_MP_H
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include "perf.h"
+#include "perf_list.h"
+#include "perf_stat.h"
+#include "perf_record.h"
 
-#include "los_config.h"
-#include "los_list.h"
-
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-
-#define OS_MP_CPU_ALL       LOSCFG_KERNEL_CPU_MASK
-
-#define OS_MP_GC_PERIOD     100 /* ticks */
-
-typedef enum {
-    LOS_MP_IPI_WAKEUP,
-    LOS_MP_IPI_SCHEDULE,
-    LOS_MP_IPI_HALT,
-#ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_MP_IPI_FUNC_CALL,
-#endif
-} MP_IPI_TYPE;
-
-typedef VOID (*SMP_FUNC_CALL)(VOID *args);
-
-#ifdef LOSCFG_KERNEL_SMP
-extern VOID LOS_MpSchedule(UINT32 target);
-extern VOID OsMpWakeHandler(VOID);
-extern VOID OsMpScheduleHandler(VOID);
-extern VOID OsMpHaltHandler(VOID);
-extern UINT32 OsMpInit(VOID);
-#else
-STATIC INLINE VOID LOS_MpSchedule(UINT32 target)
+int main(int argc, char **argv)
 {
-    (VOID)target;
-}
-#endif
-
-#ifdef LOSCFG_KERNEL_SMP_CALL
-typedef struct {
-    LOS_DL_LIST node;
-    SMP_FUNC_CALL func;
-    VOID *args;
-} MpCallFunc;
-
-/**
- * It is used to call function on target cpus by sending ipi, and the first param is target cpu mask value.
- */
-extern VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args);
-extern VOID OsMpFuncCallHandler(VOID);
-#else
-INLINE VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
-{
-    (VOID)target;
-    if (func != NULL) {
-        func(args);
+#define TWO_ARGS    2
+#define THREE_ARGS  3
+    int fd = open("/dev/perf", O_RDWR);
+    if (fd == -1) {
+        printf("Perf open failed.\n");
+        exit(EXIT_FAILURE);
     }
-}
-#endif /* LOSCFG_KERNEL_SMP_CALL */
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+    if (argc == 1) {
+        PerfUsage();
+    } else if ((argc == TWO_ARGS) && strcmp(argv[1], "start") == 0) {
+        PerfStart(fd, 0);
+    } else if ((argc == THREE_ARGS) && strcmp(argv[1], "start") == 0) {
+        size_t id = strtoul(argv[THREE_ARGS - 1], NULL, 0);
+        PerfStart(fd, id);
+    } else if ((argc == TWO_ARGS) && strcmp(argv[1], "stop") == 0) {
+        PerfStop(fd);
+    } else if ((argc == THREE_ARGS) && strcmp(argv[1], "read") == 0) {
+        size_t size = strtoul(argv[THREE_ARGS - 1], NULL, 0);
+        char *buf = (char *)malloc(size);
+        int len = PerfRead(fd, buf, size);
+        PerfPrintBuffer(buf, len);
+        free(buf);
+    } else if ((argc == TWO_ARGS) && strcmp(argv[1], "list") == 0) {
+        PerfList();
+    } else if ((argc >= THREE_ARGS) && strcmp(argv[1], "stat") == 0) {
+        PerfStat(fd, argc, argv);
+    } else if ((argc >= THREE_ARGS) && strcmp(argv[1], "record") == 0) {
+        PerfRecord(fd, argc, argv);
+    } else {
+        printf("Unsupported perf command.\n");
+        PerfUsage();
+    }
 
-#endif /* _LOS_MP_H_ */
+    close(fd);
+    return 0;
+}

@@ -29,72 +29,29 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_MP_H
-#define _LOS_MP_H
 
-#include "los_config.h"
-#include "los_list.h"
+#ifndef _PERF_LIST_H
+#define _PERF_LIST_H
 
-#ifdef __cplusplus
-#if __cplusplus
+#ifdef  __cplusplus
+#if  __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_MP_CPU_ALL       LOSCFG_KERNEL_CPU_MASK
-
-#define OS_MP_GC_PERIOD     100 /* ticks */
-
-typedef enum {
-    LOS_MP_IPI_WAKEUP,
-    LOS_MP_IPI_SCHEDULE,
-    LOS_MP_IPI_HALT,
-#ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_MP_IPI_FUNC_CALL,
-#endif
-} MP_IPI_TYPE;
-
-typedef VOID (*SMP_FUNC_CALL)(VOID *args);
-
-#ifdef LOSCFG_KERNEL_SMP
-extern VOID LOS_MpSchedule(UINT32 target);
-extern VOID OsMpWakeHandler(VOID);
-extern VOID OsMpScheduleHandler(VOID);
-extern VOID OsMpHaltHandler(VOID);
-extern UINT32 OsMpInit(VOID);
-#else
-STATIC INLINE VOID LOS_MpSchedule(UINT32 target)
-{
-    (VOID)target;
-}
-#endif
-
-#ifdef LOSCFG_KERNEL_SMP_CALL
 typedef struct {
-    LOS_DL_LIST node;
-    SMP_FUNC_CALL func;
-    VOID *args;
-} MpCallFunc;
+    const char *name;
+    int event;
+    int type;
+} PerfEvent;
 
-/**
- * It is used to call function on target cpus by sending ipi, and the first param is target cpu mask value.
- */
-extern VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args);
-extern VOID OsMpFuncCallHandler(VOID);
-#else
-INLINE VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
-{
-    (VOID)target;
-    if (func != NULL) {
-        func(args);
-    }
-}
-#endif /* LOSCFG_KERNEL_SMP_CALL */
+extern const PerfEvent g_events[];
+void PerfList(void);
 
 #ifdef __cplusplus
 #if __cplusplus
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#endif
+#endif
 
-#endif /* _LOS_MP_H_ */
+#endif /* _PERF_LIST_H */

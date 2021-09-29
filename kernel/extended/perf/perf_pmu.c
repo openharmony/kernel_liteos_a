@@ -29,72 +29,42 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_MP_H
-#define _LOS_MP_H
+#include "perf_pmu_pri.h"
 
-#include "los_config.h"
-#include "los_list.h"
+STATIC Pmu *g_pmuMgr[PERF_EVENT_TYPE_MAX] = { NULL };
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-
-#define OS_MP_CPU_ALL       LOSCFG_KERNEL_CPU_MASK
-
-#define OS_MP_GC_PERIOD     100 /* ticks */
-
-typedef enum {
-    LOS_MP_IPI_WAKEUP,
-    LOS_MP_IPI_SCHEDULE,
-    LOS_MP_IPI_HALT,
-#ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_MP_IPI_FUNC_CALL,
-#endif
-} MP_IPI_TYPE;
-
-typedef VOID (*SMP_FUNC_CALL)(VOID *args);
-
-#ifdef LOSCFG_KERNEL_SMP
-extern VOID LOS_MpSchedule(UINT32 target);
-extern VOID OsMpWakeHandler(VOID);
-extern VOID OsMpScheduleHandler(VOID);
-extern VOID OsMpHaltHandler(VOID);
-extern UINT32 OsMpInit(VOID);
-#else
-STATIC INLINE VOID LOS_MpSchedule(UINT32 target)
+UINT32 OsPerfPmuRegister(Pmu *pmu)
 {
-    (VOID)target;
-}
-#endif
+    UINT32 type;
 
-#ifdef LOSCFG_KERNEL_SMP_CALL
-typedef struct {
-    LOS_DL_LIST node;
-    SMP_FUNC_CALL func;
-    VOID *args;
-} MpCallFunc;
-
-/**
- * It is used to call function on target cpus by sending ipi, and the first param is target cpu mask value.
- */
-extern VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args);
-extern VOID OsMpFuncCallHandler(VOID);
-#else
-INLINE VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
-{
-    (VOID)target;
-    if (func != NULL) {
-        func(args);
+    if ((pmu == NULL) || (pmu->type >= PERF_EVENT_TYPE_MAX)) {
+        return LOS_NOK;
     }
-}
-#endif /* LOSCFG_KERNEL_SMP_CALL */
 
-#ifdef __cplusplus
-#if __cplusplus
+    type = pmu->type;
+    if (g_pmuMgr[type] == NULL) {
+        g_pmuMgr[type] = pmu;
+        return LOS_OK;
+    }
+    return LOS_NOK;
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
 
-#endif /* _LOS_MP_H_ */
+Pmu *OsPerfPmuGet(UINT32 type)
+{
+    if (type >= PERF_EVENT_TYPE_MAX) {
+        return NULL;
+    }
+
+    if (type == PERF_EVENT_TYPE_RAW) { /* process hardware raw events with hard pmu */
+        type = PERF_EVENT_TYPE_HW;
+    }
+    return g_pmuMgr[type];
+}
+
+VOID OsPerfPmuRm(UINT32 type)
+{
+    if (type >= PERF_EVENT_TYPE_MAX) {
+        return;
+    }
+    g_pmuMgr[type] = NULL;
+}

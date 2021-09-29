@@ -371,6 +371,10 @@ typedef struct {
     LOS_DL_LIST     msgListHead;
     BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];
 #endif
+#ifdef LOSCFG_KERNEL_PERF
+    UINTPTR         pc;
+    UINTPTR         fp;
+#endif
 } LosTaskCB;
 
 typedef struct {

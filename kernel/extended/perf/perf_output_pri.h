@@ -29,11 +29,11 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_MP_H
-#define _LOS_MP_H
+#ifndef _PERF_OUTPUT_PRI_H
+#define _PERF_OUTPUT_PRI_H
 
-#include "los_config.h"
-#include "los_list.h"
+#include "los_perf_pri.h"
+#include "los_cir_buf.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -41,55 +41,18 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_MP_CPU_ALL       LOSCFG_KERNEL_CPU_MASK
-
-#define OS_MP_GC_PERIOD     100 /* ticks */
-
-typedef enum {
-    LOS_MP_IPI_WAKEUP,
-    LOS_MP_IPI_SCHEDULE,
-    LOS_MP_IPI_HALT,
-#ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_MP_IPI_FUNC_CALL,
-#endif
-} MP_IPI_TYPE;
-
-typedef VOID (*SMP_FUNC_CALL)(VOID *args);
-
-#ifdef LOSCFG_KERNEL_SMP
-extern VOID LOS_MpSchedule(UINT32 target);
-extern VOID OsMpWakeHandler(VOID);
-extern VOID OsMpScheduleHandler(VOID);
-extern VOID OsMpHaltHandler(VOID);
-extern UINT32 OsMpInit(VOID);
-#else
-STATIC INLINE VOID LOS_MpSchedule(UINT32 target)
-{
-    (VOID)target;
-}
-#endif
-
-#ifdef LOSCFG_KERNEL_SMP_CALL
 typedef struct {
-    LOS_DL_LIST node;
-    SMP_FUNC_CALL func;
-    VOID *args;
-} MpCallFunc;
+    CirBuf ringbuf;           /* ring buffer */
+    UINT32 waterMark;          /* notify water mark */
+} PerfOutputCB;
 
-/**
- * It is used to call function on target cpus by sending ipi, and the first param is target cpu mask value.
- */
-extern VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args);
-extern VOID OsMpFuncCallHandler(VOID);
-#else
-INLINE VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
-{
-    (VOID)target;
-    if (func != NULL) {
-        func(args);
-    }
-}
-#endif /* LOSCFG_KERNEL_SMP_CALL */
+extern UINT32 OsPerfOutputInit(VOID *buf, UINT32 size);
+extern UINT32 OsPerfOutputRead(CHAR *dest, UINT32 size);
+extern UINT32 OsPerfOutputWrite(CHAR *data, UINT32 size);
+extern VOID OsPerfOutputInfo(VOID);
+extern VOID OsPerfOutputFlush(VOID);
+extern VOID OsPerfNotifyHookReg(const PERF_BUF_NOTIFY_HOOK func);
+extern VOID OsPerfFlushHookReg(const PERF_BUF_FLUSH_HOOK func);
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -97,4 +60,4 @@ INLINE VOID OsMpFuncCall(UINT32 target, SMP_FUNC_CALL func, VOID *args)
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#endif /* _LOS_MP_H_ */
+#endif /* _PERF_OUTPUT_PRI_H */
