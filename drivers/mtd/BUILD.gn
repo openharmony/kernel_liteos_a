@@ -27,50 +27,8 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-OBJOUT = $(OUT)/obj
-TOPDIR = $(abspath $(LITEOSTOPDIR)/../..)
+import("//kernel/liteos_a/liteos.gni")
 
-TARGET = $(OUT)/lib/lib$(MODULE_NAME).a
-
-LOCAL_OBJS = $(addprefix $(OBJOUT)/,$(addsuffix .o,$(basename $(subst $(TOPDIR)/,,$(abspath $(LOCAL_SRCS))))))
-
-all : $(TARGET)
-
-ifeq ($(HIDE),@)
-ECHO = $1 = echo "  $1" $$(patsubst $$(OUT)/%,%,$$@) && $1(){ if ! $($1) "$$$$@"; then echo command details: $($1) "$$$$@"; false; fi;};$1
-$(foreach cmd,CC GPP AS AR LD,$(eval $(call ECHO,$(cmd))))
-endif
-
-LOCAL_FLAGS += -MD -MP
--include $(LOCAL_OBJS:%.o=%.d)
-
-$(OBJOUT)/%.o: $(TOPDIR)/%.c
-	$(HIDE)$(CC) $(CFLAGS) $(LOCAL_FLAGS) $(LOCAL_CFLAGS) -c $< -o $@
-
-$(OBJOUT)/%.o: $(TOPDIR)/%.cpp
-	$(HIDE)$(GPP) $(CXXFLAGS) $(LOCAL_FLAGS) $(LOCAL_CPPFLAGS) -c $< -o $@
-
-$(OBJOUT)/%.o: $(TOPDIR)/%.S
-	$(HIDE)$(CC) $(CFLAGS) $(LOCAL_FLAGS) $(LOCAL_ASFLAGS) -c $< -o $@
-
-$(OBJOUT)/%.o: $(TOPDIR)/%.s
-	$(HIDE)$(AS) $(ASFLAGS) $(LOCAL_FLAGS) $(LOCAL_ASFLAGS) -c $< -o $@
-
-$(OBJOUT)/%.o: $(TOPDIR)/%.cc
-	$(HIDE)$(GPP) $(CXXFLAGS) $(LOCAL_FLAGS) $(LOCAL_CPPFLAGS) -c $< -o $@
-
-$(OUT)/lib/lib%.a: $(LOCAL_OBJS)
-	$(HIDE)$(AR) $(ARFLAGS) $@ $^
-
-$(OUT)/bin/%: $(LOCAL_OBJS)
-	$(HIDE)$(GPP) $(LDFLAGS) -o $@ $^
-
-$(OUT)/%/:;$(HIDE)mkdir -p $@
-
-$(LOCAL_OBJS): | $(dir $(LOCAL_OBJS))
-$(TARGET): | $(dir $(TARGET))
-
-clean:
-	$(HIDE)$(RM) $(TARGET) $(LOCAL_OBJS)
-
-.PHONY: all clean
+module_group("mtd") {
+  modules = [ "multi_partition" ]
+}
