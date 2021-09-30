@@ -223,12 +223,14 @@ STATIC INT32 OsReadEhdr(const CHAR *fileName, ELFInfo *elfInfo, BOOL isExecFile)
 
 #ifdef LOSCFG_DRIVERS_TZDRIVER
     if (isExecFile) {
-        ret = fs_getfilep(GetAssociatedSystemFd(elfInfo->procfd), &OsCurrProcessGet()->execFile);
+        struct file *filep;
+        ret = fs_getfilep(GetAssociatedSystemFd(elfInfo->procfd), &filep);
         if (ret) {
             PRINT_ERR("%s[%d], Failed to get struct file %s!\n", __FUNCTION__, __LINE__, fileName);
             /* File will be closed by OsLoadELFFile */
             return ret;
         }
+        OsCurrProcessGet()->execVnode = filep->f_vnode;
     }
 #endif
     ret = OsReadELFInfo(elfInfo->procfd, (UINT8 *)&elfInfo->elfEhdr, sizeof(LD_ELF_EHDR), 0);

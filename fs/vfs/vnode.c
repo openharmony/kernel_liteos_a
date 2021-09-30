@@ -434,7 +434,6 @@ int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struc
             currentVnode->filePath[vnodePathLen] = 0;
         }
     }
-    return ret;
 
 OUT_FREE_PATH:
     if (normalizedPath) {
