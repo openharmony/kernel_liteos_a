@@ -121,7 +121,7 @@ typedef struct ProcessCB {
     TimerIdMap           timerIdMap;
 #endif
 #ifdef LOSCFG_DRIVERS_TZDRIVER
-    struct file          *execFile;   /**< Exec bin of the process */
+    struct Vnode        *execVnode;   /**< Exec bin of the process */
 #endif
     mode_t               umask;
 #ifdef LOSCFG_KERNEL_CPUP
