@@ -292,6 +292,8 @@ LosVmSpace *OsCreateUserVmSpace(VOID);
 STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace);
 LosMux *OsGVmSpaceMuxGet(VOID);
 STATUS_T OsUnMMap(LosVmSpace *space, VADDR_T addr, size_t size);
+STATUS_T OsVmSpaceRegionFree(LosVmSpace *space);
+
 /**
  * thread safety
  * it is used to malloc continuous virtual memory, no sure for continuous physical memory.
