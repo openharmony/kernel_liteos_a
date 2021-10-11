@@ -1420,8 +1420,6 @@ BOOL ConsoleEnable(VOID)
         if (g_uart_fputc_en == 0) {
             if ((g_console[CONSOLE_TELNET - 1] != NULL) && OsPreemptable()) {
                 return TRUE;
-            } else {
-                return FALSE;
             }
         }
 
@@ -1538,8 +1536,6 @@ INT32 ConsoleUpdateFd(VOID)
     if (g_uart_fputc_en == 0) {
         if (g_console[CONSOLE_TELNET - 1] != NULL) {
             consoleID = CONSOLE_TELNET;
-        } else {
-            return -1;
         }
     } else if (consoleID == 0) {
         if (g_console[CONSOLE_SERIAL - 1] != NULL) {
