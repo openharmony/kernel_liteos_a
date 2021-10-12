@@ -496,13 +496,13 @@ extern UINT32 LOS_TraceStart(VOID);
 
 /**
  * @ingroup los_trace
- * @brief Stop trace sample.
+ * @brief Stop trace.
  *
  * @par Description:
- * This API is used to start trace sample.
+ * This API is used to stop trace.
  * @attention
  * <ul>
- * <li>Stop trace sample</li>
+ * <li>Stop trace</li>
  * </ul>
  *
  * @param  None.
