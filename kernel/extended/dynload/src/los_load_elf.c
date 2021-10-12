@@ -47,10 +47,12 @@
 #include "tzdriver.h"
 #endif
 
-static int OsELFOpen(const CHAR *fileName, INT32 oflags)
+STATIC BOOL g_srandInit;
+
+STATIC INT32 OsELFOpen(const CHAR *fileName, INT32 oflags)
 {
-    int ret = -LOS_NOK;
-    int procFd;
+    INT32 ret = -LOS_NOK;
+    INT32 procFd;
 
     procFd = AllocProcessFd();
     if (procFd < 0) {
@@ -71,11 +73,11 @@ static int OsELFOpen(const CHAR *fileName, INT32 oflags)
     return procFd;
 }
 
-static int OsELFClose(int procFd)
+STATIC INT32 OsELFClose(INT32 procFd)
 {
-    int ret;
+    INT32 ret;
     /* Process procfd convert to system global procfd */
-    int sysfd = DisassociateProcessFd(procFd);
+    INT32 sysfd = DisassociateProcessFd(procFd);
     if (sysfd < 0) {
         return -EBADF;
     }
@@ -720,7 +722,7 @@ STATIC UINT32 OsGetRndOffset(const ELFLoadInfo *loadInfo)
     if (read(loadInfo->randomDevFD, &randomValue, sizeof(UINT32)) == sizeof(UINT32)) {
         randomValue &= RANDOM_MASK;
     } else {
-        randomValue = 0;
+        randomValue = (UINT32)random() & RANDOM_MASK;
     }
 #else
     (VOID)loadInfo;
@@ -791,7 +793,10 @@ STATIC INT32 OsSetArgParams(ELFLoadInfo *loadInfo, CHAR *const *argv, CHAR *cons
 
     loadInfo->randomDevFD = open("/dev/urandom", O_RDONLY);
     if (loadInfo->randomDevFD < 0) {
-        PRINT_ERR("%s: open /dev/urandom failed\n", __FUNCTION__);
+        if (!g_srandInit) {
+            srand((UINT32)time(NULL));
+            g_srandInit = TRUE;
+        }
     }
 
     (VOID)OsGetStackProt(loadInfo);
@@ -879,7 +884,8 @@ STATIC INT32 OsGetRndNum(const ELFLoadInfo *loadInfo, UINT32 *rndVec, UINT32 vec
     for (i = 0; i < vecSize; ++i) {
         ret = read(loadInfo->randomDevFD, &randomValue, sizeof(UINT32));
         if (ret != sizeof(UINT32)) {
-            return -EIO;
+            rndVec[i] = (UINT32)random();
+            continue;
         }
         rndVec[i] = randomValue;
     }
