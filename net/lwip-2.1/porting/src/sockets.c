@@ -1174,6 +1174,25 @@ static u8_t lwip_ioctl_internal_SIOCGIFMTU(struct ifreq *ifr)
     }
 }
 
+static u8_t lwip_ioctl_internal_SIOCGIFBRDADDR(struct ifreq *ifr)
+{
+    struct netif *netif = NULL;
+    struct sockaddr_in *sock_in = NULL;
+
+    /* get netif subnet broadcast addr */
+    netif = netif_find(ifr->ifr_name);
+    if (netif == NULL) {
+        return ENODEV;
+    }
+    if (ip4_addr_isany_val(*(ip_2_ip4(&netif->netmask)))) {
+        return ENXIO;
+    }
+    sock_in = (struct sockaddr_in *)&ifr->ifr_addr;
+    sock_in->sin_family = AF_INET;
+    sock_in->sin_addr.s_addr = (ip_2_ip4(&((netif)->ip_addr))->addr | ~(ip_2_ip4(&netif->netmask)->addr));
+    return 0;
+}
+
 #endif /* LWIP_IOCTL_IF */
 
 #if LWIP_NETIF_ETHTOOL
@@ -1436,6 +1455,13 @@ static u8_t lwip_ioctl_impl(const struct lwip_sock *sock, long cmd, void *argp)
         case SIOCSIFMTU:
             err = lwip_ioctl_internal_SIOCSIFMTU(ifr);
             break;
+        case SIOCGIFBRDADDR:
+            if (is_ipv6 != 0) {
+                err = EINVAL;
+            } else {
+                err = lwip_ioctl_internal_SIOCGIFBRDADDR(ifr);
+            }
+            break;
 #endif /* LWIP_IOCTL_IF */
 #if LWIP_NETIF_ETHTOOL
         case SIOCETHTOOL:
@@ -1549,6 +1575,7 @@ int socks_ioctl(int sockfd, long cmd, void *argp)
             case SIOCGIFMTU:
             case SIOCSIFMTU:
             case SIOCETHTOOL:
+            case SIOCGIFBRDADDR:
                 nbytes = sizeof(struct ifreq);
                 break;
             default:
