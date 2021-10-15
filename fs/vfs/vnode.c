@@ -388,7 +388,7 @@ int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struc
         }
     }
 
-    if (normalizedPath[0] == '/' && normalizedPath[1] == '\0') {
+    if (normalizedPath[1] == '\0' && normalizedPath[0] == '/') {
         *result = g_rootVnode;
         free(normalizedPath);
         return LOS_OK;
@@ -445,6 +445,11 @@ OUT_FREE_PATH:
 int VnodeLookup(const char *path, struct Vnode **vnode, uint32_t flags)
 {
     return VnodeLookupAt(path, vnode, flags, NULL);
+}
+
+int VnodeLookupFullpath(const char *fullpath, struct Vnode **vnode, uint32_t flags)
+{
+    return VnodeLookupAt(fullpath, vnode, flags, g_rootVnode);
 }
 
 static void ChangeRootInternal(struct Vnode *rootOld, char *dirname)
