@@ -36,6 +36,7 @@
 #endif
 #include "los_hwi.h"
 #include "los_memory_pri.h"
+#include "los_process_pri.h"
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif
@@ -46,7 +47,6 @@
 #include "los_excinfo_pri.h"
 #endif
 #include "los_exc_pri.h"
-
 
 #define SIZEBUF  256
 
@@ -278,7 +278,9 @@ VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...
     }
 
     if ((level != LOS_COMMON_LEVEL) && ((level > LOS_EMG_LEVEL) && (level <= LOS_TRACE_LEVEL))) {
-        dprintf("[%s]", g_logString[level]);
+        dprintf("[%s][%s:%s]", g_logString[level],
+                ((OsCurrProcessGet() == NULL) ? "NULL" : OsCurrProcessGet()->processName),
+                ((OsCurrTaskGet() == NULL) ? "NULL" : OsCurrTaskGet()->taskName));
     }
 
     va_start(ap, fmt);
