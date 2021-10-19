@@ -87,28 +87,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread003, TestSize.Level0)
     ItTestPthread003();
 }
 
-/* *
- * @tc.name: it_test_pthread_004
- * @tc.desc: function for ProcessPthreadTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessPthreadTest, ItTestPthread004, TestSize.Level0)
-{
-    ItTestPthread004();
-}
-
-/* *
- * @tc.name: it_test_pthread_005
- * @tc.desc: function for ProcessPthreadTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessPthreadTest, ItTestPthread005, TestSize.Level0)
-{
-    ItTestPthread005();
-}
-
 #ifndef LOSCFG_USER_TEST_SMP
 /* *
  * @tc.name: it_test_pthread_006
@@ -237,17 +215,6 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread016, TestSize.Level0)
 }
 
 /* *
- * @tc.name: it_test_pthread_017
- * @tc.desc: function for ProcessPthreadTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessPthreadTest, ItTestPthread017, TestSize.Level0)
-{
-    ItTestPthread017();
-}
-
-/* *
  * @tc.name: it_test_pthread_018
  * @tc.desc: function for ProcessPthreadTest
  * @tc.type: FUNC
@@ -268,6 +235,18 @@ HWTEST_F(ProcessPthreadTest, ItTestPthread019, TestSize.Level0)
 {
     ItTestPthread019();
 }
+
+/* *
+ * @tc.name: it_test_pthread_017
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread017, TestSize.Level0)
+{
+    ItTestPthread017();
+}
+
 
 /* *
  * @tc.name: it_test_pthread_once_001
@@ -322,6 +301,53 @@ HWTEST_F(ProcessPthreadTest, ItTestPthreadCond001, TestSize.Level0)
 HWTEST_F(ProcessPthreadTest, ItTestPthreadCond002, TestSize.Level0)
 {
     ItTestPthreadCond002();
+}
+
+/* *
+ * @tc.name: it_test_pthread_cond_003
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthreadCond003, TestSize.Level0)
+{
+    ItTestPthreadCond003();
+}
+
+/* *
+ * @tc.name: it_test_pthread_cond_004
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthreadCond004, TestSize.Level0)
+{
+    ItTestPthreadCond004();
+}
+
+#endif
+
+#if defined(LOSCFG_USER_TEST_FULL)
+/* *
+ * @tc.name: it_test_pthread_004
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread004, TestSize.Level0)
+{
+    ItTestPthread004();
+}
+
+/* *
+ * @tc.name: it_test_pthread_005
+ * @tc.desc: function for ProcessPthreadTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessPthreadTest, ItTestPthread005, TestSize.Level0)
+{
+    ItTestPthread005();
 }
 #endif
 } // namespace OHOS
