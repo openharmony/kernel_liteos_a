@@ -254,7 +254,7 @@ SYSCALL_HAND_DEF(__NR_shmctl, SysShmCtl, int, ARG_NUM_3)
 SYSCALL_HAND_DEF(__NR_statx, SysStatx, int, ARG_NUM_5)
 
 /* LiteOS customized syscalls, not compatible with ARM EABI */
-SYSCALL_HAND_DEF(__NR_pthread_set_detach, SysUserThreadSetDeatch, int, ARG_NUM_1)
+SYSCALL_HAND_DEF(__NR_pthread_set_detach, SysUserThreadSetDetach, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_pthread_join, SysThreadJoin, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_pthread_deatch, SysUserThreadDetach, int, ARG_NUM_1)
 SYSCALL_HAND_DEF(__NR_creat_user_thread, SysCreateUserThread, unsigned int, ARG_NUM_3)

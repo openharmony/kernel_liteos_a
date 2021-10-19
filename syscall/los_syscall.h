@@ -106,7 +106,7 @@ extern int SysSetProcessGroupID(unsigned int pid, unsigned int gid);
 extern unsigned int SysCreateUserThread(const TSK_ENTRY_FUNC func, const UserTaskParam *userParam, bool joinable);
 extern int SysSetThreadArea(const char *area);
 extern char *SysGetThreadArea(void);
-extern int SysUserThreadSetDeatch(unsigned int taskID);
+extern int SysUserThreadSetDetach(unsigned int taskID);
 extern int SysUserThreadDetach(unsigned int taskID);
 extern int SysThreadJoin(unsigned int taskID);
 extern void SysUserExitGroup(int status);

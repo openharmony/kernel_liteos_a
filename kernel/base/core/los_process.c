@@ -1663,9 +1663,7 @@ STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, 
     childPara->usTaskPrio = mainThread->priority;
     childPara->processID = childProcessCB->processID;
     if (mainThread->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
-        childPara->uwResved = OS_TASK_FLAG_PTHREAD_JOIN;
-    } else if (mainThread->taskStatus & OS_TASK_FLAG_DETACHED) {
-        childPara->uwResved = OS_TASK_FLAG_DETACHED;
+        childPara->uwResved = LOS_TASK_ATTR_JOINABLE;
     }
 
     SCHEDULER_UNLOCK(intSave);
