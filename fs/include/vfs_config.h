@@ -96,6 +96,7 @@ extern "C" {
 #define CONFIG_NEXPANED_DESCRIPTORS     (CONFIG_NTIME_DESCRIPTORS + CONFIG_NQUEUE_DESCRIPTORS)
 #define TIMER_FD_OFFSET                 FD_SETSIZE
 #define MQUEUE_FD_OFFSET                (FD_SETSIZE + CONFIG_NTIME_DESCRIPTORS)
+#define EPOLL_FD_OFFSET                 (FD_SETSIZE + CONFIG_NTIME_DESCRIPTORS + CONFIG_NQUEUE_DESCRIPTORS)
 
 /* net configure */
 
@@ -128,6 +129,8 @@ extern "C" {
 /* directory configure */
 
 #define VFS_USING_WORKDIR               // enable current working directory
+
+#define CONFIG_EPOLL_DESCRIPTORS    32
 
 /* permission configure */
 #define DEFAULT_DIR_MODE        0777

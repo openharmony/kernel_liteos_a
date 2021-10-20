@@ -88,6 +88,8 @@ sources_full = [
   "full/IO_test_ppoll_003.cpp",
   "full/IO_test_pselect_001.cpp",
   "full/IO_test_pselect_002.cpp",
+  "full/IO_test_epoll_001.cpp",
+  "full/IO_test_epoll_002.cpp",
 ]
 
 if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
