@@ -378,6 +378,11 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
         (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
     }
 #endif
+
+    if (processCB->resourceLimit != NULL) {
+        (VOID)LOS_MemFree((VOID *)m_aucSysMem0, processCB->resourceLimit);
+        processCB->resourceLimit = NULL;
+    }
 }
 
 LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, ProcessGroup **group)
