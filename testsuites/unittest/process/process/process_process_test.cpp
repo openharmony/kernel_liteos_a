@@ -369,83 +369,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess030, TestSize.Level0)
 }
 
 /* *
- * @tc.name: it_test_process_031
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess031, TestSize.Level0)
-{
-    ItTestProcess031();
-}
-
-/* *
- * @tc.name: it_test_process_032
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess032, TestSize.Level0)
-{
-    ItTestProcess032();
-}
-
-/* *
- * @tc.name: it_test_process_033
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess033, TestSize.Level0)
-{
-    ItTestProcess033();
-}
-
-/* *
- * @tc.name: it_test_process_034
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess034, TestSize.Level0)
-{
-    ItTestProcess034();
-}
-
-/* *
- * @tc.name: it_test_process_035
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess035, TestSize.Level0)
-{
-    ItTestProcess035();
-}
-
-/* *
- * @tc.name: it_test_process_036
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess036, TestSize.Level0)
-{
-    ItTestProcess036();
-}
-
-/* *
- * @tc.name: it_test_process_037
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess037, TestSize.Level0)
-{
-    ItTestProcess037();
-}
-
-/* *
  * @tc.name: it_test_process_038
  * @tc.desc: function for ProcessProcessTest
  * @tc.type: FUNC
@@ -465,17 +388,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess038, TestSize.Level0)
 HWTEST_F(ProcessProcessTest, ItTestProcess039, TestSize.Level0)
 {
     ItTestProcess039();
-}
-
-/* *
- * @tc.name: it_test_process_042
- * @tc.desc: function for ProcessProcessTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess042, TestSize.Level0)
-{
-    ItTestProcess042();
 }
 
 /* *
@@ -553,17 +465,6 @@ HWTEST_F(ProcessProcessTest, ItTestProcess048, TestSize.Level0)
 HWTEST_F(ProcessProcessTest, ItTestProcess054, TestSize.Level0)
 {
     ItTestProcess054();
-}
-
-/* *
- * @tc.name: it_test_process_055
- * @tc.desc: function for waitid:To test the function of transferring different parameters of the waitid.
- * @tc.type: FUNC
- * @tc.require: AR000E0QAB
- */
-HWTEST_F(ProcessProcessTest, ItTestProcess055, TestSize.Level0)
-{
-    ItTestProcess055();
 }
 
 /* *
@@ -681,6 +582,83 @@ HWTEST_F(ProcessProcessTest, ItTestProcess007, TestSize.Level0)
 }
 
 /* *
+ * @tc.name: it_test_process_031
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess031, TestSize.Level0)
+{
+    ItTestProcess031();
+}
+
+/* *
+ * @tc.name: it_test_process_032
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess032, TestSize.Level0)
+{
+    ItTestProcess032();
+}
+
+/* *
+ * @tc.name: it_test_process_033
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess033, TestSize.Level0)
+{
+    ItTestProcess033();
+}
+
+/* *
+ * @tc.name: it_test_process_034
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess034, TestSize.Level0)
+{
+    ItTestProcess034();
+}
+
+/* *
+ * @tc.name: it_test_process_035
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess035, TestSize.Level0)
+{
+    ItTestProcess035();
+}
+
+/* *
+ * @tc.name: it_test_process_036
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess036, TestSize.Level0)
+{
+    ItTestProcess036();
+}
+
+/* *
+ * @tc.name: it_test_process_037
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess037, TestSize.Level0)
+{
+    ItTestProcess037();
+}
+
+/* *
  * @tc.name: it_test_process_040
  * @tc.desc: function for ProcessProcessTest
  * @tc.type: FUNC
@@ -703,6 +681,17 @@ HWTEST_F(ProcessProcessTest, ItTestProcess041, TestSize.Level0)
 }
 
 /* *
+ * @tc.name: it_test_process_042
+ * @tc.desc: function for ProcessProcessTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess042, TestSize.Level0)
+{
+    ItTestProcess042();
+}
+
+/* *
  * @tc.name: it_test_process_053
  * @tc.desc: function for killpg:Sends a signal to the process group,
  * Other processes in the process group can receive the signal.
@@ -712,6 +701,17 @@ HWTEST_F(ProcessProcessTest, ItTestProcess041, TestSize.Level0)
 HWTEST_F(ProcessProcessTest, ItTestProcess053, TestSize.Level0)
 {
     ItTestProcess053();
+}
+
+/* *
+ * @tc.name: it_test_process_055
+ * @tc.desc: function for waitid:To test the function of transferring different parameters of the waitid.
+ * @tc.type: FUNC
+ * @tc.require: AR000E0QAB
+ */
+HWTEST_F(ProcessProcessTest, ItTestProcess055, TestSize.Level0)
+{
+    ItTestProcess055();
 }
 
 /* *
