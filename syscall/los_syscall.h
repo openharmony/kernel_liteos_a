@@ -257,6 +257,8 @@ extern int SysIoctl(int fd, int req, void *arg);
 extern int SysFcntl(int fd, int cmd, void *arg);
 extern int SysDup2(int fd1, int fd2);
 extern int SysSelect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+extern int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+                    const struct timespec *timeout, const long data[2]);
 extern int SysTruncate(const char *path, off_t length);
 extern int SysFtruncate(int fd, off_t length);
 extern int SysStatfs(const char *path, struct statfs *buf);
