@@ -374,7 +374,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 
 #ifdef LOSCFG_KERNEL_LITEIPC
     if (OsProcessIsUserMode(processCB)) {
-        LiteIpcPoolDelete(&(processCB->ipcInfo));
+        LiteIpcPoolDelete(&(processCB->ipcInfo), processCB->processID);
         (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
     }
 #endif
