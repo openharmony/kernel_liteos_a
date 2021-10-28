@@ -2518,39 +2518,42 @@ int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p, cons
 {
     int timeout;
     int ret;
+    int retVal;
     sigset_t_l origMask;
     sigset_t_l setl;
 
     CHECK_ASPACE(tmo_p, sizeof(struct timespec));
     CHECK_ASPACE(sigMask, sizeof(sigset_t));
-    DUP_FROM_USER(tmo_p, sizeof(struct timespec));
-    DUP_FROM_USER(sigMask, sizeof(sigset_t), FREE_DUP(tmo_p));
+    CPY_FROM_USER(tmo_p);
+    CPY_FROM_USER(sigMask);
 
     if (tmo_p != NULL) {
         timeout = tmo_p->tv_sec * OS_SYS_US_PER_MS + tmo_p->tv_nsec / OS_SYS_NS_PER_MS;
-        if (timeout & 0x80000000) {
-            ret = -EINVAL;
-            printf("ret[1] = %d\n", ret);
-            return ret;
+        if (timeout < 0) {
+            return -EINVAL;
         }
     } else {
         timeout = -1;
     }
     
     if (sigMask != NULL) {
-        memcpy(&setl.sig[0], sigMask, sizeof(sigset_t));
+        memcpy_s(&setl.sig[0], sizeof(sigset_t), sigMask, sizeof(sigset_t));
     }
     
-    OsSigprocMask(SIG_SETMASK, sigMask?(&setl):NULL, &origMask);
+    ret = OsSigprocMask(SIG_SETMASK, sigMask ? &setl : NULL, &origMask);
+    if (ret != 0) {
+        return -EINVAL;
+    }
     ret = SysPoll(fds, nfds, timeout);
     if (ret < 0) {
-        ret = -get_errno();
+        retVal = -get_errno();
     }
-    OsSigprocMask(SIG_SETMASK, &origMask, NULL);
+    ret = OsSigprocMask(SIG_SETMASK, &origMask, NULL);
+    if (ret != 0) {
+        return -EINVAL;
+    }
 
-    FREE_DUP(tmo_p);
-    FREE_DUP(sigMask);
-    return (ret == -1) ? -get_errno() : ret;
+    return retVal;
 }
 
 int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
