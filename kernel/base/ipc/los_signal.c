@@ -226,9 +226,9 @@ int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
     unsigned int intSave;
     sigset_t set;
     int retVal;
-    
+
     if (setl != NULL) {
-        retVal = LOS_ArchCopyFromUser(&set, &(setl->sig[0]), sizeof(sigset_t));
+        retVal = LOS_CopyToKernel(&set, sizeof(sigset_t), &(setl->sig[0]), sizeof(sigset_t));
         if (retVal != 0) {
             return -EFAULT;
         }
@@ -268,7 +268,7 @@ int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
     SCHEDULER_UNLOCK(intSave);
 
     if (oldset != NULL) {
-        retVal = LOS_ArchCopyToUser(&(oldset->sig[0]), &oldSigprocmask, sizeof(sigset_t));
+        retVal = LOS_CopyFromKernel(&(oldset->sig[0]), sizeof(sigset_t), &oldSigprocmask, sizeof(sigset_t));
         if (retVal != 0) {
             return -EFAULT;
         }
