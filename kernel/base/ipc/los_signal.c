@@ -157,13 +157,10 @@ STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
         case OS_TASK_WAIT_SIGNAL:
             OsSigWaitTaskWake(taskCB, signo);
             break;
-#ifdef LOSCFG_KERNEL_LITEIPC
         case OS_TASK_WAIT_LITEIPC:
-            taskCB->ipcStatus &= ~IPC_THREAD_STATUS_PEND;
             OsTaskWakeClearPendMask(taskCB);
             OsSchedTaskWake(taskCB);
             break;
-#endif
         case OS_TASK_WAIT_FUTEX:
             OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
             OsTaskWakeClearPendMask(taskCB);

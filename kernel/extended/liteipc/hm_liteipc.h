@@ -169,11 +169,6 @@ typedef struct {
     VOID                 *buffToFree;
 } IpcContent;
 
-#define IPC_THREAD_STATUS_INVAL        0x0001U
-#define IPC_THREAD_STATUS_START        0x0002U
-#define IPC_THREAD_STATUS_PEND         0x0004U
-#define IPC_THREAD_STATUS_STOP         0x0008U
-
 /* init liteipc driver */
 extern UINT32 OsLiteIpcInit(VOID);
 
