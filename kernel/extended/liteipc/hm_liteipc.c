@@ -254,11 +254,10 @@ LITE_OS_SEC_TEXT UINT32 LiteIpcPoolReInit(ProcIpcInfo *child, const ProcIpcInfo 
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo)
+LITE_OS_SEC_TEXT VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo, UINT32 processID)
 {
     UINT32 intSave;
     IpcUsedNode *node = NULL;
-    UINT32 processID = LOS_GetCurrProcessID();
     if (ipcInfo->pool.kvaddr != NULL) {
         LOS_VFree(ipcInfo->pool.kvaddr);
         ipcInfo->pool.kvaddr = NULL;
