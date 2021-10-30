@@ -2516,16 +2516,12 @@ int SysFstatfs64(int fd, size_t sz, struct statfs *buf)
 
 int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p, const sigset_t *sigMask, int nsig)
 {
-    int timeout;
-    int ret;
-    int retVal;
-    sigset_t_l origMask;
-    sigset_t_l setl;
+    int timeout, retVal;
+    sigset_t_l origMask = {0};
+    sigset_t_l set = {0};
 
     CHECK_ASPACE(tmo_p, sizeof(struct timespec));
-    CHECK_ASPACE(sigMask, sizeof(sigset_t));
     CPY_FROM_USER(tmo_p);
-    CPY_FROM_USER(sigMask);
 
     if (tmo_p != NULL) {
         timeout = tmo_p->tv_sec * OS_SYS_US_PER_MS + tmo_p->tv_nsec / OS_SYS_NS_PER_MS;
@@ -2535,23 +2531,19 @@ int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p, cons
     } else {
         timeout = -1;
     }
-    
+
     if (sigMask != NULL) {
-        memcpy_s(&setl.sig[0], sizeof(sigset_t), sigMask, sizeof(sigset_t));
+        retVal = LOS_ArchCopyFromUser(&set, sigMask, sizeof(sigset_t));
+        if (retVal != 0) {
+            return -EFAULT;
+        }
+        (VOID)OsSigprocMask(SIG_SETMASK, &set, &origMask);
+    } else {
+        (VOID)OsSigprocMask(SIG_SETMASK, NULL, &origMask);
     }
-    
-    ret = OsSigprocMask(SIG_SETMASK, sigMask ? &setl : NULL, &origMask);
-    if (ret != 0) {
-        return -EINVAL;
-    }
-    ret = SysPoll(fds, nfds, timeout);
-    if (ret < 0) {
-        retVal = -get_errno();
-    }
-    ret = OsSigprocMask(SIG_SETMASK, &origMask, NULL);
-    if (ret != 0) {
-        return -EINVAL;
-    }
+
+    retVal = SysPoll(fds, nfds, timeout);
+    (VOID)OsSigprocMask(SIG_SETMASK, &origMask, NULL);
 
     return retVal;
 }
