@@ -953,9 +953,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     SCHEDULER_LOCK(intSave);
     LosTaskCB *tcb = OS_TCB_FROM_TID(dstTid);
     LOS_ListTailInsert(&(tcb->msgListHead), &(buf->listNode));
-    OsHookCall(LOS_HOOK_TYPE_IPC_WRITE, &buf->msg, dstTid, tcb->processID, tcb->ipcStatus);
-    if (tcb->ipcStatus & IPC_THREAD_STATUS_PEND) {
-        tcb->ipcStatus &= ~IPC_THREAD_STATUS_PEND;
+    OsHookCall(LOS_HOOK_TYPE_IPC_WRITE, &buf->msg, dstTid, tcb->processID, tcb->waitFlag);
+    if (tcb->waitFlag == OS_TASK_WAIT_LITEIPC) {
         OsTaskWakeClearPendMask(tcb);
         OsSchedTaskWake(tcb);
         SCHEDULER_UNLOCK(intSave);
@@ -1011,11 +1010,11 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *c
             ret =  -EINVAL;
     }
     if (ret != LOS_OK) {
-        OsHookCall(LOS_HOOK_TYPE_IPC_READ_DROP, &node->msg, tcb->ipcStatus);
+        OsHookCall(LOS_HOOK_TYPE_IPC_READ_DROP, &node->msg, tcb->waitFlag);
         (VOID)HandleSpecialObjects(LOS_CurTaskIDGet(), node, TRUE);
         (VOID)LiteIpcNodeFree(LOS_GetCurrProcessID(), (VOID *)node);
     } else {
-        OsHookCall(LOS_HOOK_TYPE_IPC_READ, &node->msg, tcb->ipcStatus);
+        OsHookCall(LOS_HOOK_TYPE_IPC_READ, &node->msg, tcb->waitFlag);
     }
     return ret;
 }
@@ -1035,18 +1034,17 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
     do {
         SCHEDULER_LOCK(intSave);
         if (LOS_ListEmpty(listHead)) {
-            OsHookCall(LOS_HOOK_TYPE_IPC_TRY_READ, syncFlag ? MT_REPLY : MT_REQUEST, tcb->ipcStatus);
-            tcb->ipcStatus |= IPC_THREAD_STATUS_PEND;
             OsTaskWaitSetPendMask(OS_TASK_WAIT_LITEIPC, OS_INVALID_VALUE, timeout);
+            OsHookCall(LOS_HOOK_TYPE_IPC_TRY_READ, syncFlag ? MT_REPLY : MT_REQUEST, tcb->waitFlag);
             ret = OsSchedTaskWait(&g_ipcPendlist, timeout, TRUE);
             if (ret == LOS_ERRNO_TSK_TIMEOUT) {
-                OsHookCall(LOS_HOOK_TYPE_IPC_READ_TIMEOUT, syncFlag ? MT_REPLY : MT_REQUEST, tcb->ipcStatus);
+                OsHookCall(LOS_HOOK_TYPE_IPC_READ_TIMEOUT, syncFlag ? MT_REPLY : MT_REQUEST, tcb->waitFlag);
                 SCHEDULER_UNLOCK(intSave);
                 return -ETIME;
             }
 
             if (OsTaskIsKilled(tcb)) {
-                OsHookCall(LOS_HOOK_TYPE_IPC_KILL, syncFlag ? MT_REPLY : MT_REQUEST, tcb->ipcStatus);
+                OsHookCall(LOS_HOOK_TYPE_IPC_KILL, syncFlag ? MT_REPLY : MT_REQUEST, tcb->waitFlag);
                 SCHEDULER_UNLOCK(intSave);
                 return -ERFKILL;
             }

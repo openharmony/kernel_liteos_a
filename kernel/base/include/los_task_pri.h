@@ -359,7 +359,6 @@ typedef struct {
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process */
 #ifdef LOSCFG_KERNEL_LITEIPC
-    UINT32          ipcStatus;
     LOS_DL_LIST     msgListHead;
     BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];
 #endif
