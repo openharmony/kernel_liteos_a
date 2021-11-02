@@ -71,5 +71,5 @@ VADDR_T *OsGFirstTableGet(VOID);
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#endif /* __LOS_VM_PAGE_H__ */
+#endif /* __LOS_ARCH_MMU_H__ */
 

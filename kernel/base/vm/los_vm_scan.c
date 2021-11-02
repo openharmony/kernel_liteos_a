@@ -77,7 +77,7 @@ VOID OsLruCacheAdd(LosFilePage *fpage, enum OsLruList lruType)
     LOS_SpinUnlockRestore(&physSeg->lruLock, intSave);
 }
 
-/* dellete a lru node, caller need hold lru_lock */
+/* delete a lru node, caller need hold lru_lock */
 VOID OsLruCacheDel(LosFilePage *fpage)
 {
     LosVmPhysSeg *physSeg = fpage->physSeg;
@@ -175,7 +175,7 @@ VOID OsPageRefIncLocked(LosFilePage *fpage)
     LOS_SpinUnlockRestore(&fpage->physSeg->lruLock, intSave);
 }
 
-/* page referced dec: (call by thrinker)
+/* page referced dec: (call by shrinker)
 ----------inactive----------|----------active------------
 [ref:0,act:0], [ref:1,act:0]|[ref:0,act:1], [ref:1,act:1]
 ref:1, act:1 --> ref:0, act:1

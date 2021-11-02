@@ -618,7 +618,7 @@ STATIC UINT32 OsCvtPte2FlagsToAttrs(UINT32 flags)
     return mmuFlags;
 }
 
-STATIC UINT32 OsMapL2PageContinous(PTE_T pte1, UINT32 flags, VADDR_T *vaddr, PADDR_T *paddr, UINT32 *count)
+STATIC UINT32 OsMapL2PageContinuous(PTE_T pte1, UINT32 flags, VADDR_T *vaddr, PADDR_T *paddr, UINT32 *count)
 {
     PTE_T *pte2BasePtr = NULL;
     UINT32 archFlags;
@@ -662,9 +662,9 @@ status_t LOS_ArchMmuMap(LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T paddr, size_
             l1Entry = OsGetPte1(archMmu->virtTtb, vaddr);
             if (OsIsPte1Invalid(l1Entry)) {
                 OsMapL1PTE(archMmu, &l1Entry, vaddr, flags);
-                saveCounts = OsMapL2PageContinous(l1Entry, flags, &vaddr, &paddr, &count);
+                saveCounts = OsMapL2PageContinuous(l1Entry, flags, &vaddr, &paddr, &count);
             } else if (OsIsPte1PageTable(l1Entry)) {
-                saveCounts = OsMapL2PageContinous(l1Entry, flags, &vaddr, &paddr, &count);
+                saveCounts = OsMapL2PageContinuous(l1Entry, flags, &vaddr, &paddr, &count);
             } else {
                 LOS_Panic("%s %d, unimplemented tt_entry %x\n", __FUNCTION__, __LINE__, l1Entry);
             }
@@ -716,7 +716,7 @@ STATUS_T LOS_ArchMmuMove(LosArchMmu *archMmu, VADDR_T oldVaddr, VADDR_T newVaddr
     PADDR_T paddr = 0;
 
     if ((archMmu == NULL) || (oldVaddr == 0) || (newVaddr == 0) || (count == 0)) {
-        VM_ERR("invalid args: archMmu %p, oldVaddr %p, newVddr %p, count %d",
+        VM_ERR("invalid args: archMmu %p, oldVaddr %p, newVaddr %p, count %d",
                archMmu, oldVaddr, newVaddr, count);
         return LOS_NOK;
     }
