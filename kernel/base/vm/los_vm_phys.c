@@ -157,23 +157,6 @@ VOID OsVmPhysInit(VOID)
     }
 }
 
-STATIC VOID OsVmPhysFreeListAdd(LosVmPage *page, UINT8 order)
-{
-    struct VmPhysSeg *seg = NULL;
-    struct VmFreeList *list = NULL;
-
-    if (page->segID >= VM_PHYS_SEG_MAX) {
-        LOS_Panic("The page segment id(%d) is invalid\n", page->segID);
-    }
-
-    page->order = order;
-    seg = &g_vmPhysSeg[page->segID];
-
-    list = &seg->freeList[order];
-    LOS_ListTailInsert(&list->node, &page->node);
-    list->listCnt++;
-}
-
 STATIC VOID OsVmPhysFreeListAddUnsafe(LosVmPage *page, UINT8 order)
 {
     struct VmPhysSeg *seg = NULL;
@@ -192,22 +175,6 @@ STATIC VOID OsVmPhysFreeListAddUnsafe(LosVmPage *page, UINT8 order)
 }
 
 STATIC VOID OsVmPhysFreeListDelUnsafe(LosVmPage *page)
-{
-    struct VmPhysSeg *seg = NULL;
-    struct VmFreeList *list = NULL;
-
-    if ((page->segID >= VM_PHYS_SEG_MAX) || (page->order >= VM_LIST_ORDER_MAX)) {
-        LOS_Panic("The page segment id(%u) or order(%u) is invalid\n", page->segID, page->order);
-    }
-
-    seg = &g_vmPhysSeg[page->segID];
-    list = &seg->freeList[page->order];
-    list->listCnt--;
-    LOS_ListDelete(&page->node);
-    page->order = VM_LIST_ORDER_MAX;
-}
-
-STATIC VOID OsVmPhysFreeListDel(LosVmPage *page)
 {
     struct VmPhysSeg *seg = NULL;
     struct VmFreeList *list = NULL;
@@ -376,14 +343,14 @@ VOID OsVmPhysPagesFree(LosVmPage *page, UINT8 order)
             if ((buddyPage == NULL) || (buddyPage->order != order)) {
                 break;
             }
-            OsVmPhysFreeListDel(buddyPage);
+            OsVmPhysFreeListDelUnsafe(buddyPage);
             order++;
             pa &= ~(VM_ORDER_TO_PHYS(order) - 1);
             page = OsVmPhysToPage(pa, page->segID);
         } while (order < VM_LIST_ORDER_MAX - 1);
     }
 
-    OsVmPhysFreeListAdd(page, order);
+    OsVmPhysFreeListAddUnsafe(page, order);
 }
 
 VOID OsVmPhysPagesFreeContiguous(LosVmPage *page, size_t nPages)
@@ -553,7 +520,7 @@ VOID OsPhysSharePageCopy(PADDR_T oldPaddr, PADDR_T *newPaddr, LosVmPage *newPage
 
     oldPage = LOS_VmPageGet(oldPaddr);
     if (oldPage == NULL) {
-        VM_ERR("invalid paddr %p", oldPaddr);
+        VM_ERR("invalid oldPaddr %p", oldPaddr);
         return;
     }
 
