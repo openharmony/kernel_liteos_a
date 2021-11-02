@@ -373,10 +373,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 #endif
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-    if (OsProcessIsUserMode(processCB)) {
-        LiteIpcPoolDelete(&(processCB->ipcInfo), processCB->processID);
-        (VOID)memset_s(&(processCB->ipcInfo), sizeof(ProcIpcInfo), 0, sizeof(ProcIpcInfo));
-    }
+    (VOID)LiteIpcPoolDestroy(processCB->processID);
 #endif
 
     if (processCB->resourceLimit != NULL) {
@@ -749,16 +746,6 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
     if (ret != LOS_OK) {
         goto EXIT;
     }
-
-#ifdef LOSCFG_KERNEL_LITEIPC
-    if (OsProcessIsUserMode(processCB)) {
-        ret = LiteIpcPoolInit(&(processCB->ipcInfo));
-        if (ret != LOS_OK) {
-            ret = LOS_ENOMEM;
-            goto EXIT;
-        }
-    }
-#endif
 
 #ifdef LOSCFG_FS_VFS
     processCB->files = alloc_files();
@@ -1439,10 +1426,7 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     }
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-    ret = LiteIpcPoolInit(&(processCB->ipcInfo));
-    if (ret != LOS_OK) {
-        return LOS_NOK;
-    }
+    (VOID)LiteIpcPoolDestroy(processCB->processID);
 #endif
 
     processCB->sigHandler = 0;
@@ -1833,9 +1817,9 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
     }
 
 #ifdef LOSCFG_KERNEL_LITEIPC
-    if (OsProcessIsUserMode(child)) {
-        ret = LiteIpcPoolReInit(&child->ipcInfo, (const ProcIpcInfo *)(&run->ipcInfo));
-        if (ret != LOS_OK) {
+    if (run->ipcInfo != NULL) {
+        child->ipcInfo = LiteIpcPoolReInit((const ProcIpcInfo *)(run->ipcInfo));
+        if (child->ipcInfo == NULL) {
             return LOS_ENOMEM;
         }
     }

@@ -103,7 +103,7 @@ typedef struct ProcessCB {
     UINTPTR              sigHandler;   /**< Signal handler */
     sigset_t             sigShare;     /**< Signal share bit */
 #ifdef LOSCFG_KERNEL_LITEIPC
-    ProcIpcInfo          ipcInfo;      /**< Memory pool for lite ipc */
+    ProcIpcInfo          *ipcInfo;      /**< Memory pool for lite ipc */
 #endif
 #ifdef LOSCFG_KERNEL_VM
     LosVmSpace           *vmSpace;     /**< VMM space for processes */

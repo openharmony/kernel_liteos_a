@@ -44,7 +44,9 @@
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
 #endif
-
+#ifdef LOSCFG_KERNEL_LITEIPC
+#include "hm_liteipc.h"
+#endif
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -359,8 +361,7 @@ typedef struct {
     UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
                                              a specific child process, or any child process */
 #ifdef LOSCFG_KERNEL_LITEIPC
-    LOS_DL_LIST     msgListHead;
-    BOOL            accessMap[LOSCFG_BASE_CORE_TSK_LIMIT];
+    IpcTaskInfo     *ipcTaskInfo;
 #endif
 #ifdef LOSCFG_KERNEL_PERF
     UINTPTR         pc;
