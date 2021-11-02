@@ -215,28 +215,22 @@ void OsSigMaskSwitch(LosTaskCB * const rtcb, sigset_t set)
     }
 }
 
-int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
+int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldsetl)
 {
     LosTaskCB *spcb = NULL;
-    sigset_t oldSigprocmask;
     int ret = LOS_OK;
     unsigned int intSave;
     sigset_t set;
-    int retVal;
 
-    if (setl != NULL) {
-        retVal = LOS_ArchCopyFromUser(&set, &(setl->sig[0]), sizeof(sigset_t));
-        if (retVal != 0) {
-            return -EFAULT;
-        }
-    }
     SCHEDULER_LOCK(intSave);
     spcb = OsCurrTaskGet();
     /* If requested, copy the old mask to user. */
-    oldSigprocmask = spcb->sig.sigprocmask;
-
+    if (oldsetl != NULL) {
+        *(sigset_t *)oldsetl = spcb->sig.sigprocmask;
+    }
     /* If requested, modify the current signal mask. */
     if (setl != NULL) {
+        set = *(sigset_t *)setl;
         /* Okay, determine what we are supposed to do */
         switch (how) {
             /* Set the union of the current set and the signal
@@ -264,12 +258,6 @@ int OsSigprocMask(int how, const sigset_t_l *setl, sigset_t_l *oldset)
     }
     SCHEDULER_UNLOCK(intSave);
 
-    if (oldset != NULL) {
-        retVal = LOS_ArchCopyToUser(&(oldset->sig[0]), &oldSigprocmask, sizeof(sigset_t));
-        if (retVal != 0) {
-            return -EFAULT;
-        }
-    }
     return ret;
 }
 
