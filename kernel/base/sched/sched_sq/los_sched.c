@@ -383,15 +383,16 @@ VOID OsSchedUpdateExpireTime(UINT64 startTime)
 
 STATIC INLINE UINT32 OsSchedCalculateTimeSlice(UINT16 proPriority, UINT16 priority)
 {
-    UINT32 ratTime, readTasks;
+    UINT32 retTime;
+    UINT32 readyTasks;
 
     SchedQueue *queueList = &g_sched->queueList[proPriority];
-    readTasks = queueList->readyTasks[priority];
-    if (readTasks > OS_SCHED_READY_MAX) {
+    readyTasks = queueList->readyTasks[priority];
+    if (readyTasks > OS_SCHED_READY_MAX) {
         return OS_SCHED_TIME_SLICES_MIN;
     }
-    ratTime = ((OS_SCHED_READY_MAX - readTasks) * OS_SCHED_TIME_SLICES_DIFF) / OS_SCHED_READY_MAX;
-    return (ratTime + OS_SCHED_TIME_SLICES_MIN);
+    retTime = ((OS_SCHED_READY_MAX - readyTasks) * OS_SCHED_TIME_SLICES_DIFF) / OS_SCHED_READY_MAX;
+    return (retTime + OS_SCHED_TIME_SLICES_MIN);
 }
 
 STATIC INLINE VOID OsSchedPriQueueEnHead(UINT32 proPriority, LOS_DL_LIST *priqueueItem, UINT32 priority)
@@ -502,7 +503,7 @@ STATIC INLINE BOOL OsSchedScanTimerList(VOID)
      * (per cpu) and ipc(mutex,sem and etc.)'s block at the same time, it can be waken
      * up by either timeout or corresponding ipc it's waiting.
      *
-     * Now synchronize sortlink preocedure is used, therefore the whole task scan needs
+     * Now synchronize sortlink procedure is used, therefore the whole task scan needs
      * to be protected, preventing another core from doing sortlink deletion at same time.
      */
     LOS_SpinLock(&cpu->taskSortLinkSpin);
@@ -977,7 +978,7 @@ STATIC INLINE VOID OsSchedSwitchProcess(LosProcessCB *runProcess, LosProcessCB *
     OsCurrProcessSet(newProcess);
 }
 
-STATIC VOID OsSchedTaskSwicth(LosTaskCB *runTask, LosTaskCB *newTask)
+STATIC VOID OsSchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
 {
     UINT64 endTime;
 
@@ -1060,7 +1061,7 @@ VOID OsSchedIrqEndCheckNeedSched(VOID)
 
         LosTaskCB *newTask = OsGetTopTask();
         if (runTask != newTask) {
-            OsSchedTaskSwicth(runTask, newTask);
+            OsSchedTaskSwitch(runTask, newTask);
             LOS_SpinUnlock(&g_taskSpin);
             return;
         }
@@ -1089,7 +1090,7 @@ VOID OsSchedResched(VOID)
         return;
     }
 
-    OsSchedTaskSwicth(runTask, newTask);
+    OsSchedTaskSwitch(runTask, newTask);
 }
 
 VOID LOS_Schedule(VOID)
@@ -1108,8 +1109,8 @@ VOID LOS_Schedule(VOID)
 
     /*
      * trigger schedule in task will also do the slice check
-     * if neccessary, it will give up the timeslice more in time.
-     * otherwhise, there's no other side effects.
+     * if necessary, it will give up the timeslice more in time.
+     * otherwise, there's no other side effects.
      */
     SCHEDULER_LOCK(intSave);
 
