@@ -376,6 +376,15 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     (VOID)LiteIpcPoolDestroy(processCB->processID);
 #endif
 
+#ifdef LOSCFG_KERNEL_CPUP
+    UINT32 intSave;
+    OsCpupBase *processCpup = processCB->processCpup;
+    SCHEDULER_LOCK(intSave);
+    processCB->processCpup = NULL;
+    SCHEDULER_UNLOCK(intSave);
+    (VOID)LOS_MemFree(m_aucSysMem1, processCpup);
+#endif
+
     if (processCB->resourceLimit != NULL) {
         (VOID)LOS_MemFree((VOID *)m_aucSysMem0, processCB->resourceLimit);
         processCB->resourceLimit = NULL;
@@ -654,12 +663,21 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, UINT16 priority, c
     }
 #endif
 
+#ifdef LOSCFG_KERNEL_CPUP
+    processCB->processCpup = (OsCpupBase *)LOS_MemAlloc(m_aucSysMem1, sizeof(OsCpupBase));
+    if (processCB->processCpup == NULL) {
+        return LOS_ENOMEM;
+    }
+    (VOID)memset_s(processCB->processCpup, sizeof(OsCpupBase), 0, sizeof(OsCpupBase));
+#endif
+
 #ifdef LOSCFG_SECURITY_VID
     status_t status = VidMapListInit(processCB);
     if (status != LOS_OK) {
         return LOS_ENOMEM;
     }
 #endif
+
 #ifdef LOSCFG_SECURITY_CAPABILITY
     OsInitCapability(processCB);
 #endif
