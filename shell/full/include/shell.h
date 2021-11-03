@@ -67,7 +67,7 @@ extern "C" {
 #define CMD_HISTORY_LEN         10
 #define CMD_MAX_PATH            256
 #define DEFAULT_SCREEN_WIDTH    80
-#define DEFAULT_SCREEN_HEIGNT   24
+#define DEFAULT_SCREEN_HEIGHT   24
 
 #define SHELL_MODE              0
 #define OTHER_MODE              1
@@ -117,7 +117,7 @@ typedef enum {
 
 /*
  * Hook for user-defined debug function
- * Unify differnt module's func for registration
+ * Unify different module's func for registration
  */
 typedef UINT32 (*CmdCallBackFunc)(UINT32 argc, const CHAR **argv);
 

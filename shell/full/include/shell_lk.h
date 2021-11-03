@@ -99,7 +99,7 @@ extern VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *f
  *
  * @par Description:
  * <ul>
- * <li>This API is used to registe a hook function to LK.</li>
+ * <li>This API is used to register a hook function to LK.</li>
  * </ul>
  *
  * @param  LK_FUNC  [IN] the print func.

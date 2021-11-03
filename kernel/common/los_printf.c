@@ -88,16 +88,16 @@ STATIC VOID UartOutput(const CHAR *str, UINT32 len, BOOL isLock)
 #ifdef LOSCFG_PLATFORM_CONSOLE
 STATIC VOID ConsoleOutput(const CHAR *str, UINT32 len)
 {
-    ssize_t writen = 0;
+    ssize_t written = 0;
     ssize_t cnt;
     ssize_t toWrite = len;
 
     for (;;) {
-        cnt = write(STDOUT_FILENO, str + writen, (size_t)toWrite);
+        cnt = write(STDOUT_FILENO, str + written, (size_t)toWrite);
         if ((cnt < 0) || ((cnt == 0) && (OS_INT_ACTIVE)) || (toWrite == cnt)) {
             break;
         }
-        writen += cnt;
+        written += cnt;
         toWrite -= cnt;
     }
 }

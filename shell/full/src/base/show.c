@@ -158,7 +158,7 @@ INT32 OsShellDeinit(INT32 consoleId)
     return 0;
 }
 
-CHAR *OsShellGetWorkingDirtectory(VOID)
+CHAR *OsShellGetWorkingDirectory(VOID)
 {
     CONSOLE_CB *consoleCB = OsGetConsoleByTaskID(OsCurrTaskGet()->taskID);
     ShellCB *shellCB = NULL;

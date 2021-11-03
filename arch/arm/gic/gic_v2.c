@@ -172,7 +172,7 @@ VOID HalIrqHandler(VOID)
 
     OsInterrupt(vector);
 
-    /* use orignal iar to do the EOI */
+    /* use original iar to do the EOI */
     GIC_REG_32(GICC_EOIR) = iar;
 }
 

@@ -217,7 +217,7 @@ VOID OsShrinkActiveList(LosVmPhysSeg *physSeg, int nScan)
             continue;
         }
 
-        /* happend when caller hold cache lock and try reclaim this page */
+        /* happened when caller hold cache lock and try reclaim this page */
         if (OsIsPageLocked(fpage->vmPage)) {
             LOS_SpinUnlock(&fpage->mapping->list_lock);
             continue;

@@ -70,7 +70,7 @@ extern "C" {
     LOS_HOOK_TYPE_DEF(LOS_HOOK_TYPE_QUEUE_WRITE, (const LosQueueCB *queueCB, UINT32 operateType,            \
                         UINT32 bufferSize, UINT32 timeout))                                                 \
     LOS_HOOK_TYPE_DEF(LOS_HOOK_TYPE_QUEUE_DELETE, (const LosQueueCB *queueCB))                              \
-    /* Hook types supported by semphore modules */                                                          \
+    /* Hook types supported by semaphore modules */                                                          \
     LOS_HOOK_TYPE_DEF(LOS_HOOK_TYPE_SEM_CREATE, (const LosSemCB *semCreated))                               \
     LOS_HOOK_TYPE_DEF(LOS_HOOK_TYPE_SEM_POST, (const LosSemCB *semPosted, const LosTaskCB *resumedTask))    \
     LOS_HOOK_TYPE_DEF(LOS_HOOK_TYPE_SEM_PEND, (const LosSemCB *semPended, const LosTaskCB *runningTask,     \

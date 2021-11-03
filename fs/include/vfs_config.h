@@ -44,14 +44,14 @@ extern "C" {
 #define PATH_MAX 256
 #define CONFIG_DISABLE_MQUEUE   // disable posix mqueue inode configure
 
-/* file system configur */
+/* file system config */
 
 #define CONFIG_FS_WRITABLE      // enable file system can be written
 #define CONFIG_FS_READABLE      // enable file system can be read
 #define CONFIG_DEBUG_FS         // enable vfs debug function
 
 
-/* fatfs cache configur */
+/* fatfs cache config */
 /* config block size for fat file system, only can be 0,32,64,128,256,512,1024 */
 #define CONFIG_FS_FAT_SECTOR_PER_BLOCK  64
 

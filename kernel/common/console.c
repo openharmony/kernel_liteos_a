@@ -95,7 +95,7 @@ INT32 GetFilepOps(const struct file *filep, struct file **privFilep, const struc
         goto ERROUT;
     }
 
-    /* to find uart driver operation function throutht u.i_opss */
+    /* to find uart driver operation function through u.i_opss */
 
     drv = (struct drv_data *)(*privFilep)->f_vnode->data;
 
@@ -363,7 +363,7 @@ STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
 }
 
 enum {
-    STAT_NOMAL_KEY,
+    STAT_NORMAL_KEY,
     STAT_ESC_KEY,
     STAT_MULTI_KEY
 };
@@ -381,22 +381,22 @@ STATIC INT32 UserShellCheckUDRL(const CHAR ch, INT32 *lastTokenType)
         }
     } else if (ch == 0x41) { /* up */
         if (*lastTokenType == STAT_MULTI_KEY) {
-            *lastTokenType = STAT_NOMAL_KEY;
+            *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x42) { /* down */
         if (*lastTokenType == STAT_MULTI_KEY) {
-            *lastTokenType = STAT_NOMAL_KEY;
+            *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x43) { /* right */
         if (*lastTokenType == STAT_MULTI_KEY) {
-            *lastTokenType = STAT_NOMAL_KEY;
+            *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x44) { /* left */
         if (*lastTokenType == STAT_MULTI_KEY) {
-            *lastTokenType = STAT_NOMAL_KEY;
+            *lastTokenType = STAT_NORMAL_KEY;
             return ret;
         }
     }
@@ -458,7 +458,7 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
     INT32 ret;
     INT32 needreturn = LOS_NOK;
     CHAR ch;
-    INT32 lastTokenType = STAT_NOMAL_KEY;
+    INT32 lastTokenType = STAT_NORMAL_KEY;
 
     if (fops->read == NULL) {
         return -EFAULT;
@@ -504,7 +504,7 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
                 break;
         }
     } else {
-        /* if data is already in console fifo, we returen them immediately */
+        /* if data is already in console fifo, we return them immediately */
         ret = ConsoleReadFifo(buffer, consoleCB, bufLen);
     }
 
@@ -738,7 +738,7 @@ ERROUT:
 STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 {
     INT32 cnt;
-    size_t writen = 0;
+    size_t written = 0;
     size_t toWrite = bufLen;
     UINT32 intSave;
 
@@ -749,18 +749,18 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
     }
 #endif
     LOS_CirBufLock(&cirBufSendCB->cirBufCB, &intSave);
-    while (writen < (INT32)bufLen) {
+    while (written < (INT32)bufLen) {
         /* Transform for CR/LR mode */
-        if ((buffer[writen] == '\n') || (buffer[writen] == '\r')) {
+        if ((buffer[written] == '\n') || (buffer[written] == '\r')) {
             (VOID)LOS_CirBufWrite(&cirBufSendCB->cirBufCB, "\r", 1);
         }
 
-        cnt = LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[writen], 1);
+        cnt = LOS_CirBufWrite(&cirBufSendCB->cirBufCB, &buffer[written], 1);
         if (cnt <= 0) {
             break;
         }
         toWrite -= cnt;
-        writen += cnt;
+        written += cnt;
     }
     LOS_CirBufUnlock(&cirBufSendCB->cirBufCB, intSave);
     /* Log is cached but not printed when a system exception occurs */
@@ -768,7 +768,7 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
         (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);
     }
 
-    return writen;
+    return written;
 }
 
 STATIC ssize_t ConsoleWrite(struct file *filep, const CHAR *buffer, size_t bufLen)

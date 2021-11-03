@@ -555,7 +555,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
     if (sigcb->waitList.pstNext == NULL) {
         LOS_ListInit(&sigcb->waitList);
     }
-    /* If pendingflag & set > 0, shound clear pending flag */
+    /* If pendingflag & set > 0, should clear pending flag */
     sigset_t clear = sigcb->sigPendFlag & *set;
     if (clear) {
         sigcb->sigPendFlag ^= clear;

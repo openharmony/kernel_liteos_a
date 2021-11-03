@@ -337,7 +337,7 @@ extern UINT32 LOS_SwtmrStop(UINT16 swtmrID);
  * specified by usSwTmrID.
  * @attention
  * <ul>
- * <li>The specific timer should be created and started successfully, error happends otherwise.</li>
+ * <li>The specific timer should be created and started successfully, error happeneds otherwise.</li>
  * </ul>
  *
  * @param  swtmrID  [IN]  Software timer ID created by LOS_SwtmrCreate. The value of ID should be in

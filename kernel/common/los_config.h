@@ -122,7 +122,7 @@ extern UINT32 __heap_end;
 
 /**
  * @ingroup los_config
- * Sched clck interval
+ * Sched clock interval
  */
 #define SCHED_CLOCK_INTETRVAL_TICKS  LOSCFG_BASE_CORE_TICK_PER_SECOND
 
@@ -405,7 +405,7 @@ extern UINT32 __heap_end;
  *
  * @par Description:
  * <ul>
- * <li>This defination is used to declare the type of functions for reading or writing exception information</li>
+ * <li>This definition is used to declare the type of functions for reading or writing exception information</li>
  * </ul>
  * @attention
  * <ul>
@@ -419,7 +419,7 @@ extern UINT32 __heap_end;
  *
  * @retval none.
  * @par Dependency:
- * <ul><li>los_config.h: the header file that contains the type defination.</li></ul>
+ * <ul><li>los_config.h: the header file that contains the type definition.</li></ul>
  * @see
  */
 typedef VOID (*log_read_write_fn)(UINT32 startAddr, UINT32 space, UINT32 rwFlag, CHAR *buf);
