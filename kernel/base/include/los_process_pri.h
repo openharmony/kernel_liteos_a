@@ -125,7 +125,7 @@ typedef struct ProcessCB {
 #endif
     mode_t               umask;
 #ifdef LOSCFG_KERNEL_CPUP
-    OsCpupBase           processCpup; /**< Process cpu usage */
+    OsCpupBase           *processCpup; /**< Process cpu usage */
 #endif
     struct rlimit        *resourceLimit;
 } LosProcessCB;
