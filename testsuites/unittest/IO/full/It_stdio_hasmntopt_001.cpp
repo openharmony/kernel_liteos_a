@@ -41,6 +41,18 @@ static UINT32 testcase(VOID)
     char *opt = argv[1];
     char *ret = nullptr;
 
+    char fileWords[] = "/dev/disk/by-uuid/c4992556-a86e-45e8-ba5f-190b16a9073x /usr1 ext3 errors=remount-ro,nofail 0 1";
+    char *pathList[] = {"/etc/fstab"};
+    char *streamList[] = {(char *)fileWords};
+    int streamLen[] = {sizeof(fileWords)};
+    
+    int flag = PrepareFileEnv(pathList, streamList, streamLen, 1);
+    if (flag != 0) {
+        printf("error: need some env file, but prepare is not ok");
+        (VOID)RecoveryFileEnv(pathList, 1);
+        return -1;
+    }
+    
     mnt_new = (struct mntent *)malloc(sizeof(struct mntent));
     mnt_new->mnt_fsname = "UUID=c4992556-a86e-45e8-ba5f-190b16a9073x";
     mnt_new->mnt_dir = "/usr1";
@@ -79,7 +91,7 @@ static UINT32 testcase(VOID)
     if (fp != NULL) {
         endmntent(fp);
     }
-
+    (VOID)RecoveryFileEnv(pathList, 1);
     return LOS_OK;
 }
 

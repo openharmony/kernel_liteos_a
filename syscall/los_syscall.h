@@ -268,15 +268,15 @@ extern int SysFstatfs64(int fd, size_t sz, struct statfs *buf);
 
 extern int SysStat(const char *path, struct kstat *buf);
 extern int SysLstat(const char *path, struct kstat *buffer);
-extern int SysFstat(int fildes, struct stat *buf);
+extern int SysFstat(int fildes, struct kstat *buf);
 extern int SysStatx(int fd, const char *restrict path, int flag, unsigned mask, struct statx *restrict stx);
 extern int SysFsync(int fd);
 extern ssize_t SysReadv(int fd, const struct iovec *iov, int iovcnt);
 extern ssize_t SysWritev(int fd, const struct iovec *iov, int iovcnt);
 extern int SysPipe(int pipefd[2]); /* 2 : pipe fds for read and write */
 extern int SysFormat(const char *dev, int sectors, int option);
-extern int SysFstat64(int fd, struct stat64 *buf);
-extern int SysFstatat64(int fd, const char *restrict path, struct stat *restrict buf, int flag);
+extern int SysFstat64(int fd, struct kstat *buf);
+extern int SysFstatat64(int fd, const char *restrict path, struct kstat *restrict buf, int flag);
 extern int SysFcntl64(int fd, int cmd, void *arg);
 extern int SysPoll(struct pollfd *fds, nfds_t nfds, int timeout);
 extern int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p,
