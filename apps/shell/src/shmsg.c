@@ -331,37 +331,50 @@ char *GetCmdName(const char *cmdline, unsigned int len)
     return cmdName;
 }
 
+void ChildExec(const char *cmdName, char *const paramArray[])
+{
+    int ret;
+    pid_t gid;
+
+    ret = setpgrp();
+    if (ret == -1) {
+        exit(1);
+    }
+
+    gid = getpgrp();
+    if (gid < 0) {
+        printf("get group id failed, pgrpid %d, errno %d\n", gid, errno);
+    }
+
+    ret = tcsetpgrp(STDIN_FILENO, gid);
+    if (ret != 0) {
+        printf("tcsetpgrp failed, errno %d\n", errno);
+    }
+
+    ret = execve(cmdName, paramArray, NULL);
+    if (ret == -1) {
+        perror("execve");
+        exit(-1);
+    }
+}
+
 static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len, const CmdParsed *cmdParsed)
 {
     int ret;
     pid_t forkPid;
-    pid_t gid;
 
-    if (strncmp(cmdline, SHELL_EXEC_COMMAND, SHELL_EXEC_COMMAND_BYTES) == 0) {
+    if (strncmp(cmdline, CMD_EXEC_COMMAND, CMD_EXEC_COMMAND_BYTES) == 0) {
         forkPid = fork();
         if (forkPid < 0) {
             printf("Faild to fork from shell\n");
             return;
         } else if (forkPid == 0) {
-            ret = setpgrp();
-            if (ret == -1) {
-                exit(1);
-            }
-
-            gid = getpgrp();
-            if (gid < 0) {
-                printf("get group id failed, pgrpid %d, errno %d\n", gid, errno);
-            }
-
-            ret = tcsetpgrp(STDIN_FILENO, gid);
+            ChildExec(cmdParsed->paramArray[0], cmdParsed->paramArray);
+        } else {
+            waitpid(forkPid, 0, 0);
+            ret = tcsetpgrp(STDIN_FILENO, getpid());
             if (ret != 0) {
                 printf("tcsetpgrp failed, errno %d\n", errno);
-            }
-
-            ret = execve((const char *)cmdParsed->paramArray[0], (char * const *)cmdParsed->paramArray, NULL);
-            if (ret == -1) {
-                perror("execve");
-                exit(-1);
             }
         }
     } else {
@@ -419,7 +432,7 @@ unsigned int PreHandleCmdline(const char *input, char **output, unsigned int *ou
     unsigned int removeLen = strlen("./"); /* "./" needs to be removed if it exists */
     unsigned int ret;
     char *newCmd = NULL;
-    char *execCmd = SHELL_EXEC_COMMAND;
+    char *execCmd = CMD_EXEC_COMMAND;
     const char *cmdBuf = input;
     unsigned int cmdBufLen = strlen(cmdBuf);
     char *shiftStr = (char *)malloc(cmdBufLen + 1);
