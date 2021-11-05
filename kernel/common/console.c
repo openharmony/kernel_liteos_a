@@ -67,6 +67,9 @@ STATIC SPIN_LOCK_INIT(g_consoleSpin);
 #define CONSOLE_SEND_TASK_EXIT    0x04U
 #define CONSOLE_SEND_TASK_RUNNING 0x10U
 
+#define SHELL_ENTRY_NAME     "ShellEntry"
+#define SHELL_ENTRY_NAME_LEN 10
+
 CONSOLE_CB *g_console[CONSOLE_NUM];
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -1440,15 +1443,31 @@ BOOL ConsoleEnable(VOID)
     return FALSE;
 }
 
+BOOL IsShellEntryRunning(UINT32 shellEntryId)
+{
+    LosTaskCB *taskCB;
+    if (shellEntryId == SHELL_ENTRYID_INVALID) {
+        return FALSE;
+    }
+    taskCB = OsGetTaskCB(shellEntryId);
+    return !OsTaskIsUnused(taskCB) &&
+           (strlen(taskCB->taskName) == SHELL_ENTRY_NAME_LEN &&
+            strncmp(taskCB->taskName, SHELL_ENTRY_NAME, SHELL_ENTRY_NAME_LEN) == 0);
+}
+
 INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
 {
-    if (g_console[consoleID - 1]->shellEntryId == SHELL_ENTRYID_INVALID) {
+    UINT32 intSave;
+
+    LOS_SpinLockSave(&g_consoleSpin, &intSave);
+    if (!IsShellEntryRunning(g_console[consoleID - 1]->shellEntryId)) {
         g_console[consoleID - 1]->shellEntryId = taskID;
+        LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
         (VOID)OsSetCurrProcessGroupID(OsGetUserInitProcessID());
         return LOS_OK;
     }
-
-    return LOS_NOK;
+    LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
+    return g_console[consoleID - 1]->shellEntryId == taskID ? LOS_OK : LOS_NOK;
 }
 
 BOOL SetSerialNonBlock(const CONSOLE_CB *consoleCB)
