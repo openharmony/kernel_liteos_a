@@ -31,6 +31,10 @@
 
 #include "shcmd.h"
 
+#define DEFAULT_SCREEN_WIDTH 80
+#define MAX_CMD_KEY_WIDTH    12
+#define CMD_ITEM_PER_LINE    (DEFAULT_SCREEN_WIDTH / (MAX_CMD_KEY_WIDTH + 1))
+
 UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
 {
     UINT32 loop = 0;
@@ -45,15 +49,16 @@ UINT32 OsShellCmdHelp(UINT32 argc, const CHAR **argv)
 
     PRINTK("*******************shell commands:*************************\n");
     LOS_DL_LIST_FOR_EACH_ENTRY(curCmdItem, &(cmdInfo->cmdList.list), CmdItemNode, list) {
-        if ((loop & (8 - 1)) == 0) { /* 8 - 1:just align print */
+        if ((loop % CMD_ITEM_PER_LINE) == 0) { /* just align print */
             PRINTK("\n");
         }
-        PRINTK("%-12s  ", curCmdItem->cmd->cmdKey);
+        PRINTK("%-12s ", curCmdItem->cmd->cmdKey);
 
         loop++;
     }
-
-    PRINTK("\n");
+    PRINTK("\n\nAfter shell prompt \"OHOS # \":\n"
+           "Use `<cmd> [args ...]` to run built-in shell commands listed above.\n"
+           "Use `exec <cmd> [args ...]` or `./<cmd> [args ...]` to run external commands.\n");
     return 0;
 }
 
