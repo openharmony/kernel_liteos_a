@@ -44,7 +44,10 @@
 #include "shell_pri.h"
 #include "shcmd.h"
 
+#define CHAR_CTRL_C   '\x03'
+#define CHAR_CTRL_DEL '\x7F'
 
+#define VISIABLE_CHAR(ch) ((ch) > 0x1F && (ch) < 0x7F)
 
 char *GetCmdline(ShellCB *shellCB)
 {
@@ -202,7 +205,21 @@ void ParseEnterKey(OutputFunc outputFunc, ShellCB *shellCB)
         shellCB->shellBuf[shellCB->shellBufOffset] = '\0';
     }
 NOTIFY:
-    outputFunc("\n");
+    shellCB->shellBufOffset = 0;
+    ShellTaskNotify(shellCB);
+}
+
+void ParseCancelKey(OutputFunc outputFunc, ShellCB *shellCB)
+{
+    if ((shellCB == NULL) || (outputFunc == NULL)) {
+        return;
+    }
+
+    if (shellCB->shellBufOffset <= (SHOW_MAX_LEN - 1)) {
+        shellCB->shellBuf[0] = CHAR_CTRL_C;
+        shellCB->shellBuf[1] = '\0';
+    }
+
     shellCB->shellBufOffset = 0;
     ShellTaskNotify(shellCB);
 }
@@ -238,7 +255,7 @@ void ParseTabKey(OutputFunc outputFunc, ShellCB *shellCB)
 
 void ParseNormalChar(char ch, OutputFunc outputFunc, ShellCB *shellCB)
 {
-    if ((shellCB == NULL) || (outputFunc == NULL)) {
+    if ((shellCB == NULL) || (outputFunc == NULL) || !VISIABLE_CHAR(ch)) {
         return;
     }
 
@@ -256,7 +273,7 @@ void ShellCmdLineParse(char c, OutputFunc outputFunc, ShellCB *shellCB)
     const char ch = c;
     int ret;
 
-    if ((shellCB->shellBufOffset == 0) && (ch != '\n') && (ch != '\0')) {
+    if ((shellCB->shellBufOffset == 0) && (ch != '\n') && (ch != CHAR_CTRL_C) && (ch != '\0')) {
         (void)memset_s(shellCB->shellBuf, SHOW_MAX_LEN, 0, SHOW_MAX_LEN);
     }
 
@@ -265,8 +282,11 @@ void ShellCmdLineParse(char c, OutputFunc outputFunc, ShellCB *shellCB)
         case '\n': /* enter */
             ParseEnterKey(outputFunc, shellCB);
             break;
+        case CHAR_CTRL_C: /* ctrl + c */
+            ParseCancelKey(outputFunc, shellCB);
+            break;
         case '\b': /* backspace */
-        case 0x7F: /* delete(0x7F) */
+        case CHAR_CTRL_DEL: /* delete(0x7F) */
             ParseDeleteKey(outputFunc, shellCB);
             break;
         case '\t': /* tab */
@@ -358,6 +378,30 @@ void ChildExec(const char *cmdName, char *const paramArray[])
     }
 }
 
+int CheckExit(const char *cmdName, const CmdParsed *cmdParsed)
+{
+    int ret = 0;
+
+    if (strlen(cmdName) != CMD_EXIT_COMMAND_BYTES || strncmp(cmdName, CMD_EXIT_COMMAND, CMD_EXIT_COMMAND_BYTES) != 0) {
+        return 0;
+    }
+
+    if (cmdParsed->paramCnt > 1) {
+        printf("exit: too many arguments\n");
+        return -1;
+    }
+    if (cmdParsed->paramCnt == 1) {
+        char *p;
+        ret = strtol(cmdParsed->paramArray[0], &p, CMD_EXIT_CODE_BASE_DEC);
+        if (*p != '\0') {
+            printf("exit: bad number: %s\n", cmdParsed->paramArray[0]);
+            return -1;
+        }
+    }
+
+    exit(ret);
+}
+
 static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len, const CmdParsed *cmdParsed)
 {
     int ret;
@@ -378,6 +422,9 @@ static void DoCmdExec(const char *cmdName, const char *cmdline, unsigned int len
             }
         }
     } else {
+        if (CheckExit(cmdName, cmdParsed) < 0) {
+            return;
+        }
         (void)syscall(__NR_shellexec, cmdName, cmdline);
     }
 }
@@ -535,7 +582,11 @@ static void ShellCmdProcess(ShellCB *shellCB)
         if (buf == NULL) {
             break;
         }
-
+        if (buf[0] == CHAR_CTRL_C) {
+            printf("^C");
+            buf[0] = '\n';
+        }
+        printf("\n");
         ExecCmdline(buf);
         ShellSaveHistoryCmd(buf, shellCB);
         shellCB->cmdMaskKeyLink = shellCB->cmdHistoryKeyLink;
