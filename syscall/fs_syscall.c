@@ -43,6 +43,7 @@
 #include "sys/uio.h"
 #include "poll.h"
 #include "sys/prctl.h"
+#include "epoll.h"
 #ifdef LOSCFG_KERNEL_DYNLOAD
 #include "los_exec_elf.h"
 #endif
@@ -2594,4 +2595,132 @@ int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 
     return ret;
 }
+
+int SysEpollCreate(int size)
+{
+    int ret;
+    int procFd;
+
+    if (size <= 0) {
+        return -EINVAL;
+    }
+
+    ret = epoll_create(size);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+    procFd = AllocAndAssocProcessFd((INTPTR)(ret), MIN_START_FD);
+    if (procFd == -1) {
+        epoll_close(ret);
+        return -EMFILE;
+    }
+
+    return procFd;
+}
+
+int SysEpollCreate1(int flags)
+{
+    int ret;
+    int procFd;
+
+    ret = epoll_create(flags);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+    procFd = AllocAndAssocProcessFd((INTPTR)(ret), MIN_START_FD);
+    if (procFd == -1) {
+        epoll_close(ret);
+        return -EMFILE;
+    }
+
+    return procFd;
+}
+
+int SysEpollCtl(int epfd, int op, int fd, struct epoll_event *ev)
+{
+    int ret;
+
+    CHECK_ASPACE(ev, sizeof(struct epoll_event));
+    CPY_FROM_USER(ev);
+
+    fd = GetAssociatedSystemFd(fd);
+    epfd = GetAssociatedSystemFd(epfd);
+    if ((fd < 0) || (epfd < 0)) {
+        ret = -EBADF;
+        goto OUT;
+    }
+
+    ret = epoll_ctl(epfd, op, fd, ev);
+    if (ret < 0) {
+        ret =-EBADF;
+        goto OUT;
+    }
+
+    CPY_TO_USER(ev);
+OUT:
+    return (ret == -1)? -get_errno():ret;
+}
+
+int SysEpollWait(int epfd, struct epoll_event *evs, int maxevents, int timeout)
+{
+    int ret = 0;
+
+    CHECK_ASPACE(evs, sizeof(struct epoll_event));
+    CPY_FROM_USER(evs);
+
+    epfd = GetAssociatedSystemFd(epfd);
+    if  (epfd < 0) {
+        ret = -EBADF;
+        goto OUT;
+    }
+
+    ret = epoll_wait(epfd, evs, maxevents, timeout);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+    CPY_TO_USER(evs);
+OUT:
+    return (ret == -1) ? -get_errno() : ret;
+}
+
+int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout, const sigset_t *mask)
+{
+    sigset_t_l origMask;
+    sigset_t_l setl;
+    int ret = 0;
+
+    CHECK_ASPACE(mask, sizeof(sigset_t));
+
+    if (mask != NULL) {
+        ret = LOS_ArchCopyFromUser(&setl, mask, sizeof(sigset_t));
+        if (ret != 0) {
+            return -EFAULT;
+        }
+    }
+
+    CHECK_ASPACE(evs, sizeof(struct epoll_event));
+    CPY_FROM_USER(evs);
+
+    epfd = GetAssociatedSystemFd(epfd);
+    if (epfd < 0) {
+        ret = -EBADF;
+        goto OUT;
+    }
+
+    OsSigprocMask(SIG_SETMASK, &setl, &origMask);
+    ret = epoll_wait(epfd, evs, maxevents, timeout);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+
+    OsSigprocMask(SIG_SETMASK, &origMask, NULL);
+
+    CPY_TO_USER(evs);
+OUT:
+    return (ret == -1) ? -get_errno() : ret;
+}
+
 #endif

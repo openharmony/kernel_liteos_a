@@ -149,6 +149,29 @@ HWTEST_F(IoTest, IO_TEST_PPOLL_003, TestSize.Level0)
 }
 
 /* *
+ * @tc.name: IO_TEST_EPOLL_001
+ * @tc.desc: function for IoTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+ 
+HWTEST_F(IoTest, IO_TEST_EPOLL_001, TestSize.Level0)
+{
+    IO_TEST_EPOLL_001();
+}
+
+/* *
+ * @tc.name: IO_TEST_EPOLL_002
+ * @tc.desc: function for IoTest
+ * @tc.type: FUNC
+ * @tc.require: AR000EEMQ9
+ */
+HWTEST_F(IoTest, IO_TEST_EPOLL_002, TestSize.Level0)
+{
+    IO_TEST_EPOLL_002();
+}
+
+/* *
  * @tc.name: IT_STDLIB_POLL_002
  * @tc.desc: function for IoTest
  * @tc.type: FUNC

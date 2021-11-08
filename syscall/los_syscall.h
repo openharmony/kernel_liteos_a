@@ -60,6 +60,7 @@
 #include "sys/socket.h"
 #include "dirent.h"
 #include "fs/file.h"
+#include "epoll.h"
 #endif
 #include <sys/wait.h>
 #include "sys/resource.h"
@@ -284,6 +285,11 @@ extern int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_
 extern int SysPrctl(int option, ...);
 extern ssize_t SysPread64(int fd, void *buf, size_t nbytes, off64_t offset);
 extern ssize_t SysPwrite64(int fd, const void *buf, size_t nbytes, off64_t offset);
+extern int SysEpollCreate(int size);
+extern int SysEpollCreate1(int size);
+extern int SysEpollCtl(int epfd, int op, int fd, struct epoll_event *ev);
+extern int SysEpollWait(int epfd, struct epoll_event *evs, int maxevents, int timeout);
+extern int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout, const sigset_t *mask);
 extern char *SysGetcwd(char *buf, size_t n);
 extern ssize_t SysSendFile(int outfd, int infd, off_t *offset, size_t count);
 extern int SysTruncate(const char *path, off_t length);
