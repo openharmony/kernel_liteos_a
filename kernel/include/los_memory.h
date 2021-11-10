@@ -59,7 +59,7 @@ extern "C" {
 
 /**
  * @ingroup los_memory
- * The recored layes of function call.
+ * The recored layers of function call.
  */
 #define LOS_RECORD_LR_CNT 3
 #endif

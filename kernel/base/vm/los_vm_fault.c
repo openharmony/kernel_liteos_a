@@ -140,7 +140,7 @@ STATIC STATUS_T OsDoReadFault(LosVmMapRegion *region, LosVmPgFault *vmPgFault)
     return LOS_ERRNO_VM_NO_MEMORY;
 }
 
-/* numap a page when cow happend only */
+/* unmap a page when cow happend only */
 STATIC LosVmPage *OsCowUnmapOrg(LosArchMmu *archMmu, LosVmMapRegion *region, LosVmPgFault *vmf)
 {
     UINT32 intSave;

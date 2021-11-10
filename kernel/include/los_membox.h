@@ -230,7 +230,7 @@ extern VOID LOS_ShowBox(VOID *pool);
  *
  * @param  boxMem        [IN]  Type  #VOID*   Pointer to the calculate membox.
  * @param  maxBlk       [OUT] Type  #UINT32* Record membox max block.
- * @param  blkCnt       [OUT] Type  #UINT32* Record membox block count alreay allocated.
+ * @param  blkCnt       [OUT] Type  #UINT32* Record membox block count already allocated.
  * @param  blkSize      [OUT] Type  #UINT32* Record membox block size.
  *
  * @retval #LOS_OK        The heap status calculate success.
