@@ -91,12 +91,12 @@ static int OsStrSeparateTabStrGet(const char **tabStr, CmdParsed *parsed, unsign
     return SH_OK;
 }
 
-char *OsShellGetWorkingDirtectory()
+char *OsShellGetWorkingDirectory(void)
 {
     return OsGetShellCb()->shellWorkingDirectory;
 }
 
-int OsShellSetWorkingDirtectory(const char *dir, size_t len)
+int OsShellSetWorkingDirectory(const char *dir, size_t len)
 {
     if (dir == NULL) {
         return SH_NOK;
@@ -115,7 +115,7 @@ static int OsStrSeparate(const char *tabStr, char *strPath, char *nameLooking, u
     char *strEnd = NULL;
     char *cutPos = NULL;
     CmdParsed parsed = {0};
-    char *shellWorkingDirectory = OsShellGetWorkingDirtectory();
+    char *shellWorkingDirectory = OsShellGetWorkingDirectory();
     int ret;
 
     ret = OsStrSeparateTabStrGet(&tabStr, &parsed, tabStrLen);
@@ -223,7 +223,7 @@ static int OsPrintMatchList(unsigned int count, const char *strPath, const char 
         return (int)SH_ERROR;
     }
 
-    if (count > (lineCap * DEFAULT_SCREEN_HEIGNT)) {
+    if (count > (lineCap * DEFAULT_SCREEN_HEIGHT)) {
         ret = OsSurePrintAll(count);
         if (ret != 1) {
             return ret;
@@ -375,10 +375,10 @@ static int OsTabMatchFile(char *cmdKey, unsigned int *len)
 }
 
 /*
- * Description: Pass in the string and clear useless space ,which inlcude:
+ * Description: Pass in the string and clear useless space ,which include:
  *                1) The overmatch space which is not be marked by Quote's area
  *                   Squeeze the overmatch space into one space
- *                2) Clear all space before first vaild charatctor
+ *                2) Clear all space before first valid charatctor
  * Input:       cmdKey : Pass in the buff string, which is ready to be operated
  *              cmdOut : Pass out the buffer string ,which has already been operated
  *              size : cmdKey length
@@ -407,7 +407,7 @@ unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size)
 
     /* Backup the 'output' start address */
     outputBak = output;
-    /* Scan each charactor in 'cmdKey',and squeeze the overmuch space and ignore invaild charactor */
+    /* Scan each charactor in 'cmdKey',and squeeze the overmuch space and ignore invalid charactor */
     for (; *cmdKey != '\0'; cmdKey++) {
         /* Detected a Double Quotes, switch the matching status */
         if (*(cmdKey) == '\"') {
@@ -417,7 +417,7 @@ unsigned int OsCmdKeyShift(const char *cmdKey, char *cmdOut, unsigned int size)
         /* 1) Quotes matching status is FALSE (which said that the space is not been marked by double quotes) */
         /* 2) Current charactor is a space */
         /* 3) Next charactor is a space too, or the string is been seeked to the end already(\0) */
-        /* 4) Invaild charactor, such as single quotes */
+        /* 4) Invalid charactor, such as single quotes */
         if ((*cmdKey == ' ') && ((*(cmdKey + 1) == ' ') || (*(cmdKey + 1) == '\0')) && QUOTES_STATUS_CLOSE(quotes)) {
             continue;
         }

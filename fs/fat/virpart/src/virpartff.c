@@ -53,7 +53,7 @@ extern FATFS *FatFs[FF_VOLUMES];
 * follow_virentry:
 * Compare the top segment with the virtual partition entry and replace it to its CHILD FATFS
 *
-* Acceptable return vaule:
+* Acceptable return value:
 * - FR_OK      : The top segment matches one of the virtual partition entries, and the FATFS
 *              has been replaced to the corresponding FATFS.
 * - FR_DENIED  : The top segment does not matched any of the virtual partition entries, and
@@ -291,7 +291,7 @@ static void FatfsSetParentFs(FATFS *pfs, FATFS *fs)
 * - FR_DENIED              :   The virtual partition feature has been shut down by switcher
 * - FR_DISK_ERR            :   A disk error happened
 * - FR_NOT_ENOUGH_CORE     :   Not enough memory for allocate space for CHILD FATFS
-* - FR_INVALID_PARAMETER   :   There is a invaild value in current setting
+* - FR_INVALID_PARAMETER   :   There is a invalid value in current setting
 */
 FRESULT f_regvirfs(FATFS *fs)
 {
@@ -507,7 +507,7 @@ static void FatfsSetChildClst(BYTE *work, FATFS *fs, WORD i)
 * - FR_INVAILD_FATFS : The FATFS object has error or the info in it has been occuried
 * - FR_DENIED          : The virtual partition feature has been shut down by switcher
 * - FR_INVALID_DRIVE   : The drive index is error
-* - FR_DISK_ERR        : A Disk error happend
+* - FR_DISK_ERR        : A Disk error happened
 */
 FRESULT f_checkvirpart(FATFS *fs, const TCHAR *path, BYTE vol)
 {
@@ -663,7 +663,7 @@ static void FatfsClacPartInfo(FATFS *fs, DOUBLE virpartper, UINT i)
 * - FR_INVAILD_FATFS   : The FATFS object has error or the info in it has been occuried
 * - FR_DENIED          : The virtual partition feature has been shut down by switcher
 * - FR_INVALID_DRIVE   : The drive index is error
-* - FR_DISK_ERR        : A Disk error happend
+* - FR_DISK_ERR        : A Disk error happened
 */
 FRESULT f_makevirpart(FATFS *fs, const TCHAR *path, BYTE vol)
 {
@@ -797,7 +797,7 @@ FRESULT f_getvirfree(const TCHAR *path, DWORD *nclst, DWORD *cclst)
 
     /* If current FATFS is a CHILD FATFS */
     if (ISCHILD(fs)) {
-        /* If CHILD FATFS' free_clst is invaild, the scan the FAT and update it */
+        /* If CHILD FATFS' free_clst is invalid, the scan the FAT and update it */
         if (fs->free_clst > fs->ct_clst) {
             dj.obj.fs = fs;
             fs->free_clst = fs->ct_clst;

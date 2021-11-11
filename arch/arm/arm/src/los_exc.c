@@ -244,7 +244,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
 
 STATIC VOID OsExcType(UINT32 excType, ExcContext *excBufAddr, UINT32 far, UINT32 fsr)
 {
-    /* undefinited exception handling or software interrupt */
+    /* undefined exception handling or software interrupt */
     if ((excType == OS_EXCEPT_UNDEF_INSTR) || (excType == OS_EXCEPT_SWI)) {
         if ((excBufAddr->regCPSR & INSTR_SET_MASK) == 0) { /* work status: ARM */
             excBufAddr->PC = excBufAddr->PC - ARM_INSTR_LEN;
@@ -479,7 +479,7 @@ STATIC VOID OsDumpProcessUsedMemRegion(LosProcessCB *runProcess, LosVmSpace *run
     RB_SCAN_SAFE_END(&space->regionRbTree, pstRbNodeTemp, pstRbNodeNext)
 }
 
-STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFalgs)
+STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFlags)
 {
     LosProcessCB *runProcess = NULL;
     LosVmSpace *runspace = NULL;
@@ -500,7 +500,7 @@ STATIC VOID OsDumpProcessUsedMemNode(UINT16 vmmFalgs)
         return;
     }
 
-    OsDumpProcessUsedMemRegion(runProcess, runspace, vmmFalgs);
+    OsDumpProcessUsedMemRegion(runProcess, runspace, vmmFlags);
     return;
 }
 #endif
@@ -1048,7 +1048,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
     LOCKDEP_CLEAR_LOCKS();
 
     LOS_SpinLock(&g_excSerializerSpin);
-    /* Only the current nuclear anomaly */
+    /* Only the current CPU anomaly */
     if (g_currHandleExcCpuID == INVALID_CPUID) {
         g_currHandleExcCpuID = currCpuID;
         g_currHandleExcPID = OsCurrProcessGet()->processID;

@@ -189,7 +189,7 @@ STATIC BOOL OsLockDepCheckDependancy(const LosTaskCB *current, LosTaskCB *lockOw
 VOID OsLockDepCheckIn(SPIN_LOCK_S *lock)
 {
     UINT32 intSave;
-    enum LockDepErrType checkResult = LOCKDEP_SUCEESS;
+    enum LockDepErrType checkResult = LOCKDEP_SUCCESS;
 #ifdef LOSCFG_COMPILER_CLANG_LLVM
     VOID *requestAddr = (VOID *)__builtin_return_address(1);
 #else
@@ -223,10 +223,10 @@ VOID OsLockDepCheckIn(SPIN_LOCK_S *lock)
     }
 
 OUT:
-    if (checkResult == LOCKDEP_SUCEESS) {
+    if (checkResult == LOCKDEP_SUCCESS) {
         /*
          * though the check may succeed, the waitLock still need to be set.
-         * because the OsLockDepCheckIn and OsLockDepRecord is not strictly muti-core
+         * because the OsLockDepCheckIn and OsLockDepRecord is not strictly multi-core
          * sequential, there would be more than two tasks can pass the checking, but
          * only one task can successfully obtain the lock.
          */
@@ -275,7 +275,7 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
 {
     UINT32 intSave;
     INT32 depth;
-    enum LockDepErrType checkResult = LOCKDEP_SUCEESS;
+    enum LockDepErrType checkResult = LOCKDEP_SUCCESS;
 #ifdef LOSCFG_COMPILER_CLANG_LLVM
     VOID *requestAddr = (VOID *)__builtin_return_address(1);
 #else

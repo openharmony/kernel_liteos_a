@@ -267,7 +267,7 @@ static FRESULT FatfsScanClear(INT vol)
  * Acceptable Return Value:
  * - FR_OK          : The root directory is completely clean.
  * - FR_OCCUPIED    : The virtual partition entry has been occupied by the same name file.
- * - FR_CHAIN_ERR   : The virtual partition entry has been rebuilt along the invaild cluster
+ * - FR_CHAIN_ERR   : The virtual partition entry has been rebuilt along the invalid cluster
  *                    chain.
  * Others Return Value:
  * Followed the by the lower API

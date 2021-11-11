@@ -141,9 +141,9 @@ LosMapInfo *OsGetMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr)
 
 VOID OsDeletePageCacheLru(LosFilePage *page)
 {
-    /* delete form lru list */
+    /* delete from lru list */
     OsLruCacheDel(page);
-    /* delete from cache lits and free pmm if need */
+    /* delete from cache list and free pmm if needed */
     OsPageCacheDel(page);
 }
 
@@ -155,7 +155,7 @@ STATIC VOID OsPageCacheUnmap(LosFilePage *fpage, LosArchMmu *archMmu, VADDR_T va
     LOS_SpinLockSave(&fpage->physSeg->lruLock, &intSave);
     info = OsGetMapInfo(fpage, archMmu, vaddr);
     if (info == NULL) {
-        VM_ERR("OsPageCacheUnmap get map info fail!");
+        VM_ERR("OsPageCacheUnmap get map info failed!");
     } else {
         OsUnmapPageLocked(fpage, info);
     }

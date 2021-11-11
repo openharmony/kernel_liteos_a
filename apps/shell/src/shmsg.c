@@ -133,7 +133,7 @@ int ShellNotify(ShellCB *shellCB)
 }
 
 enum {
-    STAT_NOMAL_KEY,
+    STAT_NORMAL_KEY,
     STAT_ESC_KEY,
     STAT_MULTI_KEY
 };
@@ -152,23 +152,23 @@ static int ShellCmdLineCheckUDRL(const char ch, ShellCB *shellCB)
     } else if (ch == 0x41) { /* up */
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
             OsShellHistoryShow(CMD_KEY_UP, shellCB);
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x42) { /* down */
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             OsShellHistoryShow(CMD_KEY_DOWN, shellCB);
             return ret;
         }
     } else if (ch == 0x43) { /* right */
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x44) { /* left */
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             return ret;
         }
     }
@@ -265,7 +265,7 @@ void ParseNormalChar(char ch, OutputFunc outputFunc, ShellCB *shellCB)
         outputFunc("%c", ch);
     }
 
-    shellCB->shellKeyType = STAT_NOMAL_KEY;
+    shellCB->shellKeyType = STAT_NORMAL_KEY;
 }
 
 void ShellCmdLineParse(char c, OutputFunc outputFunc, ShellCB *shellCB)
@@ -459,7 +459,7 @@ static void ParseAndExecCmdline(CmdParsed *cmdParsed, const char *cmdline, unsig
     DoCmdExec(cmdName, cmdlineOrigin, len, cmdParsed);
 
     if (getcwd(shellWorkingDirectory, PATH_MAX) != NULL) {
-        (void)OsShellSetWorkingDirtectory(shellWorkingDirectory, (PATH_MAX + 1));
+        (void)OsShellSetWorkingDirectory(shellWorkingDirectory, (PATH_MAX + 1));
     }
 
 OUT:

@@ -110,7 +110,7 @@ STATIC INT32 OsStrSeparate(CHAR *tabStr, CHAR *strPath, CHAR *nameLooking, UINT3
     CHAR *strEnd = NULL;
     CHAR *cutPos = NULL;
     CmdParsed parsed = {0};
-    CHAR *shellWorkingDirectory = OsShellGetWorkingDirtectory();
+    CHAR *shellWorkingDirectory = OsShellGetWorkingDirectory();
     INT32 ret;
 
     ret = OsStrSeparateTabStrGet(&tabStr, &parsed, tabStrLen);
@@ -215,7 +215,7 @@ STATIC INT32 OsPrintMatchList(UINT32 count, const CHAR *strPath, const CHAR *nam
         return (INT32)OS_ERROR;
     }
 
-    if (count > (lineCap * DEFAULT_SCREEN_HEIGNT)) {
+    if (count > (lineCap * DEFAULT_SCREEN_HEIGHT)) {
         ret = OsSurePrintAll(count);
         if (ret != 1) {
             return ret;
@@ -421,10 +421,10 @@ STATIC INT32 OsTabMatchFile(CHAR *cmdKey, UINT32 *len)
 }
 
 /*
- * Description: Pass in the string and clear useless space ,which inlcude:
+ * Description: Pass in the string and clear useless space, which include:
  *                1) The overmatch space which is not be marked by Quote's area
  *                   Squeeze the overmatch space into one space
- *                2) Clear all space before first vaild charatctor
+ *                2) Clear all space before first valid charatctor
  * Input:       cmdKey : Pass in the buff string, which is ready to be operated
  *              cmdOut : Pass out the buffer string ,which has already been operated
  *              size : cmdKey length
@@ -452,7 +452,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdKeyShift(const CHAR *cmdKey, CHAR *cmdOut, UI
     }
     /* Backup the 'output' start address */
     outputBak = output;
-    /* Scan each charactor in 'cmdKey',and squeeze the overmuch space and ignore invaild charactor */
+    /* Scan each charactor in 'cmdKey',and squeeze the overmuch space and ignore invalid charactor */
     for (; *cmdKey != '\0'; cmdKey++) {
         /* Detected a Double Quotes, switch the matching status */
         if (*(cmdKey) == '\"') {
@@ -462,7 +462,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsCmdKeyShift(const CHAR *cmdKey, CHAR *cmdOut, UI
         /* 1) Quotes matching status is FALSE (which said that the space is not been marked by double quotes) */
         /* 2) Current charactor is a space */
         /* 3) Next charactor is a space too, or the string is been seeked to the end already(\0) */
-        /* 4) Invaild charactor, such as single quotes */
+        /* 4) Invalid charactor, such as single quotes */
         if ((*cmdKey == ' ') && ((*(cmdKey + 1) == ' ') || (*(cmdKey + 1) == '\0')) && QUOTES_STATUS_CLOSE(quotes)) {
             continue;
         }

@@ -734,7 +734,7 @@ u32_t lwip_ifconfig(int argc, const char **argv)
         LWIP:
             So in our case,
             while receiving a packet RX case, if the buffer is full (trypost - it is sys_mbox_trypost)
-            the error will be returned, we can consider that an overflow has happend.
+            the error will be returned, we can consider that an overflow has happened.
             So this can be RX overrun.
 
             But while transmitting a packet TX case, underrun cannot happen because it block on the

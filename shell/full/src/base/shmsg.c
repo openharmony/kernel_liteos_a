@@ -107,7 +107,7 @@ STATIC VOID ShellNotify(ShellCB *shellCB)
 }
 
 enum {
-    STAT_NOMAL_KEY,
+    STAT_NORMAL_KEY,
     STAT_ESC_KEY,
     STAT_MULTI_KEY
 };
@@ -126,23 +126,23 @@ STATIC INT32 ShellCmdLineCheckUDRL(const CHAR ch, ShellCB *shellCB)
     } else if (ch == 0x41) { /* up */
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
             OsShellHistoryShow(CMD_KEY_UP, shellCB);
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x42) { /* down */
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             OsShellHistoryShow(CMD_KEY_DOWN, shellCB);
             return ret;
         }
     } else if (ch == 0x43) { /* right */
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             return ret;
         }
     } else if (ch == 0x44) { /* left */
         if (shellCB->shellKeyType == STAT_MULTI_KEY) {
-            shellCB->shellKeyType = STAT_NOMAL_KEY;
+            shellCB->shellKeyType = STAT_NORMAL_KEY;
             return ret;
         }
     }
@@ -200,7 +200,7 @@ LITE_OS_SEC_TEXT_MINOR VOID ShellCmdLineParse(CHAR c, pf_OUTPUT outputFunc, Shel
         outputFunc("%c", ch);
     }
 
-    shellCB->shellKeyType = STAT_NOMAL_KEY;
+    shellCB->shellKeyType = STAT_NORMAL_KEY;
 }
 
 LITE_OS_SEC_TEXT_MINOR UINT32 ShellMsgTypeGet(CmdParsed *cmdParsed, const CHAR *cmdType)

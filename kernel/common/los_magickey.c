@@ -74,7 +74,7 @@ STATIC MagicKeyOp g_magicHelpOp = {
  * ctrl+n/shift out=0xe,
  * ctrl+o/shift in=0xf,
  * ctrl+[/esc=0x1b,
- * ctrl+] used for telnet commond mode;
+ * ctrl+] used for telnet command mode;
  */
 STATIC MagicKeyOp *g_magicOpTable[MAGIC_KEY_NUM] = {
     &g_magicMemCheckOp, /* ctrl + e */

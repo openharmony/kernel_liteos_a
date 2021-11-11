@@ -56,11 +56,11 @@ typedef struct {
     SPIN_LOCK_S       taskSortLinkSpin;      /* task sort link spin lock */
     SortLinkAttribute swtmrSortLink;         /* swtmr sort link */
     SPIN_LOCK_S       swtmrSortLinkSpin;     /* swtmr sort link spin lock */
-    UINT64            responseTime;          /* Response time for current nuclear Tick interrupts */
+    UINT64            responseTime;          /* Response time for current CPU tick interrupts */
     UINT64            tickStartTime;         /* The time when the tick interrupt starts processing */
-    UINT32            responseID;            /* The response ID of the current nuclear TICK interrupt */
+    UINT32            responseID;            /* The response ID of the current CPU tick interrupt */
     UINTPTR           runProcess;            /* The address of the process control block pointer to which
-                                                the current kernel is running */
+                                                the current CPU is running */
     UINT32            idleTaskID;            /* idle task id */
     UINT32            taskLockCnt;           /* task lock flag */
     UINT32            swtmrHandlerQueue;     /* software timer timeout queue id */

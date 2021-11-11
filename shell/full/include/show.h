@@ -40,7 +40,7 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-extern CHAR *OsShellGetWorkingDirtectory(VOID);
+extern CHAR *OsShellGetWorkingDirectory(VOID);
 extern UINT32 OsShellInit(INT32 consoleId);
 extern INT32 OsShellDeinit(INT32 consoleId);
 

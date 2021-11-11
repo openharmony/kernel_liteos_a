@@ -58,7 +58,7 @@ extern "C" {
 #define LOSCFG_TRACE_OBJ_MAX_NAME_SIZE                          LOS_TASK_NAMELEN
 
 #define LOS_TRACE_LR_RECORD                                     5
-#define LOS_TRACE_LR_IGNOR                                      0
+#define LOS_TRACE_LR_IGNORE                                     0
 /**
  * @ingroup los_trace
  * Trace records the max number of objects(kernel object, like tasks), range is [0, LOSCFG_BASE_CORE_TSK_LIMIT].
@@ -136,7 +136,7 @@ typedef enum {
 
 /**
  * @ingroup los_trace
- * Trace event type which indicate the exactly happend events, user can define own module's event type like
+ * Trace event type which indicate the exactly happened events, user can define own module's event type like
  * TRACE_#MODULE#_FLAG | NUMBER.
  *                   28                     4
  *    0 0 0 0 0 0 0 0 X X X X X X X X 0 0 0 0 0 0
@@ -254,7 +254,7 @@ typedef struct {
 #endif
 
 #ifdef LOSCFG_TRACE_FRAME_EVENT_COUNT
-    UINT32  eventCount;                               /**< the sequence of happend events */
+    UINT32  eventCount;                               /**< the sequence of happened events */
 #endif
 
 #ifdef LOS_TRACE_FRAME_LR
@@ -302,7 +302,7 @@ typedef struct {
  * @brief Define the type of trace hardware interrupt filter hook function.
  *
  * @par Description:
- * User can register fliter function by LOS_TraceHwiFilterHookReg to filter hardware interrupt events. Return true if
+ * User can register filter function by LOS_TraceHwiFilterHookReg to filter hardware interrupt events. Return true if
  * user don't need trace the certain number.
  *
  * @attention
@@ -603,10 +603,10 @@ extern OfflineHead *LOS_TraceRecordGet(VOID);
 
 /**
  * @ingroup los_trace
- * @brief Hwi num fliter hook.
+ * @brief Hwi num filter hook.
  *
  * @par Description:
- * Hwi fliter function.
+ * Hwi filter function.
  * @attention
  * <ul>
  * <li>Filter the hwi events by hwi num</li>
