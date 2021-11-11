@@ -55,7 +55,7 @@
 extern char __exc_table_start[];
 extern char __exc_table_end[];
 
-STATIC STATUS_T OsVmRegionRightCheck(LosVmMapRegion *region, UINT32 flags)
+STATIC STATUS_T OsVmRegionPermissionCheck(LosVmMapRegion *region, UINT32 flags)
 {
     if ((region->regionFlags & VM_MAP_REGION_FLAG_PERM_READ) != VM_MAP_REGION_FLAG_PERM_READ) {
         VM_ERR("read permission check failed operation flags %x, region flags %x", flags, region->regionFlags);
@@ -367,7 +367,7 @@ STATUS_T OsVmPageFaultHandler(VADDR_T vaddr, UINT32 flags, ExcContext *frame)
         goto CHECK_FAILED;
     }
 
-    status = OsVmRegionRightCheck(region, flags);
+    status = OsVmRegionPermissionCheck(region, flags);
     if (status != LOS_OK) {
         status = LOS_ERRNO_VM_ACCESS_DENIED;
         goto CHECK_FAILED;
