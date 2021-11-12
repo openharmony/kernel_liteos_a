@@ -262,7 +262,7 @@ STATIC VOID LOS_TraceUsrEvent(VOID *buffer, UINT32 len)
         return;
     }
     LOS_TRACE_EASY(info->eventType & (~TRACE_USER_DEFAULT_FLAG), info->identity, info->params[0], info->params[1],
-        info->params[2]);
+        info->params[2]); /* 2, params num, no special meaning */
     LOS_MemFree(m_aucSysMem0, buffer);
 #endif
 }

@@ -46,7 +46,7 @@ extern "C" {
 #define SHELL_EXEC_COMMAND          "exec"
 #define SHELL_EXEC_COMMAND_BYTES    4
 #define CMD_EXEC_COMMAND            SHELL_EXEC_COMMAND" "
-#define CMD_EXEC_COMMAND_BYTES      (SHELL_EXEC_COMMAND_BYTES+1)
+#define CMD_EXEC_COMMAND_BYTES      (SHELL_EXEC_COMMAND_BYTES + 1)
 #define CMD_EXIT_COMMAND            "exit"
 #define CMD_EXIT_COMMAND_BYTES      4
 #define CMD_EXIT_CODE_BASE_DEC      10
@@ -59,7 +59,7 @@ extern "C" {
 #define COLOR_L_RED    "\e[1;31m"
 #define SHELL_PROMPT   COLOR_L_RED"OHOS # "COLOR_NONE
 
-typedef void (*OutputFunc)(const char *fmt, ...);
+typedef void (* OutputFunc)(const char *fmt, ...);
 extern int ShellTaskInit(ShellCB *shellCB);
 extern int ShellEntryInit(ShellCB *shellCB);
 extern void ChildExec(const char *cmdName, char *const paramArray[]);

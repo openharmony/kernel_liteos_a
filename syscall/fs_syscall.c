@@ -2503,7 +2503,7 @@ int SysFstatfs(int fd, struct statfs *buf)
 
 int SysFstatfs64(int fd, size_t sz, struct statfs *buf)
 {
-    int ret = 0;
+    int ret;
 
     if (sz != sizeof(struct statfs)) {
         ret = -EINVAL;
@@ -2654,13 +2654,13 @@ int SysEpollCtl(int epfd, int op, int fd, struct epoll_event *ev)
 
     ret = epoll_ctl(epfd, op, fd, ev);
     if (ret < 0) {
-        ret =-EBADF;
+        ret = -EBADF;
         goto OUT;
     }
 
     CPY_TO_USER(ev);
 OUT:
-    return (ret == -1)? -get_errno():ret;
+    return (ret == -1) ? -get_errno() : ret;
 }
 
 int SysEpollWait(int epfd, struct epoll_event *evs, int maxevents, int timeout)
