@@ -46,7 +46,7 @@ extern "C" {
 #define LITEIPC_DRIVER "/dev/lite_ipc"
 #define LITEIPC_DRIVER_MODE 0644
 #define MAX_SERVICE_NUM LOSCFG_BASE_CORE_TSK_LIMIT
-#define USE_TIMESTAMP YES
+#define USE_TIMESTAMP 1
 
 typedef enum {
     HANDLE_NOT_USED,
@@ -143,7 +143,7 @@ typedef struct {
     SvcIdentity    target;    /**< serviceHandle or targetTaskId, depending on type */
     UINT32         code;      /**< service function code */
     UINT32         flag;
-#if (USE_TIMESTAMP == YES)
+#if (USE_TIMESTAMP == 1)
     UINT64         timestamp;
 #endif
     UINT32         dataSz;    /**< size of data */
