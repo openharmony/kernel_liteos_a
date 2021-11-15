@@ -47,7 +47,6 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdarg.h>
-#include <bits/alltypes.h>
 #include <sys/prctl.h>
 #include <time.h>
 #include <search.h>
