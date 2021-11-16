@@ -444,7 +444,8 @@ VOID KillPgrp(UINT16 consoleId)
     if ((consoleId > CONSOLE_NUM) || (consoleId <= 0)) {
         return;
     }
-    CONSOLE_CB *consoleCB = g_console[consoleId-1];
+
+    CONSOLE_CB *consoleCB = g_console[consoleId - 1];
     /* the default of consoleCB->pgrpId is -1, may not be set yet, avoid killing all processes */
     if (consoleCB->pgrpId < 0) {
         return;
@@ -1445,7 +1446,7 @@ BOOL ConsoleEnable(VOID)
 
 BOOL IsShellEntryRunning(UINT32 shellEntryId)
 {
-    LosTaskCB *taskCB;
+    LosTaskCB *taskCB = NULL;
     if (shellEntryId == SHELL_ENTRYID_INVALID) {
         return FALSE;
     }

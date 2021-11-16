@@ -61,15 +61,15 @@ extern "C" {
 #define EPOLL_CTL_MOD 3
 
 typedef union epoll_data {
-	void *ptr;
-	int fd;
-	UINT32 u32;
-	UINT64 u64;
+    void *ptr;
+    int fd;
+    UINT32 u32;
+    UINT64 u64;
 } epoll_data_t;
 
 struct epoll_event {
-	UINT32 events;
-	epoll_data_t data;
+    UINT32 events;
+    epoll_data_t data;
 };
 
 int epoll_create(int size);

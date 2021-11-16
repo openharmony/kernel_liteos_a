@@ -47,7 +47,7 @@ void srand(unsigned s)
 
 int rand(void)
 {
-   return random();
+    return random();
 }
 
 void _exit(int status)

@@ -239,8 +239,10 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *regi
 ERROR_MAP_OUT:
     LOS_VFree(ipcInfo->pool.kvaddr);
 ERROR_REGION_OUT:
-    ipcInfo->pool.uvaddr = NULL;
-    ipcInfo->pool.kvaddr = NULL;
+    if (ipcInfo != NULL) {
+        ipcInfo->pool.uvaddr = NULL;
+        ipcInfo->pool.kvaddr = NULL;
+    }
     return ret;
 }
 
@@ -979,7 +981,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
                 }
 #endif
                 OsHookCall(LOS_HOOK_TYPE_IPC_WRITE_DROP, msg, *dstTid,
-                 (*dstTid == INVAILD_ID) ? INVAILD_ID : OS_TCB_FROM_TID(*dstTid)->processID, 0);
+                            (*dstTid == INVAILD_ID) ? INVAILD_ID : OS_TCB_FROM_TID(*dstTid)->processID, 0);
                 PRINT_ERR("Liteipc A timeout reply, request timestamp:%lld, now:%lld\n", msg->timestamp, now);
                 return -ETIME;
             }

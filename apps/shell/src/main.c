@@ -110,12 +110,12 @@ static int DoShellExec(char **argv)
     }
     memset_s(cmdLine, len, 0, len);
 
-    for(j = 0; j < i; j++) {
+    for (j = 0; j < i; j++) {
         strcat_s(cmdLine, len,  argv[j]);
         strcat_s(cmdLine, len, " ");
     }
 
-    cmdLine[len - 2] = '\0';
+    cmdLine[len - 2] = '\0'; /* 2, (len - 2) is the end of cmdline buf */
     ret = syscall(__NR_shellexec, argv[0], cmdLine);
     free(cmdLine);
     return ret;

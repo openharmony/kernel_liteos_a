@@ -55,7 +55,7 @@ VOID HalArchCpuOn(UINT32 cpuNum, ArchCpuStartFunc func, struct SmpOps *ops, VOID
 {
     struct OsCpuInit *cpuInit = &g_cpuInit[cpuNum - 1];
     UINTPTR startEntry = (UINTPTR)&reset_vector - KERNEL_VMM_BASE + SYS_MEM_BASE;
-    INT32 ret = 0;
+    INT32 ret;
 
     cpuInit->cpuStart = func;
     cpuInit->arg = arg;
