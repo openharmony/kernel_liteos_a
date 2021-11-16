@@ -285,11 +285,6 @@ int OsShrinkInactiveList(LosVmPhysSeg *physSeg, int nScan, LOS_DL_LIST *list)
     return nrReclaimed;
 }
 
-bool InactiveListIsLow(LosVmPhysSeg *physSeg)
-{
-    return (physSeg->lruSize[VM_LRU_ACTIVE_FILE] > physSeg->lruSize[VM_LRU_INACTIVE_FILE]) ? TRUE : FALSE;
-}
-
 #ifdef LOSCFG_FS_VFS
 int OsTryShrinkMemory(size_t nPage)
 {
@@ -319,7 +314,7 @@ int OsTryShrinkMemory(size_t nPage)
             continue;
         }
 
-        if (InactiveListIsLow(physSeg)) {
+        if (OsInactiveListIsLow(physSeg)) {
             OsShrinkActiveList(physSeg, (nPage < VM_FILEMAP_MIN_SCAN) ? VM_FILEMAP_MIN_SCAN : nPage);
         }
 
