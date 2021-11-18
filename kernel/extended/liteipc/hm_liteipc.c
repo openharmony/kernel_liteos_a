@@ -46,8 +46,8 @@
 #include "los_vm_phys.h"
 #include "los_hook.h"
 
-#define USE_TASKID_AS_HANDLE YES
-#define USE_MMAP YES
+#define USE_TASKID_AS_HANDLE 1
+#define USE_MMAP 1
 #define IPC_IO_DATA_MAX 8192UL
 #define IPC_MSG_DATA_SZ_MAX (IPC_IO_DATA_MAX * sizeof(SpecialObj) / (sizeof(SpecialObj) + sizeof(size_t)))
 #define IPC_MSG_OBJECT_NUM_MAX (IPC_MSG_DATA_SZ_MAX / sizeof(SpecialObj))
@@ -69,7 +69,7 @@ typedef struct {
 } IpcUsedNode;
 
 STATIC LosMux g_serviceHandleMapMux;
-#if (USE_TASKID_AS_HANDLE == YES)
+#if (USE_TASKID_AS_HANDLE == 1)
 STATIC HandleInfo g_cmsTask;
 #else
 STATIC HandleInfo g_serviceHandleMap[MAX_SERVICE_NUM];
@@ -100,7 +100,7 @@ STATIC const struct file_operations_vfs g_liteIpcFops = {
 LITE_OS_SEC_TEXT_INIT UINT32 OsLiteIpcInit(VOID)
 {
     UINT32 ret;
-#if (USE_TASKID_AS_HANDLE == YES)
+#if (USE_TASKID_AS_HANDLE == 1)
     g_cmsTask.status = HANDLE_NOT_USED;
 #else
     memset_s(g_serviceHandleMap, sizeof(g_serviceHandleMap), 0, sizeof(g_serviceHandleMap));
@@ -419,7 +419,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 GetTid(UINT32 serviceHandle, UINT32 *taskID)
         return -EINVAL;
     }
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
-#if (USE_TASKID_AS_HANDLE == YES)
+#if (USE_TASKID_AS_HANDLE == 1)
     *taskID = serviceHandle ? serviceHandle : g_cmsTask.taskID;
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return LOS_OK;
@@ -437,7 +437,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 GetTid(UINT32 serviceHandle, UINT32 *taskID)
 LITE_OS_SEC_TEXT STATIC UINT32 GenerateServiceHandle(UINT32 taskID, HandleStatus status, UINT32 *serviceHandle)
 {
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
-#if (USE_TASKID_AS_HANDLE == YES)
+#if (USE_TASKID_AS_HANDLE == 1)
     *serviceHandle = taskID ? taskID : LOS_CurTaskIDGet(); /* if taskID is 0, return curTaskID */
     if (*serviceHandle != g_cmsTask.taskID) {
         (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
@@ -460,7 +460,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 GenerateServiceHandle(UINT32 taskID, HandleStatus
 
 LITE_OS_SEC_TEXT STATIC VOID RefreshServiceHandle(UINT32 serviceHandle, UINT32 result)
 {
-#if (USE_TASKID_AS_HANDLE == NO)
+#if (USE_TASKID_AS_HANDLE == 0)
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
     if ((result == LOS_OK) && (g_serviceHandleMap[serviceHandle].status == HANDLE_REGISTING)) {
         g_serviceHandleMap[serviceHandle].status = HANDLE_REGISTED;
@@ -582,7 +582,7 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
         return;
     }
 
-#if (USE_TASKID_AS_HANDLE == YES)
+#if (USE_TASKID_AS_HANDLE == 1)
 
     UINT32 intSave;
     LOS_DL_LIST *listHead = NULL;
@@ -643,7 +643,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 SetCms(UINTPTR maxMsgSize)
         return -EINVAL;
     }
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
-#if (USE_TASKID_AS_HANDLE == YES)
+#if (USE_TASKID_AS_HANDLE == 1)
     if (g_cmsTask.status == HANDLE_NOT_USED) {
         g_cmsTask.status = HANDLE_REGISTED;
         g_cmsTask.taskID = LOS_CurTaskIDGet();
@@ -667,7 +667,7 @@ LITE_OS_SEC_TEXT STATIC BOOL IsCmsSet(VOID)
 {
     BOOL ret;
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
-#if (USE_TASKID_AS_HANDLE == YES)
+#if (USE_TASKID_AS_HANDLE == 1)
     ret = g_cmsTask.status == HANDLE_REGISTED;
 #else
     ret = g_serviceHandleMap[0].status == HANDLE_REGISTED;
@@ -680,7 +680,7 @@ LITE_OS_SEC_TEXT STATIC BOOL IsCmsTask(UINT32 taskID)
 {
     BOOL ret;
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
-#if (USE_TASKID_AS_HANDLE == YES)
+#if (USE_TASKID_AS_HANDLE == 1)
     ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID == OS_TCB_FROM_TID(g_cmsTask.taskID)->processID) : FALSE;
 #else
     ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID ==
@@ -939,7 +939,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
     UINT32 ret;
     IpcMsg *msg = content->outMsg;
     UINT32 flag = content->flag;
-#if (USE_TIMESTAMP == YES)
+#if (USE_TIMESTAMP == 1)
     UINT64 now = LOS_CurrNanosec();
 #endif
     if (((msg->dataSz > 0) && (msg->data == NULL)) ||
@@ -960,7 +960,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
                 PRINT_ERR("Liteipc %s, %d\n", __FUNCTION__, __LINE__);
                 return -EACCES;
             }
-#if (USE_TIMESTAMP == YES)
+#if (USE_TIMESTAMP == 1)
             msg->timestamp = now;
 #endif
             break;
@@ -972,7 +972,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
             if (!IsValidReply(content)) {
                 return -EINVAL;
             }
-#if (USE_TIMESTAMP == YES)
+#if (USE_TIMESTAMP == 1)
             if (now > msg->timestamp + LITEIPC_TIMEOUT_NS) {
 #ifdef LOSCFG_KERNEL_HOOK
                 ret = GetTid(msg->target.handle, dstTid);
@@ -990,7 +990,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
             break;
         case MT_DEATH_NOTIFY:
             *dstTid = msg->target.handle;
-#if (USE_TIMESTAMP == YES)
+#if (USE_TIMESTAMP == 1)
             msg->timestamp = now;
 #endif
             break;
@@ -1085,7 +1085,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *c
                 PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
                 ret = -EINVAL;
             }
-#if (USE_TIMESTAMP == YES)
+#if (USE_TIMESTAMP == 1)
             if (node->msg.timestamp != content->outMsg->timestamp) {
                 PRINT_ERR("Recieve a unmatch reply, drop it\n");
                 ret = -EINVAL;
