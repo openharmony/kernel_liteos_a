@@ -163,6 +163,12 @@ ifeq ($(LOSCFG_KERNEL_PERF), y)
     LITEOS_PERF_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/perf
 endif
 
+ifeq ($(LOSCFG_KERNEL_LMS), y)
+    LITEOS_BASELIB        += -llms
+    LIB_SUBDIRS           += kernel/extended/lms
+    LITEOS_LMS_INCLUDE   += -I $(LITEOSTOPDIR)/kernel/extended/lms
+endif
+
 ifeq ($(LOSCFG_KERNEL_LITEIPC), y)
     LITEOS_BASELIB     += -lliteipc
     LIB_SUBDIRS           += kernel/extended/liteipc
@@ -507,7 +513,7 @@ LITEOS_EXTKERNEL_INCLUDE   := $(LITEOS_CPPSUPPORT_INCLUDE) $(LITEOS_DYNLOAD_INCL
                               $(LITEOS_TICKLESS_INCLUDE)   $(LITEOS_HOOK_INCLUDE)\
                               $(LITEOS_VDSO_INCLUDE)       $(LITEOS_LITEIPC_INCLUDE) \
                               $(LITEOS_PIPE_INCLUDE)       $(LITEOS_CPUP_INCLUDE) \
-                              $(LITEOS_PERF_INCLUDE)
+                              $(LITEOS_PERF_INCLUDE)       $(LITEOS_LMS_INCLUDE)
 LITEOS_COMPAT_INCLUDE      := $(LITEOS_POSIX_INCLUDE) $(LITEOS_LINUX_INCLUDE) \
                               $(LITEOS_BSD_INCLUDE)
 LITEOS_FS_INCLUDE          := $(LITEOS_VFS_INCLUDE)        $(LITEOS_FAT_CACHE_INCLUDE) \

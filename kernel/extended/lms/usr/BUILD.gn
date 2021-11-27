@@ -27,34 +27,33 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//kernel/liteos_a/liteos.gni")
-import("//third_party/bounds_checking_function/libsec_src.gni")
+import("//build/lite/config/component/lite_component.gni")
 
-module_switch = defined(LOSCFG_LIB_LIBC)
-module_name = get_path_info(rebase_path("."), "name")
-kernel_module(module_name) {
-  sources = libsec_sources
-
-  if (defined(LOSCFG_KERNEL_LMS)) {
-    if (ohos_build_compiler == "gcc") {
-      cflags_c = [ "-fsanitize=kernel-address" ]
-    } else {
-      cflags_c = [
-        "-fsanitize=kernel-address",
-        "-mllvm",
-        "-asan-instrumentation-with-call-threshold=0",
-        "-mllvm",
-        "-asan-stack=0",
-        "-mllvm",
-        "-asan-globals=0",
-      ]
-    }
-  }
-
-  public_configs = [ ":public" ]
+copy("usrlmslib") {
+  deps = [ ":usrlms" ]
+  sources = [ get_path_info(".", "out_dir") + "/libusrlms.a" ]
+  outputs = [ "$root_out_dir/libusrlms.a" ]
 }
 
-config("public") {
-  include_dirs = libsec_include_dirs
-  defines = [ "SECUREC_IN_KERNEL=0" ]
+lite_library("usrlms") {
+  target_type = "static_library"
+  sources = [
+    "los_lms.c",
+    "los_lmslibc.c",
+  ]
+
+  include_dirs = [ "." ]
+
+  cflags = [
+    "-fPIC",
+    "-funwind-tables",
+    "-fasynchronous-unwind-tables",
+  ]
+
+  ldflags = [
+    "-rdynamic",
+    "-lunwind",
+  ]
+
+  output_dir = target_out_dir
 }

@@ -28,33 +28,16 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import("//kernel/liteos_a/liteos.gni")
-import("//third_party/bounds_checking_function/libsec_src.gni")
 
-module_switch = defined(LOSCFG_LIB_LIBC)
+module_switch = defined(LOSCFG_KERNEL_LMS)
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
-  sources = libsec_sources
-
-  if (defined(LOSCFG_KERNEL_LMS)) {
-    if (ohos_build_compiler == "gcc") {
-      cflags_c = [ "-fsanitize=kernel-address" ]
-    } else {
-      cflags_c = [
-        "-fsanitize=kernel-address",
-        "-mllvm",
-        "-asan-instrumentation-with-call-threshold=0",
-        "-mllvm",
-        "-asan-stack=0",
-        "-mllvm",
-        "-asan-globals=0",
-      ]
-    }
-  }
-
-  public_configs = [ ":public" ]
+  sources = [
+    "lms_libc.c",
+    "los_lms.c",
+  ]
 }
 
 config("public") {
-  include_dirs = libsec_include_dirs
-  defines = [ "SECUREC_IN_KERNEL=0" ]
+  include_dirs = [ "." ]
 }

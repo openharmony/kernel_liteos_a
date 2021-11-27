@@ -27,34 +27,51 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//kernel/liteos_a/liteos.gni")
-import("//third_party/bounds_checking_function/libsec_src.gni")
-
-module_switch = defined(LOSCFG_LIB_LIBC)
-module_name = get_path_info(rebase_path("."), "name")
-kernel_module(module_name) {
-  sources = libsec_sources
-
-  if (defined(LOSCFG_KERNEL_LMS)) {
-    if (ohos_build_compiler == "gcc") {
-      cflags_c = [ "-fsanitize=kernel-address" ]
-    } else {
-      cflags_c = [
-        "-fsanitize=kernel-address",
-        "-mllvm",
-        "-asan-instrumentation-with-call-threshold=0",
-        "-mllvm",
-        "-asan-stack=0",
-        "-mllvm",
-        "-asan-globals=0",
-      ]
-    }
-  }
-
-  public_configs = [ ":public" ]
+import("//build/lite/config/component/lite_component.gni")
+lite_component("LMS-Sample") {
+  features = [ ":sample_usr_lms" ]
 }
-
-config("public") {
-  include_dirs = libsec_include_dirs
-  defines = [ "SECUREC_IN_KERNEL=0" ]
+executable("sample_usr_lms") {
+  output_name = "sample_usr_lms"
+  sources = [ "src/sample_usr_lms.c" ]
+  include_dirs = []
+  defines = []
+  if (ohos_build_compiler == "gcc") {
+    cflags_c = [
+      "-O0",
+      "-fsanitize=kernel-address",
+      "-funwind-tables",
+      "-fasynchronous-unwind-tables",
+    ]
+  } else {
+    cflags_c = [
+      "-O0",
+      "-fsanitize=kernel-address",
+      "-mllvm",
+      "-asan-instrumentation-with-call-threshold=0",
+      "-mllvm",
+      "-asan-stack=0",
+      "-mllvm",
+      "-asan-globals=0",
+      "-funwind-tables",
+      "-fasynchronous-unwind-tables",
+    ]
+  }
+  ldflags = [
+    "-rdynamic",
+    "-lunwind",
+    "-lusrlms",
+    "-Wl,--wrap=realloc",
+    "-Wl,--wrap=calloc",
+    "-Wl,--wrap=malloc",
+    "-Wl,--wrap=free",
+    "-Wl,--wrap=valloc",
+    "-Wl,--wrap=aligned_alloc",
+    "-Wl,--wrap=memset",
+    "-Wl,--wrap=memcpy",
+    "-Wl,--wrap=memmove",
+    "-Wl,--wrap=strcpy",
+    "-Wl,--wrap=strcat",
+  ]
+  deps = [ "//kernel/liteos_a/kernel/extended/lms/usr:usrlmslib" ]
 }

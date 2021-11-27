@@ -88,6 +88,7 @@ STATIC INLINE VOID OsSchedIrqStartTime(VOID)
 } while (0);
 
 #define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))
+#define OS_SCHEDULER_ALL_ACTIVE (g_taskScheduled == LOSCFG_KERNEL_CPU_MASK)
 
 typedef enum {
     INT_NO_RESCH = 0x0,   /* no needs to schedule */
