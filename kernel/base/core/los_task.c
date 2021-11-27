@@ -525,7 +525,9 @@ LITE_OS_SEC_TEXT VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
         OsTaskKernelResourcesToFree(syncSignal, topOfStack);
 
         SCHEDULER_LOCK(intSave);
+#ifdef LOSCFG_KERNEL_VM
         OsClearSigInfoTmpList(&(taskCB->sig));
+#endif
         OsInsertTCBToFreeList(taskCB);
         SCHEDULER_UNLOCK(intSave);
     }
