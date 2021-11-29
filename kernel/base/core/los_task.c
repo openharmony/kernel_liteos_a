@@ -78,10 +78,6 @@ LITE_OS_SEC_BSS SPIN_LOCK_INIT(g_taskSpin);
 STATIC VOID OsConsoleIDSetHook(UINT32 param1,
                                UINT32 param2) __attribute__((weakref("OsSetConsoleID")));
 
-#define OS_CHECK_TASK_BLOCK (OS_TASK_STATUS_DELAY |    \
-                             OS_TASK_STATUS_PENDING |  \
-                             OS_TASK_STATUS_SUSPENDED)
-
 /* temp task blocks for booting procedure */
 LITE_OS_SEC_BSS STATIC LosTaskCB                g_mainTask[LOSCFG_KERNEL_CORE_NUM];
 
@@ -736,7 +732,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskResume(UINT32 taskID)
     UINT32 intSave;
     UINT32 errRet;
     LosTaskCB *taskCB = NULL;
-    BOOL needSched = FALSE;
 
     if (OS_TID_CHECK_INVALID(taskID)) {
         return LOS_ERRNO_TSK_ID_INVALID;
@@ -756,17 +751,11 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskResume(UINT32 taskID)
         OS_GOTO_ERREND();
     }
 
-    taskCB->taskStatus &= ~OS_TASK_STATUS_SUSPENDED;
-    if (!(taskCB->taskStatus & OS_CHECK_TASK_BLOCK)) {
-        OsSchedTaskEnQueue(taskCB);
-        if (OS_SCHEDULER_ACTIVE) {
-            needSched = TRUE;
-        }
-    }
+    BOOL needSched = OsSchedResume(taskCB);
     SCHEDULER_UNLOCK(intSave);
 
     LOS_MpSchedule(OS_MP_CPU_ALL);
-    if (needSched) {
+    if (OS_SCHEDULER_ACTIVE && needSched) {
         LOS_Schedule();
     }
 
@@ -834,16 +823,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsTaskSuspend(LosTaskCB *taskCB)
         return errRet;
     }
 
-    if (tempStatus & OS_TASK_STATUS_READY) {
-        OsSchedTaskDeQueue(taskCB);
-    }
-
-    taskCB->taskStatus |= OS_TASK_STATUS_SUSPENDED;
-    OsHookCall(LOS_HOOK_TYPE_MOVEDTASKTOSUSPENDEDLIST, taskCB);
-    if (taskCB == OsCurrTaskGet()) {
-        OsSchedResched();
-    }
-
+    OsSchedSuspend(taskCB);
     return LOS_OK;
 }
 

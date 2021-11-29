@@ -61,5 +61,6 @@ config("public") {
     "vdso:public",
     "perf:public",
     "lms:public",
+    "power:public",
   ]
 }
