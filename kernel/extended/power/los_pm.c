@@ -54,7 +54,6 @@
 #define OS_PM_SYS_EARLY        1
 #define OS_PM_SYS_DEVICE_EARLY 2
 
-typedef UINT32 (*SysSuspend)(VOID);
 typedef UINT32 (*Suspend)(UINT32 mode);
 
 typedef struct {
@@ -80,6 +79,9 @@ typedef struct {
 STATIC EVENT_CB_S g_pmEvent;
 STATIC LosPmCB g_pmCB;
 STATIC SPIN_LOCK_INIT(g_pmSpin);
+STATIC LosPmSysctrl g_sysctrl;
+
+STATIC VOID OsPmSysctrlInit(VOID);
 
 STATIC VOID OsPmTickTimerStart(LosPmCB *pm)
 {
@@ -104,31 +106,25 @@ STATIC VOID OsPmCpuResume(LosPmCB *pm)
     }
 }
 
-STATIC SysSuspend OsPmCpuSuspend(LosPmCB *pm)
+VOID OsPmCpuSuspend(LosPmCB *pm)
 {
-    SysSuspend sysSuspend = NULL;
-
     /* cpu enter low power mode */
     LOS_ASSERT(pm->sysctrl != NULL);
 
     if (pm->sysMode == LOS_SYS_NORMAL_SLEEP) {
-        sysSuspend = pm->sysctrl->normalSuspend;
+        pm->sysctrl->normalSuspend();
     } else if (pm->sysMode == LOS_SYS_LIGHT_SLEEP) {
-        sysSuspend = pm->sysctrl->lightSuspend;
+        pm->sysctrl->lightSuspend();
     } else if (pm->sysMode == LOS_SYS_DEEP_SLEEP) {
-        sysSuspend = pm->sysctrl->deepSuspend;
+        pm->sysctrl->deepSuspend();
     } else {
-        sysSuspend = pm->sysctrl->shutdownSuspend;
+        pm->sysctrl->shutdownSuspend();
     }
-
-    LOS_ASSERT(sysSuspend != NULL);
-
-    return sysSuspend;
 }
 
 STATIC VOID OsPmResumePrepare(LosPmCB *pm, UINT32 mode, UINT32 prepare)
 {
-    if ((prepare == 0) && (pm->device->resume != NULL)) {
+    if ((prepare == 0) && (pm->device != NULL) && (pm->device->resume != NULL)) {
         pm->device->resume(mode);
     }
 
@@ -173,7 +169,11 @@ STATIC UINT32 OsPmSuspendCheck(LosPmCB *pm, Suspend *sysSuspendEarly, Suspend *d
     pm->isWake = FALSE;
     *mode = pm->sysMode;
     *sysSuspendEarly = pm->sysctrl->early;
-    *deviceSuspend = pm->device->suspend;
+    if (pm->device != NULL) {
+        *deviceSuspend = pm->device->suspend;
+    } else {
+        *deviceSuspend = NULL;
+    }
     LOS_SpinUnlock(&g_pmSpin);
     return LOS_OK;
 }
@@ -185,7 +185,6 @@ STATIC UINT32 OsPmSuspendSleep(LosPmCB *pm)
     LOS_SysSleepEnum mode;
     UINT32 prepare = 0;
     BOOL tickTimerStop = FALSE;
-    SysSuspend sysSuspend;
     UINT64 currTime;
 
     ret = OsPmSuspendCheck(pm, &sysSuspendEarly, &deviceSuspend, &mode);
@@ -214,14 +213,7 @@ STATIC UINT32 OsPmSuspendSleep(LosPmCB *pm)
         OsSchedUpdateExpireTime(currTime);
     }
 
-    sysSuspend = OsPmCpuSuspend(pm);
-    LOS_SpinUnlockRestore(&g_pmSpin, intSave);
-
-    if (!pm->isWake) {
-        ret = sysSuspend();
-    }
-
-    LOS_SpinLockSave(&g_pmSpin, &intSave);
+    OsPmCpuSuspend(pm);
 
     OsPmCpuResume(pm);
 
@@ -230,8 +222,8 @@ STATIC UINT32 OsPmSuspendSleep(LosPmCB *pm)
 EXIT:
     pm->sysMode = LOS_SYS_NORMAL_SLEEP;
     OsPmResumePrepare(pm, (UINT32)mode, prepare);
-    LOS_SpinUnlockRestore(&g_pmSpin, intSave);
 
+    LOS_SpinUnlockRestore(&g_pmSpin, intSave);
     LOS_TaskUnlock();
     return ret;
 }
@@ -252,7 +244,36 @@ STATIC UINT32 OsPmDeviceRegister(LosPmCB *pm, LosPmDevice *device)
 STATIC UINT32 OsPmSysctrlRegister(LosPmCB *pm, LosPmSysctrl *sysctrl)
 {
     LOS_SpinLock(&g_pmSpin);
-    pm->sysctrl = sysctrl;
+    if (sysctrl->early != NULL) {
+        pm->sysctrl->early = sysctrl->early;
+    }
+    if (sysctrl->late != NULL) {
+        pm->sysctrl->late = sysctrl->late;
+    }
+    if (sysctrl->normalSuspend != NULL) {
+        pm->sysctrl->normalSuspend = sysctrl->normalSuspend;
+    }
+    if (sysctrl->normalResume != NULL) {
+        pm->sysctrl->normalResume = sysctrl->normalResume;
+    }
+    if (sysctrl->lightSuspend != NULL) {
+        pm->sysctrl->lightSuspend = sysctrl->lightSuspend;
+    }
+    if (sysctrl->lightResume != NULL) {
+        pm->sysctrl->lightResume = sysctrl->lightResume;
+    }
+    if (sysctrl->deepSuspend != NULL) {
+        pm->sysctrl->deepSuspend = sysctrl->deepSuspend;
+    }
+    if (sysctrl->deepResume != NULL) {
+        pm->sysctrl->deepResume = sysctrl->deepResume;
+    }
+    if (sysctrl->shutdownSuspend != NULL) {
+        pm->sysctrl->shutdownSuspend = sysctrl->shutdownSuspend;
+    }
+    if (sysctrl->shutdownResume != NULL) {
+        pm->sysctrl->shutdownResume = sysctrl->shutdownResume;
+    }
     LOS_SpinUnlock(&g_pmSpin);
 
     return LOS_OK;
@@ -297,8 +318,10 @@ STATIC UINT32 OsPmDeviceUnregister(LosPmCB *pm, LosPmDevice *device)
 
 STATIC UINT32 OsPmSysctrlUnregister(LosPmCB *pm, LosPmSysctrl *sysctrl)
 {
+    (VOID)sysctrl;
     LOS_SpinLock(&g_pmSpin);
-    pm->sysctrl = NULL;
+    OsPmSysctrlInit();
+    pm->pmMode = LOS_SYS_NORMAL_SLEEP;
     LOS_SpinUnlock(&g_pmSpin);
 
     return LOS_OK;
@@ -359,11 +382,6 @@ UINT32 LOS_PmModeSet(LOS_SysSleepEnum mode)
     }
 
     LOS_SpinLock(&g_pmSpin);
-    if ((mode != LOS_SYS_NORMAL_SLEEP) && (pm->device == NULL)) {
-        LOS_SpinUnlock(&g_pmSpin);
-        return LOS_EINVAL;
-    }
-
     if ((mode == LOS_SYS_LIGHT_SLEEP) && (pm->sysctrl->lightSuspend == NULL)) {
         LOS_SpinUnlock(&g_pmSpin);
         return LOS_EINVAL;
@@ -634,6 +652,28 @@ BOOL OsIsPmMode(VOID)
     return FALSE;
 }
 
+STATIC UINT32 OsPmSuspendDefaultHandler(VOID)
+{
+    PRINTK("Enter pm default handler!!!\n");
+    WFI;
+    return LOS_OK;
+}
+
+STATIC VOID OsPmSysctrlInit(VOID)
+{
+    /* Default handler functions, which are implemented by the product */
+    g_sysctrl.early = NULL;
+    g_sysctrl.late = NULL;
+    g_sysctrl.normalSuspend = OsPmSuspendDefaultHandler;
+    g_sysctrl.normalResume = NULL;
+    g_sysctrl.lightSuspend = OsPmSuspendDefaultHandler;
+    g_sysctrl.lightResume = NULL;
+    g_sysctrl.deepSuspend = OsPmSuspendDefaultHandler;
+    g_sysctrl.deepResume = NULL;
+    g_sysctrl.shutdownSuspend = NULL;
+    g_sysctrl.shutdownResume = NULL;
+}
+
 UINT32 OsPmInit(VOID)
 {
     LosPmCB *pm = &g_pmCB;
@@ -644,6 +684,8 @@ UINT32 OsPmInit(VOID)
     LOS_ListInit(&pm->lockList);
     (VOID)LOS_EventInit(&g_pmEvent);
 
+    OsPmSysctrlInit();
+    pm->sysctrl = &g_sysctrl;
     return LOS_OK;
 }
 
