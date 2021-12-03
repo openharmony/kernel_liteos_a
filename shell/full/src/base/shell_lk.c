@@ -40,6 +40,7 @@
 #endif
 #include "los_init.h"
 #include "los_printf_pri.h"
+#include "los_process_pri.h"
 
 #ifdef LOSCFG_SHELL_LK
 
@@ -189,7 +190,9 @@ VOID OsLkDefaultFunc(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt,
         return;
     }
     if ((level != LOS_COMMON_LEVEL) && ((level > LOS_EMG_LEVEL) && (level <= LOS_TRACE_LEVEL))) {
-        dprintf("[%s]", OsLogLvGet(level));
+        dprintf("[%s][%s:%s]", OsLogLvGet(level),
+                ((OsCurrProcessGet() == NULL) ? "NULL" : OsCurrProcessGet()->processName),
+                ((OsCurrTaskGet() == NULL) ? "NULL" : OsCurrTaskGet()->taskName));
     }
     LkDprintf(fmt, ap);
 }
