@@ -307,7 +307,7 @@ int SysOpen(const char *path, int oflags, ...)
         goto ERROUT;
     }
 
-    if (oflags & O_CLOEXEC) {
+    if ((unsigned int)oflags & O_CLOEXEC) {
         SetCloexecFlag(procFd);
     }
 
@@ -1640,7 +1640,7 @@ int SysOpenat(int dirfd, const char *path, int oflags, ...)
         goto ERROUT;
     }
 
-    if (oflags & O_CLOEXEC) {
+    if ((unsigned int)oflags & O_CLOEXEC) {
         SetCloexecFlag(procFd);
     }
 
