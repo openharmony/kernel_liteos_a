@@ -563,7 +563,6 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #else
     g_currHandleExcCpuID = INVALID_CPUID;
 #endif
-    runProcess->processStatus &= ~OS_PROCESS_FLAG_EXIT;
 
 #ifdef LOSCFG_KERNEL_SMP
 #ifdef LOSCFG_FS_VFS
@@ -580,10 +579,10 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
 #endif
     OsProcessExitCodeSignalSet(runProcess, SIGUSR2);
 
-    /* An exception was raised by a task that is not the current main thread during the exit process of
+    /* An exception was raised by a task during the exit process of
      * the current process.
      */
-    if ((runProcess->processStatus & OS_PROCESS_FLAG_EXIT) && (runProcess->threadGroupID != runTask->taskID)) {
+    if (runProcess->processStatus & OS_PROCESS_FLAG_EXIT) {
         SCHEDULER_UNLOCK(intSave);
         /* Exception handling All operations should be kept prior to that operation */
         OsExcRestore();
