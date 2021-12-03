@@ -177,7 +177,7 @@ STATIC VOID OsTryUnmapL1PTE(const LosArchMmu *archMmu, vaddr_t vaddr, UINT32 sca
     /*
      * Check if all pages related to this l1 entry are deallocated.
      * We only need to check pages that we did not clear above starting
-     * from page_idx and wrapped around SECTION.
+     * from scanIndex and wrapped around SECTION.
      */
     UINT32 l1Index;
     PTE_T l1Entry;
