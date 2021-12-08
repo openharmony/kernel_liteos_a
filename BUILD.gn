@@ -82,8 +82,6 @@ generate_notice_file("kernel_notice_file") {
   ]
 }
 
-visibility = [ ":*" ]
-
 liteos_arch_cflags = []
 if (defined(LOSCFG_ARCH_ARM)) {
   mcpu = LOSCFG_ARCH_CPU
@@ -314,7 +312,6 @@ group("tests") {
 
 group("kernel") {
   deps = [ ":build_kernel_image" ]
-  visibility += [ "//build/lite:ohos" ]
 }
 
 group("liteos_a") {
