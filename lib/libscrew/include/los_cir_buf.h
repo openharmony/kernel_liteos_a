@@ -56,22 +56,6 @@ typedef struct {
     CHAR *fifo;
 } CirBuf;
 
-STATIC INLINE VOID LOS_CirBufLock(CirBuf *cirbufCB, UINT32 *intSave)
-{
-    if (cirbufCB == NULL) {
-        return;
-    }
-    LOS_SpinLockSave(&cirbufCB->lock, intSave);
-}
-
-STATIC INLINE VOID LOS_CirBufUnlock(CirBuf *cirbufCB, UINT32 intSave)
-{
-    if (cirbufCB == NULL) {
-        return;
-    }
-    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);
-}
-
 extern UINT32 LOS_CirBufInit(CirBuf *cirbufCB, CHAR *fifo, UINT32 size);
 extern VOID LOS_CirBufDeinit(CirBuf *cirbufCB);
 extern UINT32 LOS_CirBufWrite(CirBuf *cirbufCB, const CHAR *buf, UINT32 size);
