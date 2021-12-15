@@ -30,6 +30,7 @@
  */
 
 #include "los_cir_buf.h"
+#include "los_spinlock.h"
 
 
 UINT32 LOS_CirBufUsedSize(CirBuf *cirbufCB)
@@ -103,14 +104,17 @@ STATIC UINT32 OsCirBufWriteLoop(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 
 UINT32 LOS_CirBufWrite(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
 {
-    UINT32 cpSize;
+    UINT32 cpSize = 0;
+    UINT32 intSave;
 
-    if ((cirbufCB == NULL) || (buf == NULL) || (size == 0)) {
+    if ((cirbufCB == NULL) || (buf == NULL) || (size == 0) || (cirbufCB->status != CBUF_USED)) {
         return 0;
     }
 
+    LOS_SpinLockSave(&cirbufCB->lock, &intSave);
+
     if ((cirbufCB->fifo == NULL) || (cirbufCB->remain == 0))  {
-        return 0;
+        goto EXIT;;
     }
 
     if (cirbufCB->startIdx <= cirbufCB->endIdx) {
@@ -119,6 +123,8 @@ UINT32 LOS_CirBufWrite(CirBuf *cirbufCB, const CHAR *buf, UINT32 size)
         cpSize = OsCirBufWriteLinear(cirbufCB, buf, size);
     }
 
+EXIT:
+    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);
     return cpSize;
 }
 
@@ -173,14 +179,17 @@ STATIC UINT32 OsCirBufReadLoop(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
 
 UINT32 LOS_CirBufRead(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
 {
-    UINT32 cpSize;
+    UINT32 cpSize = 0;
+    UINT32 intSave;
 
-    if ((cirbufCB == NULL) || (buf == NULL) || (size == 0)) {
+    if ((cirbufCB == NULL) || (buf == NULL) || (size == 0) || (cirbufCB->status != CBUF_USED)) {
         return 0;
     }
 
+    LOS_SpinLockSave(&cirbufCB->lock, &intSave);
+
     if ((cirbufCB->fifo == NULL) || (cirbufCB->remain == cirbufCB->size)) {
-        return 0;
+        goto EXIT;
     }
 
     if (cirbufCB->startIdx >= cirbufCB->endIdx) {
@@ -189,6 +198,8 @@ UINT32 LOS_CirBufRead(CirBuf *cirbufCB, CHAR *buf, UINT32 size)
         cpSize = OsCirBufReadLinear(cirbufCB, buf, size);
     }
 
+EXIT:
+    LOS_SpinUnlockRestore(&cirbufCB->lock, intSave);
     return cpSize;
 }
 
