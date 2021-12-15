@@ -60,6 +60,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param);
 
 STATIC UINT8 g_taskConsoleIDArray[LOSCFG_BASE_CORE_TSK_LIMIT];
 STATIC SPIN_LOCK_INIT(g_consoleSpin);
+STATIC SPIN_LOCK_INIT(g_consoleWriteSpinLock);
 
 #define SHELL_ENTRYID_INVALID     0xFFFFFFFF
 #define SHELL_TASK_PRIORITY       9
@@ -749,7 +750,8 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
         return 0;
     }
 #endif
-    LOS_CirBufLock(&cirBufSendCB->cirBufCB, &intSave);
+
+    LOS_SpinLockSave(&g_consoleWriteSpinLock, &intSave);
     while (written < (INT32)bufLen) {
         /* Transform for CR/LR mode */
         if ((buffer[written] == '\n') || (buffer[written] == '\r')) {
@@ -763,7 +765,8 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
         toWrite -= cnt;
         written += cnt;
     }
-    LOS_CirBufUnlock(&cirBufSendCB->cirBufCB, intSave);
+    LOS_SpinUnlockRestore(&g_consoleWriteSpinLock, intSave);
+
     /* Log is cached but not printed when a system exception occurs */
     if (OsGetSystemStatus() == OS_SYSTEM_NORMAL) {
         (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_CIRBUF_EVENT);
@@ -1629,7 +1632,6 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
     CirBufSendCB *cirBufSendCB = consoleCB->cirBufSendCB;
     CirBuf *cirBufCB = &cirBufSendCB->cirBufCB;
     UINT32 ret, size;
-    UINT32 intSave;
     CHAR *buf = NULL;
 
     (VOID)LOS_EventWrite(&cirBufSendCB->sendEvent, CONSOLE_SEND_TASK_RUNNING);
@@ -1648,9 +1650,7 @@ STATIC UINT32 ConsoleSendTask(UINTPTR param)
             }
             (VOID)memset_s(buf, size + 1, 0, size + 1);
 
-            LOS_CirBufLock(cirBufCB, &intSave);
             (VOID)LOS_CirBufRead(cirBufCB, buf, size);
-            LOS_CirBufUnlock(cirBufCB, intSave);
 
             (VOID)WriteToTerminal(consoleCB, buf, size);
             (VOID)LOS_MemFree(m_aucSysMem1, buf);
