@@ -155,20 +155,12 @@ STATIC UINT32 ConsoleRefcountGet(const CONSOLE_CB *consoleCB)
 
 STATIC VOID ConsoleRefcountSet(CONSOLE_CB *consoleCB, BOOL flag)
 {
-    if (flag == TRUE) {
-        ++(consoleCB->refCount);
-    } else {
-        --(consoleCB->refCount);
-    }
+    (consoleCB->refCount) += flag ? 1 : -1;
 }
 
 BOOL IsConsoleOccupied(const CONSOLE_CB *consoleCB)
 {
-    if (ConsoleRefcountGet(consoleCB) != FALSE) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
+    return ConsoleRefcountGet(consoleCB);
 }
 
 STATIC INT32 ConsoleCtrlCaptureLine(CONSOLE_CB *consoleCB)
@@ -295,10 +287,7 @@ STATIC INT32 OsConsoleFullpathToID(const CHAR *fullpath)
 
 STATIC BOOL ConsoleFifoEmpty(const CONSOLE_CB *console)
 {
-    if (console->fifoOut == console->fifoIn) {
-        return TRUE;
-    }
-    return FALSE;
+    return console->fifoOut == console->fifoIn;
 }
 
 STATIC VOID ConsoleFifoClearup(CONSOLE_CB *console)
@@ -344,10 +333,7 @@ INT32 FilepOpen(struct file *filep, const struct file_operations_vfs *fops)
      * corresponding to filep of /dev/console)
      */
     ret = fops->open(filep);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
 
 STATIC INLINE VOID UserEndOfRead(CONSOLE_CB *consoleCB, struct file *filep,
@@ -469,10 +455,7 @@ STATIC INT32 UserFilepRead(CONSOLE_CB *consoleCB, struct file *filep, const stru
     /* Non-ICANON mode */
     if ((consoleCB->consoleTermios.c_lflag & ICANON) == 0) {
         ret = fops->read(filep, buffer, bufLen);
-        if (ret < 0) {
-            return -EPERM;
-        }
-        return ret;
+        return (ret < 0) ? -EPERM : ret;
     }
     /* ICANON mode: store data to console buffer,  read data and stored data into console fifo */
     if (consoleCB->currentLen == 0) {
@@ -525,10 +508,7 @@ INT32 FilepRead(struct file *filep, const struct file_operations_vfs *fops, CHAR
      * corresponding to filep of /dev/console)
      */
     ret = fops->read(filep, buffer, bufLen);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
 
 INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, const CHAR *buffer, size_t bufLen)
@@ -539,10 +519,7 @@ INT32 FilepWrite(struct file *filep, const struct file_operations_vfs *fops, con
     }
 
     ret = fops->write(filep, buffer, bufLen);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
 
 INT32 FilepClose(struct file *filep, const struct file_operations_vfs *fops)
@@ -557,10 +534,7 @@ INT32 FilepClose(struct file *filep, const struct file_operations_vfs *fops)
      * corresponding to filep of /dev/console)
      */
     ret = fops->close(filep);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return ret < 0 ? -EPERM : ret;
 }
 
 INT32 FilepIoctl(struct file *filep, const struct file_operations_vfs *fops, INT32 cmd, unsigned long arg)
@@ -571,10 +545,7 @@ INT32 FilepIoctl(struct file *filep, const struct file_operations_vfs *fops, INT
     }
 
     ret = fops->ioctl(filep, cmd, arg);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
 
 INT32 FilepPoll(struct file *filep, const struct file_operations_vfs *fops, poll_table *fds)
@@ -589,10 +560,7 @@ INT32 FilepPoll(struct file *filep, const struct file_operations_vfs *fops, poll
      * corresponding to filep of /dev/serial)
      */
     ret = fops->poll(filep, fds);
-    if (ret < 0) {
-        return -EPERM;
-    }
-    return ret;
+    return (ret < 0) ? -EPERM : ret;
 }
 
 STATIC INT32 ConsoleOpen(struct file *filep)
@@ -858,10 +826,8 @@ STATIC INT32 ConsoleGetWinSize(unsigned long arg)
         .ws_row = DEFAULT_WINDOW_SIZE_ROW
     };
 
-    if (LOS_CopyFromKernel((VOID *)arg, sizeof(struct winsize), &kws, sizeof(struct winsize)) != 0) {
-        return -EFAULT;
-    }
-    return LOS_OK;
+    return (LOS_CopyFromKernel((VOID *)arg, sizeof(struct winsize), &kws, sizeof(struct winsize)) != 0) ?
+        -EFAULT : LOS_OK;
 }
 
 STATIC INT32 ConsoleGetTermios(unsigned long arg)
@@ -879,11 +845,8 @@ STATIC INT32 ConsoleGetTermios(unsigned long arg)
         return -EFAULT;
     }
 
-    if (LOS_ArchCopyToUser((VOID *)arg, &consoleCB->consoleTermios, sizeof(struct termios)) != 0) {
-        return -EFAULT;
-    } else {
-        return LOS_OK;
-    }
+    return (LOS_ArchCopyToUser((VOID *)arg, &consoleCB->consoleTermios, sizeof(struct termios)) != 0) ?
+        -EFAULT : LOS_OK;
 }
 
 INT32 ConsoleSetPgrp(CONSOLE_CB *consoleCB, unsigned long arg)
@@ -896,10 +859,7 @@ INT32 ConsoleSetPgrp(CONSOLE_CB *consoleCB, unsigned long arg)
 
 INT32 ConsoleGetPgrp(CONSOLE_CB *consoleCB, unsigned long arg)
 {
-    if (LOS_ArchCopyToUser((VOID *)arg, &consoleCB->pgrpId, sizeof(INT32)) != 0) {
-        return -EFAULT;
-    }
-    return LOS_OK;
+    return (LOS_ArchCopyToUser((VOID *)arg, &consoleCB->pgrpId, sizeof(INT32)) != 0) ? -EFAULT : LOS_OK;
 }
 
 STATIC INT32 ConsoleIoctl(struct file *filep, INT32 cmd, unsigned long arg)
@@ -1204,11 +1164,7 @@ STATIC UINT32 OsConsoleBufInit(CONSOLE_CB *consoleCB)
     initParam.usTaskPrio   = SHELL_TASK_PRIORITY;
     initParam.auwArgs[0]   = (UINTPTR)consoleCB;
     initParam.uwStackSize  = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
-    if (consoleCB->consoleID == CONSOLE_SERIAL) {
-        initParam.pcName   = "SendToSer";
-    } else {
-        initParam.pcName   = "SendToTelnet";
-    }
+    initParam.pcName = (consoleCB->consoleID == CONSOLE_SERIAL) ? "SendToSer" : "SendToTelnet";
     initParam.uwResved     = LOS_TASK_STATUS_DETACHED;
 
     ret = LOS_TaskCreate(&consoleCB->sendTaskID, &initParam);
@@ -1432,10 +1388,7 @@ BOOL ConsoleEnable(VOID)
         if (consoleID == 0) {
             return FALSE;
         } else if ((consoleID == CONSOLE_TELNET) || (consoleID == CONSOLE_SERIAL)) {
-            if ((OsGetSystemStatus() == OS_SYSTEM_NORMAL) && !OsPreemptable()) {
-                return FALSE;
-            }
-            return TRUE;
+            return ((OsGetSystemStatus() == OS_SYSTEM_NORMAL) && !OsPreemptable()) ? FALSE : TRUE;
         }
 #if defined (LOSCFG_DRIVERS_USB_SERIAL_GADGET) || defined (LOSCFG_DRIVERS_USB_ETH_SER_GADGET)
         else if ((SerialTypeGet() == SERIAL_TYPE_USBTTY_DEV) && (userial_mask_get() == 1)) {
@@ -1471,69 +1424,43 @@ INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
         return LOS_OK;
     }
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
-    return g_console[consoleID - 1]->shellEntryId == taskID ? LOS_OK : LOS_NOK;
+    return (g_console[consoleID - 1]->shellEntryId == taskID) ? LOS_OK : LOS_NOK;
 }
 
 BOOL SetSerialNonBlock(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-
     if (consoleCB == NULL) {
         PRINT_ERR("%s: Input parameter is illegal\n", __FUNCTION__);
         return FALSE;
     }
-    ret = ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_SERIAL, CONSOLE_RD_NONBLOCK);
-    if (ret != 0) {
-        return FALSE;
-    }
-
-    return TRUE;
+    return ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_SERIAL, CONSOLE_RD_NONBLOCK) == 0;
 }
 
 BOOL SetSerialBlock(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-
     if (consoleCB == NULL) {
         PRINT_ERR("%s: Input parameter is illegal\n", __FUNCTION__);
         return TRUE;
     }
-    ret = ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_SERIAL, CONSOLE_RD_BLOCK);
-    if (ret != 0) {
-        return TRUE;
-    }
-
-    return FALSE;
+    return ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_SERIAL, CONSOLE_RD_BLOCK) != 0;
 }
 
 BOOL SetTelnetNonBlock(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-
     if (consoleCB == NULL) {
         PRINT_ERR("%s: Input parameter is illegal\n", __FUNCTION__);
         return FALSE;
     }
-    ret = ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_TELNET, CONSOLE_RD_NONBLOCK);
-    if (ret != 0) {
-        return FALSE;
-    }
-    return TRUE;
+    return ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_TELNET, CONSOLE_RD_NONBLOCK) == 0;
 }
 
 BOOL SetTelnetBlock(const CONSOLE_CB *consoleCB)
 {
-    INT32 ret;
-
     if (consoleCB == NULL) {
         PRINT_ERR("%s: Input parameter is illegal\n", __FUNCTION__);
         return TRUE;
     }
-    ret = ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_TELNET, CONSOLE_RD_BLOCK);
-    if (ret != 0) {
-        return TRUE;
-    }
-    return FALSE;
+    return ioctl(consoleCB->fd, CONSOLE_CMD_RD_BLOCK_TELNET, CONSOLE_RD_BLOCK) != 0;
 }
 
 BOOL is_nonblock(const CONSOLE_CB *consoleCB)
@@ -1570,11 +1497,7 @@ INT32 ConsoleUpdateFd(VOID)
         }
     }
 
-    if (g_console[consoleID - 1] == NULL) {
-        return -1;
-    }
-
-    return g_console[consoleID - 1]->fd;
+    return (g_console[consoleID - 1] != NULL) ? g_console[consoleID - 1]->fd : -1;
 }
 
 CONSOLE_CB *OsGetConsoleByID(INT32 consoleID)
