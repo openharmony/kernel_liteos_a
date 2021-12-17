@@ -41,7 +41,7 @@
 #include "los_vm_lock.h"
 #include "user_copy.h"
 
-#define HILOG_BUFFER 4096
+#define HILOG_BUFFER LOSCFG_HILOG_BUFFER_SIZE
 #define DRIVER_MODE 0666
 #define HILOG_DRIVER "/dev/hilog"
 
@@ -255,6 +255,7 @@ static void HiLogCoverOldLog(size_t bufLen)
     int retval;
     struct HiLogEntry header;
     size_t totalSize = bufLen + sizeof(struct HiLogEntry);
+    int dropLogLines = 0;
 
     while (totalSize + g_hiLogDev.size > HILOG_BUFFER) {
         retval = HiLogReadRingBuffer((unsigned char *)&header, sizeof(header));
@@ -262,8 +263,12 @@ static void HiLogCoverOldLog(size_t bufLen)
             break;
         }
 
+        dropLogLines++;
         HiLogBufferDec(sizeof(header));
         HiLogBufferDec(header.len);
+    }
+    if (dropLogLines > 0) {
+        dprintf("hilog ringbuffer full, drop %d line(s) log", dropLogLines);
     }
 }
 
