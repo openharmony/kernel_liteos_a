@@ -790,7 +790,7 @@ STATUS_T LOS_ArchMmuDestroy(LosArchMmu *archMmu)
         LOS_PhysPageFree(page);
     }
 
-    OsArmWriteTlbiasid(archMmu->asid);
+    OsArmWriteTlbiasidis(archMmu->asid);
     OsFreeAsid(archMmu->asid);
 #endif
     (VOID)LOS_MuxDestroy(&archMmu->mtx);
