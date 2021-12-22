@@ -1237,10 +1237,10 @@ __attribute__((noinline)) VOID LOS_Panic(const CHAR *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    UartVprintf(fmt, ap);
+    OsVprintf(fmt, ap, EXC_OUTPUT);
     va_end(ap);
     __asm__ __volatile__("swi 0");
-    while (1);
+    while (1) {}
 }
 
 /* stack protector */
