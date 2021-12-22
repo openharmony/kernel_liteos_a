@@ -184,7 +184,7 @@ extern UINT32 LiteIpcPoolInit(ProcIpcInfo *ipcInfo);
 extern UINT32 LiteIpcPoolReInit(ProcIpcInfo *childIpcInfo, const ProcIpcInfo *parentIpcInfo);
 
 /* delete process liteipc memory pool */
-extern VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo);
+extern VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo, UINT32 processID);
 
 /* remove service handle and send death notify */
 extern VOID LiteIpcRemoveServiceHandle(LosTaskCB *taskCB);
