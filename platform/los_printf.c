@@ -202,12 +202,22 @@ __attribute__ ((noinline)) VOID dprintf(const CHAR *fmt, ...)
     va_list ap;
     va_start(ap, fmt);
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);
+#ifdef LOSCFG_SAVE_EXCINFO
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
+        WriteExcBufVa(fmt, ap);
+    }
+#endif
     va_end(ap);
 }
 
 VOID LkDprintf(const CHAR *fmt, va_list ap)
 {
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);
+#ifdef LOSCFG_SAVE_EXCINFO
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
+        WriteExcBufVa(fmt, ap);
+    }
+#endif
 }
 
 #ifdef LOSCFG_SHELL_DMESG
@@ -273,6 +283,11 @@ VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...
 
     va_start(ap, fmt);
     OsVprintf(fmt, ap, CONSOLE_OUTPUT);
+#ifdef LOSCFG_SAVE_EXCINFO
+    if (OsGetSystemStatus() == OS_SYSTEM_EXC_CURR_CPU) {
+        WriteExcBufVa(fmt, ap);
+    }
+#endif
     va_end(ap);
 }
 #endif
