@@ -228,7 +228,8 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
             break;
         }
         default:
-            ret = LOS_ERRNO_VM_NOT_FOUND;
+            OsArmWriteTlbimvaais(ROUNDDOWN(far, PAGE_SIZE));
+            ret = LOS_OK;
             break;
     }
 #if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
