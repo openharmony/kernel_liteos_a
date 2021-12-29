@@ -36,6 +36,7 @@
 #include "los_bitmap.h"
 #include "los_list.h"
 #include "los_atomic.h"
+#include "los_spinlock.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -51,6 +52,9 @@ typedef struct VmPage {
     UINT8               order;       /**< vm page in which order list */
     UINT8               segID;       /**< the segment id of vm page */
     UINT16              nPages;      /**< the vm page is used for kernel heap */
+#ifdef LOSCFG_PAGE_TABLE_FINE_LOCK
+    SPIN_LOCK_S         lock;        /**< lock for page table entry */
+#endif
 } LosVmPage;
 
 extern LosVmPage *g_vmPageArray;

@@ -220,6 +220,20 @@ LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID)
     return (seg->pageBase + (offset >> PAGE_SHIFT));
 }
 
+LosVmPage *OsVmPaddrToPage(paddr_t paddr)
+{
+    INT32 segID;
+    LosVmPage *vmPage = NULL;
+
+    for (segID = 0; segID < g_vmPhysSegNum; segID++) {
+        vmPage = OsVmPhysToPage(paddr, segID);
+        if (vmPage != NULL) {
+            return vmPage;
+        }
+    }
+    return NULL;
+}
+
 VOID *OsVmPageToVaddr(LosVmPage *page)
 {
     VADDR_T vaddr;
@@ -444,10 +458,22 @@ VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
 }
 
+PADDR_T OsKVaddrToPaddr(VADDR_T kvaddr)
+{
+    if (kvaddr == 0) {
+        return 0;
+    }
+    return (kvaddr - KERNEL_ASPACE_BASE + SYS_MEM_BASE);
+}
+
 VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 {
     struct VmPhysSeg *seg = NULL;
     UINT32 segID;
+
+    if (paddr == 0) {
+        return NULL;
+    }
 
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {
         seg = &g_vmPhysSeg[segID];
