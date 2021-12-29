@@ -38,7 +38,10 @@
 #define __LOS_ARCH_MMU_H__
 
 #include "los_typedef.h"
-#include "los_mux.h"
+#include "los_vm_phys.h"
+#ifndef LOSCFG_PAGE_TABLE_FINE_LOCK
+#include "los_spinlock.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -47,7 +50,9 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct ArchMmu {
-    LosMux              mtx;            /**< arch mmu page table entry modification mutex lock */
+#ifndef LOSCFG_PAGE_TABLE_FINE_LOCK
+    SPIN_LOCK_S         lock;           /**< arch mmu page table entry modification spin lock */
+#endif
     VADDR_T             *virtTtb;       /**< translation table base virtual addr */
     PADDR_T             physTtb;        /**< translation table base phys addr */
     UINT32              asid;           /**< TLB asid */
