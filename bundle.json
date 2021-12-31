@@ -1,0 +1,59 @@
+{
+    "name": "@ohos/kernel_liteos_a",
+    "version": "",
+    "description": "liteos-a内核",
+    "homePage": "https://gitee.com/openharmony",
+    "license": "BSD 3-clause",
+    "repository": "https://gitee.com/openharmony/kernel_liteos_a",
+    "domain": "os",
+    "language": "",
+    "publishAs": "code-segment",
+    "private": false,
+    "scripts": {},
+    "tags": [
+        "kernel"
+    ],
+    "keywords": [
+        "kernel",
+        "liteos-a"
+    ],
+    "envs": [],
+    "dirs": [],
+    "author": {
+        "name": "",
+        "email": "",
+        "url": ""
+    },
+    "contributors": [
+        {
+            "name": "",
+            "email": "",
+            "url": ""
+        }
+    ],
+    "segment": {
+        "destPath": "kernel/liteos_a"
+    },
+    "component": {
+        "name": "liteos-a",
+        "subsystem": "liteos_a",
+        "syscap": [
+            "SystemCapability.Kernel.liteos-a"
+        ],
+        "features": [],
+        "adated_system_type": [
+            "small"
+        ],
+        "rom": "",
+        "ram": "",
+        "deps": {
+            "components": [],
+            "third_party": []
+        },
+        "build": {
+            "sub_component": [],
+            "inner_kits": [],
+            "test": []
+        }
+    }
+}
