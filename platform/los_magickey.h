@@ -46,7 +46,7 @@ typedef struct {
     CHAR magicKey;
 } MagicKeyOp;
 
-extern INT32 CheckMagicKey(CHAR key);
+extern INT32 CheckMagicKey(CHAR key, UINT16 consoleId);
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -436,17 +436,16 @@ STATIC VOID StoreReadChar(CONSOLE_CB *consoleCB, char ch, INT32 readcount)
     }
 }
 
-VOID KillPgrp()
+VOID KillPgrp(UINT16 consoleId)
 {
-    INT32 consoleId;
-    LosProcessCB *process = OsCurrProcessGet();
-
-    if ((process->consoleID > CONSOLE_NUM - 1) || (process->consoleID < 0)) {
+    if ((consoleId > CONSOLE_NUM) || (consoleId <= 0)) {
         return;
     }
-
-    consoleId = process->consoleID;
-    CONSOLE_CB *consoleCB = g_console[consoleId];
+    CONSOLE_CB *consoleCB = g_console[consoleId-1];
+    /* the default of consoleCB->pgrpId is -1, may not be set yet, avoid killing all processes */
+    if (consoleCB->pgrpId < 0) {
+        return;
+    }
     (VOID)OsKillLock(consoleCB->pgrpId, SIGINT);
 }
 
