@@ -35,6 +35,7 @@ local_flags = [
   "-fbuiltin",
   "-Wno-narrowing",
   "-fPIE",
+  "-Wno-error",
 ]
 if (LOSCFG_USER_TEST_SMP == "enable" ||
     (LOSCFG_USER_TEST_SMP == "default" && board_name == "hispark_taurus")) {
