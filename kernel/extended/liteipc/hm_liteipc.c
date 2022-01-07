@@ -862,7 +862,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckMsgSize(IpcMsg *msg)
             totalSize += obj->content.ptr.buffSz;
         }
     }
-    (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
+    (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
     if (totalSize > g_cmsTask.maxMsgSize) {
         (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
         return -EINVAL;
