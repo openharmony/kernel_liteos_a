@@ -479,16 +479,6 @@ VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
 
 VADDR_T *LOS_PaddrToKVaddr(PADDR_T paddr)
 {
-    struct VmPhysSeg *seg = NULL;
-    UINT32 segID;
-
-    for (segID = 0; segID < g_vmPhysSegNum; segID++) {
-        seg = &g_vmPhysSeg[segID];
-        if ((paddr >= seg->start) && (paddr < (seg->start + seg->size))) {
-            return (VADDR_T *)(UINTPTR)(paddr - SYS_MEM_BASE + KERNEL_ASPACE_BASE);
-        }
-    }
-
     return (VADDR_T *)(UINTPTR)(paddr - SYS_MEM_BASE + KERNEL_ASPACE_BASE);
 }
 
