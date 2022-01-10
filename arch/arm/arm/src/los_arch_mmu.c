@@ -39,14 +39,21 @@
 #include "los_pte_ops.h"
 #include "los_tlb_v6.h"
 #include "los_printf.h"
-#include "los_vm_phys.h"
 #include "los_vm_common.h"
 #include "los_vm_map.h"
 #include "los_vm_boot.h"
 #include "los_mmu_descriptor_v6.h"
-
+#include "los_process_pri.h"
 
 #ifdef LOSCFG_KERNEL_MMU
+typedef struct {
+    LosArchMmu *archMmu;
+    VADDR_T *vaddr;
+    PADDR_T *paddr;
+    UINT32 *flags;
+} MmuMapInfo;
+
+#define TRY_MAX_TIMES 10
 
 __attribute__((aligned(MMU_DESCRIPTOR_L1_SMALL_ENTRY_NUMBERS))) \
     __attribute__((section(".bss.prebss.translation_table"))) UINT8 \
@@ -60,6 +67,75 @@ UINT8 *g_mmuJumpPageTable = g_tempPageTable;
 extern CHAR __mmu_ttlb_begin; /* defined in .ld script */
 UINT8 *g_mmuJumpPageTable = (UINT8 *)&__mmu_ttlb_begin; /* temp page table, this is only used when system power up */
 #endif
+
+STATIC SPIN_LOCK_S *OsGetPteLock(LosArchMmu *archMmu, PADDR_T paddr, UINT32 *intSave)
+{
+    SPIN_LOCK_S *lock = NULL;
+#ifdef LOSCFG_PAGE_TABLE_FINE_LOCK
+    LosVmPage *vmPage = NULL;
+
+    vmPage = OsVmPaddrToPage(paddr);
+    if (vmPage == NULL) {
+        return NULL;
+    }
+    lock = &vmPage->lock;
+#else
+    lock = &archMmu->lock;
+#endif
+
+    LOS_SpinLockSave(lock, intSave);
+    return lock;
+}
+
+STATIC SPIN_LOCK_S *OsGetPte1Lock(LosArchMmu *archMmu, PADDR_T paddr, UINT32 *intSave)
+{
+    return OsGetPteLock(archMmu, paddr, intSave);
+}
+
+STATIC INLINE VOID OsUnlockPte1(SPIN_LOCK_S *lock, UINT32 intSave)
+{
+    if (lock == NULL) {
+        return;
+    }
+    LOS_SpinUnlockRestore(lock, intSave);
+}
+
+STATIC SPIN_LOCK_S *OsGetPte1LockTmp(LosArchMmu *archMmu, PADDR_T paddr, UINT32 *intSave)
+{
+    SPIN_LOCK_S *spinLock = NULL;
+#ifdef LOSCFG_PAGE_TABLE_FINE_LOCK
+    spinLock = OsGetPteLock(archMmu, paddr, intSave);
+#else
+    (VOID)archMmu;
+    (VOID)paddr;
+    (VOID)intSave;
+#endif
+    return spinLock;
+}
+
+STATIC INLINE VOID OsUnlockPte1Tmp(SPIN_LOCK_S *lock, UINT32 intSave)
+{
+#ifdef LOSCFG_PAGE_TABLE_FINE_LOCK
+    if (lock == NULL) {
+        return;
+    }
+    LOS_SpinUnlockRestore(lock, intSave);
+#else
+    (VOID)lock;
+    (VOID)intSave;
+#endif
+}
+
+STATIC INLINE SPIN_LOCK_S *OsGetPte2Lock(LosArchMmu *archMmu, PTE_T pte1, UINT32 *intSave)
+{
+    PADDR_T pa = MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(pte1);
+    return OsGetPteLock(archMmu, pa, intSave);
+}
+
+STATIC INLINE VOID OsUnlockPte2(SPIN_LOCK_S *lock, UINT32 intSave)
+{
+    return OsUnlockPte1(lock, intSave);
+}
 
 STATIC INLINE PTE_T *OsGetPte2BasePtr(PTE_T pte1)
 {
@@ -172,7 +248,7 @@ STATIC VOID OsPutL2Table(const LosArchMmu *archMmu, UINT32 l1Index, paddr_t l2Pa
 #endif
 }
 
-STATIC VOID OsTryUnmapL1PTE(const LosArchMmu *archMmu, vaddr_t vaddr, UINT32 scanIndex, UINT32 scanCount)
+STATIC VOID OsTryUnmapL1PTE(LosArchMmu *archMmu, PTE_T *l1Entry, vaddr_t vaddr, UINT32 scanIndex, UINT32 scanCount)
 {
     /*
      * Check if all pages related to this l1 entry are deallocated.
@@ -180,12 +256,22 @@ STATIC VOID OsTryUnmapL1PTE(const LosArchMmu *archMmu, vaddr_t vaddr, UINT32 sca
      * from scanIndex and wrapped around SECTION.
      */
     UINT32 l1Index;
-    PTE_T l1Entry;
     PTE_T *pte2BasePtr = NULL;
+    SPIN_LOCK_S *pte1Lock = NULL;
+    SPIN_LOCK_S *pte2Lock = NULL;
+    UINT32 pte1IntSave;
+    UINT32 pte2IntSave;
+    PTE_T pte1Val;
+    PADDR_T pte1Paddr;
 
-    pte2BasePtr = OsGetPte2BasePtr(OsGetPte1(archMmu->virtTtb, vaddr));
+    pte1Paddr = OsGetPte1Paddr(archMmu->physTtb, vaddr);
+    pte2Lock = OsGetPte2Lock(archMmu, *l1Entry, &pte2IntSave);
+    if (pte2Lock == NULL) {
+        return;
+    }
+    pte2BasePtr = OsGetPte2BasePtr(*l1Entry);
     if (pte2BasePtr == NULL) {
-        VM_ERR("pte2 base ptr is NULL");
+        OsUnlockPte2(pte2Lock, pte2IntSave);
         return;
     }
 
@@ -200,15 +286,27 @@ STATIC VOID OsTryUnmapL1PTE(const LosArchMmu *archMmu, vaddr_t vaddr, UINT32 sca
     }
 
     if (!scanCount) {
-        l1Index = OsGetPte1Index(vaddr);
-        l1Entry = archMmu->virtTtb[l1Index];
+        /*
+         * The pte1 of kprocess is placed in kernel image when compiled. So the pte1Lock will be null.
+         * There is no situation to simultaneous access the pte1 of kprocess.
+         */
+        pte1Lock = OsGetPte1LockTmp(archMmu, pte1Paddr, &pte1IntSave);
+        if (!OsIsPte1PageTable(*l1Entry)) {
+            OsUnlockPte1Tmp(pte1Lock, pte1IntSave);
+            OsUnlockPte2(pte2Lock, pte2IntSave);
+            return;
+        }
+        pte1Val = *l1Entry;
         /* we can kill l1 entry */
-        OsClearPte1(&archMmu->virtTtb[l1Index]);
+        OsClearPte1(l1Entry);
+        l1Index = OsGetPte1Index(vaddr);
         OsArmInvalidateTlbMvaNoBarrier(l1Index << MMU_DESCRIPTOR_L1_SMALL_SHIFT);
 
         /* try to free l2 page itself */
-        OsPutL2Table(archMmu, l1Index, MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(l1Entry));
+        OsPutL2Table(archMmu, l1Index, MMU_DESCRIPTOR_L1_PAGE_TABLE_ADDR(pte1Val));
+        OsUnlockPte1Tmp(pte1Lock, pte1IntSave);
     }
+    OsUnlockPte2(pte2Lock, pte2IntSave);
 }
 
 STATIC UINT32 OsCvtSecCacheFlagsToMMUFlags(UINT32 flags)
@@ -340,34 +438,54 @@ STATIC VOID OsCvtSecAttsToFlags(PTE_T l1Entry, UINT32 *flags)
     }
 }
 
-STATIC UINT32 OsUnmapL2PTE(const LosArchMmu *archMmu, vaddr_t vaddr, UINT32 *count)
+STATIC UINT32 OsUnmapL2PTE(LosArchMmu *archMmu, PTE_T *pte1, vaddr_t vaddr, UINT32 *count)
 {
     UINT32 unmapCount;
     UINT32 pte2Index;
+    UINT32 intSave;
     PTE_T *pte2BasePtr = NULL;
-
-    pte2BasePtr = OsGetPte2BasePtr(OsGetPte1((PTE_T *)archMmu->virtTtb, vaddr));
-    if (pte2BasePtr == NULL) {
-        LOS_Panic("%s %d, pte2 base ptr is NULL\n", __FUNCTION__, __LINE__);
-    }
+    SPIN_LOCK_S *lock = NULL;
 
     pte2Index = OsGetPte2Index(vaddr);
     unmapCount = MIN2(MMU_DESCRIPTOR_L2_NUMBERS_PER_L1 - pte2Index, *count);
+
+    lock = OsGetPte2Lock(archMmu, *pte1, &intSave);
+    if (lock == NULL) {
+        return unmapCount;
+    }
+
+    pte2BasePtr = OsGetPte2BasePtr(*pte1);
+    if (pte2BasePtr == NULL) {
+        OsUnlockPte2(lock, intSave);
+        return unmapCount;
+    }
 
     /* unmap page run */
     OsClearPte2Continuous(&pte2BasePtr[pte2Index], unmapCount);
 
     /* invalidate tlb */
     OsArmInvalidateTlbMvaRangeNoBarrier(vaddr, unmapCount);
+    OsUnlockPte2(lock, intSave);
 
     *count -= unmapCount;
     return unmapCount;
 }
 
-STATIC UINT32 OsUnmapSection(LosArchMmu *archMmu, vaddr_t *vaddr, UINT32 *count)
+STATIC UINT32 OsUnmapSection(LosArchMmu *archMmu, PTE_T *l1Entry, vaddr_t *vaddr, UINT32 *count)
 {
+    UINT32 intSave;
+    PADDR_T pte1Paddr;
+    SPIN_LOCK_S *lock = NULL;
+
+    pte1Paddr = OsGetPte1Paddr(archMmu->physTtb, *vaddr);
+    lock = OsGetPte1Lock(archMmu, pte1Paddr, &intSave);
+    if (!OsIsPte1Section(*l1Entry)) {
+        OsUnlockPte1(lock, intSave);
+        return 0;
+    }
     OsClearPte1(OsGetPte1Ptr((PTE_T *)archMmu->virtTtb, *vaddr));
     OsArmInvalidateTlbMvaNoBarrier(*vaddr);
+    OsUnlockPte1(lock, intSave);
 
     *vaddr += MMU_DESCRIPTOR_L1_SMALL_SIZE;
     *count -= MMU_DESCRIPTOR_L2_NUMBERS_PER_L1;
@@ -384,12 +502,9 @@ BOOL OsArchMmuInit(LosArchMmu *archMmu, VADDR_T *virtTtb)
     }
 #endif
 
-    status_t retval = LOS_MuxInit(&archMmu->mtx, NULL);
-    if (retval != LOS_OK) {
-        VM_ERR("Create mutex for arch mmu failed, status: %d", retval);
-        return FALSE;
-    }
-
+#ifndef LOSCFG_PAGE_TABLE_FINE_LOCK
+    LOS_SpinInit(&archMmu->lock);
+#endif
     LOS_ListInit(&archMmu->ptList);
     archMmu->virtTtb = virtTtb;
     archMmu->physTtb = (VADDR_T)(UINTPTR)virtTtb - KERNEL_ASPACE_BASE + SYS_MEM_BASE;
@@ -438,27 +553,32 @@ STATUS_T LOS_ArchMmuQuery(const LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T *pad
 
 STATUS_T LOS_ArchMmuUnmap(LosArchMmu *archMmu, VADDR_T vaddr, size_t count)
 {
-    PTE_T l1Entry;
+    PTE_T *l1Entry = NULL;
     INT32 unmapped = 0;
     UINT32 unmapCount = 0;
+    INT32 tryTime = TRY_MAX_TIMES;
 
     while (count > 0) {
-        l1Entry = OsGetPte1(archMmu->virtTtb, vaddr);
-        if (OsIsPte1Invalid(l1Entry)) {
+        l1Entry = OsGetPte1Ptr(archMmu->virtTtb, vaddr);
+        if (OsIsPte1Invalid(*l1Entry)) {
             unmapCount = OsUnmapL1Invalid(&vaddr, &count);
-        } else if (OsIsPte1Section(l1Entry)) {
+        } else if (OsIsPte1Section(*l1Entry)) {
             if (MMU_DESCRIPTOR_IS_L1_SIZE_ALIGNED(vaddr) && count >= MMU_DESCRIPTOR_L2_NUMBERS_PER_L1) {
-                unmapCount = OsUnmapSection(archMmu, &vaddr, &count);
+                unmapCount = OsUnmapSection(archMmu, l1Entry, &vaddr, &count);
             } else {
                 LOS_Panic("%s %d, unimplemented\n", __FUNCTION__, __LINE__);
             }
-        } else if (OsIsPte1PageTable(l1Entry)) {
-            unmapCount = OsUnmapL2PTE(archMmu, vaddr, &count);
-            OsTryUnmapL1PTE(archMmu, vaddr, OsGetPte2Index(vaddr) + unmapCount,
-                            MMU_DESCRIPTOR_L2_NUMBERS_PER_L1 - unmapCount);
+        } else if (OsIsPte1PageTable(*l1Entry)) {
+            unmapCount = OsUnmapL2PTE(archMmu, l1Entry, vaddr, &count);
+            OsTryUnmapL1PTE(archMmu, l1Entry, vaddr, OsGetPte2Index(vaddr) + unmapCount,
+                            MMU_DESCRIPTOR_L2_NUMBERS_PER_L1);
             vaddr += unmapCount << MMU_DESCRIPTOR_L2_SMALL_SHIFT;
         } else {
             LOS_Panic("%s %d, unimplemented\n", __FUNCTION__, __LINE__);
+        }
+        tryTime = (unmapCount == 0) ? (tryTime - 1) : tryTime;
+        if (tryTime == 0) {
+            return LOS_ERRNO_VM_FAULT;
         }
         unmapped += unmapCount;
     }
@@ -466,17 +586,22 @@ STATUS_T LOS_ArchMmuUnmap(LosArchMmu *archMmu, VADDR_T vaddr, size_t count)
     return unmapped;
 }
 
-STATIC UINT32 OsMapSection(const LosArchMmu *archMmu, UINT32 flags, VADDR_T *vaddr,
-                           PADDR_T *paddr, UINT32 *count)
+STATIC UINT32 OsMapSection(MmuMapInfo *mmuMapInfo, UINT32 *count)
 {
     UINT32 mmuFlags = 0;
+    UINT32 intSave;
+    PADDR_T pte1Paddr;
+    SPIN_LOCK_S *lock = NULL;
 
-    mmuFlags |= OsCvtSecFlagsToAttrs(flags);
-    OsSavePte1(OsGetPte1Ptr(archMmu->virtTtb, *vaddr),
-        OsTruncPte1(*paddr) | mmuFlags | MMU_DESCRIPTOR_L1_TYPE_SECTION);
+    mmuFlags |= OsCvtSecFlagsToAttrs(*mmuMapInfo->flags);
+    pte1Paddr = OsGetPte1Paddr(mmuMapInfo->archMmu->physTtb, *mmuMapInfo->vaddr);
+    lock = OsGetPte1Lock(mmuMapInfo->archMmu, pte1Paddr, &intSave);
+    OsSavePte1(OsGetPte1Ptr(mmuMapInfo->archMmu->virtTtb, *mmuMapInfo->vaddr),
+        OsTruncPte1(*mmuMapInfo->paddr) | mmuFlags | MMU_DESCRIPTOR_L1_TYPE_SECTION);
+    OsUnlockPte1(lock, intSave);
     *count -= MMU_DESCRIPTOR_L2_NUMBERS_PER_L1;
-    *vaddr += MMU_DESCRIPTOR_L1_SMALL_SIZE;
-    *paddr += MMU_DESCRIPTOR_L1_SMALL_SIZE;
+    *mmuMapInfo->vaddr += MMU_DESCRIPTOR_L1_SMALL_SIZE;
+    *mmuMapInfo->paddr += MMU_DESCRIPTOR_L1_SMALL_SIZE;
 
     return MMU_DESCRIPTOR_L2_NUMBERS_PER_L1;
 }
@@ -517,25 +642,8 @@ STATIC STATUS_T OsGetL2Table(LosArchMmu *archMmu, UINT32 l1Index, paddr_t *ppa)
     (VOID)memset_s(kvaddr, MMU_DESCRIPTOR_L2_SMALL_SIZE, 0, MMU_DESCRIPTOR_L2_SMALL_SIZE);
 
     /* get physical address */
-    *ppa = LOS_PaddrQuery(kvaddr) + l2Offset;
+    *ppa = OsKVaddrToPaddr((VADDR_T)kvaddr) + l2Offset;
     return LOS_OK;
-}
-
-STATIC VOID OsMapL1PTE(LosArchMmu *archMmu, PTE_T *pte1Ptr, vaddr_t vaddr, UINT32 flags)
-{
-    paddr_t pte2Base = 0;
-
-    if (OsGetL2Table(archMmu, OsGetPte1Index(vaddr), &pte2Base) != LOS_OK) {
-        LOS_Panic("%s %d, failed to allocate pagetable\n", __FUNCTION__, __LINE__);
-    }
-
-    *pte1Ptr = pte2Base | MMU_DESCRIPTOR_L1_TYPE_PAGE_TABLE;
-    if (flags & VM_MAP_REGION_FLAG_NS) {
-        *pte1Ptr |= MMU_DESCRIPTOR_L1_PAGETABLE_NON_SECURE;
-    }
-    *pte1Ptr &= MMU_DESCRIPTOR_L1_SMALL_DOMAIN_MASK;
-    *pte1Ptr |= MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT; // use client AP
-    OsSavePte1(OsGetPte1Ptr(archMmu->virtTtb, vaddr), *pte1Ptr);
 }
 
 STATIC UINT32 OsCvtPte2CacheFlagsToMMUFlags(UINT32 flags)
@@ -618,32 +726,93 @@ STATIC UINT32 OsCvtPte2FlagsToAttrs(UINT32 flags)
     return mmuFlags;
 }
 
-STATIC UINT32 OsMapL2PageContinuous(PTE_T pte1, UINT32 flags, VADDR_T *vaddr, PADDR_T *paddr, UINT32 *count)
+STATIC UINT32 OsMapL1PTE(MmuMapInfo *mmuMapInfo, PTE_T *l1Entry, UINT32 *count)
+{
+    PADDR_T pte2Base = 0;
+    PADDR_T pte1Paddr;
+    SPIN_LOCK_S *pte1Lock = NULL;
+    SPIN_LOCK_S *pte2Lock = NULL;
+    PTE_T *pte2BasePtr = NULL;
+    UINT32 saveCounts, archFlags, pte1IntSave, pte2IntSave;
+
+    pte1Paddr = OsGetPte1Paddr(mmuMapInfo->archMmu->physTtb, *mmuMapInfo->vaddr);
+    pte1Lock = OsGetPte1Lock(mmuMapInfo->archMmu, pte1Paddr, &pte1IntSave);
+    if (!OsIsPte1Invalid(*l1Entry)) {
+        OsUnlockPte1(pte1Lock, pte1IntSave);
+        return 0;
+    }
+    if (OsGetL2Table(mmuMapInfo->archMmu, OsGetPte1Index(*mmuMapInfo->vaddr), &pte2Base) != LOS_OK) {
+        LOS_Panic("%s %d, failed to allocate pagetable\n", __FUNCTION__, __LINE__);
+    }
+
+    *l1Entry = pte2Base | MMU_DESCRIPTOR_L1_TYPE_PAGE_TABLE;
+    if (*mmuMapInfo->flags & VM_MAP_REGION_FLAG_NS) {
+        *l1Entry |= MMU_DESCRIPTOR_L1_PAGETABLE_NON_SECURE;
+    }
+    *l1Entry &= MMU_DESCRIPTOR_L1_SMALL_DOMAIN_MASK;
+    *l1Entry |= MMU_DESCRIPTOR_L1_SMALL_DOMAIN_CLIENT; // use client AP
+    OsSavePte1(OsGetPte1Ptr(mmuMapInfo->archMmu->virtTtb, *mmuMapInfo->vaddr), *l1Entry);
+    OsUnlockPte1(pte1Lock, pte1IntSave);
+
+    pte2Lock = OsGetPte2Lock(mmuMapInfo->archMmu, *l1Entry, &pte2IntSave);
+    if (pte2Lock == NULL) {
+        LOS_Panic("pte2 should not be null!\n");
+    }
+    pte2BasePtr = (PTE_T *)LOS_PaddrToKVaddr(pte2Base);
+
+    /* compute the arch flags for L2 4K pages */
+    archFlags = OsCvtPte2FlagsToAttrs(*mmuMapInfo->flags);
+    saveCounts = OsSavePte2Continuous(pte2BasePtr, OsGetPte2Index(*mmuMapInfo->vaddr), *mmuMapInfo->paddr | archFlags,
+                                      *count);
+    OsUnlockPte2(pte2Lock, pte2IntSave);
+    *mmuMapInfo->paddr += (saveCounts << MMU_DESCRIPTOR_L2_SMALL_SHIFT);
+    *mmuMapInfo->vaddr += (saveCounts << MMU_DESCRIPTOR_L2_SMALL_SHIFT);
+    *count -= saveCounts;
+    return saveCounts;
+}
+
+STATIC UINT32 OsMapL2PageContinous(MmuMapInfo *mmuMapInfo, PTE_T *pte1, UINT32 *count)
 {
     PTE_T *pte2BasePtr = NULL;
     UINT32 archFlags;
     UINT32 saveCounts;
+    UINT32 intSave;
+    SPIN_LOCK_S *lock = NULL;
 
-    pte2BasePtr = OsGetPte2BasePtr(pte1);
+    lock = OsGetPte2Lock(mmuMapInfo->archMmu, *pte1, &intSave);
+    if (lock == NULL) {
+        return 0;
+    }
+    pte2BasePtr = OsGetPte2BasePtr(*pte1);
     if (pte2BasePtr == NULL) {
-        LOS_Panic("%s %d, pte1 %#x error\n", __FUNCTION__, __LINE__, pte1);
+        OsUnlockPte2(lock, intSave);
+        return 0;
     }
 
     /* compute the arch flags for L2 4K pages */
-    archFlags = OsCvtPte2FlagsToAttrs(flags);
-    saveCounts = OsSavePte2Continuous(pte2BasePtr, OsGetPte2Index(*vaddr), *paddr | archFlags, *count);
-    *paddr += (saveCounts << MMU_DESCRIPTOR_L2_SMALL_SHIFT);
-    *vaddr += (saveCounts << MMU_DESCRIPTOR_L2_SMALL_SHIFT);
+    archFlags = OsCvtPte2FlagsToAttrs(*mmuMapInfo->flags);
+    saveCounts = OsSavePte2Continuous(pte2BasePtr, OsGetPte2Index(*mmuMapInfo->vaddr), *mmuMapInfo->paddr | archFlags,
+                                      *count);
+    OsUnlockPte2(lock, intSave);
+    *mmuMapInfo->paddr += (saveCounts << MMU_DESCRIPTOR_L2_SMALL_SHIFT);
+    *mmuMapInfo->vaddr += (saveCounts << MMU_DESCRIPTOR_L2_SMALL_SHIFT);
     *count -= saveCounts;
     return saveCounts;
 }
 
 status_t LOS_ArchMmuMap(LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T paddr, size_t count, UINT32 flags)
 {
-    PTE_T l1Entry;
+    PTE_T *l1Entry = NULL;
     UINT32 saveCounts = 0;
     INT32 mapped = 0;
+    INT32 tryTime = TRY_MAX_TIMES;
     INT32 checkRst;
+    MmuMapInfo mmuMapInfo = {
+        .archMmu = archMmu,
+        .vaddr = &vaddr,
+        .paddr = &paddr,
+        .flags = &flags,
+    };
 
     checkRst = OsMapParamCheck(flags, vaddr, paddr);
     if (checkRst < 0) {
@@ -652,24 +821,27 @@ status_t LOS_ArchMmuMap(LosArchMmu *archMmu, VADDR_T vaddr, PADDR_T paddr, size_
 
     /* see what kind of mapping we can use */
     while (count > 0) {
-        if (MMU_DESCRIPTOR_IS_L1_SIZE_ALIGNED(vaddr) &&
-            MMU_DESCRIPTOR_IS_L1_SIZE_ALIGNED(paddr) &&
+        if (MMU_DESCRIPTOR_IS_L1_SIZE_ALIGNED(*mmuMapInfo.vaddr) &&
+            MMU_DESCRIPTOR_IS_L1_SIZE_ALIGNED(*mmuMapInfo.paddr) &&
             count >= MMU_DESCRIPTOR_L2_NUMBERS_PER_L1) {
             /* compute the arch flags for L1 sections cache, r ,w ,x, domain and type */
-            saveCounts = OsMapSection(archMmu, flags, &vaddr, &paddr, &count);
+            saveCounts = OsMapSection(&mmuMapInfo, &count);
         } else {
             /* have to use a L2 mapping, we only allocate 4KB for L1, support 0 ~ 1GB */
-            l1Entry = OsGetPte1(archMmu->virtTtb, vaddr);
-            if (OsIsPte1Invalid(l1Entry)) {
-                OsMapL1PTE(archMmu, &l1Entry, vaddr, flags);
-                saveCounts = OsMapL2PageContinuous(l1Entry, flags, &vaddr, &paddr, &count);
-            } else if (OsIsPte1PageTable(l1Entry)) {
-                saveCounts = OsMapL2PageContinuous(l1Entry, flags, &vaddr, &paddr, &count);
+            l1Entry = OsGetPte1Ptr(archMmu->virtTtb, *mmuMapInfo.vaddr);
+            if (OsIsPte1Invalid(*l1Entry)) {
+                saveCounts = OsMapL1PTE(&mmuMapInfo, l1Entry, &count);
+            } else if (OsIsPte1PageTable(*l1Entry)) {
+                saveCounts = OsMapL2PageContinous(&mmuMapInfo, l1Entry, &count);
             } else {
                 LOS_Panic("%s %d, unimplemented tt_entry %x\n", __FUNCTION__, __LINE__, l1Entry);
             }
         }
         mapped += saveCounts;
+        tryTime = (saveCounts == 0) ? (tryTime - 1) : tryTime;
+        if (tryTime == 0) {
+            return LOS_ERRNO_VM_TIMED_OUT;
+        }
     }
 
     return mapped;
@@ -793,7 +965,6 @@ STATUS_T LOS_ArchMmuDestroy(LosArchMmu *archMmu)
     OsArmWriteTlbiasidis(archMmu->asid);
     OsFreeAsid(archMmu->asid);
 #endif
-    (VOID)LOS_MuxDestroy(&archMmu->mtx);
     return LOS_OK;
 }
 
@@ -862,7 +1033,7 @@ STATIC VOID OsSetKSectionAttr(UINTPTR virtAddr, BOOL uncached)
     LosVmSpace *kSpace = LOS_GetKVmSpace();
     status_t status;
     UINT32 length;
-    int i;
+    INT32 i;
     LosArchMmuInitMapping *kernelMap = NULL;
     UINT32 kmallocLength;
     UINT32 flags;
@@ -965,5 +1136,4 @@ VOID OsInitMappingStartUp(VOID)
     OsKSectionNewAttrEnable();
 }
 #endif
-
 
