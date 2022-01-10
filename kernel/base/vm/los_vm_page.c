@@ -50,6 +50,9 @@ STATIC VOID OsVmPageInit(LosVmPage *page, paddr_t pa, UINT8 segID)
     page->segID = segID;
     page->order = VM_LIST_ORDER_MAX;
     page->nPages = 0;
+#ifdef LOSCFG_PAGE_TABLE_FINE_LOCK
+    LOS_SpinInit(&page->lock);
+#endif
 }
 
 STATIC INLINE VOID OsVmPageOrderListInit(LosVmPage *page, size_t nPages)
