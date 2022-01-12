@@ -118,7 +118,10 @@ static int GetFullpathNull(int fd, const char *path, char **filePath)
         if (ret < 0) {
             return -get_errno();
         }
-        fullPath = file->f_path;
+        fullPath = strdup(file->f_path);
+        if (fullPath == NULL) {
+            ret = -ENOMEM;
+        }
     } else {
         ret = GetFullpath(fd, path, &fullPath);
         if (ret < 0) {
