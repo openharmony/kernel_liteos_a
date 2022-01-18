@@ -77,30 +77,6 @@ STATIC INLINE VOID OsAddNode2SortLink(SortLinkAttribute *sortLinkHeader, SortLin
     } while (1);
 }
 
-VOID OsDeleteNodeSortLink(SortLinkAttribute *sortLinkHeader, SortLinkList *sortList)
-{
-    LOS_ListDelete(&sortList->sortLinkNode);
-    SET_SORTLIST_VALUE(sortList, OS_SORT_LINK_INVALID_TIME);
-    sortLinkHeader->nodeNum--;
-}
-
-STATIC INLINE UINT64 OsGetSortLinkNextExpireTime(SortLinkAttribute *sortHeader, UINT64 startTime)
-{
-    LOS_DL_LIST *head = &sortHeader->sortLink;
-    LOS_DL_LIST *list = head->pstNext;
-
-    if (LOS_ListEmpty(head)) {
-        return OS_SCHED_MAX_RESPONSE_TIME - OS_TICK_RESPONSE_PRECISION;
-    }
-
-    SortLinkList *listSorted = LOS_DL_LIST_ENTRY(list, SortLinkList, sortLinkNode);
-    if (listSorted->responseTime <= (startTime + OS_TICK_RESPONSE_PRECISION)) {
-        return startTime + OS_TICK_RESPONSE_PRECISION;
-    }
-
-    return listSorted->responseTime;
-}
-
 STATIC Percpu *OsFindIdleCpu(UINT16 *idleCpuID)
 {
     Percpu *idleCpu = OsPercpuGetByID(0);
@@ -127,7 +103,6 @@ STATIC Percpu *OsFindIdleCpu(UINT16 *idleCpuID)
 
 VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, SortLinkType type)
 {
-    UINT32 intSave;
     Percpu *cpu = NULL;
     SortLinkAttribute *sortLinkHeader = NULL;
     SPIN_LOCK_S *spinLock = NULL;
@@ -150,7 +125,7 @@ VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, Sort
         LOS_Panic("Sort link type error : %u\n", type);
     }
 
-    LOS_SpinLockSave(spinLock, &intSave);
+    LOS_SpinLock(spinLock);
     SET_SORTLIST_VALUE(node, startTime + (UINT64)waitTicks * OS_CYCLE_PER_TICK);
     OsAddNode2SortLink(sortLinkHeader, node);
 #ifdef LOSCFG_KERNEL_SMP
@@ -159,12 +134,11 @@ VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, Sort
         LOS_MpSchedule(CPUID_TO_AFFI_MASK(idleCpu));
     }
 #endif
-    LOS_SpinUnlockRestore(spinLock, intSave);
+    LOS_SpinUnlock(spinLock);
 }
 
 VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type)
 {
-    UINT32 intSave;
 #ifdef LOSCFG_KERNEL_SMP
     Percpu *cpu = OsPercpuGetByID(node->cpuid);
 #else
@@ -183,29 +157,11 @@ VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type)
         LOS_Panic("Sort link type error : %u\n", type);
     }
 
-    LOS_SpinLockSave(spinLock, &intSave);
+    LOS_SpinLock(spinLock);
     if (node->responseTime != OS_SORT_LINK_INVALID_TIME) {
         OsDeleteNodeSortLink(sortLinkHeader, node);
     }
-    LOS_SpinUnlockRestore(spinLock, intSave);
-}
-
-UINT64 OsGetNextExpireTime(UINT64 startTime)
-{
-    UINT32 intSave;
-    Percpu *cpu = OsPercpuGet();
-    SortLinkAttribute *taskHeader = &cpu->taskSortLink;
-    SortLinkAttribute *swtmrHeader = &cpu->swtmrSortLink;
-
-    LOS_SpinLockSave(&cpu->taskSortLinkSpin, &intSave);
-    UINT64 taskExpirTime = OsGetSortLinkNextExpireTime(taskHeader, startTime);
-    LOS_SpinUnlockRestore(&cpu->taskSortLinkSpin, intSave);
-
-    LOS_SpinLockSave(&cpu->swtmrSortLinkSpin, &intSave);
-    UINT64 swtmrExpirTime = OsGetSortLinkNextExpireTime(swtmrHeader, startTime);
-    LOS_SpinUnlockRestore(&cpu->swtmrSortLinkSpin, intSave);
-
-    return (taskExpirTime < swtmrExpirTime) ? taskExpirTime : swtmrExpirTime;
+    LOS_SpinUnlock(spinLock);
 }
 
 UINT32 OsSortLinkGetTargetExpireTime(const SortLinkList *targetSortList)

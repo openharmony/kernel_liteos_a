@@ -32,6 +32,7 @@
 #include "los_sched_pri.h"
 #include "los_hw_pri.h"
 #include "los_task_pri.h"
+#include "los_swtmr_pri.h"
 #include "los_process_pri.h"
 #include "los_arch_mmu.h"
 #include "los_hook.h"
@@ -75,8 +76,6 @@ typedef struct {
 } Sched;
 
 STATIC Sched *g_sched = NULL;
-STATIC UINT64 g_schedTickMaxResponseTime;
-UINT64 g_sysSchedStartTime = OS_64BIT_MAX;
 
 #ifdef LOSCFG_SCHED_TICK_DEBUG
 #define OS_SCHED_DEBUG_DATA_NUM  1000
@@ -237,30 +236,6 @@ UINT32 OsShellShowSchedParam(VOID)
 }
 #endif
 
-UINT32 OsSchedSetTickTimerType(UINT32 timerType)
-{
-    switch (timerType) {
-        case 32: /* 32 bit timer */
-            g_schedTickMaxResponseTime = OS_32BIT_MAX;
-            break;
-        case 64: /* 64 bit timer */
-            g_schedTickMaxResponseTime = OS_64BIT_MAX;
-            break;
-        default:
-            PRINT_ERR("Unsupported Tick Timer type, The system only supports 32 and 64 bit tick timers\n");
-            return LOS_NOK;
-    }
-
-    return LOS_OK;
-}
-
-STATIC VOID OsSchedSetStartTime(UINT64 currCycle)
-{
-    if (g_sysSchedStartTime == OS_64BIT_MAX) {
-        g_sysSchedStartTime = currCycle;
-    }
-}
-
 STATIC INLINE VOID OsTimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
 {
     LOS_ASSERT(currTime >= taskCB->startTime);
@@ -283,54 +258,29 @@ STATIC INLINE VOID OsTimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
 #endif
 }
 
-STATIC INLINE VOID OsSchedTickReload(Percpu *currCpu, UINT64 nextResponseTime, UINT32 responseID, BOOL isTimeSlice)
+STATIC INLINE UINT64 GetNextExpireTime(Percpu *cpu, UINT64 startTime, UINT32 tickPrecision)
 {
-    UINT64 currTime, nextExpireTime;
-    UINT32 usedTime;
+    SortLinkAttribute *taskHeader = &cpu->taskSortLink;
+    SortLinkAttribute *swtmrHeader = &cpu->swtmrSortLink;
 
-    currTime = OsGetCurrSchedTimeCycle();
-    if (currCpu->tickStartTime != 0) {
-        usedTime = currTime - currCpu->tickStartTime;
-        currCpu->tickStartTime = 0;
-    } else {
-        usedTime = 0;
-    }
+    LOS_SpinLock(&cpu->taskSortLinkSpin);
+    UINT64 taskExpireTime = OsGetSortLinkNextExpireTime(taskHeader, startTime, tickPrecision);
+    LOS_SpinUnlock(&cpu->taskSortLinkSpin);
 
-    if ((nextResponseTime > usedTime) && ((nextResponseTime - usedTime) > OS_TICK_RESPONSE_PRECISION)) {
-        nextResponseTime -= usedTime;
-    } else {
-        nextResponseTime = OS_TICK_RESPONSE_PRECISION;
-    }
+    LOS_SpinLock(&cpu->swtmrSortLinkSpin);
+    UINT64 swtmrExpireTime = OsGetSortLinkNextExpireTime(swtmrHeader, startTime, tickPrecision);
+    LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 
-    nextExpireTime = currTime + nextResponseTime;
-    if (nextExpireTime >= currCpu->responseTime) {
-        return;
-    }
-
-    if (isTimeSlice) {
-        /* The expiration time of the current system is the thread's slice expiration time */
-        currCpu->responseID = responseID;
-    } else {
-        currCpu->responseID = OS_INVALID_VALUE;
-    }
-    currCpu->responseTime = nextExpireTime;
-    HalClockTickTimerReload(nextResponseTime);
-
-#ifdef LOSCFG_SCHED_TICK_DEBUG
-    SchedTickDebug *schedDebug = &g_schedTickDebug[ArchCurrCpuid()];
-    if (schedDebug->index < OS_SCHED_DEBUG_DATA_NUM) {
-        schedDebug->setTickCount++;
-    }
-#endif
+    return (taskExpireTime < swtmrExpireTime) ? taskExpireTime : swtmrExpireTime;
 }
 
 STATIC INLINE VOID OsSchedSetNextExpireTime(UINT64 startTime, UINT32 responseID,
                                             UINT64 taskEndTime, UINT32 oldResponseID)
 {
-    UINT64 nextExpireTime = OsGetNextExpireTime(startTime);
     Percpu *currCpu = OsPercpuGet();
-    UINT64 nextResponseTime;
+    UINT64 nextResponseTime = 0;
     BOOL isTimeSlice = FALSE;
+    UINT64 nextExpireTime = GetNextExpireTime(currCpu, startTime, OS_TICK_RESPONSE_PRECISION);
 
     currCpu->schedFlag &= ~INT_PEND_TICK;
     if (currCpu->responseID == oldResponseID) {
@@ -346,19 +296,35 @@ STATIC INLINE VOID OsSchedSetNextExpireTime(UINT64 startTime, UINT32 responseID,
         isTimeSlice = TRUE;
     }
 
-    if ((currCpu->responseTime > nextExpireTime) &&
-        ((currCpu->responseTime - nextExpireTime) >= OS_TICK_RESPONSE_PRECISION)) {
-        nextResponseTime = nextExpireTime - startTime;
-        if (nextResponseTime > g_schedTickMaxResponseTime) {
-            nextResponseTime = g_schedTickMaxResponseTime;
-        }
-    } else {
-        /* There is no point earlier than the current expiration date */
-        currCpu->tickStartTime = 0;
+    if ((currCpu->responseTime <= nextExpireTime) ||
+        ((currCpu->responseTime - nextExpireTime) < OS_TICK_RESPONSE_PRECISION)) {
         return;
     }
 
-    OsSchedTickReload(currCpu, nextResponseTime, responseID, isTimeSlice);
+    UINT64 currTime = OsGetCurrSchedTimeCycle();
+    if (nextExpireTime >= currTime) {
+        nextResponseTime = nextExpireTime - currTime;
+    }
+
+    if (nextResponseTime < OS_TICK_RESPONSE_PRECISION) {
+        nextResponseTime = OS_TICK_RESPONSE_PRECISION;
+    }
+
+    if (isTimeSlice) {
+        /* The expiration time of the current system is the thread's slice expiration time */
+        currCpu->responseID = responseID;
+    } else {
+        currCpu->responseID = OS_INVALID_VALUE;
+    }
+
+    currCpu->responseTime = currTime + HalClockTickTimerReload(nextResponseTime);
+
+#ifdef LOSCFG_SCHED_TICK_DEBUG
+    SchedTickDebug *schedDebug = &g_schedTickDebug[ArchCurrCpuid()];
+    if (schedDebug->index < OS_SCHED_DEBUG_DATA_NUM) {
+        schedDebug->setTickCount++;
+    }
+#endif
 }
 
 VOID OsSchedUpdateExpireTime(UINT64 startTime)
@@ -843,9 +809,7 @@ VOID OsSchedTick(VOID)
     Sched *sched = g_sched;
     Percpu *currCpu = OsPercpuGet();
     BOOL needSched = FALSE;
-    LosTaskCB *runTask = OsCurrTaskGet();
 
-    currCpu->tickStartTime = runTask->irqStartTime;
     if (currCpu->responseID == OS_INVALID_VALUE) {
         if (sched->swtmrScan != NULL) {
             (VOID)sched->swtmrScan();
@@ -970,6 +934,8 @@ VOID OsSchedStart(VOID)
     UINT32 cpuid = ArchCurrCpuid();
     UINT32 intSave;
 
+    PRINTK("cpu %d entering scheduler\n", cpuid);
+
     SCHEDULER_LOCK(intSave);
 
     if (cpuid == 0) {
@@ -983,9 +949,6 @@ VOID OsSchedStart(VOID)
     newProcess->processStatus |= OS_PROCESS_STATUS_RUNNING;
     newProcess->processStatus = OS_PROCESS_RUNTASK_COUNT_ADD(newProcess->processStatus);
 
-    OsSchedSetStartTime(HalClockGetCycles());
-    newTask->startTime = OsGetCurrSchedTimeCycle();
-
 #ifdef LOSCFG_KERNEL_SMP
     /*
      * attention: current cpu needs to be set, in case first task deletion
@@ -996,13 +959,15 @@ VOID OsSchedStart(VOID)
 
     OsCurrTaskSet((VOID *)newTask);
 
+    newTask->startTime = OsGetCurrSchedTimeCycle();
+
+    OsSwtmrResponseTimeReset(newTask->startTime);
+
     /* System start schedule */
     OS_SCHEDULER_SET(cpuid);
 
     OsPercpuGet()->responseID = OS_INVALID;
     OsSchedSetNextExpireTime(newTask->startTime, newTask->taskID, newTask->startTime + newTask->timeSlice, OS_INVALID);
-
-    PRINTK("cpu %d entering scheduler\n", cpuid);
     OsTaskContextLoad(newTask);
 }
 
