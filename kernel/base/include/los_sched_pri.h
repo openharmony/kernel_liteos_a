@@ -52,15 +52,9 @@ extern "C" {
 extern UINT32 g_taskScheduled;
 typedef BOOL (*SchedScan)(VOID);
 
-extern UINT64 g_sysSchedStartTime;
-
 STATIC INLINE UINT64 OsGetCurrSchedTimeCycle(VOID)
 {
-    if (g_sysSchedStartTime != OS_64BIT_MAX) {
-        return (HalClockGetCycles() - g_sysSchedStartTime);
-    }
-
-    return 0;
+    return HalClockGetCycles();
 }
 
 STATIC INLINE VOID OsSchedIrqUpdateUsedTime(VOID)
@@ -155,8 +149,6 @@ STATIC INLINE VOID OsCpuSchedUnlock(Percpu *cpu, UINT32 intSave)
 
     LOS_IntRestore(intSave);
 }
-
-extern UINT32 OsSchedSetTickTimerType(UINT32 timerType);
 
 extern VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask);
 
