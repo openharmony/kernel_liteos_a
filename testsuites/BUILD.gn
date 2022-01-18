@@ -33,5 +33,6 @@ group("testsuites") {
   deps = [
     #"kernel",
     "unittest",
+    "unittest_old",
   ]
 }
