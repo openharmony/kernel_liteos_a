@@ -31,7 +31,6 @@
 
 #include "los_hw_pri.h"
 #include "los_tick_pri.h"
-#include "los_sched_pri.h"
 #include "los_sys_pri.h"
 #include "gic_common.h"
 
@@ -139,11 +138,6 @@ LITE_OS_SEC_TEXT_INIT VOID HalClockInit(VOID)
 
 LITE_OS_SEC_TEXT_INIT VOID HalClockStart(VOID)
 {
-    UINT32 ret = OsSchedSetTickTimerType(64); /* 64 bit tick timer */
-    if (ret != LOS_OK) {
-        return;
-    }
-
     HalIrqUnmask(OS_TICK_INT_NUM);
 
     /* triggle the first tick */
@@ -175,7 +169,7 @@ UINT32 HalClockGetTickTimerCycles(VOID)
     return (UINT32)((cval > cycles) ? (cval - cycles) : 0);
 }
 
-VOID HalClockTickTimerReload(UINT64 cycles)
+UINT64 HalClockTickTimerReload(UINT64 cycles)
 {
     HalIrqMask(OS_TICK_INT_NUM);
     HalIrqClear(OS_TICK_INT_NUM);
@@ -185,4 +179,5 @@ VOID HalClockTickTimerReload(UINT64 cycles)
     TimerCtlWrite(1);
 
     HalIrqUnmask(OS_TICK_INT_NUM);
+    return cycles;
 }

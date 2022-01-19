@@ -67,7 +67,7 @@ static int Testcase(VOID)
     ICUNIT_ASSERT_EQUAL(err, EINVAL, err);
 
     param.sched_priority = 15; // 15, set pthread priority.
-    ret = sched_setparam(20, &param); // 20, set the param.
+    ret = sched_setparam(60, &param); // 60, set the param.
     err = errno;
     ICUNIT_ASSERT_EQUAL(ret, -1, ret);
     ICUNIT_ASSERT_EQUAL(err, ESRCH, err);

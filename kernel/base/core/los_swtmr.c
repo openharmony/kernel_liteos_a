@@ -246,7 +246,7 @@ STATIC INLINE VOID OsWakePendTimeSwtmr(Percpu *cpu, UINT64 currTime, SWTMR_CTRL_
 LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
 {
     Percpu *cpu = OsPercpuGet();
-    SortLinkAttribute* swtmrSortLink = &OsPercpuGet()->swtmrSortLink;
+    SortLinkAttribute* swtmrSortLink = &cpu->swtmrSortLink;
     LOS_DL_LIST *listObject = &swtmrSortLink->sortLink;
 
     /*
@@ -268,7 +268,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
         swtmr->startTime = GET_SORTLIST_VALUE(sortList);
         OsDeleteNodeSortLink(swtmrSortLink, sortList);
         LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
-        
+
         OsHookCall(LOS_HOOK_TYPE_SWTMR_EXPIRED, swtmr);
         OsWakePendTimeSwtmr(cpu, currTime, swtmr);
 
@@ -280,6 +280,33 @@ LITE_OS_SEC_TEXT VOID OsSwtmrScan(VOID)
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
     }
 
+    LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
+}
+
+LITE_OS_SEC_TEXT VOID OsSwtmrResponseTimeReset(UINT64 startTime)
+{
+    UINT32 intSave;
+    Percpu *cpu = OsPercpuGet();
+    SortLinkAttribute* swtmrSortLink = &cpu->swtmrSortLink;
+    LOS_DL_LIST *listHead = &swtmrSortLink->sortLink;
+    LOS_DL_LIST *listNext = listHead->pstNext;
+
+    LOS_SpinLock(&cpu->swtmrSortLinkSpin);
+    while (listNext != listHead) {
+        SortLinkList *sortList = LOS_DL_LIST_ENTRY(listNext, SortLinkList, sortLinkNode);
+        OsDeleteNodeSortLink(swtmrSortLink, sortList);
+        LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
+
+        SWTMR_CTRL_S *swtmr = LOS_DL_LIST_ENTRY(sortList, SWTMR_CTRL_S, stSortList);
+
+        SWTMR_LOCK(intSave);
+        swtmr->startTime = startTime;
+        OsSwtmrStart(startTime, swtmr);
+        SWTMR_UNLOCK(intSave);
+
+        LOS_SpinLock(&cpu->swtmrSortLinkSpin);
+        listNext = listNext->pstNext;
+    }
     LOS_SpinUnlock(&cpu->swtmrSortLinkSpin);
 }
 
