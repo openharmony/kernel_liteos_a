@@ -53,6 +53,12 @@ LOSCFG_USER_TEST_DYNLOAD = true
 LOSCFG_USER_TEST_EXC = true
 LOSCFG_USER_TEST_MEM_SHM = true
 LOSCFG_USER_TEST_MEM_VM = true
+
+########## process test ##########
+# Control switch for process&pthread function test
+LOSCFG_USER_TEST_PROCESS_THREAD = true
+
+# Module list
 LOSCFG_USER_TEST_MUTEX = true
 LOSCFG_USER_TEST_PROCESS = true
 LOSCFG_USER_TEST_PTHREAD = true

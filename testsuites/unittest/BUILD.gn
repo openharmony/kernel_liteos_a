@@ -63,6 +63,7 @@ config("public_config_for_pressure") {
   cflags_cc = cflags
 }
 
+# Note: The execution time of a single XXX_door.bin cannot exceed 90 seconds.
 group("unittest") {
   deps = []
   if (ohos_build_type == "debug") {
@@ -126,6 +127,18 @@ group("unittest") {
       }
       if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
         deps += [ "net:liteos_a_net_unittest" ]
+      }
+    }
+
+    # process test
+    if (LOSCFG_USER_TEST_PROCESS_THREAD == true) {
+      if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
+        deps += [ "process/basic:liteos_a_process_basic_unittest_door" ]
+        deps += [ "process/lock:liteos_a_process_lock_unittest_door" ]
+      }
+      if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
+        deps += [ "process/basic:liteos_a_process_basic_unittest" ]
+        deps += [ "process/lock:liteos_a_process_lock_unittest" ]
       }
     }
 
