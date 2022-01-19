@@ -810,7 +810,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
     kerInitProcess->processStatus &= ~OS_PROCESS_STATUS_INIT;
     g_processGroup = kerInitProcess->group;
     LOS_ListInit(&g_processGroup->groupList);
-    OsCurrProcessSet(kerInitProcess);
 
     LosProcessCB *idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);
     ret = OsInitPCB(idleProcess, OS_KERNEL_MODE, OS_TASK_PRIORITY_LOWEST, "KIdle");
@@ -832,7 +831,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
     if (ret != LOS_OK) {
         return ret;
     }
-    idleProcess->threadGroupID = OsPercpuGet()->idleTaskID;
+    idleProcess->threadGroupID = OsGetIdleTaskId();
 
     return LOS_OK;
 }
@@ -907,7 +906,7 @@ LITE_OS_SEC_TEXT INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio
     }
 #endif
 
-    needSched = OsSchedModifyProcessSchedParam(processCB, policy, prio);
+    needSched = OsSchedModifyProcessSchedParam(pid, policy, prio);
     SCHEDULER_UNLOCK(intSave);
 
     LOS_MpSchedule(OS_MP_CPU_ALL);

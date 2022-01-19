@@ -34,8 +34,6 @@
 
 #include "los_base.h"
 #include "los_hw_cpu.h"
-#include "los_spinlock.h"
-#include "los_sortlink_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -49,29 +47,11 @@ typedef enum {
     CPU_HALT,          /* cpu in the halt */
     CPU_EXC            /* cpu in the exc */
 } ExcFlag;
-#endif
 
 typedef struct {
-    SortLinkAttribute taskSortLink;          /* task sort link */
-    SPIN_LOCK_S       taskSortLinkSpin;      /* task sort link spin lock */
-    SortLinkAttribute swtmrSortLink;         /* swtmr sort link */
-    SPIN_LOCK_S       swtmrSortLinkSpin;     /* swtmr sort link spin lock */
-    UINT64            responseTime;          /* Response time for current CPU tick interrupts */
-    UINT64            tickStartTime;         /* The time when the tick interrupt starts processing */
-    UINT32            responseID;            /* The response ID of the current CPU tick interrupt */
-    UINTPTR           runProcess;            /* The address of the process control block pointer to which
-                                                the current CPU is running */
-    UINT32            idleTaskID;            /* idle task id */
-    UINT32            taskLockCnt;           /* task lock flag */
-    UINT32            swtmrHandlerQueue;     /* software timer timeout queue id */
-    UINT32            swtmrTaskID;           /* software timer task id */
-
-    UINT32            schedFlag;             /* pending scheduler flag */
-#ifdef LOSCFG_KERNEL_SMP
-    UINT32            excFlag;               /* cpu halt or exc flag */
+    UINT32      excFlag;               /* cpu halt or exc flag */
 #ifdef LOSCFG_KERNEL_SMP_CALL
-    LOS_DL_LIST       funcLink;              /* mp function call link */
-#endif
+    LOS_DL_LIST funcLink;              /* mp function call link */
 #endif
 } Percpu;
 
@@ -87,6 +67,19 @@ STATIC INLINE Percpu *OsPercpuGetByID(UINT32 cpuid)
 {
     return &g_percpu[cpuid];
 }
+
+STATIC INLINE UINT32 OsCpuStatusIsHalt(UINT16 cpuid)
+{
+    return (OsPercpuGetByID(cpuid)->excFlag == CPU_HALT);
+}
+
+STATIC INLINE VOID OsCpuStatusSet(ExcFlag flag)
+{
+    OsPercpuGet()->excFlag = flag;
+}
+
+VOID OsAllCpuStatusOutput(VOID);
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
