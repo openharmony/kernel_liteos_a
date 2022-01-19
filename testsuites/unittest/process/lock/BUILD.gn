@@ -1,5 +1,4 @@
-# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -27,11 +26,33 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//kernel/liteos_a/liteos.gni")
+import("//build/lite/config/test.gni")
+import("//kernel/liteos_a/testsuites/unittest/config.gni")
+import("./config.gni")
 
-group("testsuites") {
-  deps = [
-    #"kernel",
-    "unittest",
-  ]
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
+  unittest("liteos_a_process_lock_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    sources += sources_smoke
+    sources_full = []
+    sources += sources_full
+    configs = [ "../..:public_config_for_door" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  }
+}
+
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
+  unittest("liteos_a_process_lock_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    sources += sources_smoke
+    sources += sources_full
+    configs = [ "../..:public_config_for_all" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  }
 }
