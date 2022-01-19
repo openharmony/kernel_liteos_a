@@ -33,7 +33,7 @@
 #define _LOS_TASK_PRI_H
 
 #include "los_task.h"
-#include "los_percpu_pri.h"
+#include "los_sortlink_pri.h"
 #include "los_spinlock.h"
 #ifdef LOSCFG_SCHED_DEBUG
 #include "los_stat_pri.h"
@@ -528,7 +528,6 @@ extern LosTaskCB *OsGetMainTask(VOID);
 extern VOID OsSetMainTask(VOID);
 extern UINT32 OsGetIdleTaskId(VOID);
 extern VOID OsTaskEntry(UINT32 taskID);
-extern SortLinkAttribute *OsTaskSortLinkGet(VOID);
 extern VOID OsTaskProcSignal(VOID);
 extern UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UINT32 intSave);
 extern VOID OsTaskResourcesToFree(LosTaskCB *taskCB);
