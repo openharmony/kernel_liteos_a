@@ -267,7 +267,7 @@ STATIC ssize_t TelnetWrite(struct file *file, const CHAR *buf, const size_t bufL
     if (telnetDev->clientFd != 0) {
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
          /* DO NOT call blocking API in software timer task */
-        if (((LosTaskCB*)OsCurrTaskGet())->taskEntry == (TSK_ENTRY_FUNC)OsSwtmrTask) {
+        if (OsIsSwtmrTask(OsCurrTaskGet())) {
             TelnetUnlock();
             return ret;
         }

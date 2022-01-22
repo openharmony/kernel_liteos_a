@@ -34,18 +34,13 @@
 
 #include "los_typedef.h"
 #include "los_list.h"
-#include "los_sys_pri.h"
+#include "los_spinlock.h"
 
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-typedef enum {
-    OS_SORT_LINK_TASK = 1,
-    OS_SORT_LINK_SWTMR = 2,
-} SortLinkType;
 
 typedef struct {
     LOS_DL_LIST sortLinkNode;
@@ -58,6 +53,7 @@ typedef struct {
 typedef struct {
     LOS_DL_LIST sortLink;
     UINT32      nodeNum;
+    SPIN_LOCK_S spinLock;     /* swtmr sort link spin lock */
 } SortLinkAttribute;
 
 #define OS_SORT_LINK_INVALID_TIME ((UINT64)-1)
@@ -88,11 +84,16 @@ STATIC INLINE UINT64 OsGetSortLinkNextExpireTime(SortLinkAttribute *sortHeader, 
     return listSorted->responseTime;
 }
 
-extern UINT32 OsSortLinkInit(SortLinkAttribute *sortLinkHeader);
-extern VOID OsAdd2SortLink(SortLinkList *node, UINT64 startTime, UINT32 waitTicks, SortLinkType type);
-extern VOID OsDeleteSortLink(SortLinkList *node, SortLinkType type);
-extern UINT32 OsSortLinkGetTargetExpireTime(const SortLinkList *targetSortList);
-extern UINT32 OsSortLinkGetNextExpireTime(const SortLinkAttribute *sortLinkHeader);
+STATIC INLINE UINT32 OsGetSortLinkNodeNum(SortLinkAttribute *head)
+{
+    return head->nodeNum;
+}
+
+VOID OsSortLinkInit(SortLinkAttribute *sortLinkHeader);
+VOID OsAdd2SortLink(SortLinkAttribute *head, SortLinkList *node, UINT64 responseTime, UINT16 idleCpu);
+VOID OsDeleteFromSortLink(SortLinkAttribute *head, SortLinkList *node);
+UINT32 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *targetSortList);
+UINT32 OsSortLinkGetNextExpireTime(UINT64 currTime, const SortLinkAttribute *sortLinkHeader);
 
 #ifdef __cplusplus
 #if __cplusplus

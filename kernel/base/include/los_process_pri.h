@@ -374,14 +374,9 @@ STATIC INLINE LosProcessCB *OsCurrProcessGet(VOID)
     UINT32 intSave;
 
     intSave = LOS_IntLock();
-    LosProcessCB *runProcess = (LosProcessCB *)OsPercpuGet()->runProcess;
+    LosProcessCB *runProcess = OS_PCB_FROM_PID(OsCurrTaskGet()->processID);
     LOS_IntRestore(intSave);
     return runProcess;
-}
-
-STATIC INLINE VOID OsCurrProcessSet(const LosProcessCB *process)
-{
-    OsPercpuGet()->runProcess = (UINTPTR)process;
 }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -395,8 +390,32 @@ STATIC INLINE User *OsCurrUserGet(VOID)
     LOS_IntRestore(intSave);
     return user;
 }
+
+STATIC INLINE UINT32 OsProcessUserIDGet(const LosTaskCB *taskCB)
+{
+    UINT32 intSave = LOS_IntLock();
+    UINT32 uid = OS_INVALID;
+
+    LosProcessCB *process = OS_PCB_FROM_PID(taskCB->processID);
+    if (process->user != NULL) {
+        uid = process->user->userID;
+    }
+    LOS_IntRestore(intSave);
+    return uid;
+}
 #endif
 
+STATIC INLINE UINT32 OsProcessThreadGroupIDGet(const LosTaskCB *taskCB)
+{
+    return OS_PCB_FROM_PID(taskCB->processID)->threadGroupID;
+}
+
+#ifdef LOSCFG_DRIVERS_TZDRIVER
+STATIC INLINE struct Vnode *OsProcessExecVnodeGet(const LosProcessCB *processCB)
+{
+    return processCB->execVnode;
+}
+#endif
 /*
  * return immediately if no child has exited.
  */

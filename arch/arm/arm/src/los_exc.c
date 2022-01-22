@@ -33,6 +33,7 @@
 #include "los_memory_pri.h"
 #include "los_printf_pri.h"
 #include "los_task_pri.h"
+#include "los_percpu_pri.h"
 #include "los_hw_pri.h"
 #ifdef LOSCFG_SAVE_EXCINFO
 #include "los_excinfo_pri.h"
@@ -58,6 +59,7 @@
 #include "los_bitmap.h"
 #include "los_process_pri.h"
 #include "los_exc_pri.h"
+#include "los_sched_pri.h"
 #ifdef LOSCFG_FS_VFS
 #include "console.h"
 #endif
@@ -191,7 +193,7 @@ UINT32 OsArmSharedPageFault(UINT32 excType, ExcContext *frame, UINT32 far, UINT3
         return LOS_ERRNO_VM_NOT_FOUND;
     }
 #if defined(LOSCFG_KERNEL_SMP) && defined(LOSCFG_DEBUG_VERSION)
-    BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && (OsPercpuGet()->taskLockCnt != 0));
+    BOOL irqEnable = !(LOS_SpinHeld(&g_taskSpin) && OsSchedIsLock());
     if (irqEnable) {
         ArchIrqEnable();
     } else {
@@ -535,9 +537,9 @@ STATIC VOID OsExcRestore(VOID)
     g_intCount[currCpuID] = 0;
     g_curNestCount[currCpuID] = 0;
 #ifdef LOSCFG_KERNEL_SMP
-    OsPercpuGet()->excFlag = CPU_RUNNING;
+    OsCpuStatusSet(CPU_RUNNING);
 #endif
-    OsPercpuGet()->taskLockCnt = 0;
+    OsSchedLockSet(0);
 }
 
 STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
@@ -977,28 +979,6 @@ VOID OsDataAbortExcHandleEntry(ExcContext *excBufAddr)
 #define EXC_WAIT_INTER 50U
 #define EXC_WAIT_TIME  2000U
 
-STATIC VOID OsAllCpuStatusOutput(VOID)
-{
-    UINT32 i;
-
-    for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
-        switch (g_percpu[i].excFlag) {
-            case CPU_RUNNING:
-                PrintExcInfo("cpu%u is running.\n", i);
-                break;
-            case CPU_HALT:
-                PrintExcInfo("cpu%u is halted.\n", i);
-                break;
-            case CPU_EXC:
-                PrintExcInfo("cpu%u is in exc.\n", i);
-                break;
-            default:
-                break;
-        }
-    }
-    PrintExcInfo("The current handling the exception is cpu%u !\n", ArchCurrCpuid());
-}
-
 STATIC VOID WaitAllCpuStop(UINT32 cpuID)
 {
     UINT32 i;
@@ -1006,7 +986,7 @@ STATIC VOID WaitAllCpuStop(UINT32 cpuID)
 
     while (time < EXC_WAIT_TIME) {
         for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
-            if ((i != cpuID) && (g_percpu[i].excFlag != CPU_HALT)) {
+            if ((i != cpuID) && !OsCpuStatusIsHalt(i)) {
                 LOS_Mdelay(EXC_WAIT_INTER);
                 time += EXC_WAIT_INTER;
                 break;
@@ -1044,7 +1024,7 @@ STATIC VOID OsCheckAllCpuStatus(VOID)
     UINT32 currCpuID = ArchCurrCpuid();
     UINT32 ret, target;
 
-    OsPercpuGet()->excFlag = CPU_EXC;
+    OsCpuStatusSet(CPU_EXC);
     LOCKDEP_CLEAR_LOCKS();
 
     LOS_SpinLock(&g_excSerializerSpin);
@@ -1152,15 +1132,15 @@ LITE_OS_SEC_TEXT_INIT STATIC VOID OsPrintExcHead(UINT32 far)
 STATIC VOID OsSysStateSave(UINT32 *intCount, UINT32 *lockCount)
 {
     *intCount = g_intCount[ArchCurrCpuid()];
-    *lockCount = OsPercpuGet()->taskLockCnt;
+    *lockCount = OsSchedLockCountGet();
     g_intCount[ArchCurrCpuid()] = 0;
-    OsPercpuGet()->taskLockCnt = 0;
+    OsSchedLockSet(0);
 }
 
 STATIC VOID OsSysStateRestore(UINT32 intCount, UINT32 lockCount)
 {
     g_intCount[ArchCurrCpuid()] = intCount;
-    OsPercpuGet()->taskLockCnt = lockCount;
+    OsSchedLockSet(lockCount);
 }
 #endif
 
@@ -1177,7 +1157,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsExcHandleEntry(UINT32 excType, ExcContext *excBufAd
 #endif
 
     /* Task scheduling is not allowed during exception handling */
-    OsPercpuGet()->taskLockCnt++;
+    OsSchedLock();
 
     g_curNestCount[ArchCurrCpuid()]++;
 
