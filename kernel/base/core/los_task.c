@@ -94,6 +94,7 @@ VOID OsSetMainTask()
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
         g_mainTask[i].taskStatus = OS_TASK_STATUS_UNUSED;
         g_mainTask[i].taskID = LOSCFG_BASE_CORE_TSK_LIMIT;
+        g_mainTask[i].processID = OS_KERNEL_PROCESS_GROUP;
         g_mainTask[i].priority = OS_TASK_PRIORITY_LOWEST;
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
         g_mainTask[i].lockDep.lockDepth = 0;
@@ -216,16 +217,14 @@ EXIT:
 
 UINT32 OsGetIdleTaskId(VOID)
 {
-    Percpu *perCpu = OsPercpuGet();
-    return perCpu->idleTaskID;
+    return OsSchedGetRunQueIdle();
 }
 
 LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
 {
     UINT32 ret;
     TSK_INIT_PARAM_S taskInitParam;
-    Percpu *perCpu = OsPercpuGet();
-    UINT32 *idleTaskID = &perCpu->idleTaskID;
+    UINT32 idleTaskID;
 
     (VOID)memset_s((VOID *)(&taskInitParam), sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
     taskInitParam.pfnTaskEntry = (TSK_ENTRY_FUNC)OsIdleTask;
@@ -236,9 +235,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
 #ifdef LOSCFG_KERNEL_SMP
     taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
-    ret = LOS_TaskCreateOnly(idleTaskID, &taskInitParam);
-    LosTaskCB *idleTask = OS_TCB_FROM_TID(*idleTaskID);
+    ret = LOS_TaskCreateOnly(&idleTaskID, &taskInitParam);
+    LosTaskCB *idleTask = OS_TCB_FROM_TID(idleTaskID);
     idleTask->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;
+    OsSchedRunQueIdleInit(idleTaskID);
     OsSchedSetIdleTaskSchedParam(idleTask);
 
     return ret;
@@ -968,11 +968,6 @@ LITE_OS_SEC_TEXT UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UIN
         SCHEDULER_LOCK(intSave);
     }
 
-#ifdef LOSCFG_KERNEL_SMP
-    LOS_ASSERT(OsPercpuGet()->taskLockCnt == 1);
-#else
-    LOS_ASSERT(OsPercpuGet()->taskLockCnt == 0);
-#endif
     OsRunTaskToDelete(taskCB);
 
 EXIT:
@@ -1149,13 +1144,21 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskLock(VOID)
     UINT32 intSave;
 
     intSave = LOS_IntLock();
-    OsCpuSchedLock(OsPercpuGet());
+    OsSchedLock();
     LOS_IntRestore(intSave);
 }
 
 LITE_OS_SEC_TEXT_MINOR VOID LOS_TaskUnlock(VOID)
 {
-    OsCpuSchedUnlock(OsPercpuGet(), LOS_IntLock());
+    UINT32 intSave;
+
+    intSave = LOS_IntLock();
+    BOOL needSched = OsSchedUnlockResch();
+    LOS_IntRestore(intSave);
+
+    if (needSched) {
+        LOS_Schedule();
+    }
 }
 
 LITE_OS_SEC_TEXT_MINOR UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInfo)
