@@ -92,8 +92,8 @@ STATIC INLINE UINT32 OsGetSortLinkNodeNum(SortLinkAttribute *head)
 VOID OsSortLinkInit(SortLinkAttribute *sortLinkHeader);
 VOID OsAdd2SortLink(SortLinkAttribute *head, SortLinkList *node, UINT64 responseTime, UINT16 idleCpu);
 VOID OsDeleteFromSortLink(SortLinkAttribute *head, SortLinkList *node);
-UINT32 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *targetSortList);
-UINT32 OsSortLinkGetNextExpireTime(UINT64 currTime, const SortLinkAttribute *sortLinkHeader);
+UINT64 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *targetSortList);
+UINT64 OsSortLinkGetNextExpireTime(UINT64 currTime, const SortLinkAttribute *sortLinkHeader);
 
 #ifdef __cplusplus
 #if __cplusplus

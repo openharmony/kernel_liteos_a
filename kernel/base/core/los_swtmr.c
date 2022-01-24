@@ -269,7 +269,11 @@ BOOL OsSwtmrWorkQueueFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
 LITE_OS_SEC_TEXT UINT32 OsSwtmrGetNextTimeout(VOID)
 {
     UINT64 currTime = OsGetCurrSchedTimeCycle();
-    return (OsSortLinkGetNextExpireTime(currTime, &OsSchedRunQue()->swtmrSortLink) / OS_CYCLE_PER_TICK);
+    UINT64 time = (OsSortLinkGetNextExpireTime(currTime, &OsSchedRunQue()->swtmrSortLink) / OS_CYCLE_PER_TICK);
+    if (time > OS_INVALID_VALUE) {
+        time = OS_INVALID_VALUE;
+    }
+    return (UINT32)time;
 }
 
 /*
@@ -293,7 +297,11 @@ LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
 LITE_OS_SEC_TEXT STATIC UINT32 OsSwtmrTimeGet(const SWTMR_CTRL_S *swtmr)
 {
     UINT64 currTime = OsGetCurrSchedTimeCycle();
-    return (OsSortLinkGetTargetExpireTime(currTime, &swtmr->stSortList) / OS_CYCLE_PER_TICK);
+    UINT64 time = (OsSortLinkGetTargetExpireTime(currTime, &swtmr->stSortList) / OS_CYCLE_PER_TICK);
+    if (time > OS_INVALID_VALUE) {
+        time = OS_INVALID_VALUE;
+    }
+    return (UINT32)time;
 }
 
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,

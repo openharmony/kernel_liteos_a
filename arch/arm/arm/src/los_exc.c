@@ -589,7 +589,7 @@ STATIC VOID OsUserExcHandle(ExcContext *excBufAddr)
         SCHEDULER_UNLOCK(intSave);
         /* Exception handling All operations should be kept prior to that operation */
         OsExcRestore();
-        OsTaskToExit(runTask, OS_PRO_EXIT_OK);
+        OsRunningTaskToExit(runTask, OS_PRO_EXIT_OK);
     } else {
         SCHEDULER_UNLOCK(intSave);
 

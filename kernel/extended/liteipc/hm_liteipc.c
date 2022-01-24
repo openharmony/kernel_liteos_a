@@ -697,7 +697,10 @@ LITE_OS_SEC_TEXT STATIC BOOL IsTaskAlive(UINT32 taskID)
         return FALSE;
     }
     tcb = OS_TCB_FROM_TID(taskID);
-    if (!OsProcessIsUserMode(OS_PCB_FROM_PID(tcb->processID))) {
+    if (!OsTaskIsUserMode(tcb)) {
+        return FALSE;
+    }
+    if (OsTaskIsUnused(tcb)) {
         return FALSE;
     }
     if (OsTaskIsInactive(tcb)) {
