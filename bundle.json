@@ -60,9 +60,7 @@
                 "//kernel/liteos_a:liteos_a"
             ],
             "inner_kits": [],
-            "test": [
-                "//kernel/liteos_a/testsuites:testsuites"
-            ]
+            "test": []
         }
     }
 }
