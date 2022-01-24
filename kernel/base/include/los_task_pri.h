@@ -33,20 +33,8 @@
 #define _LOS_TASK_PRI_H
 
 #include "los_task.h"
-#include "los_sortlink_pri.h"
-#include "los_spinlock.h"
-#ifdef LOSCFG_SCHED_DEBUG
-#include "los_stat_pri.h"
-#endif
-#include "los_stackinfo_pri.h"
-#include "los_futex_pri.h"
-#include "los_signal.h"
-#ifdef LOSCFG_KERNEL_CPUP
-#include "los_cpup_pri.h"
-#endif
-#ifdef LOSCFG_KERNEL_LITEIPC
-#include "hm_liteipc.h"
-#endif
+#include "los_sched_pri.h"
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -81,97 +69,6 @@ extern SPIN_LOCK_S g_taskSpin;
 
 /**
  * @ingroup los_task
- * Define a usable task priority.
- *
- * Highest task priority.
- */
-#define OS_TASK_PRIORITY_HIGHEST    0
-
-/**
- * @ingroup los_task
- * Define a usable task priority.
- *
- * Lowest task priority.
- */
-#define OS_TASK_PRIORITY_LOWEST     31
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is init.
- */
-#define OS_TASK_STATUS_INIT         0x0001U
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is ready.
- */
-#define OS_TASK_STATUS_READY        0x0002U
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is running.
- */
-#define OS_TASK_STATUS_RUNNING      0x0004U
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is suspended.
- */
-#define OS_TASK_STATUS_SUSPENDED    0x0008U
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is blocked.
- */
-#define OS_TASK_STATUS_PENDING      0x0010U
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is delayed.
- */
-#define OS_TASK_STATUS_DELAY        0x0020U
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The time for waiting for an event to occur expires.
- */
-#define OS_TASK_STATUS_TIMEOUT      0x0040U
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is pend for a period of time.
- */
-#define OS_TASK_STATUS_PEND_TIME    0x0080U
-
-#define OS_TASK_STATUS_BLOCKED      (OS_TASK_STATUS_INIT | OS_TASK_STATUS_PENDING | \
-                                     OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The task is exit.
- */
-#define OS_TASK_STATUS_EXIT         0x0100U
-
-/**
- * @ingroup los_task
  * Flag that indicates the task or task control block status.
  *
  * The task control block is unused.
@@ -185,6 +82,14 @@ extern SPIN_LOCK_S g_taskSpin;
  * The task is joinable.
  */
 #define OS_TASK_FLAG_PTHREAD_JOIN   0x0400U
+
+/**
+ * @ingroup los_task
+ * Flag that indicates the task or task control block status.
+ *
+ * The task is user mode task.
+ */
+#define OS_TASK_FLAG_USER_MODE      0x0800U
 
 /**
  * @ingroup los_task
@@ -306,76 +211,6 @@ extern SPIN_LOCK_S g_taskSpin;
 #define OS_RESOURCE_EVENT_MASK          0xFF
 #define OS_RESOURCE_EVENT_OOM           0x02
 #define OS_RESOURCE_EVENT_FREE          0x04
-#define OS_TCB_NAME_LEN 32
-
-typedef struct {
-    VOID            *stackPointer;      /**< Task stack pointer */
-    UINT16          taskStatus;         /**< Task status */
-
-    /* The scheduling */
-    UINT16          priority;           /**< Task priority */
-    UINT16          policy;
-    UINT64          startTime;          /**< The start time of each phase of task */
-    UINT64          irqStartTime;       /**< Interrupt start time */
-    UINT32          irqUsedTime;        /**< Interrupt consumption time */
-    UINT32          initTimeSlice;      /**< Task init time slice */
-    INT32           timeSlice;          /**< Task remaining time slice */
-    UINT32          waitTimes;          /**< Task delay time, tick number */
-    SortLinkList    sortList;           /**< Task sortlink node */
-
-    UINT32          stackSize;          /**< Task stack size */
-    UINTPTR         topOfStack;         /**< Task stack top */
-    UINT32          taskID;             /**< Task ID */
-    TSK_ENTRY_FUNC  taskEntry;          /**< Task entrance function */
-    VOID            *joinRetval;        /**< pthread adaption */
-    VOID            *taskMux;           /**< Task-held mutex */
-    VOID            *taskEvent;         /**< Task-held event */
-    UINTPTR         args[4];            /**< Parameter, of which the maximum number is 4 */
-    CHAR            taskName[OS_TCB_NAME_LEN]; /**< Task name */
-    LOS_DL_LIST     pendList;           /**< Task pend node */
-    LOS_DL_LIST     threadList;         /**< thread list */
-    UINT32          eventMask;          /**< Event mask */
-    UINT32          eventMode;          /**< Event mode */
-    UINT32          priBitMap;          /**< BitMap for recording the change of task priority,
-                                             the priority can not be greater than 31 */
-#ifdef LOSCFG_KERNEL_CPUP
-    OsCpupBase      taskCpup;           /**< task cpu usage */
-#endif
-    INT32           errorNo;            /**< Error Num */
-    UINT32          signal;             /**< Task signal */
-    sig_cb          sig;
-#ifdef LOSCFG_KERNEL_SMP
-    UINT16          currCpu;            /**< CPU core number of this task is running on */
-    UINT16          lastCpu;            /**< CPU core number of this task is running on last time */
-    UINT16          cpuAffiMask;        /**< CPU affinity mask, support up to 16 cores */
-#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
-    UINT32          syncSignal;         /**< Synchronization for signal handling */
-#endif
-#ifdef LOSCFG_KERNEL_SMP_LOCKDEP
-    LockDep         lockDep;
-#endif
-#endif
-#ifdef LOSCFG_SCHED_DEBUG
-    SchedStat       schedStat;          /**< Schedule statistics */
-#endif
-    UINTPTR         userArea;
-    UINTPTR         userMapBase;
-    UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE */
-    UINT32          processID;          /**< Which belong process */
-    FutexNode       futex;
-    LOS_DL_LIST     joinList;           /**< join list */
-    LOS_DL_LIST     lockList;           /**< Hold the lock list */
-    UINTPTR         waitID;             /**< Wait for the PID or GID of the child process */
-    UINT16          waitFlag;           /**< The type of child process that is waiting, belonging to a group or parent,
-                                             a specific child process, or any child process */
-#ifdef LOSCFG_KERNEL_LITEIPC
-    IpcTaskInfo     *ipcTaskInfo;
-#endif
-#ifdef LOSCFG_KERNEL_PERF
-    UINTPTR         pc;
-    UINTPTR         fp;
-#endif
-} LosTaskCB;
 
 typedef struct {
     LosTaskCB *runTask;
@@ -416,21 +251,6 @@ typedef struct {
     UINT16 timeout;  /**< Expiration duration */
 } OsTaskRobin;
 
-STATIC INLINE LosTaskCB *OsCurrTaskGet(VOID)
-{
-    return (LosTaskCB *)ArchCurrTaskGet();
-}
-
-STATIC INLINE VOID OsCurrTaskSet(LosTaskCB *task)
-{
-    ArchCurrTaskSet(task);
-}
-
-STATIC INLINE VOID OsCurrUserTaskSet(UINTPTR thread)
-{
-    ArchCurrUserTaskSet(thread);
-}
-
 STATIC INLINE LosTaskCB *OsGetTaskCB(UINT32 taskID)
 {
     return OS_TCB_FROM_TID(taskID);
@@ -438,47 +258,17 @@ STATIC INLINE LosTaskCB *OsGetTaskCB(UINT32 taskID)
 
 STATIC INLINE BOOL OsTaskIsUnused(const LosTaskCB *taskCB)
 {
-    if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-STATIC INLINE BOOL OsTaskIsRunning(const LosTaskCB *taskCB)
-{
-    if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-STATIC INLINE BOOL OsTaskIsInactive(const LosTaskCB *taskCB)
-{
-    if (taskCB->taskStatus & (OS_TASK_STATUS_UNUSED | OS_TASK_STATUS_INIT | OS_TASK_STATUS_EXIT)) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-STATIC INLINE BOOL OsTaskIsPending(const LosTaskCB *taskCB)
-{
-    if (taskCB->taskStatus & OS_TASK_STATUS_PENDING) {
-        return TRUE;
-    }
-
-    return FALSE;
+    return ((taskCB->taskStatus & OS_TASK_STATUS_UNUSED) != 0);
 }
 
 STATIC INLINE BOOL OsTaskIsKilled(const LosTaskCB *taskCB)
 {
-    if (taskCB->taskStatus & OS_TASK_FLAG_EXIT_KILL) {
-        return TRUE;
-    }
+    return ((taskCB->taskStatus & OS_TASK_FLAG_EXIT_KILL) != 0);
+}
 
-    return FALSE;
+STATIC INLINE BOOL OsTaskIsUserMode(const LosTaskCB *taskCB)
+{
+    return ((taskCB->taskStatus & OS_TASK_FLAG_USER_MODE) != 0);
 }
 
 #define OS_TID_CHECK_INVALID(taskID) ((UINT32)(taskID) >= g_taskMaxNum)
@@ -529,21 +319,18 @@ extern VOID OsSetMainTask(VOID);
 extern UINT32 OsGetIdleTaskId(VOID);
 extern VOID OsTaskEntry(UINT32 taskID);
 extern VOID OsTaskProcSignal(VOID);
-extern UINT32 OsTaskDeleteUnsafe(LosTaskCB *taskCB, UINT32 status, UINT32 intSave);
-extern VOID OsTaskResourcesToFree(LosTaskCB *taskCB);
-extern VOID OsRunTaskToDelete(LosTaskCB *taskCB);
 extern UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam);
 extern INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL setPName);
 extern VOID OsTaskCBRecycleToFree(VOID);
-extern VOID OsTaskExitGroup(UINT32 status);
-extern VOID OsTaskToExit(LosTaskCB *taskCB, UINT32 status);
-extern VOID OsExecDestroyTaskGroup(VOID);
+extern VOID OsRunningTaskToExit(LosTaskCB *runTask, UINT32 status);
 extern UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB);
 extern UINT32 OsUserProcessOperatePermissionsCheck(LosTaskCB *taskCB, UINT32 processID);
 extern INT32 OsTcbDispatch(LosTaskCB *stcb, siginfo_t *info);
 extern VOID OsWriteResourceEvent(UINT32 events);
 extern VOID OsWriteResourceEventUnsafe(UINT32 events);
 extern UINT32 OsResourceFreeTaskCreate(VOID);
+extern VOID OsTaskInsertToRecycleList(LosTaskCB *taskCB);
+extern VOID OsInactiveTaskDelete(LosTaskCB *taskCB);
 
 #ifdef __cplusplus
 #if __cplusplus
