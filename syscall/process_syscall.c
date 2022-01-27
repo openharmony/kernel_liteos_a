@@ -948,7 +948,6 @@ EXIT:
 int SysUserThreadDetach(unsigned int taskID)
 {
     unsigned int intSave;
-    LosTaskCB *taskCB = NULL;
     unsigned int ret;
 
     if (OS_TID_CHECK_INVALID(taskID)) {
@@ -956,14 +955,13 @@ int SysUserThreadDetach(unsigned int taskID)
     }
 
     SCHEDULER_LOCK(intSave);
-    taskCB = OS_TCB_FROM_TID(taskID);
-    ret = OsUserTaskOperatePermissionsCheck(taskCB);
+    ret = OsUserTaskOperatePermissionsCheck(OS_TCB_FROM_TID(taskID));
+    SCHEDULER_UNLOCK(intSave);
     if (ret != LOS_OK) {
-        SCHEDULER_UNLOCK(intSave);
         return ret;
     }
 
-    ret = OsTaskDeleteUnsafe(taskCB, OS_PRO_EXIT_OK, intSave);
+    ret = LOS_TaskDelete(taskID);
     if (ret != LOS_OK) {
         return ESRCH;
     }
@@ -997,12 +995,13 @@ EXIT:
 
 void SysUserExitGroup(int status)
 {
-    OsTaskExitGroup((unsigned int)status);
+    (void)status;
+    OsProcessThreadGroupDestroy();
 }
 
 void SysThreadExit(int status)
 {
-    OsTaskToExit(OsCurrTaskGet(), (unsigned int)status);
+    OsRunningTaskToExit(OsCurrTaskGet(), (unsigned int)status);
 }
 
 int SysFutex(const unsigned int *uAddr, unsigned int flags, int val,
