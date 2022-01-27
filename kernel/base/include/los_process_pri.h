@@ -80,10 +80,8 @@ typedef struct ProcessCB {
     UINT32               processID;                    /**< Process ID */
     UINT16               processStatus;                /**< [15:4] Process Status; [3:0] The number of threads currently
                                                             running in the process */
-    UINT16               priority;                     /**< Process priority */
     UINT16               consoleID;                    /**< The console id of task belongs  */
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; */
-    UINT16               readyTaskNum;                 /**< The number of ready tasks in the current process */
     UINT32               parentProcessID;              /**< Parent process ID */
     UINT32               exitCode;                     /**< Process exit status */
     LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */
@@ -149,7 +147,7 @@ typedef struct ProcessCB {
  *
  * The process is created but does not participate in scheduling.
  */
-#define OS_PROCESS_STATUS_INIT           0x0010U
+#define OS_PROCESS_STATUS_INIT           OS_TASK_STATUS_INIT
 
 /**
  * @ingroup los_process
@@ -157,7 +155,7 @@ typedef struct ProcessCB {
  *
  * The process is ready.
  */
-#define OS_PROCESS_STATUS_READY          0x0020U
+#define OS_PROCESS_STATUS_READY          OS_TASK_STATUS_READY
 
 /**
  * @ingroup los_process
@@ -165,7 +163,7 @@ typedef struct ProcessCB {
  *
  * The process is running.
  */
-#define OS_PROCESS_STATUS_RUNNING        0x0040U
+#define OS_PROCESS_STATUS_RUNNING        OS_TASK_STATUS_RUNNING
 
 /**
  * @ingroup los_process
@@ -173,7 +171,7 @@ typedef struct ProcessCB {
  *
  * The process is pending
  */
-#define OS_PROCESS_STATUS_PENDING       0x0080U
+#define OS_PROCESS_STATUS_PENDING       (OS_TASK_STATUS_PENDING | OS_TASK_STATUS_DELAY | OS_TASK_STATUS_SUSPENDED)
 
 /**
  * @ingroup los_process
@@ -181,23 +179,7 @@ typedef struct ProcessCB {
  *
  * The process is run out but the resources occupied by the process are not recovered.
  */
-#define OS_PROCESS_STATUS_ZOMBIES        0x100U
-
-/**
- * @ingroup los_process
- * Flag that indicates the process or process control block status.
- *
- * The number of task currently running under the process, it only works with multiple cores.
- */
-#define OS_PROCESS_RUNTASK_COUNT_MASK    0x000FU
-
-/**
- * @ingroup los_process
- * Flag that indicates the process or process control block status.
- *
- * The process status mask.
- */
-#define OS_PROCESS_STATUS_MASK           0xFFF0U
+#define OS_PROCESS_STATUS_ZOMBIES        0x0100U
 
 /**
  * @ingroup los_process
@@ -267,6 +249,11 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)
     return ((processCB->processStatus & (OS_PROCESS_FLAG_UNUSED | OS_PROCESS_STATUS_ZOMBIES)) != 0);
 }
 
+STATIC INLINE BOOL OsProcessIsInit(const LosProcessCB *processCB)
+{
+    return (processCB->processStatus & OS_PROCESS_STATUS_INIT);
+}
+
 /**
  * @ingroup los_process
  * The highest priority of a kernel mode process.
@@ -296,13 +283,6 @@ STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)
  * User state root process default priority
  */
 #define OS_PROCESS_USERINIT_PRIORITY     28
-
-#define OS_GET_PROCESS_STATUS(status) ((UINT16)((UINT16)(status) & OS_PROCESS_STATUS_MASK))
-#define OS_PROCESS_GET_RUNTASK_COUNT(status) ((UINT16)(((UINT16)(status)) & OS_PROCESS_RUNTASK_COUNT_MASK))
-#define OS_PROCESS_RUNTASK_COUNT_ADD(status) ((UINT16)(((UINT16)(status)) & OS_PROCESS_STATUS_MASK) | \
-        ((OS_PROCESS_GET_RUNTASK_COUNT(status) + 1) & OS_PROCESS_RUNTASK_COUNT_MASK))
-#define OS_PROCESS_RUNTASK_COUNT_DEC(status) ((UINT16)(((UINT16)(status)) & OS_PROCESS_STATUS_MASK) | \
-        ((OS_PROCESS_GET_RUNTASK_COUNT(status) - 1) & OS_PROCESS_RUNTASK_COUNT_MASK))
 
 #define OS_TASK_DEFAULT_STACK_SIZE      0x2000
 #define OS_USER_TASK_SYSCALL_STACK_SIZE 0x3000
@@ -410,6 +390,18 @@ STATIC INLINE UINT32 OsProcessThreadGroupIDGet(const LosTaskCB *taskCB)
     return OS_PCB_FROM_PID(taskCB->processID)->threadGroupID;
 }
 
+STATIC INLINE UINT32 OsProcessThreadNumberGet(const LosTaskCB *taskCB)
+{
+    return OS_PCB_FROM_PID(taskCB->processID)->threadNumber;
+}
+
+#ifdef LOSCFG_KERNEL_VM
+STATIC INLINE LosVmSpace *OsProcessVmSpaceGet(const LosProcessCB *processCB)
+{
+    return processCB->vmSpace;
+}
+#endif
+
 #ifdef LOSCFG_DRIVERS_TZDRIVER
 STATIC INLINE struct Vnode *OsProcessExecVnodeGet(const LosProcessCB *processCB)
 {
@@ -474,15 +466,14 @@ extern UINTPTR __user_init_bss;
 extern UINTPTR __user_init_end;
 extern UINTPTR __user_init_load_addr;
 extern UINT32 OsSystemProcessCreate(VOID);
+extern VOID OsProcessNaturalExit(LosProcessCB *processCB, UINT32 status);
 extern VOID OsProcessCBRecycleToFree(VOID);
 extern VOID OsProcessResourcesToFree(LosProcessCB *processCB);
-extern VOID OsProcessExit(LosTaskCB *runTask, INT32 status);
 extern UINT32 OsUserInitProcess(VOID);
-extern VOID OsTaskSchedQueueDequeue(LosTaskCB *taskCB, UINT16 status);
-extern VOID OsTaskSchedQueueEnqueue(LosTaskCB *taskCB, UINT16 status);
 extern INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size);
-extern UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name,
-                                   LosVmSpace *oldAspace, UINTPTR oldFiles);
+extern VOID OsExecProcessVmSpaceRestore(LosVmSpace *oldSpace);
+extern LosVmSpace *OsExecProcessVmSpaceReplace(LosVmSpace *newSpace, UINTPTR stackBase, INT32 randomDevFD);
+extern UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR *name, LosVmSpace *oldAspace, UINTPTR oldFiles);
 extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBase, UINT32 mapSize);
 extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
 extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy);
@@ -497,6 +488,9 @@ extern UINTPTR OsGetSigHandler(VOID);
 extern VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID);
 extern INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission);
 extern INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission);
+extern UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB);
+extern VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB);
+extern VOID OsProcessThreadGroupDestroy(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

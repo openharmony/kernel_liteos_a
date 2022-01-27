@@ -99,7 +99,7 @@ VOID OsDeleteFromSortLink(SortLinkAttribute *head, SortLinkList *node)
     LOS_SpinUnlock(&head->spinLock);
 }
 
-UINT32 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *targetSortList)
+UINT64 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *targetSortList)
 {
     if (currTime >= targetSortList->responseTime) {
         return 0;
@@ -108,12 +108,12 @@ UINT32 OsSortLinkGetTargetExpireTime(UINT64 currTime, const SortLinkList *target
     return (UINT32)(targetSortList->responseTime - currTime);
 }
 
-UINT32 OsSortLinkGetNextExpireTime(UINT64 currTime, const SortLinkAttribute *sortLinkHeader)
+UINT64 OsSortLinkGetNextExpireTime(UINT64 currTime, const SortLinkAttribute *sortLinkHeader)
 {
     LOS_DL_LIST *head = (LOS_DL_LIST *)&sortLinkHeader->sortLink;
 
     if (LOS_ListEmpty(head)) {
-        return 0;
+        return OS_SORT_LINK_INVALID_TIME;
     }
 
     SortLinkList *listSorted = LOS_DL_LIST_ENTRY(head->pstNext, SortLinkList, sortLinkNode);
