@@ -54,7 +54,6 @@ OpenHarmony LiteOS-A內核是基於Huawei LiteOS內核演進發展的新一代�
 │ ├── hw # 時鐘與中斷相關邏輯代碼
 │ ├── include # 對外暴露頭文件存放目錄
 │ └── uart # 串口相關邏輯代碼
-├── platform # 支持不同的芯片平台代碼，如Hi3516DV300等
 ├── security # 安全特性相關的代碼，包括進程權限管理和虛擬id映射管理
 ├── syscall # 系統調用
 └── tools # 構建工具及相關配置和代碼
@@ -68,13 +67,13 @@ OpenHarmony LiteOS-A內核是基於Huawei LiteOS內核演進發展的新一代�
 
 ## 使用說明<a name="section741617511812"></a>
 
-OpenHarmony LiteOS-A內核支持Hi3518EV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/oem_minitinier_des_3518.md)）、Hi3516DV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/oem_minitinier_des_3516.md)）單板，開發者可基於兩種單板開發運行自己的應用程序。
+OpenHarmony LiteOS-A內核支持Hi3518EV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3518.md)）、Hi3516DV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3516.md)）單板，開發者可基於兩種單板開發運行自己的應用程序。
 
 ### 準備<a name="section1579912573329"></a>
 
 開發者需要在Linux上搭建編譯環境：
 
-- [Ubuntu編譯環境凖備](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-env-setup-linux.md);
+- [Ubuntu編譯環境凖備](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-env-setup.md);
 - Hi3518EV300單板：參考[環境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3518-setting.md)；
 - Hi3516DV300單板：參考[環境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3516-setting.md)。
 
