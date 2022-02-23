@@ -148,7 +148,7 @@ static int HiLogBufferCopy(unsigned char *dst, unsigned dstLen, unsigned char *s
 
 static int HiLogReadRingBuffer(unsigned char *buffer, size_t bufLen)
 {
-    size_t retval;
+    int retval;
     size_t bufLeft = HILOG_BUFFER - g_hiLogDev.headOffset;
     if (bufLeft > bufLen) {
         retval = HiLogBufferCopy(buffer, bufLen, HiLogBufferHead(), bufLen);
