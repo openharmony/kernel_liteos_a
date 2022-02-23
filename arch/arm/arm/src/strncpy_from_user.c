@@ -46,7 +46,7 @@ INT32 LOS_StrncpyFromUser(CHAR *dst, const CHAR *src, INT32 count)
     }
 
     maxCount = (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, (size_t)count)) ? \
-                count : (USER_ASPACE_TOP_MAX - (UINTPTR)src);
+                count : (INT32)(USER_ASPACE_TOP_MAX - (UINTPTR)src);
 
     for (i = 0; i < maxCount; ++i) {
         if (LOS_GetUser(&character, src + offset) != LOS_OK) {
