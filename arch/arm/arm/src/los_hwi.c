@@ -46,16 +46,11 @@ LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_hwiSpin);
 size_t g_intCount[LOSCFG_KERNEL_CORE_NUM] = {0};
 HwiHandleForm g_hwiForm[OS_HWI_MAX_NUM];
 STATIC CHAR *g_hwiFormName[OS_HWI_MAX_NUM] = {0};
-STATIC UINT32 g_hwiFormCnt[OS_HWI_MAX_NUM] = {0};
+STATIC UINT32 g_hwiFormCnt[LOSCFG_KERNEL_CORE_NUM][OS_HWI_MAX_NUM] = {0};
 
-VOID OsIncHwiFormCnt(UINT32 index)
+UINT32 OsGetHwiFormCnt(UINT16 cpuId, UINT32 index)
 {
-    g_hwiFormCnt[index]++;
-}
-
-UINT32 OsGetHwiFormCnt(UINT32 index)
-{
-    return g_hwiFormCnt[index];
+    return g_hwiFormCnt[cpuId][index];
 }
 
 CHAR *OsGetHwiFormName(UINT32 index)
@@ -74,16 +69,17 @@ VOID OsInterrupt(UINT32 intNum)
 {
     HwiHandleForm *hwiForm = NULL;
     UINT32 *intCnt = NULL;
+    UINT16 cpuId = ArchCurrCpuid();
 
     /* Must keep the operation at the beginning of the interface */
-    intCnt = &g_intCount[ArchCurrCpuid()];
+    intCnt = &g_intCount[cpuId];
     *intCnt = *intCnt + 1;
 
-    OsSchedIrqStartTime();
-
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
-    OsCpupIrqStart();
+    OsCpupIrqStart(cpuId);
 #endif
+
+    OsSchedIrqStartTime();
     OsHookCall(LOS_HOOK_TYPE_ISR_ENTER, intNum);
     hwiForm = (&g_hwiForm[intNum]);
 #ifndef LOSCFG_NO_SHARED_IRQ
@@ -105,14 +101,14 @@ VOID OsInterrupt(UINT32 intNum)
 #ifndef LOSCFG_NO_SHARED_IRQ
     }
 #endif
-    ++g_hwiFormCnt[intNum];
+    ++g_hwiFormCnt[cpuId][intNum];
 
     OsHookCall(LOS_HOOK_TYPE_ISR_EXIT, intNum);
-#ifdef LOSCFG_CPUP_INCLUDE_IRQ
-    OsCpupIrqEnd(intNum);
-#endif
     OsSchedIrqUpdateUsedTime();
 
+#ifdef LOSCFG_CPUP_INCLUDE_IRQ
+    OsCpupIrqEnd(cpuId, intNum);
+#endif
     /* Must keep the operation at the end of the interface */
     *intCnt = *intCnt - 1;
 }
