@@ -36,7 +36,7 @@
 #include "shcmd.h"
 #include "shell.h"
 
-
+#define OS_ALL_SWTMR_MASK 0xffffffff
 #define SWTMR_STRLEN  12
 
 LITE_OS_SEC_DATA_MINOR STATIC CHAR g_shellSwtmrMode[][SWTMR_STRLEN] = {
@@ -57,13 +57,7 @@ STATIC VOID OsPrintSwtmrMsg(const SWTMR_CTRL_S *swtmr)
     UINT32 ticks = 0;
     (VOID)LOS_SwtmrTimeGet(swtmr->usTimerID, &ticks);
 
-    PRINTK("0x%08x  "
-           "%-7s  "
-           "%-6s   "
-           "%-6u   "
-           "%-6u  "
-           "0x%08x  "
-           "%p\n",
+    PRINTK("%7u%10s%8s%12u%7u%#12x%#12x\n",
            swtmr->usTimerID % LOSCFG_BASE_CORE_SWTMR_LIMIT,
            g_shellSwtmrStatus[swtmr->ucState],
            g_shellSwtmrMode[swtmr->ucMode],
@@ -75,34 +69,15 @@ STATIC VOID OsPrintSwtmrMsg(const SWTMR_CTRL_S *swtmr)
 
 STATIC INLINE VOID OsPrintSwtmrMsgHead(VOID)
 {
-    PRINTK("\r\nSwTmrID     State    Mode    Interval  Count   Arg         handlerAddr\n");
-    PRINTK("----------  -------  ------- --------- ------- ----------  --------\n");
+    PRINTK("\r\nSwTmrID     State    Mode    Interval  Count         Arg handlerAddr\n");
 }
 
-LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdSwtmrInfoGet(INT32 argc, const UINT8 **argv)
+STATIC UINT32 SwtmrBaseInfoGet(UINT32 timerID)
 {
-#define OS_ALL_SWTMR_MASK 0xffffffff
     SWTMR_CTRL_S *swtmr = g_swtmrCBArray;
     SWTMR_CTRL_S *swtmr1 = g_swtmrCBArray;
     UINT16 index;
-    size_t timerID;
     UINT16 num = 0;
-    CHAR *endPtr = NULL;
-
-    if (argc > 1) {
-        PRINTK("\nUsage: swtmr [ID]\n");
-        return OS_ERROR;
-    }
-
-    if (argc == 0) {
-        timerID = OS_ALL_SWTMR_MASK;
-    } else {
-        timerID = strtoul((CHAR *)argv[0], &endPtr, 0);
-        if ((endPtr == NULL) || (*endPtr != 0) || (timerID > LOSCFG_BASE_CORE_SWTMR_LIMIT)) {
-            PRINTK("\nswtmr ID can't access %s.\n", argv[0]);
-            return OS_ERROR;
-        }
-    }
 
     for (index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++, swtmr1++) {
         if (swtmr1->ucState == 0) {
@@ -112,13 +87,13 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdSwtmrInfoGet(INT32 argc, const UINT8 **a
 
     if (num == LOSCFG_BASE_CORE_SWTMR_LIMIT) {
         PRINTK("\r\nThere is no swtmr was created!\n");
-        return OS_ERROR;
+        return LOS_NOK;
     }
 
     if (timerID == OS_ALL_SWTMR_MASK) {
+        OsPrintSwtmrMsgHead();
         for (index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++, swtmr++) {
             if (swtmr->ucState != 0) {
-                OsPrintSwtmrMsgHead();
                 OsPrintSwtmrMsg(swtmr);
             }
         }
@@ -132,6 +107,69 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdSwtmrInfoGet(INT32 argc, const UINT8 **a
         }
         PRINTK("\r\nThe SwTimerID is not exist.\n");
     }
+    return LOS_OK;
+}
+
+#ifdef LOSCFG_SWTMR_DEBUG
+STATIC VOID OsSwtmrTimeInfoShow(VOID)
+{
+    UINT8 mode;
+    SwtmrDebugData data;
+
+    PRINTK("SwtmrID  CpuId   Mode    Period(us) WaitTime(us) WaitMax(us) RTime(us) RTimeMax(us) ReTime(us)"
+           " ReTimeMax(us)      RunCount     Handler\n");
+    for (UINT32 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {
+        if (!OsSwtmrDebugDataUsed(index)) {
+            continue;
+        }
+
+        UINT32 ret = OsSwtmrDebugDataGet(index, &data, sizeof(SwtmrDebugData), &mode);
+        if (ret != LOS_OK) {
+            break;
+        }
+
+        UINT64 waitTime = ((data.waitTime / data.waitCount) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 waitTimeMax = (data.waitTimeMax * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 runTime = ((data.runTime / data.runCount) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 runTimeMax = (data.runTimeMax * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 readyTime = ((data.readyTime / data.runCount) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        UINT64 readyTimeMax = (data.readyTimeMax * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+        PRINTK("%4u%10u%7s%14u%13llu%12llu%10llu%13llu%10llu%14llu%15llu%#12x\n",
+               index, data.cpuId, g_shellSwtmrMode[mode], data.period * OS_US_PER_TICK, waitTime, waitTimeMax,
+               runTime, runTimeMax, readyTime, readyTimeMax, data.runCount, data.handler);
+    }
+}
+#endif
+
+LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdSwtmrInfoGet(INT32 argc, const CHAR **argv)
+{
+    UINT32 timerID;
+    CHAR *endPtr = NULL;
+
+    if (argc > 1) {
+        goto SWTMR_HELP;
+    }
+
+    if (argc == 0) {
+        timerID = OS_ALL_SWTMR_MASK;
+#ifdef LOSCFG_SWTMR_DEBUG
+    } else if (strcmp("-t", argv[0]) == 0) {
+        OsSwtmrTimeInfoShow();
+        return LOS_OK;
+#endif
+    } else {
+        timerID = strtoul(argv[0], &endPtr, 0);
+        if ((endPtr == NULL) || (*endPtr != 0) || (timerID > LOSCFG_BASE_CORE_SWTMR_LIMIT)) {
+            PRINTK("\nswtmr ID can't access %s.\n", argv[0]);
+            return LOS_NOK;
+        }
+    }
+
+    return SwtmrBaseInfoGet(timerID);
+SWTMR_HELP:
+    PRINTK("Usage:\n");
+    PRINTK(" swtmr      --- Information about all created software timers.\n");
+    PRINTK(" swtmr ID   --- Specifies information about a software timer.\n");
     return LOS_OK;
 }
 
