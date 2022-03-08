@@ -66,6 +66,9 @@ typedef struct {
     SWTMR_PROC_FUNC handler;    /**< Callback function that handles software timer timeout  */
     UINTPTR arg;                /**< Parameter passed in when the callback function
                                      that handles software timer timeout is called */
+#ifdef LOSCFG_SWTMR_DEBUG
+    UINT32 swtmrId;
+#endif
 } SwtmrHandlerItem;
 
 /**
@@ -107,6 +110,29 @@ extern UINT32 OsSwtmrInit(VOID);
 extern VOID OsSwtmrRecycle(UINT32 processID);
 extern BOOL OsSwtmrWorkQueueFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg);
 extern SPIN_LOCK_S g_swtmrSpin;
+
+#ifdef LOSCFG_SWTMR_DEBUG
+typedef struct {
+    UINT64          startTime;
+    UINT64          waitTimeMax;
+    UINT64          waitTime;
+    UINT64          waitCount;
+    UINT64          readyStartTime;
+    UINT64          readyTime;
+    UINT64          readyTimeMax;
+    UINT64          runTime;
+    UINT64          runTimeMax;
+    UINT64          runCount;
+    SWTMR_PROC_FUNC handler;
+    UINT32          period;
+    UINT32          cpuId;
+    BOOL            swtmrUsed;
+} SwtmrDebugData;
+
+extern BOOL OsSwtmrDebugDataUsed(UINT32 swtmrID);
+extern UINT32 OsSwtmrDebugDataGet(UINT32 swtmrID, SwtmrDebugData *data, UINT32 len, UINT8 *mode);
+#endif
+
 #ifdef __cplusplus
 #if __cplusplus
 }

@@ -52,6 +52,132 @@ LITE_OS_SEC_BSS  SPIN_LOCK_INIT(g_swtmrSpin);
 #define SWTMR_LOCK(state)       LOS_SpinLockSave(&g_swtmrSpin, &(state))
 #define SWTMR_UNLOCK(state)     LOS_SpinUnlockRestore(&g_swtmrSpin, (state))
 
+#ifdef LOSCFG_SWTMR_DEBUG
+#define OS_SWTMR_PERIOD_TO_CYCLE(period) (((UINT64)(period) * OS_NS_PER_TICK) / OS_NS_PER_CYCLE)
+STATIC SwtmrDebugData *g_swtmrDebugData = NULL;
+
+BOOL OsSwtmrDebugDataUsed(UINT32 swtmrID)
+{
+    if (swtmrID > LOSCFG_BASE_CORE_SWTMR_LIMIT) {
+        return FALSE;
+    }
+
+    return g_swtmrDebugData[swtmrID].swtmrUsed;
+}
+
+UINT32 OsSwtmrDebugDataGet(UINT32 swtmrID, SwtmrDebugData *data, UINT32 len, UINT8 *mode)
+{
+    UINT32 intSave;
+    errno_t ret;
+
+    if ((swtmrID > LOSCFG_BASE_CORE_SWTMR_LIMIT) || (data == NULL) ||
+        (mode == NULL) || (len < sizeof(SwtmrDebugData))) {
+        return LOS_NOK;
+    }
+
+    SWTMR_CTRL_S *swtmr = &g_swtmrCBArray[swtmrID];
+    SWTMR_LOCK(intSave);
+    ret = memcpy_s(data, len, &g_swtmrDebugData[swtmrID], sizeof(SwtmrDebugData));
+    *mode = swtmr->ucMode;
+    SWTMR_UNLOCK(intSave);
+    if (ret != EOK) {
+        return LOS_NOK;
+    }
+    return LOS_OK;
+}
+#endif
+
+STATIC VOID SwtmrDebugDataInit(VOID)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    UINT32 size = sizeof(SwtmrDebugData) * LOSCFG_BASE_CORE_SWTMR_LIMIT;
+    g_swtmrDebugData = (SwtmrDebugData *)LOS_MemAlloc(m_aucSysMem1, size);
+    if (g_swtmrDebugData == NULL) {
+        PRINT_ERR("SwtmrDebugDataInit malloc failed!\n");
+        return;
+    }
+    (VOID)memset_s(g_swtmrDebugData, size, 0, size);
+#endif
+}
+
+STATIC INLINE VOID SwtmrDebugDataUpdate(SWTMR_CTRL_S *swtmr, UINT32 ticks)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    SwtmrDebugData *data = &g_swtmrDebugData[swtmr->usTimerID];
+    data->startTime = swtmr->startTime;
+    if (data->period != ticks) {
+        data->waitCount = 0;
+        data->runCount = 0;
+        data->waitTime = 0;
+        data->waitTimeMax = 0;
+        data->runTime = 0;
+        data->runTimeMax = 0;
+        data->readyTime = 0;
+        data->readyTimeMax = 0;
+        data->period = ticks;
+    }
+#endif
+}
+
+STATIC INLINE VOID SwtmrDebugDataStart(SWTMR_CTRL_S *swtmr, UINT16 cpuId)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    SwtmrDebugData *data = &g_swtmrDebugData[swtmr->usTimerID];
+    data->swtmrUsed = TRUE;
+    data->handler = swtmr->pfnHandler;
+    data->cpuId = cpuId;
+#endif
+}
+
+STATIC INLINE VOID SwtmrDebugWaitTimeCalculate(UINT32 timerId, SwtmrHandlerItemPtr swtmrHandler)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    SwtmrDebugData *data = &g_swtmrDebugData[timerId];
+    swtmrHandler->swtmrId = timerId;
+    UINT64 currTime = OsGetCurrSchedTimeCycle();
+    UINT64 waitTime = currTime - data->startTime;
+    data->waitTime += waitTime;
+    if (waitTime > data->waitTimeMax) {
+        data->waitTimeMax = waitTime;
+    }
+    data->readyStartTime = currTime;
+    LOS_ASSERT(waitTime >= OS_SWTMR_PERIOD_TO_CYCLE(data->period));
+    data->waitCount++;
+#endif
+}
+
+STATIC INLINE VOID SwtmrDebugDataClear(UINT32 timerId)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    (VOID)memset_s(&g_swtmrDebugData[timerId], sizeof(SwtmrDebugData), 0, sizeof(SwtmrDebugData));
+#endif
+}
+
+STATIC INLINE VOID SwtmrHandler(SwtmrHandlerItemPtr swtmrHandle)
+{
+#ifdef LOSCFG_SWTMR_DEBUG
+    UINT32 intSave;
+    SwtmrDebugData *data = &g_swtmrDebugData[swtmrHandle->swtmrId];
+    UINT64 startTime = OsGetCurrSchedTimeCycle();
+#endif
+    swtmrHandle->handler(swtmrHandle->arg);
+#ifdef LOSCFG_SWTMR_DEBUG
+    UINT64 runTime = OsGetCurrSchedTimeCycle() - startTime;
+    SWTMR_LOCK(intSave);
+    data->runTime += runTime;
+    if (runTime > data->runTimeMax) {
+        data->runTimeMax = runTime;
+    }
+    runTime = startTime - data->readyStartTime;
+    data->readyTime += runTime;
+    if (runTime > data->readyTimeMax) {
+        data->readyTimeMax = runTime;
+    }
+    data->runCount++;
+    SWTMR_UNLOCK(intSave);
+#endif
+}
+
 STATIC VOID SwtmrTask(VOID)
 {
     SwtmrHandlerItemPtr swtmrHandlePtr = NULL;
@@ -62,12 +188,9 @@ STATIC VOID SwtmrTask(VOID)
     for (;;) {
         ret = LOS_QueueRead(swtmrHandlerQueue, &swtmrHandlePtr, sizeof(CHAR *), LOS_WAIT_FOREVER);
         if ((ret == LOS_OK) && (swtmrHandlePtr != NULL)) {
-            swtmrHandle.handler = swtmrHandlePtr->handler;
-            swtmrHandle.arg = swtmrHandlePtr->arg;
+            (VOID)memcpy_s(&swtmrHandle, sizeof(SwtmrHandlerItem), swtmrHandlePtr, sizeof(SwtmrHandlerItem));
             (VOID)LOS_MemboxFree(g_swtmrHandlerPool, swtmrHandlePtr);
-            if (swtmrHandle.handler != NULL) {
-                swtmrHandle.handler(swtmrHandle.arg);
-            }
+            SwtmrHandler(&swtmrHandle);
         }
     }
 }
@@ -150,6 +273,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
             ret = LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
             goto ERROR;
         }
+
+        SwtmrDebugDataInit();
     }
 
     ret = LOS_QueueCreate(NULL, OS_SWTMR_HANDLE_QUEUE_SIZE, &swtmrHandlerQueue, 0, sizeof(CHAR *));
@@ -190,6 +315,7 @@ LITE_OS_SEC_TEXT VOID OsSwtmrStart(SWTMR_CTRL_S *swtmr)
     swtmr->ucState = OS_SWTMR_STATUS_TICKING;
 
     OsSchedAddSwtmr2TimeList(&swtmr->stSortList, swtmr->startTime, ticks);
+    SwtmrDebugDataUpdate(swtmr, ticks);
     OsSchedUpdateExpireTime();
     return;
 }
@@ -204,6 +330,8 @@ STATIC INLINE VOID OsSwtmrDelete(SWTMR_CTRL_S *swtmr)
     LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);
     swtmr->ucState = OS_SWTMR_STATUS_UNUSED;
     swtmr->uwOwnerPid = 0;
+
+    SwtmrDebugDataClear(swtmr->usTimerID);
 }
 
 VOID OsSwtmrWake(SchedRunQue *rq, UINT64 startTime, SortLinkList *sortList)
@@ -216,6 +344,7 @@ VOID OsSwtmrWake(SchedRunQue *rq, UINT64 startTime, SortLinkList *sortList)
     if (swtmrHandler != NULL) {
         swtmrHandler->handler = swtmr->pfnHandler;
         swtmrHandler->arg = swtmr->uwArg;
+        SwtmrDebugWaitTimeCalculate(swtmr->usTimerID, swtmrHandler);
 
         if (LOS_QueueWrite(rq->swtmrHandlerQueue, swtmrHandler, sizeof(CHAR *), LOS_NO_WAIT)) {
             (VOID)LOS_MemboxFree(g_swtmrHandlerPool, swtmrHandler);
@@ -389,6 +518,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SwtmrStart(UINT16 swtmrID)
             /* fall-through */
         case OS_SWTMR_STATUS_CREATED:
             swtmr->startTime = OsGetCurrSchedTimeCycle();
+            SwtmrDebugDataStart(swtmr, ArchCurrCpuid());
             OsSwtmrStart(swtmr);
             break;
         default:
