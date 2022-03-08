@@ -1325,7 +1325,9 @@ INT32 system_console_init(const CHAR *deviceName)
         LOS_SpinLockSave(&g_consoleSpin, &intSave);
         (VOID)OsConsoleDelete(consoleCB);
         g_console[consoleID - 1] = NULL;
-        g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = 0;
+        if (OsCurrTaskGet() != NULL) {
+            g_taskConsoleIDArray[OsCurrTaskGet()->taskID] = 0;
+        }
         LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
         return VFS_ERROR;
     }

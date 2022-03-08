@@ -36,7 +36,6 @@
 #include "dirent.h"
 #include "securec.h"
 
-
 #define SHELL_INIT_MAGIC_FLAG 0xABABABAB
 #define CTRL_C 0x03 /* 0x03: ctrl+c ASCII */
 
@@ -585,7 +584,6 @@ END:
 
 unsigned int OsCmdExec(CmdParsed *cmdParsed, char *cmdStr)
 {
-    /* TODO: complete the usrspace command */
     unsigned int ret = SH_OK;
     if (cmdParsed && cmdStr) {
         ret = SH_NOK;

@@ -353,7 +353,7 @@ INT32 JffsFixWrite(CHAR *path, INT64 fileSize, INT32 writeSize, INT32 interfaceT
     gettimeofday(&testTime2, 0);
     perTime = (testTime2.tv_sec - testTime1.tv_sec) * USECS_PER_SEC + (testTime2.tv_usec - testTime1.tv_usec);
 
-    printf("fix_Write TaskID:%3d,sucess to fclose the %s ,task:%d ms,\n", taskId, path, MSECS_PER_SEC / MSECS_PER_SEC);
+    printf("fix_Write TaskID:%3d,sucess to fclose the %s ,task:%d ms,\n", taskId, path, (perTime / USECS_PER_SEC) * MSECS_PER_SEC);
 
     free(writeBuf);
 
@@ -1000,7 +1000,7 @@ public:
 };
 #if defined(LOSCFG_USER_TEST_FULL)
 /* *
- * @tc.name: IO_TEST_FACCESSAT_001 
+ * @tc.name: IO_TEST_FACCESSAT_001
  * @tc.desc: normal tests for faccessat
  * @tc.type: FUNC
  * @tc.require: AR000EEMQ9
