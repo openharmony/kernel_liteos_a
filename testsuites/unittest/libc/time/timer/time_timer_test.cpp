@@ -77,17 +77,6 @@ HWTEST_F(TimeTimerTest, TimerTest003, TestSize.Level0)
 }
 
 /* *
- * @tc.name: TimerTest004
- * @tc.desc: function for TimeTimerTest
- * @tc.type: FUNC
- * @tc.require: AR000EEMQ9
- */
-/*HWTEST_F(TimeTimerTest, TimerTest004, TestSize.Level0)
-{
-    TimerTest004(); // TODO: musl sigaction handler have only one param.
-}*/
-
-/* *
  * @tc.name: TimerTest005
  * @tc.desc: function for timer_create SIGEV_THREAD.
  * @tc.type: FUNC

@@ -578,7 +578,7 @@ BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priori
     }
 
     taskCB->priority = priority;
-    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, taskCB->priority); 
+    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, taskCB->priority);
     if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {
         OsSchedTaskEnQueue(taskCB);
         return TRUE;
@@ -771,7 +771,9 @@ BOOL OsSchedSwtmrTimeListFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
     for (UINT16 cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
         SchedRunQue *rq = OsSchedRunQueByID(cpuid);
         SortLinkAttribute *swtmrSortLink = &rq->swtmrSortLink;
-        return SchedSwtmrRunQueFind(swtmrSortLink, checkFunc, arg);
+        if (SchedSwtmrRunQueFind(swtmrSortLink, checkFunc, arg)) {
+            return TRUE;
+        }
     }
     return FALSE;
 }

@@ -180,7 +180,7 @@ static void LmsFreeTest(void)
     printf("\n-------- LmsFreeTest Start --------\n");
     char *buf = (char *)malloc(16);
     printf("[LmsFreeTest] malloc addr:%p size:%d\n", buf, 16);
-    printf("[LmsFreeTest] free addr:%p\n", buf, 16);
+    printf("[LmsFreeTest] free addr:%p size:%d\n", buf, 16);
     free(buf);
     printf("[LmsFreeTest] Use after free error should be triggered, read addr:%p range[1,1]\n", buf);
     BufReadTest(buf, 1, 1);
@@ -204,5 +204,6 @@ int main(int argc, char * const * argv)
     LmsStrcpyTest();
     LmsStrcatTest();
     LmsFreeTest();
+    free(tmp);
     printf("\n############### Lms Test End ###############\n");
 }

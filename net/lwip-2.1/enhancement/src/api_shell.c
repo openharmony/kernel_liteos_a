@@ -3015,7 +3015,7 @@ int netstat_netconn_sendq(struct netconn *conn)
             retVal = netstat_tcp_sendq(conn->pcb.tcp);
             break;
         case NETCONN_RAW:
-            retVal = 0; /* todo */
+            retVal = 0;
             break;
 #if PF_PKT_SUPPORT
         case NETCONN_PKT_RAW:

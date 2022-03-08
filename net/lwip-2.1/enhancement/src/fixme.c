@@ -144,7 +144,7 @@ err_t netifapi_dhcps_stop(struct netif *netif)
  */
 static void tcp_unlock_accept(ip6_addr_t *ipaddr)
 {
-    // FIXME
+
 }
 
 static void netif_ip6_addr_setinvalid(struct netif *netif, const ip6_addr_t *addr6)
@@ -327,26 +327,22 @@ err_t netif_set_hwaddr(struct netif *netif, const unsigned char *hw_addr, int hw
 
 err_t etharp_update_arp_entry(struct netif *netif, const ip4_addr_t *ipaddr, struct eth_addr *ethaddr, u8_t flags)
 {
-    // FIXME
     return 0;
 }
 
 err_t etharp_delete_arp_entry(struct netif *netif, ip4_addr_t *ipaddr)
 {
-    // FIXME
     return 0;
 }
 
 
 err_t lwip_dns_setserver(u8_t numdns, ip_addr_t *dnsserver)
 {
-    // FIXME
     return 0;
 }
 
 err_t lwip_dns_getserver(u8_t numdns, ip_addr_t *dnsserver)
 {
-    // FIXME
     return 0;
 }
 
@@ -372,7 +368,6 @@ sys_sem_t dup_addr_detect;
 
 int lwip_sntp_start(int server_num, char **sntp_server, struct timeval *time)
 {
-    // FIXME
     return 0;
 }
 
