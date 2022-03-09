@@ -1306,15 +1306,15 @@ LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg
 
     switch (cmd) {
         case IPC_SET_CMS:
-            return SetCms(arg);
+            return (INT32)SetCms(arg);
         case IPC_CMS_CMD:
-            return HandleCmsCmd((CmsCmdContent *)(UINTPTR)arg);
+            return (INT32)HandleCmsCmd((CmsCmdContent *)(UINTPTR)arg);
         case IPC_SET_IPC_THREAD:
             if (IsCmsSet() == FALSE) {
                 PRINT_ERR("Liteipc ServiceManager not set!\n");
                 return -EINVAL;
             }
-            return SetIpcTask();
+            return (INT32)SetIpcTask();
         case IPC_SEND_RECV_MSG:
             if (arg == 0) {
                 return -EINVAL;
@@ -1325,12 +1325,12 @@ LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg
             }
             ret = LiteIpcMsgHandle((IpcContent *)(UINTPTR)arg);
             if (ret != LOS_OK) {
-                return ret;
+                return (INT32)ret;
             }
             break;
         default:
             PRINT_ERR("Unknow liteipc ioctl cmd:%d\n", cmd);
             return -EINVAL;
     }
-    return ret;
+    return (INT32)ret;
 }
