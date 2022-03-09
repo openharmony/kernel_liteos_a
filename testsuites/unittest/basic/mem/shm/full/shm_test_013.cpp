@@ -44,9 +44,10 @@ static int testcase(void)
     ICUNIT_ASSERT_NOT_EQUAL(shmfd, -1, shmfd);
 
     writebuf = (char*)malloc(pageSize);
+    ICUNIT_ASSERT_NOT_EQUAL(writebuf, NULL, writebuf);
     readbuf = (char*)malloc(pageSize);
     ICUNIT_ASSERT_NOT_EQUAL(readbuf, NULL, readbuf);
-    ICUNIT_ASSERT_NOT_EQUAL(writebuf, NULL, writebuf);
+
     memset_s(writebuf, pageSize, 0xf, pageSize);
 
     count = write(shmfd, writebuf, pageSize);
