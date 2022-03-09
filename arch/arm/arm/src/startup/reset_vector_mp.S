@@ -121,8 +121,9 @@ reset_vector:
     mcr     p15, 0, r0, c13, c0, 4
     /* do some early cpu setup: i/d cache disable, mmu disabled */
     mrc     p15, 0, r0, c1, c0, 0
-    bic     r0, #(1<<12)
-    bic     r0, #(1<<2 | 1<<0)
+    bic     r0, #(1 << 12)          /* i cache */
+    bic     r0, #(1 << 2)           /* d cache */
+    bic     r0, #(1 << 0)           /* mmu */
     mcr     p15, 0, r0, c1, c0, 0
 
     /* enable fpu+neon */
@@ -282,11 +283,11 @@ mmu_setup:
     mcr    p15, 0, r12, c1, c0, 1               /* ACTLR, Auxlliary Control Register */
     dsb
     mrc     p15, 0, r12, c1, c0, 0
-    bic     r12, #(1 << 29 | 1 << 28)
-    orr     r12, #(1 << 0)
+    bic     r12, #(1 << 29 | 1 << 28)           /* Disable TRE/AFE */
+    orr     r12, #(1 << 0)                      /* mmu enable */
     bic     r12, #(1 << 1)
-    orr     r12, #(1 << 2)
-    orr     r12, #(1 << 12)
+    orr     r12, #(1 << 2)                     /* D cache enable */
+    orr     r12, #(1 << 12)                    /* I cache enable */
     mcr     p15, 0, r12, c1, c0, 0              /* Set SCTLR with r12: Turn on the MMU, I/D cache Disable TRE/AFE */
     isb
     ldr     pc,  =1f                            /* Convert to VA */
