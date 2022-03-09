@@ -73,9 +73,9 @@ OpenHarmony LiteOS Cortex-A supports the  [Hi3518E V300](https://gitee.com/openh
 
 You need to set up the compilation environment on Linux.
 
--   [Compilation environment on Linux](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-env-setup-lin.md)
--   For Hi3518E V300, see  [Setting Up the Hi3518 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-board3518-setting.md).
--   For Hi3516D V300, see  [Setting Up the Hi3516 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-board3516-setting.md).
+-   [Compilation environment on Linux](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-env-setup-linux.md)
+-   For Hi3518E V300, see  [Setting Up the Hi3518 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3518-setting.md).
+-   For Hi3516D V300, see  [Setting Up the Hi3516 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3516-setting.md).
 
 ### Source Code Acquisition<a name="section11443189655"></a>
 
@@ -85,9 +85,9 @@ Download and decompress a set of source code on a Linux server to acquire the  [
 
 For details about how to develop the first application, see:
 
--   [Developing the First Example Program Running on Hi3518](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-board3518-running.md)
+-   [Developing the First Example Program Running on Hi3518](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3518-running.md)
 
--   [Developing the First Example Program Running on Hi3516](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-board3516-running.md)
+-   [Developing the First Example Program Running on Hi3516](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3516-running.md)
 
 ## Repositories Involved<a name="section1371113476307"></a>
 
@@ -95,5 +95,5 @@ For details about how to develop the first application, see:
 
 [drivers\_liteos](https://gitee.com/openharmony/drivers_liteos/blob/master/README.md)
 
-**kernel\_liteos\_a**
+[kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a/blob/master/README.md)
 
