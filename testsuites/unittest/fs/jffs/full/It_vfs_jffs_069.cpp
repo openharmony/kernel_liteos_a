@@ -64,7 +64,7 @@ static UINT32 Testcase(VOID)
     fd = open(pathname, O_NONBLOCK | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT1);
 
-    memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
+    (void)memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
     len = read(fd, readbuf, 50); // 50 means read len
     ICUNIT_GOTO_EQUAL(len, 7, len, EXIT1); // 7 means length of actually read data
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "liteos ", readbuf, EXIT1);
