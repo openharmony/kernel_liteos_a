@@ -53,7 +53,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(len, strlen(filebuf1), len, EXIT2);
 
     off = lseek(fd, 3, SEEK_SET); // 3 means seek len
-    ICUNIT_GOTO_EQUAL(off, 3, off, EXIT2); // 3 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 3, off, EXIT2); // 3 means current file position
 
     pfd2 = dup(fd);
     ICUNIT_GOTO_NOT_EQUAL(pfd2, -1, pfd2, EXIT3);

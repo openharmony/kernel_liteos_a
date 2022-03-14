@@ -87,7 +87,7 @@ static struct ProcDirEntry *ProcFindNode(struct ProcDirEntry *parent, const char
 }
 
 /*
- * descrition: find the file's handle
+ * description: find the file's handle
  * path: the file of fullpath
  * return: the file of handle
  * add by ll

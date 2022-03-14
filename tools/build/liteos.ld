@@ -175,7 +175,7 @@ SECTIONS
 
     __user_init_size = __user_init_end - __user_init_entry;
 
-    /* unintialized data (in same segment as writable data) */
+    /* uninitialized data (in same segment as writable data) */
     .bss : {
         . = ALIGN(0x800);
         __int_stack_start = .;

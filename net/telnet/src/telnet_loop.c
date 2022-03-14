@@ -427,7 +427,7 @@ STATIC INT32 TelnetdAcceptClient(INT32 clientFd, const struct sockaddr_in *inTel
     }
 
     if (g_telnetClientFd >= 0) {
-        /* alreay connected and support only one */
+        /* already connected and support only one */
         goto ERROUT_UNLOCK;
     }
 
