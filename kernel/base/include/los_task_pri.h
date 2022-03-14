@@ -43,9 +43,9 @@ extern "C" {
 
 /**
  * @ingroup los_task
- * Define task siginal types.
+ * Define task signal types.
  *
- * Task siginal types.
+ * Task signal types.
  */
 #define SIGNAL_NONE                 0U
 #define SIGNAL_KILL                 (1U << 0)

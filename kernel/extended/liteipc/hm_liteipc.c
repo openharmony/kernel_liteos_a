@@ -1161,7 +1161,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
             if (ret == LOS_OK) {
                 break;
             }
-            if (ret == -ENOENT) { /* It means that we've recieved a failed reply */
+            if (ret == -ENOENT) { /* It means that we've received a failed reply */
                 return ret;
             }
         }
