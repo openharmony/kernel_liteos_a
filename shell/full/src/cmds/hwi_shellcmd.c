@@ -76,7 +76,7 @@ STATIC VOID ShellCmdHwiInfoShow(OsIrqCpupCB *irqData, CPUP_INFO_S *hwiCpup1s,
             }
             CHAR *irqName = OsGetHwiFormName(i);
             UINT32 index = (i * LOSCFG_KERNEL_CORE_NUM) + cpu;
-            PRINTK(" %10d:%5u%11u%11llu%10llu%6u.%-2u%8u.%-2u%7u.%-2u%7s %-12s\n", i, cpu, count, cycles, timeMax,
+            PRINTK(" %10u:%5u%11u%11llu%10llu%6u.%-2u%8u.%-2u%7u.%-2u%7s %-12s\n", i, cpu, count, cycles, timeMax,
                    hwiCpupAll[index].usage / CPUP_PRECISION_MULT, hwiCpupAll[index].usage % CPUP_PRECISION_MULT,
                    hwiCpup10s[index].usage / CPUP_PRECISION_MULT, hwiCpup10s[index].usage % CPUP_PRECISION_MULT,
                    hwiCpup1s[index].usage / CPUP_PRECISION_MULT, hwiCpup1s[index].usage % CPUP_PRECISION_MULT,

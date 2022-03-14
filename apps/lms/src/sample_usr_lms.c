@@ -70,11 +70,16 @@ static void LmsReallocTest(void)
     printf("[LmsReallocTest] malloc addr:%p size:%d\n", buf, 64);
     printf("[LmsReallocTest] read overflow & underflow error should be triggered, read range[-1,64]\n");
     BufReadTest(buf, -1, 64);
-    buf = (char *)realloc(buf, 32);
-    printf("[LmsReallocTest] realloc addr:%p size:%d\n", buf, 32);
+    char *buf1 = (char *)realloc(buf, 32);
+    if (buf1 == NULL) {
+        free(buf);
+        return;
+    }
+    buf = NULL;
+    printf("[LmsReallocTest] realloc addr:%p size:%d\n", buf1, 32);
     printf("[LmsReallocTest] read overflow & underflow error should be triggered, read range[-1,32]\n");
-    BufReadTest(buf, -1, 32);
-    free(buf);
+    BufReadTest(buf1, -1, 32);
+    free(buf1);
     printf("\n-------- LmsReallocTest End --------\n");
 }
 
