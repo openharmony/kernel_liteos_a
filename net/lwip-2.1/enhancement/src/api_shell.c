@@ -1750,7 +1750,7 @@ LWIP_STATIC int osPingFunc(u32_t destip, u32_t cnt, u32_t interval, u32_t data_l
                     PRINTK("\nPing: parameter problem ...");
                     break;
                 default :
-                    PRINTK("\nPing: unknow error ...");
+                    PRINTK("\nPing: unknown error ...");
                     break;
             }
             i++;
@@ -2371,7 +2371,7 @@ LWIP_STATIC int create_ping6_socket(u8_t type, const void *param)
             ret = lwip_setsockopt(sfd, SOL_SOCKET, SO_BINDTODEVICE, (char *)(param), strlen((char *)(param)));
             if (ret == -1) {
                 (void)lwip_close(sfd);
-                PRINTK("ping6: unknown iface %s\n", (char *)(param));
+                PRINTK("ping6: unknownn iface %s\n", (char *)(param));
                 return ret;
             }
         }

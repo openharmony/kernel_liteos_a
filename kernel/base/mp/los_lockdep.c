@@ -87,7 +87,7 @@ STATIC INLINE CHAR *OsLockDepErrorStringGet(enum LockDepErrType type)
             errorString = "lockdep overflow";
             break;
         default:
-            errorString = "unknow error code";
+            errorString = "unknown error code";
             break;
     }
 
@@ -313,7 +313,7 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
     /* record lock holding time */
     heldlocks[depth].holdTime = OsLockDepGetCycles() - heldlocks[depth].holdTime;
 
-    /* if unlock a older lock, needs move heldLock records */
+    /* if unlock an older lock, needs move heldLock records */
     while (depth < lockDep->lockDepth - 1) {
         lockDep->heldLocks[depth] = lockDep->heldLocks[depth + 1];
         depth++;

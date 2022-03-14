@@ -1208,7 +1208,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcMsgHandle(IpcContent *con)
         }
         content->outMsg = msg;
         if ((content->outMsg->type < 0) || (content->outMsg->type >= MT_DEATH_NOTIFY)) {
-            PRINT_ERR("LiteIpc unknow msg type:%d\n", content->outMsg->type);
+            PRINT_ERR("LiteIpc unknown msg type:%d\n", content->outMsg->type);
             ret = -EINVAL;
             goto BUFFER_FREE;
         }

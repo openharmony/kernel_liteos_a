@@ -469,7 +469,7 @@ int RemoveDir(const char *dir)
 
         rmdir(dir); /* now dir is empty */
     } else {
-        perror("unknow file type!");
+        perror("unknown file type!");
     }
     return 0;
 }
