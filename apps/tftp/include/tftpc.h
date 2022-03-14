@@ -114,7 +114,7 @@ typedef enum tagTFTPC_OpCode {
     TFTPC_OP_RRQ = 1,         /* read request */
     TFTPC_OP_WRQ,             /* write request */
     TFTPC_OP_DATA,            /* data packet */
-    TFTPC_OP_ACK,             /* acknowledgement */
+    TFTPC_OP_ACK,             /* acknowledgment */
     TFTPC_OP_ERROR,           /* error code */
     TFTPC_OP_OPT              /* option code */
 } TFTPC_OPCODE_E;

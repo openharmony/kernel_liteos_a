@@ -88,7 +88,7 @@ INT32 GetFilepOps(const struct file *filep, struct file **privFilep, const struc
         goto ERROUT;
     }
 
-    /* to find console device's filep(now it is *privFilep) throught i_private */
+    /* to find console device's filep(now it is *privFilep) through i_private */
     struct drv_data *drv = (struct drv_data *)filep->f_vnode->data;
     *privFilep = (struct file *)drv->priv;
     if (((*privFilep)->f_vnode == NULL) || ((*privFilep)->f_vnode->data == NULL)) {
@@ -1073,7 +1073,7 @@ STATIC INT32 OsConsoleDevInit(CONSOLE_CB *consoleCB, const CHAR *deviceName)
     filep->f_path = NULL;
     filep->f_priv = NULL;
     /*
-     * Use filep to connect console and uart, we can find uart driver function throught filep.
+     * Use filep to connect console and uart, we can find uart driver function through filep.
      * now we can operate /dev/console to operate /dev/ttyS0 through filep.
      */
     devOps = (struct file_operations_vfs *)((struct drv_data*)vnode->data)->ops;

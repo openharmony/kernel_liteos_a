@@ -103,7 +103,7 @@ static UINT32 Testcase(VOID)
     ret = LOS_TaskCreate(&g_testTaskID01, &testTask);
     ICUNIT_ASSERT_EQUAL(ret, LOS_OK, ret);
 
-    LOS_TaskDelay(2); // test task's prio be seted 22
+    LOS_TaskDelay(2); // test task's prio be set 22
     ICUNIT_GOTO_EQUAL(g_testCount, 2, g_testCount, EXIT);
 
     LOS_TaskLock();

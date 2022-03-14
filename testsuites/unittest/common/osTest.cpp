@@ -251,7 +251,7 @@ UINT64 TestTickCountByCurrCpuid(VOID)
 
 /*
  * different from calling LOS_TaskDelay,
- * this func will not yeild this task to another one.
+ * this func will not yield this task to another one.
  */
 VOID TestBusyTaskDelay(UINT32 tick)
 {

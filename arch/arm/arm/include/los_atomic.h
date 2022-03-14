@@ -246,7 +246,7 @@ STATIC INLINE INT32 LOS_AtomicIncRet(Atomic *v)
  * @brief Atomic auto-decrement.
  *
  * @par Description:
- * This API is used to implementating the atomic auto-decrement.
+ * This API is used to implement the atomic auto-decrement.
  * @attention
  * <ul>
  * <li>The pointer v must not be NULL.</li>
@@ -280,7 +280,7 @@ STATIC INLINE VOID LOS_AtomicDec(Atomic *v)
  * @brief Atomic auto-decrement.
  *
  * @par Description:
- * This API is used to implementating the atomic auto-decrement and return the result of auto-decrement.
+ * This API is used to implement the atomic auto-decrement and return the result of auto-decrement.
  * @attention
  * <ul>
  * <li>The pointer v must not be NULL.</li>
@@ -531,7 +531,7 @@ STATIC INLINE INT64 LOS_Atomic64IncRet(Atomic64 *v)
  * @brief Atomic64 auto-decrement.
  *
  * @par Description:
- * This API is used to implementating the atomic64 auto-decrement.
+ * This API is used to implement the atomic64 auto-decrement.
  * @attention
  * <ul>
  * <li>The pointer v must not be NULL.</li>
@@ -566,7 +566,7 @@ STATIC INLINE VOID LOS_Atomic64Dec(Atomic64 *v)
  * @brief Atomic64 auto-decrement.
  *
  * @par Description:
- * This API is used to implementating the atomic64 auto-decrement and return the result of auto-decrement.
+ * This API is used to implement the atomic64 auto-decrement and return the result of auto-decrement.
  * @attention
  * <ul>
  * <li>The pointer v must not be NULL.</li>

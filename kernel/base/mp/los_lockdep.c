@@ -142,7 +142,7 @@ STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
         OsPrintLockDepInfo("task name    : %s\n", temp->taskName);
         OsPrintLockDepInfo("task id      : %u\n", temp->taskID);
         OsPrintLockDepInfo("cpu num      : %u\n", temp->currCpu);
-        OsPrintLockDepInfo("start dumping lockdep infomation\n");
+        OsPrintLockDepInfo("start dumping lockdep information\n");
         for (i = 0; i < lockDep->lockDepth; i++) {
             if (lockDep->heldLocks[i].lockPtr == lock) {
                 OsPrintLockDepInfo("[%d] %s <-- addr:0x%x\n", i, LOCKDEP_GET_NAME(lockDep, i),

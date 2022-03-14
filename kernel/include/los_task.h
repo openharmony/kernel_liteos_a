@@ -221,7 +221,7 @@ extern "C" {
 
 /**
  * @ingroup los_task
- * Task error code: The task yeild occurs when the task is locked.
+ * Task error code: The task yield occurs when the task is locked.
  * Value: 0x0200020f
  *
  * Solution: Check the task.
@@ -411,7 +411,7 @@ extern "C" {
 
 /**
  * @ingroup los_task
- * Task error code: Task yeild in int is not permited, which will result in unexpected result.
+ * Task error code: Task yield in int is not permited, which will result in unexpected result.
  *
  * Value: 0x02000224
  *
