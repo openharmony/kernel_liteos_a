@@ -78,7 +78,7 @@ static UINT32 TestCase(VOID)
                 if (value) {
                     countErr++;
                 } else {
-                    countErr++;
+                    countRight++;
                 }
                 break;
             default:
