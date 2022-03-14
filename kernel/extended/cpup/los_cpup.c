@@ -288,8 +288,8 @@ LITE_OS_SEC_TEXT_MINOR STATIC VOID OsCpupGetPos(UINT16 mode, UINT16 *curPosPoint
     curPos = CPUP_PRE_POS(tmpPos);
 
     /*
-     * The current postion has nothing to do with the CPUP modes,
-     * however, the previous postion differs.
+     * The current position has nothing to do with the CPUP modes,
+     * however, the previous position differs.
      */
     switch (mode) {
         case CPUP_LAST_ONE_SECONDS:

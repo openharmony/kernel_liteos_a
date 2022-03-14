@@ -77,8 +77,8 @@ enum {
 #define GICD_PIDR2V3                    (GICD_OFFSET + 0xffe8)
 
 #ifdef LOSCFG_ARCH_GIC_V3
-#define GICD_IGRPMODR(n)                (GICD_OFFSET + 0x0d00 + (n) * 4) /* Interrupt Group Mode Reisters */
-#define GICD_IROUTER(n)                 (GICD_OFFSET + 0x6000 + (n) * 8) /* Interrupt Rounter Reisters */
+#define GICD_IGRPMODR(n)                (GICD_OFFSET + 0x0d00 + (n) * 4) /* Interrupt Group Mode Registers */
+#define GICD_IROUTER(n)                 (GICD_OFFSET + 0x6000 + (n) * 8) /* Interrupt Rounter Registers */
 #endif
 
 #define GIC_REG_8(reg)                  (*(volatile UINT8 *)((UINTPTR)(GIC_BASE_ADDR + (reg))))

@@ -189,7 +189,7 @@ u32_t lwip_tftp_recv_from_server(s32_t iSockNum, u32_t *pulSize, TFTPC_PACKET_S 
     if (iRet == -1) {
         return TFTPC_SELECT_ERROR;
     } else if (iRet == 0) {
-        return TFTPC_TIMEOUT_ERROR;         /* Select timeout occured */
+        return TFTPC_TIMEOUT_ERROR;         /* Select timeout occurred */
     }
 
     if (!FD_ISSET(iSockNum, &stReadfds)) {
@@ -268,7 +268,7 @@ u32_t lwip_tftp_recv_from_server(s32_t iSockNum, u32_t *pulSize, TFTPC_PACKET_S 
     *pulSize = (u32_t)iRet;
 
     /* If received packet is first block of data(for get operation) or if
-       received packet is acknowledgement for write request (put operation)
+       received packet is acknowledgment for write request (put operation)
        store the received port number */
     if (((usOpcode == TFTPC_OP_DATA) &&
          (ntohs(pstRecvBuf->u.stTFTP_Data.usBlknum) == 1)) ||
@@ -687,7 +687,7 @@ u32_t lwip_tftp_get_file_by_filename(u32_t ulHostAddr,
 
         ulErrCode = lwip_tftp_recv_from_server(iSockNum, &ulRecvSize, pstRecvBuf,
                                                &ulIgnorePkt, &stServerAddr, pstSendBuf);
-        /* If select timeout occured */
+        /* If select timeout occurred */
         if (ulErrCode == TFTPC_TIMEOUT_ERROR) {
             ulTotalTime++;
             if (ulTotalTime < TFTPC_MAX_SEND_REQ_ATTEMPTS) {
@@ -982,7 +982,7 @@ u32_t lwip_tftp_put_file_by_filename(u32_t ulHostAddr, u16_t usTftpServPort, u8_
         return TFTPC_MEMALLOC_ERROR;
     }
 
-    /* First time intialize the buffer */
+    /* First time initialize the buffer */
     (void)memset_s((void *)pstSendBuf, sizeof(TFTPC_PACKET_S), 0, sizeof(TFTPC_PACKET_S));
 
     /* The destination path can only be one of the following:
@@ -1221,7 +1221,7 @@ u32_t lwip_tftp_inner_put_file(s32_t iSockNum,
         return TFTPC_MEMALLOC_ERROR;
     }
 
-    /* First time intialize the buffer */
+    /* First time initialize the buffer */
     (void)memset_s((void *)pstRecvBuf, sizeof(TFTPC_PACKET_S), 0, sizeof(TFTPC_PACKET_S));
 
     /* Initialize from address to the server address at first */
@@ -1235,7 +1235,7 @@ u32_t lwip_tftp_inner_put_file(s32_t iSockNum,
         ulError = lwip_tftp_recv_from_server(iSockNum, &ulPktSize,
                                              pstRecvBuf, &ulIgnorePkt,
                                              pstServerAddr, pstSendBuf);
-        /* If select timeout occured */
+        /* If select timeout occurred */
         if (ulError == TFTPC_TIMEOUT_ERROR) {
             ulTotalTime++;
             if (ulTotalTime < TFTPC_MAX_SEND_REQ_ATTEMPTS) {
@@ -1526,7 +1526,7 @@ u32_t lwip_tftp_get_file_by_filename_to_rawmem(u32_t ulHostAddr,
 
         ulErrCode = lwip_tftp_recv_from_server(iSockNum, &ulRecvSize, pstRecvBuf, &ulIgnorePkt,
                                                &stServerAddr, pstSendBuf);
-        /* If select timeout occured */
+        /* If select timeout occurred */
         if (ulErrCode == TFTPC_TIMEOUT_ERROR) {
             ulTotalTime++;
             if (ulTotalTime < TFTPC_MAX_SEND_REQ_ATTEMPTS) {

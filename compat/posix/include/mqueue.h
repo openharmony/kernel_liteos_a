@@ -71,7 +71,7 @@ extern "C" {
 /* CONSTANTS */
 
 #define MQ_USE_MAGIC  0x89abcdef
-/* not suppurt prio */
+/* not support prio */
 #define MQ_PRIO_MAX 1
 
 typedef union send_receive_t {
@@ -297,7 +297,7 @@ extern int mq_send(mqd_t personal, const char *msg, size_t msgLen, unsigned int 
  * <li><b>EAGAIN</b>: The message queue is empty.</li>
  * <li><b>EINVAL</b>: invalid parameter.</li>
  * <li><b>EMSGSIZE</b>: The message to be received is too long.</li>
- * <li><b>ETIMEDOUT</b>: The operaton times out.</li>
+ * <li><b>ETIMEDOUT</b>: The operation times out.</li>
  * </ul>
  *
  * @par Dependency:
