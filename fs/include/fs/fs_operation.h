@@ -98,7 +98,7 @@ extern char *rindex(const char *s, int c);
  * @ingroup fs
  *
  * @par Description:
- * The set_label() function shall set the value of a global varible,
+ * The set_label() function shall set the value of a global variable,
  * the value will be used to set the label of SD card in format().
  *
  * @param name  [IN] label to set, the length must be less than 12
