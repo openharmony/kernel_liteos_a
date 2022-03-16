@@ -62,15 +62,13 @@ static UINT32 Testcase(void)
     TSK_INIT_PARAM_S task1 = { 0 };
     g_testCount = 0;
 
-    TEST_TASK_PARAM_INIT(task1, "it_smp_task_130", (TSK_ENTRY_FUNC)TaskF01, TASK_PRIO_TEST_TASK);
+    UINT16 prio = LOS_TaskPriGet(LOS_CurTaskIDGet());
+    TEST_TASK_PARAM_INIT(task1, "it_smp_task_130", (TSK_ENTRY_FUNC)TaskF01, prio);
     int i;
 
     task1.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
     ret = LOS_TaskCreate(&g_testTaskID01, &task1);
     ICUNIT_GOTO_EQUAL(ret, LOS_OK, ret, EXIT);
-
-    ret = OS_TCB_FROM_TID(g_testTaskID01)->taskStatus;
-    ICUNIT_GOTO_NOT_EQUAL((ret & OS_TASK_STATUS_READY), 0, ret, EXIT);
 
     /* Wait TaskF01 to yield, then testTask timeslice is LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT */
     if (g_testCount != 1) {
