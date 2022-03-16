@@ -48,6 +48,7 @@
 #ifdef LOSCFG_KERNEL_LITEIPC
 #include "hm_liteipc.h"
 #endif
+#include "los_mp.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -55,9 +56,11 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define OS_SCHED_MINI_PERIOD       (OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI)
-#define OS_TICK_RESPONSE_PRECISION (UINT32)((OS_SCHED_MINI_PERIOD * 75) / 100)
-#define OS_SCHED_MAX_RESPONSE_TIME (UINT64)(((UINT64)-1) - 1U)
+#define OS_SCHED_MINI_PERIOD          (OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND_MINI)
+#define OS_TICK_RESPONSE_PRECISION    (UINT32)((OS_SCHED_MINI_PERIOD * 75) / 100)
+#define OS_SCHED_MAX_RESPONSE_TIME    OS_SORT_LINK_INVALID_TIME
+#define OS_SCHED_TICK_TO_CYCLE(ticks) ((UINT64)ticks * OS_CYCLE_PER_TICK)
+#define AFFI_MASK_TO_CPUID(mask)      ((UINT16)((mask) - 1))
 
 extern UINT32 g_taskScheduled;
 #define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))
@@ -78,17 +81,16 @@ typedef enum {
 
 typedef struct {
     SortLinkAttribute taskSortLink;          /* task sort link */
-    SortLinkAttribute swtmrSortLink;         /* swtmr sort link */
     UINT64            responseTime;          /* Response time for current CPU tick interrupts */
     UINT32            responseID;            /* The response ID of the current CPU tick interrupt */
     UINT32            idleTaskID;            /* idle task id */
     UINT32            taskLockCnt;           /* task lock flag */
-    UINT32            swtmrTaskID;           /* software timer task id */
-    UINT32            swtmrHandlerQueue;     /* software timer timeout queue id */
     UINT32            schedFlag;             /* pending scheduler flag */
 } SchedRunQue;
 
 extern SchedRunQue g_schedRunQue[LOSCFG_KERNEL_CORE_NUM];
+
+VOID OsSchedUpdateExpireTime(VOID);
 
 STATIC INLINE SchedRunQue *OsSchedRunQue(VOID)
 {
@@ -190,75 +192,8 @@ STATIC INLINE VOID OsSchedRunQuePendingSet(VOID)
     OsSchedRunQue()->schedFlag |= INT_PEND_RESCH;
 }
 
-#ifdef LOSCFG_KERNEL_SMP
-STATIC INLINE VOID FindIdleRunQue(UINT16 *idleCpuID)
-{
-    SchedRunQue *idleRq = OsSchedRunQueByID(0);
-    UINT32 nodeNum = OsGetSortLinkNodeNum(&idleRq->taskSortLink) + OsGetSortLinkNodeNum(&idleRq->swtmrSortLink);
-    UINT16 cpuID = 1;
-    do {
-        SchedRunQue *rq = OsSchedRunQueByID(cpuID);
-        UINT32 temp = OsGetSortLinkNodeNum(&rq->taskSortLink) + OsGetSortLinkNodeNum(&rq->swtmrSortLink);
-        if (nodeNum > temp) {
-            *idleCpuID = cpuID;
-            nodeNum = temp;
-        }
-        cpuID++;
-    } while (cpuID < LOSCFG_KERNEL_CORE_NUM);
-}
-#endif
-
-STATIC INLINE VOID OsSchedAddTask2TimeList(SortLinkList *node, UINT64 startTime, UINT32 waitTicks)
-{
-    UINT16 idleCpu = 0;
-#ifdef LOSCFG_KERNEL_SMP
-    FindIdleRunQue(&idleCpu);
-#endif
-    SchedRunQue *rq = OsSchedRunQueByID(idleCpu);
-    UINT64 responseTime = startTime + (UINT64)waitTicks * OS_CYCLE_PER_TICK;
-    OsAdd2SortLink(&rq->taskSortLink, node, responseTime, idleCpu);
-}
-
-STATIC INLINE UINT32 OsSchedSwtmrHandlerQueueGet(VOID)
-{
-    return OsSchedRunQue()->swtmrHandlerQueue;
-}
-
-STATIC INLINE VOID OsSchedDeTaskFromTimeList(SortLinkList *node)
-{
-#ifdef LOSCFG_KERNEL_SMP
-    SchedRunQue *rq = OsSchedRunQueByID(node->cpuid);
-#else
-    SchedRunQue *rq = OsSchedRunQueByID(0);
-#endif
-    OsDeleteFromSortLink(&rq->taskSortLink, node);
-}
-
-STATIC INLINE VOID OsSchedAddSwtmr2TimeList(SortLinkList *node, UINT64 startTime, UINT32 waitTicks)
-{
-    UINT16 idleCpu = 0;
-#ifdef LOSCFG_KERNEL_SMP
-    FindIdleRunQue(&idleCpu);
-#endif
-    SchedRunQue *rq = OsSchedRunQueByID(idleCpu);
-    UINT64 responseTime = startTime + (UINT64)waitTicks * OS_CYCLE_PER_TICK;
-    OsAdd2SortLink(&rq->swtmrSortLink, node, responseTime, idleCpu);
-}
-
-STATIC INLINE VOID OsSchedDeSwtmrFromTimeList(SortLinkList *node)
-{
-#ifdef LOSCFG_KERNEL_SMP
-    SchedRunQue *rq = OsSchedRunQueByID(node->cpuid);
-#else
-    SchedRunQue *rq = OsSchedRunQueByID(0);
-#endif
-    OsDeleteFromSortLink(&rq->swtmrSortLink, node);
-}
-
 VOID OsSchedRunQueIdleInit(UINT32 idleTaskID);
-VOID OsSchedRunQueSwtmrInit(UINT32 swtmrTaskID, UINT32 swtmrQueue);
 VOID OsSchedRunQueInit(VOID);
-BOOL OsSchedSwtmrTimeListFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg);
 
 /**
  * @ingroup los_sched
@@ -359,11 +294,11 @@ typedef struct {
     UINT16          priority;           /**< Task priority */
     UINT16          policy;
     UINT64          startTime;          /**< The start time of each phase of task */
+    UINT64          waitTime;           /**< Task delay time, tick number */
     UINT64          irqStartTime;       /**< Interrupt start time */
     UINT32          irqUsedTime;        /**< Interrupt consumption time */
     UINT32          initTimeSlice;      /**< Task init time slice */
     INT32           timeSlice;          /**< Task remaining time slice */
-    UINT32          waitTimes;          /**< Task delay time, tick number */
     SortLinkList    sortList;           /**< Task sortlink node */
 
     UINT32          stackSize;          /**< Task stack size */
@@ -480,6 +415,78 @@ STATIC INLINE VOID OsSchedIrqStartTime(VOID)
     runTask->irqStartTime = OsGetCurrSchedTimeCycle();
 }
 
+#ifdef LOSCFG_KERNEL_SMP
+STATIC INLINE VOID FindIdleRunQue(UINT16 *idleCpuid)
+{
+    SchedRunQue *idleRq = OsSchedRunQueByID(0);
+    UINT32 nodeNum = OsGetSortLinkNodeNum(&idleRq->taskSortLink);
+    UINT16 cpuid = 1;
+    do {
+        SchedRunQue *rq = OsSchedRunQueByID(cpuid);
+        UINT32 temp = OsGetSortLinkNodeNum(&rq->taskSortLink);
+        if (nodeNum > temp) {
+            *idleCpuid = cpuid;
+            nodeNum = temp;
+        }
+        cpuid++;
+    } while (cpuid < LOSCFG_KERNEL_CORE_NUM);
+}
+#endif
+
+STATIC INLINE VOID OsSchedAddTask2TimeList(LosTaskCB *taskCB, UINT64 responseTime)
+{
+#ifdef LOSCFG_KERNEL_SMP
+    UINT16 cpuid = AFFI_MASK_TO_CPUID(taskCB->cpuAffiMask);
+    if (cpuid >= LOSCFG_KERNEL_CORE_NUM) {
+        cpuid = 0;
+        FindIdleRunQue(&cpuid);
+    }
+#else
+    UINT16 cpuid = 0;
+#endif
+
+    SchedRunQue *rq = OsSchedRunQueByID(cpuid);
+    OsAdd2SortLink(&rq->taskSortLink, &taskCB->sortList, responseTime, cpuid);
+#ifdef LOSCFG_KERNEL_SMP
+    if ((cpuid != ArchCurrCpuid()) && (responseTime < rq->responseTime)) {
+        rq->schedFlag |= INT_PEND_TICK;
+        LOS_MpSchedule(CPUID_TO_AFFI_MASK(cpuid));
+    }
+#endif
+}
+
+STATIC INLINE VOID OsSchedDeTaskFromTimeList(LosTaskCB *taskCB)
+{
+    SortLinkList *node = &taskCB->sortList;
+#ifdef LOSCFG_KERNEL_SMP
+    SchedRunQue *rq = OsSchedRunQueByID(node->cpuid);
+#else
+    SchedRunQue *rq = OsSchedRunQueByID(0);
+#endif
+    UINT64 oldResponseTime = GET_SORTLIST_VALUE(node);
+    OsDeleteFromSortLink(&rq->taskSortLink, node);
+    if (oldResponseTime <= rq->responseTime) {
+        rq->responseTime = OS_SCHED_MAX_RESPONSE_TIME;
+    }
+}
+
+STATIC INLINE UINT32 OsSchedAdjustTaskFromTimeList(LosTaskCB *taskCB, UINT64 responseTime)
+{
+    UINT32 ret;
+    SortLinkList *node = &taskCB->sortList;
+#ifdef LOSCFG_KERNEL_SMP
+    UINT16 cpuid = node->cpuid;
+#else
+    UINT16 cpuid = 0;
+#endif
+    SchedRunQue *rq = OsSchedRunQueByID(cpuid);
+    ret = OsSortLinkAdjustNodeResponseTime(&rq->taskSortLink, node, responseTime);
+    if (ret == LOS_OK) {
+        rq->schedFlag |= INT_PEND_TICK;
+    }
+    return ret;
+}
+
 /*
  * Schedule flag, one bit represents one core.
  * This flag is used to prevent kernel scheduling before OSStartToRun.
@@ -494,7 +501,6 @@ STATIC INLINE VOID OsSchedIrqStartTime(VOID)
 
 VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask);
 VOID OsSchedResetSchedResponseTime(UINT64 responseTime);
-VOID OsSchedUpdateExpireTime(VOID);
 VOID OsSchedToUserReleaseLock(VOID);
 VOID OsSchedTaskDeQueue(LosTaskCB *taskCB);
 VOID OsSchedTaskEnQueue(LosTaskCB *taskCB);
@@ -504,7 +510,7 @@ BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priori
 BOOL OsSchedModifyProcessSchedParam(UINT32 pid, UINT16 policy, UINT16 priority);
 VOID OsSchedSuspend(LosTaskCB *taskCB);
 BOOL OsSchedResume(LosTaskCB *taskCB);
-VOID OsSchedDelay(LosTaskCB *runTask, UINT32 tick);
+VOID OsSchedDelay(LosTaskCB *runTask, UINT64 waitTime);
 VOID OsSchedYield(VOID);
 VOID OsSchedTaskExit(LosTaskCB *taskCB);
 VOID OsSchedTick(VOID);
@@ -525,14 +531,13 @@ VOID OsSchedIrqEndCheckNeedSched(VOID);
 */
 LOS_DL_LIST *OsSchedLockPendFindPos(const LosTaskCB *runTask, LOS_DL_LIST *lockList);
 
+#ifdef LOSCFG_SCHED_DEBUG
 #ifdef LOSCFG_SCHED_TICK_DEBUG
 VOID OsSchedDebugRecordData(VOID);
 #endif
-
 UINT32 OsShellShowTickRespo(VOID);
-
 UINT32 OsShellShowSchedParam(VOID);
-
+#endif
 #ifdef __cplusplus
 #if __cplusplus
 }
