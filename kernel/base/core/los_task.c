@@ -925,7 +925,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_TaskDelay(UINT32 tick)
     }
 
     SCHEDULER_LOCK(intSave);
-    OsSchedDelay(runTask, tick);
+    OsSchedDelay(runTask, OS_SCHED_TICK_TO_CYCLE(tick));
     OsHookCall(LOS_HOOK_TYPE_MOVEDTASKTODELAYEDLIST, runTask);
     SCHEDULER_UNLOCK(intSave);
 
