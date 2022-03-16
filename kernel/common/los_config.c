@@ -52,9 +52,6 @@
 #include "los_tick.h"
 #include "los_vm_boot.h"
 #include "los_smp.h"
-#ifdef LOSCFG_ENABLE_KERNEL_TEST
-#include "los_test_pri.h"
-#endif
 
 STATIC SystemRebootFunc g_rebootHook = NULL;
 
@@ -289,17 +286,14 @@ STATIC VOID SystemInit(VOID)
 extern VOID SystemInit(VOID);
 #endif
 
+#ifndef LOSCFG_ENABLE_KERNEL_TEST
 STATIC UINT32 OsSystemInitTaskCreate(VOID)
 {
     UINT32 taskID;
     TSK_INIT_PARAM_S sysTask;
 
     (VOID)memset_s(&sysTask, sizeof(TSK_INIT_PARAM_S), 0, sizeof(TSK_INIT_PARAM_S));
-#ifndef LOSCFG_ENABLE_KERNEL_TEST
     sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)SystemInit;
-#else
-    sysTask.pfnTaskEntry = (TSK_ENTRY_FUNC)TestSystemInit;
-#endif
     sysTask.uwStackSize = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
     sysTask.pcName = "SystemInit";
     sysTask.usTaskPrio = LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO;
@@ -323,3 +317,4 @@ STATIC UINT32 OsSystemInit(VOID)
 }
 
 LOS_MODULE_INIT(OsSystemInit, LOS_INIT_LEVEL_KMOD_TASK);
+#endif

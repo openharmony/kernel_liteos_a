@@ -900,6 +900,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
 
 LOS_ERREND:
     SCHEDULER_UNLOCK(intSave);
+    if (ret == LOS_OK) {
+        LOS_Schedule();
+    }
     return ret;
 }
 
