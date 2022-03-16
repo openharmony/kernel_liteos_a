@@ -1,5 +1,5 @@
 # Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -27,17 +27,11 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import("//kernel/liteos_a/liteos.gni")
 
-include $(LITEOSTESTTOPDIR)/config.mk
-
-MODULE_NAME := ktest
-
-LOCAL_INCLUDE := -I $(LITEOSTESTTOPDIR)/kernel/include
-
-LOCAL_SRCS := $(wildcard src/osTest.c) \
-              $(wildcard src/iCunit.c) \
-
-LOCAL_FLAGS :=  $(LOCAL_INCLUDE) -Wno-error  -I $(LITEOSTOPDIR)/../../$(LOSCFG_BOARD_CONFIG_PATH)/include \
-                -I $(LITEOSTOPDIR)/fs/fat/os_adapt
-
-include $(MODULE)
+group("kernel_base") {
+  deps = [
+    "core:test_core",
+    "ipc:test_ipc",
+  ]
+}
