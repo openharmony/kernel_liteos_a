@@ -65,15 +65,15 @@ static UINT32 TestCase(VOID)
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
         (void)memset_s(pathname3, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        snprintf_s(bufname1, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
-        strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, bufname1);
-        strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, pathname2);
+        (void)snprintf_s(bufname1, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
+        (void)strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, bufname1);
+        (void)strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, pathname2);
         (void)strcpy_s(pathname4[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
         ret = mkdir(pathname4[i], HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-        strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, ".txt");
+        (void)strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, ".txt");
         (void)strcpy_s(pathname5[i], JFFS_NAME_LIMITTED_SIZE, pathname3);
 
         fd[i] = open(pathname5[i], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);

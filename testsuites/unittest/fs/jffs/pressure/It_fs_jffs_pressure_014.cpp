@@ -63,7 +63,7 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
     JffsStatPrintf(buf1);
 
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test");
     ret = mkdir(pathname2, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 

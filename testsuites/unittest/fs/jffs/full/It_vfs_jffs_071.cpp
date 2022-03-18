@@ -47,7 +47,7 @@ static UINT32 Testcase(VOID)
     for (i = 0; i < JFFS_NAME_LIMITTED_SIZE; i++) {
         (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
         (void)memset_s(pathname2[i], JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH - 1, JFFS_SHORT_ARRAY_LENGTH, "/test%d", i);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH - 1, JFFS_SHORT_ARRAY_LENGTH, "/test%d", i);
         JffsStrcat2(pathname2[i], bufname, strlen(bufname));
 
         if (fd[fileCount] == (CONFIG_NFILE_DESCRIPTORS - 1)) {

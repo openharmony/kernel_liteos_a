@@ -49,7 +49,7 @@ static int TestCase(void)
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
     pathname3 = pathname2;
-    strcat_s(pathname2, TEST_STRLEN, "/test1");
+    (void)strcat_s(pathname2, TEST_STRLEN, "/test1");
     ret = mkdir(pathname2, 0777);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 

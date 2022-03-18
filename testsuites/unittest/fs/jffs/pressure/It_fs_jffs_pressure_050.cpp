@@ -95,9 +95,9 @@ static UINT32 TestCase(VOID)
     for (i = 0; i < JFFS_THREAD_NUM_TEST; i++) {
         (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
         (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "_%d", i);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "_%d", i);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
     }
 
     g_TestCnt = 0;

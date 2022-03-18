@@ -51,19 +51,19 @@ static VOID *PthreadF01(void *arg)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     index = 0;
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME0,
             index);
         ret = mkdir(pathname, HIGHEST_AUTHORITY);
         if (ret == -1) {
             break;
         }
-        strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-        strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+        (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+        (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
         fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd == -1) {
             break;
@@ -83,7 +83,7 @@ static VOID *PthreadF01(void *arg)
         ret = close(fd);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 
-        snprintf_s(pathname2, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname2, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME0,
             index);
         ret = rename(pathname, pathname2);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
@@ -99,10 +99,10 @@ static VOID *PthreadF01(void *arg)
     }
 
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME0,
             i);
-        strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-        strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+        (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+        (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
         ret = unlink(pathname1);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
         ret = rmdir(pathname);
@@ -116,17 +116,17 @@ static VOID *PthreadF01(void *arg)
     return NULL;
 EXIT1:
     close(fd);
-    snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME0, i);
-    strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+    (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME0, i);
+    (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
     unlink(pathname1);
     rmdir(pathname);
 EXIT:
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME0,
             i);
-        strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-        strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+        (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+        (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
         unlink(pathname1);
         rmdir(pathname);
     }
@@ -155,19 +155,19 @@ static VOID *PthreadF02(void *arg)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     index = 0;
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME01,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME01,
             index);
         ret = mkdir(pathname, HIGHEST_AUTHORITY);
         if (ret == -1) {
             break;
         }
-        strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-        strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+        (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+        (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
         fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd == -1) {
             break;
@@ -187,7 +187,7 @@ static VOID *PthreadF02(void *arg)
         ret = close(fd);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 
-        snprintf_s(pathname2, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME01,
+        (void)snprintf_s(pathname2, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME01,
             index);
         ret = rename(pathname, pathname2);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
@@ -203,10 +203,10 @@ static VOID *PthreadF02(void *arg)
     }
 
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME01,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME01,
             i);
-        strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-        strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+        (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+        (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
         ret = unlink(pathname1);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
         ret = rmdir(pathname);
@@ -220,17 +220,17 @@ static VOID *PthreadF02(void *arg)
     return NULL;
 EXIT1:
     close(fd);
-    snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME01, i);
-    strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+    (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME01, i);
+    (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
     unlink(pathname1);
     rmdir(pathname);
 EXIT:
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME01,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME01,
             i);
-        strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-        strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+        (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+        (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
         unlink(pathname1);
         rmdir(pathname);
     }
@@ -259,19 +259,19 @@ static VOID *PthreadF03(void *arg)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     index = 0;
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME02,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME02,
             index);
         ret = mkdir(pathname, HIGHEST_AUTHORITY);
         if (ret == -1) {
             break;
         }
-        strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-        strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+        (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+        (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
         fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd == -1) {
             break;
@@ -291,7 +291,7 @@ static VOID *PthreadF03(void *arg)
         ret = close(fd);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 
-        snprintf_s(pathname2, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME02,
+        (void)snprintf_s(pathname2, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME02,
             index);
         ret = rename(pathname, pathname2);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -307,10 +307,10 @@ static VOID *PthreadF03(void *arg)
     }
 
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME02,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME02,
             i);
-        strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-        strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+        (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+        (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
         ret = unlink(pathname1);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
         ret = rmdir(pathname);
@@ -324,17 +324,17 @@ static VOID *PthreadF03(void *arg)
     return NULL;
 EXIT1:
     close(fd);
-    snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME02, i);
-    strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+    (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test%d", JFFS_PATH_NAME02, i);
+    (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
     unlink(pathname1);
     rmdir(pathname);
 EXIT:
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME02,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test_%d", JFFS_PATH_NAME02,
             i);
-        strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
-        strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
+        (void)strcpy_s(pathname1, JFFS_STANDARD_NAME_LENGTH, pathname);
+        (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/file.txt");
         unlink(pathname1);
         rmdir(pathname);
     }

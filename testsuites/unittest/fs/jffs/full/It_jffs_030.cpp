@@ -47,8 +47,8 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(realName, NULL, realName, EXIT);
     ICUNIT_GOTO_STRING_EQUAL(realName, pathname1, realName, EXIT);
 
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/////");
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "test");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/////");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "test");
 
     realName = realpath(pathname2, bufname);
     ICUNIT_GOTO_NOT_EQUAL(realName, NULL, realName, EXIT);

@@ -43,19 +43,19 @@ static UINT32 Testcase(VOID)
     fd[0] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY); // 0 means first fd
     ICUNIT_GOTO_NOT_EQUAL(fd[0], -1, fd[0], EXIT); // 0 means first fd
 
-    strcat_s(pathname, sizeof(pathname), "0");
+    (void)strcat_s(pathname, sizeof(pathname), "0");
     fd[1] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY); // 1 means second fd
     ICUNIT_GOTO_NOT_EQUAL(fd[1], -1, fd[1], EXIT1); // 1 means second fd
 
-    strcat_s(pathname, sizeof(pathname), "1");
+    (void)strcat_s(pathname, sizeof(pathname), "1");
     fd[2] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY); // 2 means third fd
     ICUNIT_GOTO_NOT_EQUAL(fd[2], -1, fd[2], EXIT2); // 2 means third fd
 
-    strcat_s(pathname, sizeof(pathname), "2");
+    (void)strcat_s(pathname, sizeof(pathname), "2");
     fd[3] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY); // 3 means four fd
     ICUNIT_GOTO_NOT_EQUAL(fd[3], -1, fd[3], EXIT3); // 3 means four fd
 
-    strcat_s(pathname, sizeof(pathname), "3");
+    (void)strcat_s(pathname, sizeof(pathname), "3");
     fd[4] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY); // 4 means fifth fd
     ICUNIT_GOTO_NOT_EQUAL(fd[4], -1, fd[4], EXIT4); // 4 means fifth fd
 
