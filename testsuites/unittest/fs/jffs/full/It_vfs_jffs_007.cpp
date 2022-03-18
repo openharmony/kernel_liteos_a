@@ -57,7 +57,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(pret, NULL, pret, EXIT);
     ICUNIT_GOTO_STRING_EQUAL(buf, pathname, buf, EXIT);
 
-    strcat_s(pathname, sizeof(pathname), "/0test");
+    (void)strcat_s(pathname, sizeof(pathname), "/0test");
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
@@ -69,7 +69,7 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT3);
 
-    strcat_s(pathname, sizeof(pathname), "/1file");
+    (void)strcat_s(pathname, sizeof(pathname), "/1file");
     fd1 = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd1, -1, fd1, EXIT4);
 
@@ -125,7 +125,7 @@ static UINT32 Testcase(VOID)
 
     ret = chdir("3dir");
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT9);
-    strcat_s(pathname, sizeof(pathname), "/3dir");
+    (void)strcat_s(pathname, sizeof(pathname), "/3dir");
     pret = getcwd(buf, 30); // 30 means path name len
     ICUNIT_GOTO_NOT_EQUAL(pret, NULL, pret, EXIT9);
     ICUNIT_GOTO_STRING_EQUAL(buf, pathname, buf, EXIT9);

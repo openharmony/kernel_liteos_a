@@ -40,7 +40,7 @@ static UINT32 Testcase(VOID)
     CHAR pathname1[JFFS_STANDARD_NAME_LENGTH] = { JFFS_PATH_NAME0 };
     off_t off;
 
-    strcat_s(pathname1, sizeof(pathname1), "1138.txt");
+    (void)strcat_s(pathname1, sizeof(pathname1), "1138.txt");
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT1);
 

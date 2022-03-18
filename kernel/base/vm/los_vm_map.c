@@ -462,7 +462,7 @@ LosVmMapRegion *OsCreateRegion(VADDR_T vaddr, size_t len, UINT32 regionFlags, un
         return region;
     }
 
-    memset_s(region, sizeof(LosVmMapRegion), 0, sizeof(LosVmMapRegion));
+    (void)memset_s(region, sizeof(LosVmMapRegion), 0, sizeof(LosVmMapRegion));
     region->range.base = vaddr;
     region->range.size = len;
     region->pgOff = offset;

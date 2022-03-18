@@ -51,7 +51,7 @@ static UINT32 TestCase(VOID)
     for (i = 0; i < JFFS_MIDDLE_ARRAY_LENGTH; i++) {
         (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
         (void)memset_s(pathname2[i], JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
         JffsStrcat2(pathname2[i], bufname, strlen(bufname));
 
         ret = mkdir(pathname2[i], HIGHEST_AUTHORITY);

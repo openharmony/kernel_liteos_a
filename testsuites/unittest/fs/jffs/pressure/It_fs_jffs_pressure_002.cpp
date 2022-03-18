@@ -56,11 +56,11 @@ static UINT32 TestCase(VOID)
     ret = chdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test");
     ret = mkdir(pathname2, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/test/test1");
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/test/test1");
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
@@ -82,7 +82,7 @@ static UINT32 TestCase(VOID)
     ret = close(fd);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, "/123");
+    (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, "/123");
 
     ret = stat(buffile, &buf1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);

@@ -63,18 +63,18 @@ static UINT32 TestCase(VOID)
     JffsStatPrintf(buf1);
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
         JffsStrcat2(pathname2, bufname, strlen(pathname2));
         (void)strcpy_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
-        strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "/test.txt");
+        (void)strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "/test.txt");
         (void)strcpy_s(pathname5[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1011_%d", i);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1011_%d", i);
         JffsStrcat2(pathname2, bufname, strlen(pathname2));
         (void)strcpy_s(pathname3[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
-        strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "/test.txt");
+        (void)strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "/test.txt");
         (void)strcpy_s(pathname6[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
         ret = mkdir(pathname[i], HIGHEST_AUTHORITY);

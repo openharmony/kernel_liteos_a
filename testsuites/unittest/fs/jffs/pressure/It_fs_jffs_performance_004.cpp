@@ -44,11 +44,11 @@ static VOID *PthreadF01(void *arg)
     pstTM = localtime(&tTime);
     (void)memset_s(g_jffsPathname1, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     strftime(g_jffsPathname1, JFFS_STANDARD_NAME_LENGTH - 1, "%Y-%m-%d_%H.%M.%S", pstTM);
-    snprintf_s(fileName, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/%s_#%d", g_jffsPathname1,
-        (INT32)(INTPTR)arg);
+    (void)snprintf_s(fileName, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/%s_#%d", g_jffsPathname1,
+                    (INT32)(INTPTR)arg);
 
-    snprintf_s(g_jffsPathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "performance_004_%d",
-        (INT32)(INTPTR)arg);
+    (void)snprintf_s(g_jffsPathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "performance_004_%d",
+                    (INT32)(INTPTR)arg);
     prctl(PR_SET_NAME, (unsigned long)g_jffsPathname1, 0, 0, 0);
 
     ret = JffsFixWrite(fileName, (INT64)JFFS_PERFORMANCE_W_R_SIZE, JFFS_PRESSURE_W_R_SIZE1, JFFS_WR_TYPE_TEST2);

@@ -59,7 +59,7 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname1, sizeof(pathname1), "/097");
+    (void)strcat_s(pathname1, sizeof(pathname1), "/097");
     fd1 = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, 0644); // 0644 means mode of file
     ICUNIT_GOTO_NOT_EQUAL(fd1, -1, fd1, EXIT2);
 

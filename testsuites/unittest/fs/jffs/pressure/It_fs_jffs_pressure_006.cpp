@@ -67,8 +67,8 @@ static UINT32 TestCase(VOID)
         JffsStrcat2(pathname2, "/", strlen(pathname2));
 
         for (j = 0; j < 40; j++) { // loop times: 40
-            snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "test%d", j);
-            strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, bufname);
+            (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "test%d", j);
+            (void)strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, bufname);
         }
         fd = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT3);

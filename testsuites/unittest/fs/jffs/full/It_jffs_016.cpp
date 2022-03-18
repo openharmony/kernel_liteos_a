@@ -41,7 +41,7 @@ static UINT32 Testcase(VOID)
     static struct mntent mnt1;
     FILE *fp = NULL;
 
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "test12");
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "test12");
     fp = setmntent(pathname1, "w+b");
     ICUNIT_GOTO_NOT_EQUAL(fp, NULL, fp, EXIT);
 

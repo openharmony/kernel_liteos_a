@@ -56,7 +56,7 @@ static UINT32 TestCase(VOID)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     ret = mkdir(pathname0, HIGHEST_AUTHORITY);
@@ -67,7 +67,7 @@ static UINT32 TestCase(VOID)
 
     index = 0;
     for (i = 0; i < JFFS_FILE_LIMITTED_NUM; i++) {
-        snprintf_s(bufname0, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt",
+        (void)snprintf_s(bufname0, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt",
             index);
         fd[index] = open(bufname0, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
 
@@ -91,7 +91,7 @@ static UINT32 TestCase(VOID)
 
     gettimeofday(&testTime1, 0);
     for (i = index; i >= 0; i--) {
-        snprintf_s(bufname0, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
+        (void)snprintf_s(bufname0, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
         ret = unlink(bufname0);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT3);
     }
@@ -107,7 +107,7 @@ static UINT32 TestCase(VOID)
     return JFFS_NO_ERROR;
 EXIT3:
     for (i = index; i >= 0; i--) {
-        snprintf_s(bufname0, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
+        (void)snprintf_s(bufname0, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
         unlink(bufname0);
     }
 EXIT2:

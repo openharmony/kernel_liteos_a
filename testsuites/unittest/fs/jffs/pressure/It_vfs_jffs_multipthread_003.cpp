@@ -53,12 +53,12 @@ static VOID *PthreadF01(void *arg)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     index = 0;
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt",
             index);
         fd[index] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd[index] == -1) {
@@ -87,14 +87,14 @@ static VOID *PthreadF01(void *arg)
     }
 
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
         ret = unlink(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
     }
 
     index1 = 0;
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
             "/storage/test/test00/file%d.txt", index1);
         fd1[index1] = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd1[index1] == -1) {
@@ -130,7 +130,7 @@ static VOID *PthreadF01(void *arg)
     }
 
     for (i = index1; i >= 0; i--) {
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
             "/storage/test/test00/file%d.txt", i);
         ret = unlink(pathname1);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -153,13 +153,13 @@ EXIT1:
 EXIT:
 
     for (i = index1; i >= 0; i--) {
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
             "/storage/test/test00/file%d.txt", i);
         unlink(pathname1);
     }
 
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
         unlink(pathname);
     }
     free(bufW);
@@ -187,12 +187,12 @@ static VOID *PthreadF02(void *arg)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     index = 0;
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt",
             index);
         fd[index] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd[index] == -1) {
@@ -224,14 +224,14 @@ static VOID *PthreadF02(void *arg)
     dprintf("PthreadF02 is excecuting\n");
 
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt", i);
         ret = unlink(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
     }
 
     index1 = 0;
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
             "/storage/test1/test11/file%d.txt", index1);
         fd1[index1] = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd1[index1] == -1) {
@@ -264,7 +264,7 @@ static VOID *PthreadF02(void *arg)
     }
 
     for (i = index1; i >= 0; i--) {
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
             "/storage/test1/test11/file%d.txt", i);
         ret = unlink(pathname1);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -289,13 +289,13 @@ EXIT1:
 EXIT:
 
     for (i = index1; i >= 0; i--) {
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
             "/storage/test1/test11/file%d.txt", i);
         unlink(pathname1);
     }
 
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt", i);
         unlink(pathname);
     }
     free(bufW);
@@ -323,12 +323,12 @@ static VOID *PthreadF03(void *arg)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     index = 0;
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt",
             index);
         fd[index] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd[index] == -1) {
@@ -357,14 +357,14 @@ static VOID *PthreadF03(void *arg)
     }
 
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt", i);
         ret = unlink(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
     }
 
     index1 = 0;
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
             "/storage/test2/test22/file%d.txt", index1);
         fd1[index1] = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd1[index1] == -1) {
@@ -400,7 +400,7 @@ static VOID *PthreadF03(void *arg)
     }
 
     for (i = index1; i >= 0; i--) {
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
             "/storage/test2/test22/file%d.txt", i);
         ret = unlink(pathname1);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -425,13 +425,13 @@ EXIT1:
 EXIT:
 
     for (i = index1; i >= 0; i--) {
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1,
             "/storage/test2/test22/file%d.txt", i);
         unlink(pathname1);
     }
 
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt", i);
         unlink(pathname);
     }
     free(bufW);

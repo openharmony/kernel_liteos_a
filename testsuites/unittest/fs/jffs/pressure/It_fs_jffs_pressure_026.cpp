@@ -66,8 +66,8 @@ static UINT32 TestCase(VOID)
     JffsStatPrintf(buf1);
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-        snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/test%d", i);
-        strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/test%d", i);
+        (void)strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, bufname);
 
         (void)strcpy_s(pathname3[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
 
@@ -75,10 +75,10 @@ static UINT32 TestCase(VOID)
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
         (void)strcpy_s(pathname4[i], JFFS_NAME_LIMITTED_SIZE, pathname3[i]);
-        strcat_s(pathname4[i], JFFS_NAME_LIMITTED_SIZE, ".txt");
+        (void)strcat_s(pathname4[i], JFFS_NAME_LIMITTED_SIZE, ".txt");
 
         (void)strcpy_s(pathname5[i], JFFS_NAME_LIMITTED_SIZE, pathname3[i]);
-        strcat_s(pathname5[i], JFFS_NAME_LIMITTED_SIZE, ".c");
+        (void)strcat_s(pathname5[i], JFFS_NAME_LIMITTED_SIZE, ".c");
 
         fd[i] = open(pathname4[i], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(fd[i], -1, fd[i], EXIT3);

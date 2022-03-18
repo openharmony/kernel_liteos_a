@@ -50,13 +50,13 @@ static UINT32 Testcase(VOID)
 
     (void)memset_s(pathname2, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     (void)memset_s(pathname3, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-    strcat_s(pathname6, sizeof(pathname6), "/");
+    (void)strcat_s(pathname6, sizeof(pathname6), "/");
 
     while (i < 247) { // 247 means loop times
         i++;
-        strcat_s(pathname2, sizeof(pathname2), "t");
-        strcat_s(pathname3, sizeof(pathname3), "t");
-        strcat_s(pathname6, sizeof(pathname6), "t");
+        (void)strcat_s(pathname2, sizeof(pathname2), "t");
+        (void)strcat_s(pathname3, sizeof(pathname3), "t");
+        (void)strcat_s(pathname6, sizeof(pathname6), "t");
     }
     ICUNIT_GOTO_EQUAL(strlen(pathname6), 259, strlen(pathname6), EXIT); // 259 means current name len
     ICUNIT_GOTO_EQUAL(strlen(pathname2), 247, strlen(pathname2), EXIT); // 247 means current name len
@@ -67,12 +67,12 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT1);
     ICUNIT_GOTO_EQUAL(errno, EEXIST, errno, EXIT1);
 
-    strcat_s(pathname3, sizeof(pathname3), "t");
+    (void)strcat_s(pathname3, sizeof(pathname3), "t");
     ret = mkdir(pathname3, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT2);
     ICUNIT_GOTO_EQUAL(errno, ENAMETOOLONG, errno, EXIT2);
 
-    strcat_s(pathname6, sizeof(pathname6), "t");
+    (void)strcat_s(pathname6, sizeof(pathname6), "t");
     ICUNIT_GOTO_EQUAL(strlen(pathname6), 260, strlen(pathname6), EXIT); // 260 means current name len
     ret = mkdir(pathname6, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT2);

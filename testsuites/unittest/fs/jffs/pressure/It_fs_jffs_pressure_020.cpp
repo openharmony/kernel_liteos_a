@@ -65,9 +65,9 @@ static UINT32 TestCase(VOID)
             (void)memset_s(pathname[i], JFFS_NAME_LIMITTED_SIZE, 0, strlen(pathname[i]));
         }
         for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-            snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1616_%d", i);
+            (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1616_%d", i);
             JffsStrcat2(pathname2, bufname, strlen(pathname2));
-            strcat_s(pathname[i], JFFS_STANDARD_NAME_LENGTH, pathname2);
+            (void)strcat_s(pathname[i], JFFS_STANDARD_NAME_LENGTH, pathname2);
 
             fd[i] = open(pathname[i], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
             ICUNIT_GOTO_NOT_EQUAL(fd[i], -1, fd[i], EXIT2);

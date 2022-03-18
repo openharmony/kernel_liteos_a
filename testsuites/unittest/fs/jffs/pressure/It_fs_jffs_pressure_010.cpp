@@ -63,7 +63,7 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
     JffsStatPrintf(buf1);
 
-    strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "/1609.txt");
+    (void)strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "/1609.txt");
     fd = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT2);
 
