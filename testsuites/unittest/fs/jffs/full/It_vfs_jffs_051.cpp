@@ -49,7 +49,7 @@ static UINT32 Testcase(VOID)
     ret = closedir(dir);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT0);
 
-    strcat_s(pathname, JFFS_NAME_LIMITTED_SIZE, "/0testwe12rttyututututqweqqfsdfsdfsdf.exe");
+    (void)strcat_s(pathname, JFFS_NAME_LIMITTED_SIZE, "/0testwe12rttyututututqweqqfsdfsdfsdf.exe");
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 

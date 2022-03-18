@@ -49,28 +49,28 @@ static UINT32 Testcase(VOID)
     dir1 = opendir(pathname);
     ICUNIT_GOTO_NOT_EQUAL(dir1, NULL, dir1, EXIT1);
 
-    strcat_s(pathname, sizeof(pathname), "/0test");
+    (void)strcat_s(pathname, sizeof(pathname), "/0test");
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);
 
     dir2 = opendir(pathname);
     ICUNIT_GOTO_NOT_EQUAL(dir2, NULL, dir2, EXIT3);
 
-    strcat_s(pathname, sizeof(pathname), "/1test");
+    (void)strcat_s(pathname, sizeof(pathname), "/1test");
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT4);
 
     dir3 = opendir(pathname);
     ICUNIT_GOTO_NOT_EQUAL(dir3, NULL, dir3, EXIT5);
 
-    strcat_s(pathname, sizeof(pathname), "/2test");
+    (void)strcat_s(pathname, sizeof(pathname), "/2test");
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT6);
 
     dir4 = opendir(pathname);
     ICUNIT_GOTO_NOT_EQUAL(dir4, NULL, dir4, EXIT7);
 
-    strcat_s(pathname, sizeof(pathname), "/0file");
+    (void)strcat_s(pathname, sizeof(pathname), "/0file");
     fd = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT8);
 

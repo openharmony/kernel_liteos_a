@@ -65,7 +65,7 @@ static UINT32 Testcase(VOID)
     off = lseek(fd, 2, SEEK_CUR); // 2 means file seek len
     ICUNIT_GOTO_EQUAL(off, 18, off, EXIT1); // 18 means current file position
 
-    memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
+    (void)memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
 
     len = read(fd, readbuf, 5); // 5 means read len
     ICUNIT_GOTO_EQUAL(len, 5, len, EXIT1); // 5 means read len
@@ -85,7 +85,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(len, 6, len, EXIT1); // 6 means read len
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "abcde&", readbuf, EXIT1);
 
-    memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
+    (void)memset_s(readbuf, sizeof(readbuf), 0, sizeof(readbuf));
 
     off = lseek(fd, -2, SEEK_END); // -2 means file seek back len
     ICUNIT_GOTO_EQUAL(off, 49, off, EXIT1); // 49 means current file position

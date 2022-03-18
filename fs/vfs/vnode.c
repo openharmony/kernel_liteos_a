@@ -198,7 +198,7 @@ int VnodeFree(struct Vnode *vnode)
         g_totalVnodeSize--;
     } else {
         /* for normal vnode, reclaim it to g_VnodeFreeList */
-        memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
+        (void)memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
         LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);
         g_freeVnodeSize++;
     }

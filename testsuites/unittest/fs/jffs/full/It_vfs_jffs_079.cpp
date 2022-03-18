@@ -44,14 +44,14 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname1, sizeof(pathname1), "/test");
+    (void)strcat_s(pathname1, sizeof(pathname1), "/test");
     fd1 = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd1, -1, fd1, EXIT1);
 
     ret = close(fd1);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);
 
-    strcat_s(pathname2, sizeof(pathname2), "/TEst");
+    (void)strcat_s(pathname2, sizeof(pathname2), "/TEst");
     ret = rename(pathname1, pathname2);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);
 

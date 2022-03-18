@@ -46,10 +46,10 @@ static UINT32 TestCase(VOID)
     ret = chdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "/test");
+    (void)strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "/test");
     while (i < 280) { // loop times: 280
         i++;
-        strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "t");
+        (void)strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "t");
     }
 
     dir = opendir(pathname1);

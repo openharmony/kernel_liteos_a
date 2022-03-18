@@ -43,9 +43,9 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
     for (i = 0; i < 10; i++) { // 10 means max file num
-        memset_s(bufname, sizeof(bufname), 0, strlen(bufname));
-        snprintf_s(bufname, sizeof(bufname) - 1, sizeof(bufname), "/%d", i);
-        strcat_s(pathname1, sizeof(pathname1), bufname);
+        (void)memset_s(bufname, sizeof(bufname), 0, strlen(bufname));
+        (void)snprintf_s(bufname, sizeof(bufname) - 1, sizeof(bufname), "/%d", i);
+        (void)strcat_s(pathname1, sizeof(pathname1), bufname);
         (void)strcpy_s(pathname2[i], sizeof(pathname2[i]), pathname1);
 
         ret = mkdir(pathname2[i], HIGHEST_AUTHORITY);

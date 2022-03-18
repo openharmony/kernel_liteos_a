@@ -47,14 +47,14 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname2, sizeof(pathname2), "/jffs_1015.txt");
+    (void)strcat_s(pathname2, sizeof(pathname2), "/jffs_1015.txt");
     fd = creat(pathname2, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT);
 
     ret = close(fd);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname3, sizeof(pathname3), "/1015_123.txt");
+    (void)strcat_s(pathname3, sizeof(pathname3), "/1015_123.txt");
     ret = rename(pathname2, pathname3);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
@@ -102,14 +102,14 @@ EXIT5:
 EXIT4:
     close(fd1);
 EXIT3:
-    strcat_s(pathname3, sizeof(pathname3), "/1015_123.txt");
+    (void)strcat_s(pathname3, sizeof(pathname3), "/1015_123.txt");
     close(fd);
     remove(pathname3);
 EXIT2:
     rmdir(JFFS_PATH_NAME0);
     return JFFS_NO_ERROR;
 EXIT1:
-    strcat_s(pathname2, sizeof(pathname2), "/jffs_1015.txt");
+    (void)strcat_s(pathname2, sizeof(pathname2), "/jffs_1015.txt");
     close(fd);
     remove(pathname2);
 EXIT:

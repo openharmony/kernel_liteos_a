@@ -46,19 +46,19 @@ static UINT32 Testcase(VOID)
     dir = opendir(JFFS_PATH_NAME0);
     ICUNIT_GOTO_NOT_EQUAL(dir, NULL, dir, EXIT1);
 
-    strcat_s(pathname, sizeof(pathname), "/0test");
+    (void)strcat_s(pathname, sizeof(pathname), "/0test");
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);
 
-    strcat_s(pathname, sizeof(pathname), "/1test");
+    (void)strcat_s(pathname, sizeof(pathname), "/1test");
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT3);
 
-    strcat_s(pathname, sizeof(pathname), "/2test");
+    (void)strcat_s(pathname, sizeof(pathname), "/2test");
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT4);
 
-    strcat_s(pathname, sizeof(pathname), "/0file");
+    (void)strcat_s(pathname, sizeof(pathname), "/0file");
     fd = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT5);
 

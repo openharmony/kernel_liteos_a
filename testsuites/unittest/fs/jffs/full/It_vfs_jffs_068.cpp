@@ -58,7 +58,7 @@ static UINT32 Testcase(VOID)
     pfd = dup2(fd, fd);
     ICUNIT_GOTO_EQUAL(pfd, fd, pfd, EXIT2);
 
-    strcat_s(pathname2, sizeof(pathname2), "T");
+    (void)strcat_s(pathname2, sizeof(pathname2), "T");
     fd1 = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd1, -1, fd1, EXIT4);
 

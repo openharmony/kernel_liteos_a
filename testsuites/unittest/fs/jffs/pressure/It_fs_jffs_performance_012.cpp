@@ -53,7 +53,7 @@ static VOID *PthreadF01(void *arg)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     ret = mkdir(bufname, HIGHEST_AUTHORITY);
@@ -61,7 +61,7 @@ static VOID *PthreadF01(void *arg)
 
     index = 0;
     for (i = 0; i < JFFS_FILE_LIMITTED_NUM; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt",
             index);
         fd[index] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd[index] == -1) {
@@ -88,7 +88,7 @@ static VOID *PthreadF01(void *arg)
 
     gettimeofday(&testTime1, 0);
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
         ret = unlink(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
     }
@@ -107,7 +107,7 @@ EXIT2:
     close(fd[index]);
 EXIT1:
     for (i; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test/file%d.txt", i);
         unlink(pathname);
     }
     free(bufW);
@@ -137,7 +137,7 @@ static VOID *PthreadF02(void *arg)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     ret = mkdir(bufname, HIGHEST_AUTHORITY);
@@ -145,7 +145,7 @@ static VOID *PthreadF02(void *arg)
 
     index = 0;
     for (i = 0; i < JFFS_FILE_LIMITTED_NUM; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt",
             index);
         fd[index] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd[index] == -1) {
@@ -173,7 +173,7 @@ static VOID *PthreadF02(void *arg)
 
     gettimeofday(&testTime1, 0);
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt", i);
         ret = unlink(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
     }
@@ -192,7 +192,7 @@ EXIT2:
     close(fd[index]);
 EXIT1:
     for (i; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test1/file%d.txt", i);
         unlink(pathname);
     }
     free(bufW);
@@ -223,7 +223,7 @@ static VOID *PthreadF03(void *arg)
     (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     ret = mkdir(bufname, HIGHEST_AUTHORITY);
@@ -231,7 +231,7 @@ static VOID *PthreadF03(void *arg)
 
     index = 0;
     for (i = 0; i < JFFS_FILE_LIMITTED_NUM; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt",
             index);
         fd[index] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         if (fd[index] == -1) {
@@ -258,7 +258,7 @@ static VOID *PthreadF03(void *arg)
 
     gettimeofday(&testTime1, 0);
     for (i = index; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt", i);
         ret = unlink(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
     }
@@ -277,7 +277,7 @@ EXIT2:
     close(fd[index]);
 EXIT1:
     for (i; i >= 0; i--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt", i);
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/test2/file%d.txt", i);
         unlink(pathname);
     }
     free(bufW);

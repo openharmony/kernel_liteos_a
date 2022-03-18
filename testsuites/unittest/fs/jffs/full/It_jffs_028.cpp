@@ -49,7 +49,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
     pathname3 = pathname2;
-    strcat_s(pathname2, TEST_STRLEN, "/test1");
+    (void)strcat_s(pathname2, TEST_STRLEN, "/test1");
     fd = open(pathname2, O_NONBLOCK | O_CREAT | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT1);
 
