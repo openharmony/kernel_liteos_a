@@ -67,7 +67,7 @@ static UINT32 TestCase(VOID)
         JffsStrcat2(pathname2, "/_", strlen(pathname2));
 
         for (j = 0; j < 31; j++) { // loop times: 31
-            snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "test%d", j);
+            (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "test%d", j);
             JffsStrcat2(pathname2, bufname, strlen(bufname));
         }
 

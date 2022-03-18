@@ -47,7 +47,7 @@ static UINT32 Testcase(VOID)
     ret = closedir(dir1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test123");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test123");
     fd = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT1);
 

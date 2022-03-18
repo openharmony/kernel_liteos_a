@@ -38,7 +38,7 @@ static VOID *MutiJffs06101(void *arg)
     INT32 ret;
     CHAR pathname[JFFS_STANDARD_NAME_LENGTH] = { JFFS_PATH_NAME0 };
     dprintf(" start muti_jffs_061_01  1 \n");
-    strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_61");
+    (void)strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_61");
 
     // file size: 1024, write size: 16
     ret = JffsMultiWrite(pathname, 1024, 16, O_WRONLY | O_CREAT, JFFS_WR_TYPE_TEST);
@@ -69,7 +69,7 @@ static VOID *MutiJffs06102(void *arg)
     CHAR buffile[JFFS_STANDARD_NAME_LENGTH] = { JFFS_PATH_NAME0 };
 
     dprintf(" start muti_jffs_061_02  1 \n");
-    strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_61");
+    (void)strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_61");
 
     fd = open(pathname, O_RDONLY | O_CREAT, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
@@ -116,7 +116,7 @@ static UINT32 TestCase(VOID)
     ret = mkdir(bufname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_61");
+    (void)strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test_61");
     // file size: 1024, write size: 10
     ret = JffsMultiWrite(pathname, 1024, 10, O_RDWR | O_CREAT, JFFS_WR_TYPE_TEST);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);

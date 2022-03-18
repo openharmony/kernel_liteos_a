@@ -63,9 +63,9 @@ static VOID *PthreadF01(void *arg)
         (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
         (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
 
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
-        strcat_s(g_jffsPathname1, JFFS_STANDARD_NAME_LENGTH, pathname1);
-        strcat_s(g_jffsPathname1, JFFS_STANDARD_NAME_LENGTH, bufname);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
+        (void)strcat_s(g_jffsPathname1, JFFS_STANDARD_NAME_LENGTH, pathname1);
+        (void)strcat_s(g_jffsPathname1, JFFS_STANDARD_NAME_LENGTH, bufname);
         (void)strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname1);
 
         ret = mkdir(g_jffsPathname11[i], HIGHEST_AUTHORITY);
@@ -84,7 +84,7 @@ static VOID *PthreadF01(void *arg)
     (void)memset_s(bufW, bufLen + 1, 0, bufLen + 1);
 
     for (i = 0; i < bufLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufLen + 1, filebuf);
+        (void)strcat_s(bufW, bufLen + 1, filebuf);
     }
 
     for (i = 0; i < JFFS_MAX_CYCLES; i++) {
@@ -201,16 +201,16 @@ static VOID *PthreadF02(void *arg)
             (void)memset_s(g_jffs1647Pathname5[i][j], JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
             (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
 
-            snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", j);
-            strcat_s(g_jffsPathname2, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname11[i]);
-            strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, bufname);
-            strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, ".txt");
+            (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", j);
+            (void)strcat_s(g_jffsPathname2, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname11[i]);
+            (void)strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, bufname);
+            (void)strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, ".txt");
             (void)strcpy_s(g_jffs1647Pathname4[i][j], JFFS_STANDARD_NAME_LENGTH, g_jffsPathname2);
 
             (void)memset_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-            strcat_s(g_jffsPathname2, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname11[i]);
-            strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, bufname);
-            strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, ".cpp");
+            (void)strcat_s(g_jffsPathname2, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname11[i]);
+            (void)strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, bufname);
+            (void)strcat_s(g_jffsPathname2, JFFS_STANDARD_NAME_LENGTH, ".cpp");
             (void)strcpy_s(g_jffs1647Pathname5[i][j], JFFS_STANDARD_NAME_LENGTH, g_jffsPathname2);
 
             g_jffsFd12[i][j] = open(g_jffs1647Pathname4[i][j], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL,

@@ -52,14 +52,14 @@ static UINT32 TestCase(VOID)
 
     (void)memset_s(pathname4, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     (void)memset_s(pathname5, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-    strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "/");
+    (void)strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "/");
 
     // PATH_MAX test. The dirname has occupied 9 bytes.
     while (i < 246) { // loop times: 246
         i++;
-        strcat_s(pathname4, JFFS_NAME_LIMITTED_SIZE, "t");
-        strcat_s(pathname5, JFFS_NAME_LIMITTED_SIZE, "t");
-        strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "t");
+        (void)strcat_s(pathname4, JFFS_NAME_LIMITTED_SIZE, "t");
+        (void)strcat_s(pathname5, JFFS_NAME_LIMITTED_SIZE, "t");
+        (void)strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "t");
     }
     ICUNIT_GOTO_EQUAL(strlen(pathname3), 255, strlen(pathname3), EXIT); // pathname length: 255
     ICUNIT_GOTO_EQUAL(strlen(pathname4), 246, strlen(pathname4), EXIT); // pathname length: 246
@@ -74,12 +74,12 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT2);
     ICUNIT_GOTO_EQUAL(errno, EEXIST, errno, EXIT2);
 
-    strcat_s(pathname5, JFFS_NAME_LIMITTED_SIZE, "t");
+    (void)strcat_s(pathname5, JFFS_NAME_LIMITTED_SIZE, "t");
     fd = open(pathname5, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT1);
     ICUNIT_GOTO_EQUAL(errno, ENAMETOOLONG, errno, EXIT2);
 
-    strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "t");
+    (void)strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "t");
     ICUNIT_GOTO_EQUAL(strlen(pathname3), 256, strlen(pathname3), EXIT); // pathname length: 256
     fd = open(pathname3, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT1);

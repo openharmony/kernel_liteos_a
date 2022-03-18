@@ -51,13 +51,13 @@ static VOID *PthreadF01(void *arg)
     g_jffsFlagF01++;
 
     (void)memset_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-    strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, pathname1);
+    (void)strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, pathname1);
 
     for (i = 0; i < JFFS_MAXIMUM_SIZES; i++) {
         (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
 
-        strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, bufname);
         (void)strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname6);
 
         ret = mkdir(g_jffsPathname11[i], HIGHEST_AUTHORITY);
@@ -152,8 +152,8 @@ static VOID *PthreadF02(void *arg)
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
         (void)memset_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
         (void)memset_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname11[i]);
-        strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, ".txt");
+        (void)strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, g_jffsPathname11[i]);
+        (void)strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, ".txt");
         (void)strcpy_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname7);
 
         g_jffsFd11[i] = open(g_jffsPathname12[i], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);

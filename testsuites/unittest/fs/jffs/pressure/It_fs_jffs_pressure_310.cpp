@@ -52,13 +52,13 @@ static UINT32 TestCase(VOID)
 
     (void)memset_s(pathname2, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     (void)memset_s(pathname3, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-    strcat_s(pathname6, JFFS_NAME_LIMITTED_SIZE, "/");
+    (void)strcat_s(pathname6, JFFS_NAME_LIMITTED_SIZE, "/");
     // PATH_MAX test. The dirname has occupied 14 bytes.
     while (i < 241) { // loop times: 241
         i++;
-        strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "t");
-        strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "t");
-        strcat_s(pathname6, JFFS_NAME_LIMITTED_SIZE, "t");
+        (void)strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "t");
+        (void)strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "t");
+        (void)strcat_s(pathname6, JFFS_NAME_LIMITTED_SIZE, "t");
     }
     ICUNIT_GOTO_EQUAL(strlen(pathname6), 255, strlen(pathname6), EXIT); // pathname length: 255
     ICUNIT_GOTO_EQUAL(strlen(pathname2), 241, strlen(pathname2), EXIT); // pathname length: 241
@@ -69,12 +69,12 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT1);
     ICUNIT_GOTO_EQUAL(errno, EEXIST, errno, EXIT1);
 
-    strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "t");
+    (void)strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "t");
     ret = mkdir(pathname3, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT2);
     ICUNIT_GOTO_EQUAL(errno, ENAMETOOLONG, errno, EXIT2);
 
-    strcat_s(pathname6, JFFS_NAME_LIMITTED_SIZE, "t");
+    (void)strcat_s(pathname6, JFFS_NAME_LIMITTED_SIZE, "t");
     ICUNIT_GOTO_EQUAL(strlen(pathname6), 256, strlen(pathname6), EXIT); // pathname length: 256
     ret = mkdir(pathname6, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT2);

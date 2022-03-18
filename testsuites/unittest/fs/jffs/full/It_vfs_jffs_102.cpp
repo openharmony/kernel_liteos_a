@@ -50,13 +50,13 @@ static UINT32 Testcase(VOID)
 
     (void)memset_s(pathname4, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
     (void)memset_s(pathname5, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-    strcat_s(pathname3, sizeof(pathname3), "/");
+    (void)strcat_s(pathname3, sizeof(pathname3), "/");
 
     while (i < 252) { // 252 means loop times
         i++;
-        strcat_s(pathname4, sizeof(pathname4), "t");
-        strcat_s(pathname5, sizeof(pathname5), "t");
-        strcat_s(pathname3, sizeof(pathname3), "t");
+        (void)strcat_s(pathname4, sizeof(pathname4), "t");
+        (void)strcat_s(pathname5, sizeof(pathname5), "t");
+        (void)strcat_s(pathname3, sizeof(pathname3), "t");
     }
     ICUNIT_GOTO_EQUAL(strlen(pathname3), 259, strlen(pathname3), EXIT); // 259 means current name len
     ICUNIT_GOTO_EQUAL(strlen(pathname4), 252, strlen(pathname4), EXIT); // 252 means current name len
@@ -71,12 +71,12 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT2);
     ICUNIT_GOTO_EQUAL(errno, EEXIST, errno, EXIT2);
 
-    strcat_s(pathname5, sizeof(pathname5), "t");
+    (void)strcat_s(pathname5, sizeof(pathname5), "t");
     fd = open(pathname5, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT1);
     ICUNIT_GOTO_EQUAL(errno, ENAMETOOLONG, errno, EXIT2);
 
-    strcat_s(pathname3, sizeof(pathname3), "t");
+    (void)strcat_s(pathname3, sizeof(pathname3), "t");
     ICUNIT_GOTO_EQUAL(strlen(pathname3), 260, strlen(pathname3), EXIT); // 260 means current name len
     fd = open(pathname3, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT1);

@@ -48,7 +48,7 @@ static UINT32 Testcase(VOID)
     ptr = fgets(line, LINE_LENGTH, file);
     ICUNIT_GOTO_NOT_EQUAL(ptr, NULL, ptr, EXIT1);
 
-    strcat_s(pathnamedir, LINE_LENGTH, "\n");
+    (void)strcat_s(pathnamedir, LINE_LENGTH, "\n");
     ret = strcmp(line, pathnamedir);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 

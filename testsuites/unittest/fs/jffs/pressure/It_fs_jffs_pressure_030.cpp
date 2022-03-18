@@ -47,18 +47,18 @@ static VOID *PthreadF01(void *arg)
     for (i = 0; i < JFFS_MAXIMUM_SIZES; i++) {
         (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
         (void)memset_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, pathname);
-        strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, pathname);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, "/");
-        strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, "/");
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, pathname);
+        (void)strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, pathname);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, "/");
+        (void)strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, "/");
 
         (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "AAAA%d", i);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "AAAA%d", i);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
 
         (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "BBBB%d", i);
-        strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "BBBB%d", i);
+        (void)strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, bufname);
 
         ret = mkdir(g_jffsPathname11[i], HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);

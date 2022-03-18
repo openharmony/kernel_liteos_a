@@ -46,7 +46,7 @@ static int TestCase(void)
     ret = closedir(dir1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test123");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test123");
     ret = mkdir(pathname2, 0777);
     ICUNIT_GOTO_NOT_EQUAL(ret, JFFS_IS_ERROR, ret, EXIT1);
 
