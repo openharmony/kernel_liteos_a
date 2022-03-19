@@ -63,9 +63,12 @@ int main(int argc, char **argv)
     } else if ((argc == THREE_ARGS) && strcmp(argv[1], "read") == 0) {
         size_t size = strtoul(argv[THREE_ARGS - 1], NULL, 0);
         char *buf = (char *)malloc(size);
-        int len = PerfRead(fd, buf, size);
-        PerfPrintBuffer(buf, len);
-        free(buf);
+        if (buf != NULL) {
+            int len = PerfRead(fd, buf, size);
+            PerfPrintBuffer(buf, len);
+            free(buf);
+            buf = NULL;
+        }
     } else if ((argc == TWO_ARGS) && strcmp(argv[1], "list") == 0) {
         PerfList();
     } else if ((argc >= THREE_ARGS) && strcmp(argv[1], "stat") == 0) {
