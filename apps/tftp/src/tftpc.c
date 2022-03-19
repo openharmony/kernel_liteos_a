@@ -218,7 +218,7 @@ u32_t lwip_tftp_recv_from_server(s32_t iSockNum, u32_t *pulSize, TFTPC_PACKET_S 
     usOpcode = ntohs(pstRecvBuf->usOpcode);
     /* if this packet is ERROR packet */
     if (usOpcode == TFTPC_OP_ERROR) {
-        ulError = ntohs (pstRecvBuf->u.stTFTP_Err.usErrNum);
+        ulError = ntohs(pstRecvBuf->u.stTFTP_Err.usErrNum);
 
         /*If the error is according to RFC,then convert to lwip error codes.
         Constant values are used in the cases as these error codes are as per
@@ -727,7 +727,7 @@ u32_t lwip_tftp_get_file_by_filename(u32_t ulHostAddr,
         }
 
         /* if this packet is unkonwn or incorrect packet */
-        if (ntohs (pstRecvBuf->usOpcode) != TFTPC_OP_DATA) {
+        if (ntohs(pstRecvBuf->usOpcode) != TFTPC_OP_DATA) {
             /* Send error packet to server */
             lwip_tftp_send_error(iSockNum,
                                  TFTPC_PROTOCOL_PROTO_ERROR,
@@ -1557,7 +1557,7 @@ u32_t lwip_tftp_get_file_by_filename_to_rawmem(u32_t ulHostAddr,
         }
 
         /* if this packet is unkonwn or incorrect packet */
-        if (ntohs (pstRecvBuf->usOpcode) != TFTPC_OP_DATA) {
+        if (ntohs(pstRecvBuf->usOpcode) != TFTPC_OP_DATA) {
             /* Send error packet to server */
             lwip_tftp_send_error(iSockNum,
                                  TFTPC_PROTOCOL_PROTO_ERROR,

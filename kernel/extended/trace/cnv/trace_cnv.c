@@ -181,7 +181,7 @@ STATIC VOID LOS_TraceTaskResume(const LosTaskCB *taskCB)
 
 STATIC VOID LOS_TraceTaskSuspend(const LosTaskCB *taskCB)
 {
-    LOS_TRACE(TASK_SUSPEND, taskCB->taskID, taskCB->taskStatus,OsCurrTaskGet()->taskID);
+    LOS_TRACE(TASK_SUSPEND, taskCB->taskID, taskCB->taskStatus, OsCurrTaskGet()->taskID);
 }
 
 STATIC VOID LOS_TraceIsrEnter(UINT32 hwiNum)
