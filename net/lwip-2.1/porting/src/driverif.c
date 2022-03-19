@@ -34,8 +34,6 @@
 #include <lwip/snmp.h>
 #include <lwip/etharp.h>
 #include <lwip/sockets.h>
-#include <lwip/snmp.h>
-#include <lwip/etharp.h>
 #include <lwip/ethip6.h>
 
 #define LWIP_NETIF_HOSTNAME_DEFAULT         "default"

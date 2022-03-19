@@ -63,7 +63,6 @@
 #include "epoll.h"
 #endif
 #include <sys/wait.h>
-#include "sys/resource.h"
 #ifdef LOSCFG_FS_VFS
 #include "vnode.h"
 #endif
@@ -148,8 +147,8 @@ extern int SysBind(int s, const struct sockaddr *name, socklen_t namelen);
 extern int SysConnect(int s, const struct sockaddr *name, socklen_t namelen);
 extern int SysListen(int sockfd, int backlog);
 extern int SysAccept(int socket, struct sockaddr *address, socklen_t *addressLen);
-extern int SysGetSockName (int s, struct sockaddr *name, socklen_t *namelen);
-extern int SysGetPeerName (int s, struct sockaddr *name, socklen_t *namelen);
+extern int SysGetSockName(int s, struct sockaddr *name, socklen_t *namelen);
+extern int SysGetPeerName(int s, struct sockaddr *name, socklen_t *namelen);
 extern ssize_t SysSend(int s, const void *dataptr, size_t size, int flags);
 extern ssize_t SysSendTo(int s, const void *dataptr, size_t size, int flags,
                          const struct sockaddr *to, socklen_t tolen);
