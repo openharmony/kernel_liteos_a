@@ -45,7 +45,6 @@
 #ifdef LOSCFG_DRIVERS_TZDRIVER
 #include "fs/file.h"
 #endif
-#include "fs/file.h"
 #include "unistd.h"
 
 #ifdef __cplusplus

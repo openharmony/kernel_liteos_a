@@ -581,11 +581,11 @@ FRESULT f_checkvirpart(FATFS *fs, const TCHAR *path, BYTE vol)
         labelTmp = (DWORD *)label;
         *labelTmp = tmp;
         tmp = ld_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 4);
-        *((DWORD * )(label + 4)) = tmp;
+        *((DWORD *)(label + 4)) = tmp;
         tmp = ld_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 8);
-        *((DWORD * )(label + 8)) = tmp;
+        *((DWORD *)(label + 8)) = tmp;
         tmp = ld_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 12);
-        *((DWORD * )(label + 12)) = tmp;
+        *((DWORD *)(label + 12)) = tmp;
 
         if (f_checkname(label) != FR_OK) {
             (void)f_unregvirfs(fs);
@@ -721,11 +721,11 @@ FRESULT f_makevirpart(FATFS *fs, const TCHAR *path, BYTE vol)
         labelTmp = (DWORD *)label;
         tmp = *labelTmp;
         st_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 0, tmp);
-        tmp = *((DWORD * )(label + 4));
+        tmp = *((DWORD *)(label + 4));
         st_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 4, tmp);
-        tmp = *((DWORD * )(label + 8));
+        tmp = *((DWORD *)(label + 8));
         st_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 8, tmp);
-        tmp = *((DWORD * )(label + 12));
+        tmp = *((DWORD *)(label + 12));
         st_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 12, tmp);
 
         virpartper += g_fatVirPart.virtualinfo.virpartpercent[i];

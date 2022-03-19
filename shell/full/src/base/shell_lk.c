@@ -106,7 +106,7 @@ VOID OsLkLogFileSet(const CHAR *str)
     }
     fp = fopen(str, "w+");
     if (fp == NULL) {
-        printf("Error can't open the %s file\n",str);
+        printf("Error can't open the %s file\n", str);
         return;
     }
 

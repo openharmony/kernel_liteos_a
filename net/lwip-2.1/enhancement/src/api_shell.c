@@ -65,7 +65,6 @@
 #include "lwip/api_shell.h"
 
 #include "lwip/dns.h"
-#include "lwip/netdb.h"
 #include "lwip/udp.h"
 #include "lwip/priv/tcp_priv.h"
 
@@ -2378,11 +2377,11 @@ LWIP_STATIC int create_ping6_socket(u8_t type, const void *param)
     }
 
     /* Setting socket filter since we are interested only in ECHO REPLY and ERROR messages */
-    ICMP6_FILTER_SETBLOCKALL (&icmp6_sock_filter);
-    ICMP6_FILTER_SETPASS (ICMP6_TYPE_EREP, &icmp6_sock_filter);
-    ICMP6_FILTER_SETPASS (ICMP6_TYPE_DUR, &icmp6_sock_filter);
-    ICMP6_FILTER_SETPASS (ICMP6_TYPE_PTB, &icmp6_sock_filter);
-    ICMP6_FILTER_SETPASS (ICMP6_TYPE_TE, &icmp6_sock_filter);
+    ICMP6_FILTER_SETBLOCKALL(&icmp6_sock_filter);
+    ICMP6_FILTER_SETPASS(ICMP6_TYPE_EREP, &icmp6_sock_filter);
+    ICMP6_FILTER_SETPASS(ICMP6_TYPE_DUR, &icmp6_sock_filter);
+    ICMP6_FILTER_SETPASS(ICMP6_TYPE_PTB, &icmp6_sock_filter);
+    ICMP6_FILTER_SETPASS(ICMP6_TYPE_TE, &icmp6_sock_filter);
 
     ret = lwip_setsockopt(sfd, IPPROTO_ICMPV6, ICMP6_FILTER, &icmp6_sock_filter, sizeof(struct icmp6_filter));
     if (ret == -1) {
