@@ -59,7 +59,6 @@
 #define OS_SCHED_TIME_SLICES_DIFF  (OS_SCHED_TIME_SLICES_MAX - OS_SCHED_TIME_SLICES_MIN)
 #define OS_SCHED_READY_MAX         30
 #define OS_TIME_SLICE_MIN          (INT32)((50 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) /* 50us */
-
 #define OS_TASK_STATUS_BLOCKED     (OS_TASK_STATUS_INIT | OS_TASK_STATUS_PENDING | \
                                     OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)
 
@@ -133,7 +132,7 @@ UINT32 OsShellShowTickRespo(VOID)
     (VOID)memset_s((CHAR *)OsSchedDebugGet(), tickSize, 0, tickSize);
     for (cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
         SchedRunQue *rq = OsSchedRunQueByID(cpu);
-        sortLinkNum[cpu] = OsGetSortLinkNodeNum(&rq->taskSortLink) + OsGetSortLinkNodeNum(&rq->swtmrSortLink);
+        sortLinkNum[cpu] = OsGetSortLinkNodeNum(&rq->taskSortLink);
     }
     SCHEDULER_UNLOCK(intSave);
 
@@ -159,13 +158,6 @@ UINT32 OsShellShowTickRespo(VOID)
     (VOID)LOS_MemFree(m_aucSysMem1, schedDebug);
     return LOS_OK;
 }
-
-#else
-
-UINT32 OsShellShowTickRespo(VOID)
-{
-    return LOS_NOK;
-}
 #endif
 
 #ifdef LOSCFG_SCHED_DEBUG
@@ -175,6 +167,7 @@ UINT32 OsShellShowSchedParam(VOID)
     UINT64 averTimeSlice;
     UINT64 averSchedWait;
     UINT64 averPendTime;
+    UINT32 taskLinkNum[LOSCFG_KERNEL_CORE_NUM];
     UINT32 intSave;
     UINT32 size = g_taskMaxNum * sizeof(LosTaskCB);
     LosTaskCB *taskCBArray = LOS_MemAlloc(m_aucSysMem1, size);
@@ -184,7 +177,16 @@ UINT32 OsShellShowSchedParam(VOID)
 
     SCHEDULER_LOCK(intSave);
     (VOID)memcpy_s(taskCBArray, size, g_taskCBArray, size);
+    for (UINT16 cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
+        SchedRunQue *rq = OsSchedRunQueByID(cpu);
+        taskLinkNum[cpu] = OsGetSortLinkNodeNum(&rq->taskSortLink);
+    }
     SCHEDULER_UNLOCK(intSave);
+
+    for (UINT16 cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
+        PRINTK("cpu: %u Task SortMax: %u\n", cpu, taskLinkNum[cpu]);
+    }
+
     PRINTK("  Tid    AverRunTime(us)    SwitchCount  AverTimeSlice(us)    TimeSliceCount  AverReadyWait(us)  "
            "AverPendTime(us)  TaskName \n");
     for (UINT32 tid = 0; tid < g_taskMaxNum; tid++) {
@@ -228,13 +230,6 @@ UINT32 OsShellShowSchedParam(VOID)
 
     return LOS_OK;
 }
-
-#else
-
-UINT32 OsShellShowSchedParam(VOID)
-{
-    return LOS_NOK;
-}
 #endif
 
 STATIC INLINE VOID TimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
@@ -259,28 +254,12 @@ STATIC INLINE VOID TimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
 #endif
 }
 
-STATIC INLINE UINT64 GetNextExpireTime(SchedRunQue *rq, UINT64 startTime, UINT32 tickPrecision)
-{
-    SortLinkAttribute *taskHeader = &rq->taskSortLink;
-    SortLinkAttribute *swtmrHeader = &rq->swtmrSortLink;
-
-    LOS_SpinLock(&taskHeader->spinLock);
-    UINT64 taskExpireTime = OsGetSortLinkNextExpireTime(taskHeader, startTime, tickPrecision);
-    LOS_SpinUnlock(&taskHeader->spinLock);
-
-    LOS_SpinLock(&swtmrHeader->spinLock);
-    UINT64 swtmrExpireTime = OsGetSortLinkNextExpireTime(swtmrHeader, startTime, tickPrecision);
-    LOS_SpinUnlock(&swtmrHeader->spinLock);
-
-    return (taskExpireTime < swtmrExpireTime) ? taskExpireTime : swtmrExpireTime;
-}
-
 STATIC INLINE VOID SchedSetNextExpireTime(UINT32 responseID, UINT64 taskEndTime, UINT32 oldResponseID)
 {
     SchedRunQue *rq = OsSchedRunQue();
     BOOL isTimeSlice = FALSE;
     UINT64 currTime = OsGetCurrSchedTimeCycle();
-    UINT64 nextExpireTime = GetNextExpireTime(rq, currTime, OS_TICK_RESPONSE_PRECISION);
+    UINT64 nextExpireTime = OsGetSortLinkNextExpireTime(&rq->taskSortLink, currTime, OS_TICK_RESPONSE_PRECISION);
 
     rq->schedFlag &= ~INT_PEND_TICK;
     if (rq->responseID == oldResponseID) {
@@ -496,7 +475,7 @@ VOID OsSchedTaskExit(LosTaskCB *taskCB)
     }
 
     if (taskCB->taskStatus & (OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)) {
-        OsSchedDeTaskFromTimeList(&taskCB->sortList);
+        OsSchedDeTaskFromTimeList(taskCB);
         taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME);
     }
 }
@@ -512,11 +491,10 @@ VOID OsSchedYield(VOID)
     OsSchedResched();
 }
 
-VOID OsSchedDelay(LosTaskCB *runTask, UINT32 tick)
+VOID OsSchedDelay(LosTaskCB *runTask, UINT64 waitTime)
 {
-    OsSchedTaskDeQueue(runTask);
     runTask->taskStatus |= OS_TASK_STATUS_DELAY;
-    runTask->waitTimes = tick;
+    runTask->waitTime = waitTime;
 
     OsSchedResched();
 }
@@ -530,7 +508,7 @@ UINT32 OsSchedTaskWait(LOS_DL_LIST *list, UINT32 ticks, BOOL needSched)
 
     if (ticks != LOS_WAIT_FOREVER) {
         runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;
-        runTask->waitTimes = ticks;
+        runTask->waitTime = OS_SCHED_TICK_TO_CYCLE(ticks);
     }
 
     if (needSched == TRUE) {
@@ -550,7 +528,7 @@ VOID OsSchedTaskWake(LosTaskCB *resumedTask)
     resumedTask->taskStatus &= ~OS_TASK_STATUS_PENDING;
 
     if (resumedTask->taskStatus & OS_TASK_STATUS_PEND_TIME) {
-        OsSchedDeTaskFromTimeList(&resumedTask->sortList);
+        OsSchedDeTaskFromTimeList(resumedTask);
         resumedTask->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;
     }
 
@@ -625,7 +603,7 @@ STATIC VOID SchedFreezeTask(LosTaskCB *taskCB)
     }
 
     responseTime = GET_SORTLIST_VALUE(&taskCB->sortList);
-    OsSchedDeTaskFromTimeList(&taskCB->sortList);
+    OsSchedDeTaskFromTimeList(taskCB);
     SET_SORTLIST_VALUE(&taskCB->sortList, responseTime);
     taskCB->taskStatus |= OS_TASK_FLAG_FREEZE;
     return;
@@ -634,7 +612,6 @@ STATIC VOID SchedFreezeTask(LosTaskCB *taskCB)
 STATIC VOID SchedUnfreezeTask(LosTaskCB *taskCB)
 {
     UINT64 currTime, responseTime;
-    UINT32 remainTick;
 
     if (!(taskCB->taskStatus & OS_TASK_FLAG_FREEZE)) {
         return;
@@ -644,8 +621,7 @@ STATIC VOID SchedUnfreezeTask(LosTaskCB *taskCB)
     currTime = OsGetCurrSchedTimeCycle();
     responseTime = GET_SORTLIST_VALUE(&taskCB->sortList);
     if (responseTime > currTime) {
-        remainTick = ((responseTime - currTime) + OS_CYCLE_PER_TICK - 1) / OS_CYCLE_PER_TICK;
-        OsSchedAddTask2TimeList(&taskCB->sortList, currTime, remainTick);
+        OsSchedAddTask2TimeList(taskCB, responseTime);
         return;
     }
 
@@ -685,97 +661,6 @@ BOOL OsSchedResume(LosTaskCB *taskCB)
     }
 
     return needSched;
-}
-
-STATIC INLINE BOOL SchedScanSwtmrTimeList(SchedRunQue *rq)
-{
-    BOOL needSched = FALSE;
-    SortLinkAttribute* swtmrSortLink = &rq->swtmrSortLink;
-    LOS_DL_LIST *listObject = &swtmrSortLink->sortLink;
-
-    /*
-     * it needs to be carefully coped with, since the swtmr is in specific sortlink
-     * while other cores still has the chance to process it, like stop the timer.
-     */
-    LOS_SpinLock(&swtmrSortLink->spinLock);
-
-    if (LOS_ListEmpty(listObject)) {
-        LOS_SpinUnlock(&swtmrSortLink->spinLock);
-        return FALSE;
-    }
-    SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-
-    UINT64 currTime = OsGetCurrSchedTimeCycle();
-    while (sortList->responseTime <= currTime) {
-        sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-        UINT64 startTime = GET_SORTLIST_VALUE(sortList);
-        OsDeleteNodeSortLink(swtmrSortLink, sortList);
-        LOS_SpinUnlock(&swtmrSortLink->spinLock);
-
-        OsSwtmrWake(rq, startTime, sortList);
-        needSched = TRUE;
-
-        LOS_SpinLock(&swtmrSortLink->spinLock);
-        if (LOS_ListEmpty(listObject)) {
-            break;
-        }
-
-        sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
-    }
-
-    LOS_SpinUnlock(&swtmrSortLink->spinLock);
-    return needSched;
-}
-
-STATIC INLINE VOID SchedSwtmrResponseTimeReset(SchedRunQue *rq, UINT64 startTime)
-{
-    SortLinkAttribute* swtmrSortLink = &rq->swtmrSortLink;
-    LOS_DL_LIST *listHead = &swtmrSortLink->sortLink;
-    LOS_DL_LIST *listNext = listHead->pstNext;
-
-    LOS_SpinLock(&swtmrSortLink->spinLock);
-    while (listNext != listHead) {
-        SortLinkList *sortList = LOS_DL_LIST_ENTRY(listNext, SortLinkList, sortLinkNode);
-        OsDeleteNodeSortLink(swtmrSortLink, sortList);
-        LOS_SpinUnlock(&swtmrSortLink->spinLock);
-
-        OsSwtmrRestart(startTime, sortList);
-
-        LOS_SpinLock(&swtmrSortLink->spinLock);
-        listNext = listNext->pstNext;
-    }
-    LOS_SpinUnlock(&swtmrSortLink->spinLock);
-}
-
-STATIC INLINE BOOL SchedSwtmrRunQueFind(SortLinkAttribute *swtmrSortLink, SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
-{
-    LOS_DL_LIST *listObject = &swtmrSortLink->sortLink;
-    LOS_DL_LIST *list = listObject->pstNext;
-
-    LOS_SpinLock(&swtmrSortLink->spinLock);
-    while (list != listObject) {
-        SortLinkList *listSorted = LOS_DL_LIST_ENTRY(list, SortLinkList, sortLinkNode);
-        if (checkFunc((UINTPTR)listSorted, arg)) {
-            LOS_SpinUnlock(&swtmrSortLink->spinLock);
-            return TRUE;
-        }
-        list = list->pstNext;
-    }
-
-    LOS_SpinUnlock(&swtmrSortLink->spinLock);
-    return FALSE;
-}
-
-BOOL OsSchedSwtmrTimeListFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
-{
-    for (UINT16 cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
-        SchedRunQue *rq = OsSchedRunQueByID(cpuid);
-        SortLinkAttribute *swtmrSortLink = &rq->swtmrSortLink;
-        if (SchedSwtmrRunQueFind(swtmrSortLink, checkFunc, arg)) {
-            return TRUE;
-        }
-    }
-    return FALSE;
 }
 
 STATIC INLINE VOID SchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, BOOL *needSchedule)
@@ -853,14 +738,9 @@ STATIC INLINE BOOL SchedScanTaskTimeList(SchedRunQue *rq)
 VOID OsSchedTick(VOID)
 {
     SchedRunQue *rq = OsSchedRunQue();
-    BOOL needSched = FALSE;
 
     if (rq->responseID == OS_INVALID_VALUE) {
-
-        needSched |= SchedScanSwtmrTimeList(rq);
-        needSched |= SchedScanTaskTimeList(rq);
-
-        if (needSched) {
+        if (SchedScanTaskTimeList(rq)) {
             LOS_MpSchedule(OS_MP_CPU_ALL);
             rq->schedFlag |= INT_PEND_RESCH;
         }
@@ -892,16 +772,8 @@ VOID OsSchedRunQueInit(VOID)
     for (UINT16 index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {
         SchedRunQue *rq = OsSchedRunQueByID(index);
         OsSortLinkInit(&rq->taskSortLink);
-        OsSortLinkInit(&rq->swtmrSortLink);
         rq->responseTime = OS_SCHED_MAX_RESPONSE_TIME;
     }
-}
-
-VOID OsSchedRunQueSwtmrInit(UINT32 swtmrTaskID, UINT32 swtmrQueue)
-{
-    SchedRunQue *rq = OsSchedRunQue();
-    rq->swtmrTaskID = swtmrTaskID;
-    rq->swtmrHandlerQueue = swtmrQueue;
 }
 
 VOID OsSchedRunQueIdleInit(UINT32 idleTaskID)
@@ -975,9 +847,7 @@ VOID OsSchedStart(VOID)
 
     SCHEDULER_LOCK(intSave);
 
-    if (cpuid == 0) {
-        OsTickStart();
-    }
+    OsTickStart();
 
     SchedRunQue *rq = OsSchedRunQue();
     LosTaskCB *newTask = GetTopTask(rq);
@@ -995,7 +865,7 @@ VOID OsSchedStart(VOID)
 
     newTask->startTime = OsGetCurrSchedTimeCycle();
 
-    SchedSwtmrResponseTimeReset(rq, newTask->startTime);
+    OsSwtmrResponseTimeReset(newTask->startTime);
 
     /* System start schedule */
     OS_SCHEDULER_SET(cpuid);
@@ -1078,7 +948,7 @@ STATIC VOID SchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
         TimeSliceUpdate(runTask, newTask->startTime);
 
         if (runTask->taskStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY)) {
-            OsSchedAddTask2TimeList(&runTask->sortList, runTask->startTime, runTask->waitTimes);
+            OsSchedAddTask2TimeList(runTask, runTask->startTime + runTask->waitTime);
         }
     }
 
