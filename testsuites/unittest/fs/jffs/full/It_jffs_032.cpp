@@ -47,7 +47,7 @@ static UINT32 Testcase(VOID)
     ret = lstat64(pathname1, &buf1);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname1, sizeof(pathname1), "/dir");
+    (void)strcat_s(pathname1, sizeof(pathname1), "/dir");
     ret = lstat64(pathname1, &buf1);
     ICUNIT_GOTO_NOT_EQUAL(ret, 0, ret, EXIT1);
     ICUNIT_GOTO_EQUAL(errno, ENOENT, errno, EXIT1);

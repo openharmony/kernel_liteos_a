@@ -43,7 +43,7 @@ static VOID *PthreadF01(void *arg)
 
     writeBuf = (CHAR *)malloc(writeSize);
     ICUNIT_GOTO_NOT_EQUAL(writeBuf, NULL, writeBuf, EXIT);
-    memset_s(writeBuf, writeSize, (0x61 + (INT32)(INTPTR)arg), writeSize);
+    (void)memset_s(writeBuf, writeSize, (0x61 + (INT32)(INTPTR)arg), writeSize);
 
     fd = open64(g_jffsPathname11[(INT32)(INTPTR)arg], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     dprintf("(INT32)(INTPTR)arg=:%d,jffs_pathname11=:%s\n", (INT32)(INTPTR)arg, g_jffsPathname11[(INT32)(INTPTR)arg]);
@@ -93,11 +93,11 @@ static UINT32 TestCase(VOID)
     struct stat64 statbuf;
 
     for (i = 0; i < JFFS_THREAD_NUM_TEST; i++) {
-        memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "_%d", i);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "_%d", i);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, pathname2);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
     }
 
     g_TestCnt = 0;
@@ -154,7 +154,7 @@ static UINT32 TestCase(VOID)
         off64 = lseek64(fd, -10, SEEK_END); // seek offset: -10
         ICUNIT_GOTO_EQUAL(off64, statbuf.st_size - 10, off64, EXIT);
 
-        memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
         len = read(fd, readbuf, 10); // read length: 10
         ICUNIT_GOTO_EQUAL(len, 10, len, EXIT2);
 

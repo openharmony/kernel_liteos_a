@@ -48,7 +48,7 @@ static UINT32 Testcase(VOID)
     ret = chdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname1, sizeof(pathname1), "/120.txt");
+    (void)strcat_s(pathname1, sizeof(pathname1), "/120.txt");
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT1);
 
@@ -107,7 +107,7 @@ EXIT:
 * -@texpect
 1. Return successed
 2. Return successed
-3. Sucessful operation
+3. Successful operation
 4. N/A
 * -@tprior 1
 * -@tauto TRUE

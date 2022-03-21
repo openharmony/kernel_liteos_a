@@ -58,25 +58,25 @@ static VOID *PthreadF01(void *arg)
     g_jffsFlagF01++;
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-        memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, pathname);
-        strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, pathname);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, "/");
-        strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, "/");
+        (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, pathname);
+        (void)strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, pathname);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, "/");
+        (void)strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, "/");
 
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "AAAA%d", i);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "AAAA%d", i);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
 
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "BBBB%d", i);
-        strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "BBBB%d", i);
+        (void)strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, bufname);
 
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "%d", i);
-        strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
-        strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "%d", i);
+        (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)strcat_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, bufname);
 
         g_jffsFd11[i] = open(g_jffsPathname11[i], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(g_jffsFd11[i], -1, g_jffsFd11[i], EXIT);
@@ -94,7 +94,7 @@ static VOID *PthreadF01(void *arg)
 
     bufR = (CHAR *)malloc(bufLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufR, NULL, 0, EXIT2);
-    memset_s(bufR, bufLen + 1, 0, bufLen + 1);
+    (void)memset_s(bufR, bufLen + 1, 0, bufLen + 1);
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
         g_jffsFd11[i] = open(g_jffsPathname11[i], O_NONBLOCK | O_RDWR, HIGHEST_AUTHORITY);
@@ -117,7 +117,7 @@ static VOID *PthreadF01(void *arg)
 
     bufR = (CHAR *)malloc(bufLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufR, NULL, 0, EXIT2);
-    memset_s(bufR, bufLen + 1, 0, bufLen + 1);
+    (void)memset_s(bufR, bufLen + 1, 0, bufLen + 1);
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
         g_jffsFd11[i] = open(g_jffsPathname11[i], O_NONBLOCK | O_RDWR, HIGHEST_AUTHORITY);
@@ -181,10 +181,10 @@ static VOID *PthreadF02(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW, NULL, 0, EXIT2);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     for (i = 0; i < bufWLen / strlen(filebuf); i++) {
-        strcat_s(bufW, bufWLen + 1, filebuf);
+        (void)strcat_s(bufW, bufWLen + 1, filebuf);
     }
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {

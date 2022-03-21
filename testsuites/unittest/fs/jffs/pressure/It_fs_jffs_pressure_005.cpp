@@ -69,11 +69,11 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
     JffsStatPrintf(buf1);
 
-    strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "/test1");
-    strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "/test2");
-    strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "/test3");
-    strcat_s(pathname4, JFFS_NAME_LIMITTED_SIZE, "/test4");
-    strcat_s(pathname5, JFFS_NAME_LIMITTED_SIZE, "/test5");
+    (void)strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "/test1");
+    (void)strcat_s(pathname2, JFFS_NAME_LIMITTED_SIZE, "/test2");
+    (void)strcat_s(pathname3, JFFS_NAME_LIMITTED_SIZE, "/test3");
+    (void)strcat_s(pathname4, JFFS_NAME_LIMITTED_SIZE, "/test4");
+    (void)strcat_s(pathname5, JFFS_NAME_LIMITTED_SIZE, "/test5");
 
     for (i = 0; i < JFFS_PRESSURE_CYCLES; i++) {
         ret = mkdir(pathname1, HIGHEST_AUTHORITY);

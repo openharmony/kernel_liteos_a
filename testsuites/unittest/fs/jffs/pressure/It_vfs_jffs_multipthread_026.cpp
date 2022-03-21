@@ -41,7 +41,7 @@ static VOID *PthreadF01(void *arg)
     CHAR readbuf[JFFS_STANDARD_NAME_LENGTH] = "";
     struct stat statbuf;
 
-    strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/p01.txt");
+    (void)strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/p01.txt");
 
     fd = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
@@ -89,7 +89,7 @@ static VOID *PthreadF02(void *arg)
     CHAR readbuf[JFFS_STANDARD_NAME_LENGTH] = "";
     struct stat statbuf;
 
-    strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/p02.txt");
+    (void)strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/p02.txt");
 
     fd = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT1);
@@ -137,7 +137,7 @@ static VOID *PthreadF03(void *arg)
     CHAR readbuf[JFFS_STANDARD_NAME_LENGTH] = "";
     struct stat statbuf;
 
-    strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/p03.txt");
+    (void)strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/p03.txt");
 
     fd = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT1);

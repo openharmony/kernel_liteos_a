@@ -44,7 +44,7 @@ static UINT32 Testcase(VOID)
     fd = open(JFFS_PATH_NAME0, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT1);
 
-    strcat_s(pathname, sizeof(pathname), "123");
+    (void)strcat_s(pathname, sizeof(pathname), "123");
     fd1 = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd1, -1, fd1, EXIT3);
 

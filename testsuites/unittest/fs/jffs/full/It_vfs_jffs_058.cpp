@@ -48,7 +48,7 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
-    strcat_s(pathname2, sizeof(pathname2), "/test");
+    (void)strcat_s(pathname2, sizeof(pathname2), "/test");
     ret = mkdir(pathname2, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);
 

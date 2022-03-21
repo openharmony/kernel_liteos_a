@@ -52,27 +52,27 @@ static UINT32 TestCase(VOID)
     ret = chdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test");
     fd = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT2);
 
     writebuf = (CHAR *)malloc(bufLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(writebuf, NULL, writebuf, EXIT2);
-    memset_s(writebuf, bufLen + 1, 0, bufLen + 1);
+    (void)memset_s(writebuf, bufLen + 1, 0, bufLen + 1);
 
     for (i = 0; i < bufLen / strlen(filebuf); i++) {
-        strcat_s(writebuf, bufLen + 1, filebuf);
+        (void)strcat_s(writebuf, bufLen + 1, filebuf);
     }
     writebuf[bufLen - 1] = '\0';
 
     readbuf = (CHAR *)malloc(bufLen + 1);
     ICUNIT_GOTO_NOT_EQUAL(readbuf, NULL, readbuf, EXIT3);
-    memset_s(readbuf, bufLen + 1, 0, bufLen + 1);
+    (void)memset_s(readbuf, bufLen + 1, 0, bufLen + 1);
 
     len = write(fd, writebuf, bufLen - 1);
     ICUNIT_GOTO_EQUAL(len, bufLen - 1, len, EXIT4);
 
-    memset_s(readbuf, bufLen + 1, 0, bufLen + 1);
+    (void)memset_s(readbuf, bufLen + 1, 0, bufLen + 1);
     len = pread(fd, readbuf, bufLen - 1, 0);
     ICUNIT_GOTO_EQUAL(len, bufLen - 1, len, EXIT4);
 
