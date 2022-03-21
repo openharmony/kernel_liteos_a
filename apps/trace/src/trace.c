@@ -70,6 +70,10 @@ static void TraceRead(int fd, size_t size)
 {
     ssize_t i;
     ssize_t len;
+    if (size <= 0) {
+        return;
+    }
+
     char *buffer = (char *)malloc(size);
     if (buffer == NULL) {
         printf("Read buffer malloc failed.\n");

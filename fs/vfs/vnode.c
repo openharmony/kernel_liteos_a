@@ -198,7 +198,7 @@ int VnodeFree(struct Vnode *vnode)
         g_totalVnodeSize--;
     } else {
         /* for normal vnode, reclaim it to g_VnodeFreeList */
-        memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
+        (void)memset_s(vnode, sizeof(struct Vnode), 0, sizeof(struct Vnode));
         LOS_ListAdd(&g_vnodeFreeList, &vnode->actFreeEntry);
         g_freeVnodeSize++;
     }
@@ -380,6 +380,11 @@ int VnodeLookupAt(const char *path, struct Vnode **result, uint32_t flags, struc
     if (orgVnode != NULL) {
         startVnode = orgVnode;
         normalizedPath = strdup(path);
+        if (normalizedPath == NULL) {
+            PRINT_ERR("[VFS]lookup failed, strdup err\n");
+            ret = -EINVAL;
+            goto OUT_FREE_PATH;
+        }
     } else {
         ret = PreProcess(path, &startVnode, &normalizedPath);
         if (ret != LOS_OK) {
