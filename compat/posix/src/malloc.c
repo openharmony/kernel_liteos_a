@@ -40,7 +40,7 @@
  */
 
 void *calloc(size_t nitems, size_t size)
-{ /*lint !e578*/
+{
     size_t real_size;
     void *ptr = NULL;
 
@@ -78,7 +78,7 @@ void free(void *ptr)
  */
 
 void *malloc(size_t size)
-{ /*lint !e31 !e10*/
+{
     if (size == 0) {
         return NULL;
     }
@@ -87,7 +87,7 @@ void *malloc(size_t size)
 }
 
 void *zalloc(size_t size)
-{ /*lint !e10*/
+{
     void *ptr = NULL;
 
     if (size == 0) {
