@@ -50,7 +50,7 @@ extern "C" {
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #endif
 
-#define VM_PAGE_TO_PHYS(page)    (page->physAddr)
+#define VM_PAGE_TO_PHYS(page)    ((page)->physAddr)
 #define VM_ORDER_TO_PAGES(order) (1 << (order))
 #define VM_ORDER_TO_PHYS(order)  (1 << (PAGE_SHIFT + (order)))
 #define VM_PHYS_TO_ORDER(phys)   (min(LOS_LowBitGet((phys) >> PAGE_SHIFT), VM_LIST_ORDER_MAX - 1))

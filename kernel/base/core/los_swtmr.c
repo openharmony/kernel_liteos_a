@@ -329,56 +329,58 @@ LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINT32 processID)
     }
 }
 
+STATIC UINT32 SwtmrBaseInit(VOID)
+{
+    UINT32 ret;
+    UINT32 size = sizeof(SWTMR_CTRL_S) * LOSCFG_BASE_CORE_SWTMR_LIMIT;
+    SWTMR_CTRL_S *swtmr = (SWTMR_CTRL_S *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource */
+    if (swtmr == NULL) {
+        return LOS_ERRNO_SWTMR_NO_MEMORY;
+    }
+
+    (VOID)memset_s(swtmr, size, 0, size);
+    g_swtmrCBArray = swtmr;
+    LOS_ListInit(&g_swtmrFreeList);
+    for (UINT16 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++, swtmr++) {
+        swtmr->usTimerID = index;
+        LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);
+    }
+
+    size = LOS_MEMBOX_SIZE(sizeof(SwtmrHandlerItem), OS_SWTMR_HANDLE_QUEUE_SIZE);
+    g_swtmrHandlerPool = (UINT8 *)LOS_MemAlloc(m_aucSysMem1, size); /* system resident resource */
+    if (g_swtmrHandlerPool == NULL) {
+        return LOS_ERRNO_SWTMR_NO_MEMORY;
+    }
+
+    ret = LOS_MemboxInit(g_swtmrHandlerPool, size, sizeof(SwtmrHandlerItem));
+    if (ret != LOS_OK) {
+        return LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
+    }
+
+    for (UINT16 index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {
+        SwtmrRunQue *srq = &g_swtmrRunQue[index];
+        /* The linked list of all cores must be initialized at core 0 startup for load balancing */
+        OsSortLinkInit(&srq->swtmrSortLink);
+        LOS_ListInit(&srq->swtmrHandlerQueue);
+        srq->swtmrTask = NULL;
+    }
+
+    SwtmrDebugDataInit();
+
+    return LOS_OK;
+}
+
 LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
 {
-    UINT32 size;
-    UINT16 index;
     UINT32 ret;
-    SWTMR_CTRL_S *swtmr = NULL;
-    UINT32 swtmrHandlePoolSize;
     UINT32 cpuid = ArchCurrCpuid();
     UINT32 swtmrTaskID;
 
     if (cpuid == 0) {
-        size = sizeof(SWTMR_CTRL_S) * LOSCFG_BASE_CORE_SWTMR_LIMIT;
-        swtmr = (SWTMR_CTRL_S *)LOS_MemAlloc(m_aucSysMem0, size); /* system resident resource */
-        if (swtmr == NULL) {
-            ret = LOS_ERRNO_SWTMR_NO_MEMORY;
-            goto ERROR;
-        }
-
-        (VOID)memset_s(swtmr, size, 0, size);
-        g_swtmrCBArray = swtmr;
-        LOS_ListInit(&g_swtmrFreeList);
-        for (index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++, swtmr++) {
-            swtmr->usTimerID = index;
-            LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);
-        }
-
-        swtmrHandlePoolSize = LOS_MEMBOX_SIZE(sizeof(SwtmrHandlerItem), OS_SWTMR_HANDLE_QUEUE_SIZE);
-
-        g_swtmrHandlerPool = (UINT8 *)LOS_MemAlloc(m_aucSysMem1, swtmrHandlePoolSize); /* system resident resource */
-        if (g_swtmrHandlerPool == NULL) {
-            ret = LOS_ERRNO_SWTMR_NO_MEMORY;
-            goto ERROR;
-        }
-
-        ret = LOS_MemboxInit(g_swtmrHandlerPool, swtmrHandlePoolSize, sizeof(SwtmrHandlerItem));
+        ret = SwtmrBaseInit();
         if (ret != LOS_OK) {
-            (VOID)LOS_MemFree(m_aucSysMem1, g_swtmrHandlerPool);
-            ret = LOS_ERRNO_SWTMR_HANDLER_POOL_NO_MEM;
             goto ERROR;
         }
-
-        for (UINT16 index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {
-            SwtmrRunQue *srq = &g_swtmrRunQue[index];
-            /* The linked list of all cores must be initialized at core 0 startup for load balancing */
-            OsSortLinkInit(&srq->swtmrSortLink);
-            LOS_ListInit(&srq->swtmrHandlerQueue);
-            srq->swtmrTask = NULL;
-        }
-
-        SwtmrDebugDataInit();
     }
 
     ret = SwtmrTaskCreate(cpuid, &swtmrTaskID);
@@ -393,6 +395,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
 
 ERROR:
     PRINT_ERR("OsSwtmrInit error! ret = %u\n", ret);
+    (VOID)LOS_MemFree(m_aucSysMem0, g_swtmrCBArray);
+    g_swtmrCBArray = NULL;
+    (VOID)LOS_MemFree(m_aucSysMem1, g_swtmrHandlerPool);
+    g_swtmrHandlerPool = NULL;
     return ret;
 }
 
