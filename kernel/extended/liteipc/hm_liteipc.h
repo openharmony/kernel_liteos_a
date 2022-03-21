@@ -150,8 +150,8 @@ typedef struct {
     VOID           *data;
     UINT32         spObjNum;
     VOID           *offsets;
-    UINT32         processID; /**< filled by kernel, processId of sender/reciever */
-    UINT32         taskID;    /**< filled by kernel, taskId of sender/reciever */
+    UINT32         processID; /**< filled by kernel, processId of sender/receiver */
+    UINT32         taskID;    /**< filled by kernel, taskId of sender/receiver */
 #ifdef LOSCFG_SECURITY_CAPABILITY
     UINT32         userID;
     UINT32         gid;

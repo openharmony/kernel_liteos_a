@@ -60,7 +60,7 @@ typedef unsigned short fmode_t;
 #define FMODE_64BITHASH   ((fmode_t)0x400)
 /* 32bit hashes as llseek() offset (for directories) */
 #define FMODE_32BITHASH   ((fmode_t)0x200)
-/* File is opened using open(.., 3, ..) and is writeable only for ioctls
+/* File is opened using open(.., 3, ..) and is writable only for ioctls
  *     (specialy hack for floppy.c)
  */
 #define FMODE_WRITE_IOCTL ((fmode_t)0x100)

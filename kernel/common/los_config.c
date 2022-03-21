@@ -182,11 +182,11 @@ LITE_OS_SEC_TEXT_INIT VOID OsSystemInfo(VOID)
 #ifdef LOSCFG_KERNEL_SMP
                   LOSCFG_KERNEL_SMP_CORE_NUM,
 #endif
-                  HalIrqVersion(), __DATE__, __TIME__,\
+                  HalIrqVersion(), __DATE__, __TIME__, \
                   KERNEL_NAME, KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE, buildType);
 }
 
-LITE_OS_SEC_TEXT_INIT INT32 OsMain(VOID)
+LITE_OS_SEC_TEXT_INIT UINT32 OsMain(VOID)
 {
     UINT32 ret;
 #ifdef LOS_INIT_STATISTICS

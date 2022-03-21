@@ -289,7 +289,7 @@ static INT32 BlockDriverRegisterOperate(mtd_partition *newNode,
         if (ret) {
             free(newNode->blockdriver_name);
             newNode->blockdriver_name = NULL;
-            PRINT_ERR("register blkdev partion error\n");
+            PRINT_ERR("register blkdev partition error\n");
             return ret;
         }
     } else {
@@ -322,7 +322,7 @@ static INT32 CharDriverRegisterOperate(mtd_partition *newNode,
 
         ret = register_driver(newNode->chardriver_name, param->char_ops, RWE_RW_RW, newNode);
         if (ret) {
-            PRINT_ERR("register chardev partion error\n");
+            PRINT_ERR("register chardev partition error\n");
             free(newNode->chardriver_name);
             newNode->chardriver_name = NULL;
             return ret;
@@ -340,7 +340,7 @@ static INT32 BlockDriverUnregister(mtd_partition *node)
     if (node->blockdriver_name != NULL) {
         ret = unregister_blockdriver(node->blockdriver_name);
         if (ret == -EBUSY) {
-            PRINT_ERR("unregister blkdev partion error:%d\n", ret);
+            PRINT_ERR("unregister blkdev partition error:%d\n", ret);
             return ret;
         }
         free(node->blockdriver_name);
@@ -356,7 +356,7 @@ static INT32 CharDriverUnregister(mtd_partition *node)
     if (node->chardriver_name != NULL) {
         ret = unregister_driver(node->chardriver_name);
         if (ret == -EBUSY) {
-            PRINT_ERR("unregister chardev partion error:%d\n", ret);
+            PRINT_ERR("unregister chardev partition error:%d\n", ret);
             return ret;
         }
         free(node->chardriver_name);

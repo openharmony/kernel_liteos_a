@@ -319,7 +319,7 @@ FRESULT f_regvirfs(FATFS *fs)
 
     /* Set the CHILD object field */
     for (i = 0; i < fs->vir_amount; i++) {
-        pfs = ff_memalloc(sizeof(FATFS)); /* Allocate a memeory for current child FATFS object */
+        pfs = ff_memalloc(sizeof(FATFS)); /* Allocate a memory for current child FATFS object */
         if (pfs == NULL) { /* If allocate failed, must call 'f_unregvirfs' to free the previous FATFS object memory */
             goto ERROUT;
         }
@@ -500,7 +500,7 @@ static void FatfsSetChildClst(BYTE *work, FATFS *fs, WORD i)
 * - FR_OK          : The external SD configure is complete, all info has been set to the
 *                  each CHILD FATFS
 * - FR_NOT_MATCHED : The virtual partition's configure does not matched as current setting
-* - FR_MODIFIED    : The virtual partition's configure has been destoried partly or completely
+* - FR_MODIFIED    : The virtual partition's configure has been destroyed partly or completely
 * - FR_NOVIRPART   : The external SD has not been apllied as virtual partition yet
 *
 * Others Return Value:
@@ -581,11 +581,11 @@ FRESULT f_checkvirpart(FATFS *fs, const TCHAR *path, BYTE vol)
         labelTmp = (DWORD *)label;
         *labelTmp = tmp;
         tmp = ld_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 4);
-        *((DWORD * )(label + 4)) = tmp;
+        *((DWORD *)(label + 4)) = tmp;
         tmp = ld_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 8);
-        *((DWORD * )(label + 8)) = tmp;
+        *((DWORD *)(label + 8)) = tmp;
         tmp = ld_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 12);
-        *((DWORD * )(label + 12)) = tmp;
+        *((DWORD *)(label + 12)) = tmp;
 
         if (f_checkname(label) != FR_OK) {
             (void)f_unregvirfs(fs);
@@ -721,11 +721,11 @@ FRESULT f_makevirpart(FATFS *fs, const TCHAR *path, BYTE vol)
         labelTmp = (DWORD *)label;
         tmp = *labelTmp;
         st_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 0, tmp);
-        tmp = *((DWORD * )(label + 4));
+        tmp = *((DWORD *)(label + 4));
         st_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 4, tmp);
-        tmp = *((DWORD * )(label + 8));
+        tmp = *((DWORD *)(label + 8));
         st_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 8, tmp);
-        tmp = *((DWORD * )(label + 12));
+        tmp = *((DWORD *)(label + 12));
         st_dword(work + VR_PARTITION + i * VR_ITEMSIZE + VR_Entry + 12, tmp);
 
         virpartper += g_fatVirPart.virtualinfo.virpartpercent[i];

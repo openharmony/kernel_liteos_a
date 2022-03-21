@@ -387,7 +387,7 @@ STATUS_T OsMremapCheck(VADDR_T addr, size_t oldLen, VADDR_T newAddr, size_t newL
         }
     }
 
-    /* avoid new region overlaping with the old one */
+    /* avoid new region overlapping with the old one */
     if (flags & MREMAP_FIXED) {
         if (((region->range.base + region->range.size) > newAddr) &&
             (region->range.base < (newAddr + newLen))) {
