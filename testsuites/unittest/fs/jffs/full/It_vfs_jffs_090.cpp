@@ -44,7 +44,7 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname2, sizeof(pathname2), "/test");
+    (void)strcat_s(pathname2, sizeof(pathname2), "/test");
     fd = open64(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
 
@@ -54,7 +54,7 @@ static UINT32 Testcase(VOID)
     off = lseek(fd, 0, SEEK_SET);
     ICUNIT_GOTO_EQUAL(off, JFFS_NO_ERROR, off, EXIT1);
 
-    memset_s(readbuf, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+    (void)memset_s(readbuf, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
     len = read(fd, readbuf, JFFS_SHORT_ARRAY_LENGTH - 1);
     ICUNIT_GOTO_EQUAL(len, strlen(writebuf), len, EXIT1);
 

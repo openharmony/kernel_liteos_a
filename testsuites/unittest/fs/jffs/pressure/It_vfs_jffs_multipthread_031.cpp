@@ -41,7 +41,7 @@ static VOID *PthreadF01(void *arg)
     struct stat statbuf;
 
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file1%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file1%d.txt",
             JFFS_PATH_NAME0, i);
         fd[i] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(fd[i], JFFS_IS_ERROR, fd[i], EXIT);
@@ -61,7 +61,7 @@ static VOID *PthreadF01(void *arg)
     }
 
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file1%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file1%d.txt",
             JFFS_PATH_NAME0, i);
         ret = unlink(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -76,7 +76,7 @@ EXIT1:
     }
 EXIT:
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file1%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file1%d.txt",
             JFFS_PATH_NAME0, i);
         unlink(pathname);
     }
@@ -94,7 +94,7 @@ static VOID *PthreadF02(void *arg)
     struct stat statbuf;
 
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file2%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file2%d.txt",
             JFFS_PATH_NAME0, i);
         fd[i] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(fd[i], JFFS_IS_ERROR, fd[i], EXIT);
@@ -114,7 +114,7 @@ static VOID *PthreadF02(void *arg)
     }
 
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file2%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file2%d.txt",
             JFFS_PATH_NAME0, i);
         ret = unlink(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -129,7 +129,7 @@ EXIT1:
     }
 EXIT:
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file2%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file2%d.txt",
             JFFS_PATH_NAME0, i);
         unlink(pathname);
     }
@@ -147,7 +147,7 @@ static VOID *PthreadF03(void *arg)
     struct stat statbuf;
 
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file3%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file3%d.txt",
             JFFS_PATH_NAME0, i);
         fd[i] = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(fd[i], JFFS_IS_ERROR, fd[i], EXIT);
@@ -167,7 +167,7 @@ static VOID *PthreadF03(void *arg)
     }
 
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file3%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file3%d.txt",
             JFFS_PATH_NAME0, i);
         ret = unlink(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -182,7 +182,7 @@ EXIT1:
     }
 EXIT:
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file3%d.txt",
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/file3%d.txt",
             JFFS_PATH_NAME0, i);
         unlink(pathname);
     }

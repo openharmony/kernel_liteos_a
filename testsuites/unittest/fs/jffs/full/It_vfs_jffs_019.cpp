@@ -46,15 +46,15 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname2, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname2, sizeof(pathname2), "/0test");
+    (void)strcat_s(pathname2, sizeof(pathname2), "/0test");
     ret = mkdir(pathname2, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
-    strcat_s(pathname1, sizeof(pathname1), "/dirfiles");
+    (void)strcat_s(pathname1, sizeof(pathname1), "/dirfiles");
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);
 
-    strcat_s(pathname3, sizeof(pathname3), "/dirfiles/files");
+    (void)strcat_s(pathname3, sizeof(pathname3), "/dirfiles/files");
     fd = open(pathname3, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT4);
 

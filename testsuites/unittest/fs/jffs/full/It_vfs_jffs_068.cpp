@@ -58,7 +58,7 @@ static UINT32 Testcase(VOID)
     pfd = dup2(fd, fd);
     ICUNIT_GOTO_EQUAL(pfd, fd, pfd, EXIT2);
 
-    strcat_s(pathname2, sizeof(pathname2), "T");
+    (void)strcat_s(pathname2, sizeof(pathname2), "T");
     fd1 = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd1, -1, fd1, EXIT4);
 
@@ -93,7 +93,7 @@ static UINT32 Testcase(VOID)
     fd = open(pathname1, O_NONBLOCK | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT5);
 
-    memset_s(readbuf, sizeof(readbuf), 0, strlen(readbuf));
+    (void)memset_s(readbuf, sizeof(readbuf), 0, strlen(readbuf));
     len = read(fd, readbuf, MAX_FILE_NAME_LEN);
     printf("[%d] fd:%d, errno:%d,readbuf:%s\n", __LINE__, fd, errno, readbuf);
     ICUNIT_GOTO_EQUAL(len, strlen(filebuf1) + strlen(filebuf2), len, EXIT5);

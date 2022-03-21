@@ -63,7 +63,7 @@ static UINT32 TestCase(VOID)
     JffsStatPrintf(buf1);
 
     for (i = 0; i < JFFS_PRESSURE_CYCLES; i++) {
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1602_%d", i);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1602_%d", i);
         JffsStrcat2(pathname2, bufname, strlen(bufname));
         ret = mkdir(pathname2, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);

@@ -50,7 +50,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_NOT_EQUAL(dirFd, JFFS_IS_ERROR, dirFd, EXIT1);
     printf("dirFd = %d\n", dirFd);
 
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test.txt");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test.txt");
     fd = open(pathname2, O_CREAT | O_RDWR | O_TRUNC);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT1);
 

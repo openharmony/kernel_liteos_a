@@ -53,8 +53,8 @@ static UINT32 TestCase(VOID)
     ret = chdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/jffs_1600.txt");
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test.txt");
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/jffs_1600.txt");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test.txt");
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT3);
 

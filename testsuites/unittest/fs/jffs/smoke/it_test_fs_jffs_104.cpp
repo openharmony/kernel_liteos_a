@@ -45,7 +45,7 @@ static int TestCase(void)
     ret = mkdir(pathname0, 0777);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname1, TEST_STRLEN, "/test1");
+    (void)strcat_s(pathname1, TEST_STRLEN, "/test1");
     ret = mkdir(pathname1, 0777);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
@@ -73,7 +73,7 @@ static int TestCase(void)
     ret = rmdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname2, TEST_STRLEN, "/test.txt");
+    (void)strcat_s(pathname2, TEST_STRLEN, "/test.txt");
     fd = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, 0777);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT);
 

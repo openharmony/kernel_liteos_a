@@ -41,14 +41,14 @@ static UINT32 Testcase(VOID)
     int fd1 = -1;
     int fd2 = -2;
 
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/test1");
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/test1");
     fd1 = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd1, JFFS_IS_ERROR, fd1, EXIT1);
 
     ret = close(fd1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 
-    strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test2");
+    (void)strcat_s(pathname2, JFFS_STANDARD_NAME_LENGTH, "/test2");
     fd2 = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd2, JFFS_IS_ERROR, fd2, EXIT2);
 

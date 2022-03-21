@@ -40,11 +40,11 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname1, sizeof(pathname1), "/0test");
+    (void)strcat_s(pathname1, sizeof(pathname1), "/0test");
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname, sizeof(pathname), "/dirfiles");
+    (void)strcat_s(pathname, sizeof(pathname), "/dirfiles");
 
     ret = rename(pathname1, pathname);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT2);

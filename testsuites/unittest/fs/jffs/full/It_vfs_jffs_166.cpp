@@ -44,7 +44,7 @@ static UINT32 Testcase(VOID)
     ret = chdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname2, sizeof(pathname2), "/abc.txt");
+    (void)strcat_s(pathname2, sizeof(pathname2), "/abc.txt");
     ret = unlink(pathname2);
     ICUNIT_GOTO_EQUAL(ret, -1, ret, EXIT);
     ICUNIT_GOTO_EQUAL(errno, ENOENT, errno, EXIT);
