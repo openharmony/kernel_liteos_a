@@ -80,7 +80,7 @@ typedef VOID (*pf_OUTPUT)(const CHAR *fmt, ...);
  * <li>None</li>
  * </ul>
  *
- * @param fmt [IN] Type char* controls the ouput as in C printf.
+ * @param fmt [IN] Type char* controls the output as in C printf.
  *
  * @retval None
  * @par Dependency:

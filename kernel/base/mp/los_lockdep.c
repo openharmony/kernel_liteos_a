@@ -87,7 +87,7 @@ STATIC INLINE CHAR *OsLockDepErrorStringGet(enum LockDepErrType type)
             errorString = "lockdep overflow";
             break;
         default:
-            errorString = "unknow error code";
+            errorString = "unknown error code";
             break;
     }
 
@@ -142,7 +142,7 @@ STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
         OsPrintLockDepInfo("task name    : %s\n", temp->taskName);
         OsPrintLockDepInfo("task id      : %u\n", temp->taskID);
         OsPrintLockDepInfo("cpu num      : %u\n", temp->currCpu);
-        OsPrintLockDepInfo("start dumping lockdep infomation\n");
+        OsPrintLockDepInfo("start dumping lockdep information\n");
         for (i = 0; i < lockDep->lockDepth; i++) {
             if (lockDep->heldLocks[i].lockPtr == lock) {
                 OsPrintLockDepInfo("[%d] %s <-- addr:0x%x\n", i, LOCKDEP_GET_NAME(lockDep, i),
@@ -165,7 +165,7 @@ STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
     }
 }
 
-STATIC BOOL OsLockDepCheckDependancy(const LosTaskCB *current, LosTaskCB *lockOwner)
+STATIC BOOL OsLockDepCheckDependency(const LosTaskCB *current, LosTaskCB *lockOwner)
 {
     BOOL checkResult = TRUE;
     SPIN_LOCK_S *lockTemp = NULL;
@@ -217,7 +217,7 @@ VOID OsLockDepCheckIn(SPIN_LOCK_S *lock)
         goto OUT;
     }
 
-    if (OsLockDepCheckDependancy(current, lockOwner) != TRUE) {
+    if (OsLockDepCheckDependency(current, lockOwner) != TRUE) {
         checkResult = LOCKDEP_ERR_DEAD_LOCK;
         goto OUT;
     }
@@ -313,7 +313,7 @@ VOID OsLockDepCheckOut(SPIN_LOCK_S *lock)
     /* record lock holding time */
     heldlocks[depth].holdTime = OsLockDepGetCycles() - heldlocks[depth].holdTime;
 
-    /* if unlock a older lock, needs move heldLock records */
+    /* if unlock an older lock, needs move heldLock records */
     while (depth < lockDep->lockDepth - 1) {
         lockDep->heldLocks[depth] = lockDep->heldLocks[depth + 1];
         depth++;

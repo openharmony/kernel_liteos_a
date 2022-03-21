@@ -103,7 +103,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsLiteIpcInit(VOID)
 #if (USE_TASKID_AS_HANDLE == 1)
     g_cmsTask.status = HANDLE_NOT_USED;
 #else
-    memset_s(g_serviceHandleMap, sizeof(g_serviceHandleMap), 0, sizeof(g_serviceHandleMap));
+    (void)memset_s(g_serviceHandleMap, sizeof(g_serviceHandleMap), 0, sizeof(g_serviceHandleMap));
 #endif
     ret = LOS_MuxInit(&g_serviceHandleMapMux, NULL);
     if (ret != LOS_OK) {
@@ -565,7 +565,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 SendDeathMsg(UINT32 processID, UINT32 serviceHand
     }
     content.flag = SEND;
     content.outMsg = &msg;
-    memset_s(content.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
+    (void)memset_s(content.outMsg, sizeof(IpcMsg), 0, sizeof(IpcMsg));
     content.outMsg->type = MT_DEATH_NOTIFY;
     content.outMsg->target.handle = ipcTaskID;
     content.outMsg->target.token = serviceHandle;
@@ -1161,7 +1161,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
             if (ret == LOS_OK) {
                 break;
             }
-            if (ret == -ENOENT) { /* It means that we've recieved a failed reply */
+            if (ret == -ENOENT) { /* It means that we've received a failed reply */
                 return ret;
             }
         }
@@ -1208,7 +1208,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcMsgHandle(IpcContent *con)
         }
         content->outMsg = msg;
         if ((content->outMsg->type < 0) || (content->outMsg->type >= MT_DEATH_NOTIFY)) {
-            PRINT_ERR("LiteIpc unknow msg type:%d\n", content->outMsg->type);
+            PRINT_ERR("LiteIpc unknown msg type:%d\n", content->outMsg->type);
             ret = -EINVAL;
             goto BUFFER_FREE;
         }

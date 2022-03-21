@@ -119,12 +119,12 @@ VOID HalIrqInit(VOID)
 {
     UINT32 i;
 
-    /* set externel interrupts to be level triggered, active low. */
+    /* set external interrupts to be level triggered, active low. */
     for (i = 32; i < OS_HWI_MAX_NUM; i += 16) {
         GIC_REG_32(GICD_ICFGR(i / 16)) = 0;
     }
 
-    /* set externel interrupts to CPU 0 */
+    /* set external interrupts to CPU 0 */
     for (i = 32; i < OS_HWI_MAX_NUM; i += 4) {
         GIC_REG_32(GICD_ITARGETSR(i / 4)) = 0x01010101;
     }

@@ -278,7 +278,7 @@ LITE_OS_SEC_TEXT UINT32 OsSwtmrGetNextTimeout(VOID)
 
 /*
  * Description: Stop of Software Timer interface
- * Input      : swtmr --- the software timer contrl handler
+ * Input      : swtmr --- the software timer control handler
  */
 LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
 {
@@ -292,7 +292,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsSwtmrStop(SWTMR_CTRL_S *swtmr)
 
 /*
  * Description: Get next software timer expiretime
- * Input      : swtmr --- the software timer contrl handler
+ * Input      : swtmr --- the software timer control handler
  */
 LITE_OS_SEC_TEXT STATIC UINT32 OsSwtmrTimeGet(const SWTMR_CTRL_S *swtmr)
 {

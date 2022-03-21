@@ -647,7 +647,7 @@ int clock_getres(clockid_t clockID, struct timespec *tp)
         case CLOCK_MONOTONIC_RAW:
         case CLOCK_MONOTONIC:
         case CLOCK_REALTIME:
-            /* the accessable rtc resolution */
+            /* the accessible rtc resolution */
             tp->tv_nsec = OS_SYS_NS_PER_US; /* the precision of clock_gettime is 1us */
             tp->tv_sec = 0;
             break;

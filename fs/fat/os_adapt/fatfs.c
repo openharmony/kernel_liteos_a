@@ -1861,7 +1861,7 @@ static FRESULT fatfs_setlabel(los_part *part)
     return result;
 }
 
-int fatfs_mkfs (struct Vnode *device, int sectors, int option)
+int fatfs_mkfs(struct Vnode *device, int sectors, int option)
 {
     BYTE *work_buff = NULL;
     los_part *part = NULL;
