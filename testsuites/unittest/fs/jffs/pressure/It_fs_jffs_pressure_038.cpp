@@ -53,30 +53,30 @@ static VOID *PthreadF01(void *arg)
     g_TestCnt++;
     g_jffsFlagF01++;
 
-    memset_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-    memset_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-    strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, pathname1);
-    strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, pathname1);
+    (void)memset_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+    (void)memset_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+    (void)strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, pathname1);
+    (void)strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, pathname1);
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
-        memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
-        memset_s(g_jffsPathname13[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, strlen(bufname));
+        (void)memset_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
+        (void)memset_s(g_jffsPathname13[i], JFFS_NAME_LIMITTED_SIZE, 0, JFFS_NAME_LIMITTED_SIZE);
 
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
-        strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, bufname);
-        strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, bufname);
-        strcpy_s(g_jffsPathname13[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname6);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/test%d", i);
+        (void)strcat_s(g_jffsPathname6, JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, bufname);
+        (void)strcpy_s(g_jffsPathname13[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname6);
 
-        strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, "A");
-        strcpy_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname7);
+        (void)strcat_s(g_jffsPathname7, JFFS_NAME_LIMITTED_SIZE, "A");
+        (void)strcpy_s(g_jffsPathname12[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname7);
 
         if (i == 0) {
-            strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname12[i]);
+            (void)strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname12[i]);
         } else {
-            strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname13[i]);
-            strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, "A");
+            (void)strcpy_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, g_jffsPathname13[i]);
+            (void)strcat_s(g_jffsPathname11[i], JFFS_NAME_LIMITTED_SIZE, "A");
         }
 
         ret = mkdir(g_jffsPathname13[i], HIGHEST_AUTHORITY);

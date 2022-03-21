@@ -45,10 +45,10 @@ static UINT32 TestCase(VOID)
     ret = chdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "/");
+    (void)strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "/");
 
     while (i < 280) { // loop times: 280
-        strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "t");
+        (void)strcat_s(pathname1, JFFS_NAME_LIMITTED_SIZE, "t");
         i++;
     }
     ICUNIT_GOTO_EQUAL(strlen(pathname1), 294, strlen(pathname1), EXIT); // pathname length: 294

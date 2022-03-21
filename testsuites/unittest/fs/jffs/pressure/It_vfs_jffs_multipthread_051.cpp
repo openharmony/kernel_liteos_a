@@ -37,7 +37,7 @@ static VOID *MutiJffs05101(void *arg)
     CHAR pathname[JFFS_STANDARD_NAME_LENGTH] = { JFFS_PATH_NAME0 };
     dprintf(" start muti_jffs_051_01  2 \n");
 
-    strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test");
+    (void)strcat_s(pathname, JFFS_STANDARD_NAME_LENGTH, "/test");
     ret =
         JffsMultiWrite(pathname, JFFS_PRESSURE_W_R_SIZE2, JFFS_PRESSURE_W_R_SIZE1, O_RDWR | O_CREAT, JFFS_WR_TYPE_TEST);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);

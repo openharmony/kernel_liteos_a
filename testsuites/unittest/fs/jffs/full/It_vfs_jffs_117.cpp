@@ -48,7 +48,7 @@ static UINT32 Testcase(VOID)
     ret = chdir(pathname1);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-    strcat_s(pathname1, sizeof(pathname1), "/119.txt");
+    (void)strcat_s(pathname1, sizeof(pathname1), "/119.txt");
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT1);
 
@@ -70,7 +70,7 @@ static UINT32 Testcase(VOID)
     off = lseek(fd1, 0, SEEK_SET);
     ICUNIT_GOTO_EQUAL(off, 0, off, EXIT2);
 
-    memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(readbuf, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     len = read(fd1, readbuf, JFFS_STANDARD_NAME_LENGTH - 1);
     ICUNIT_GOTO_EQUAL(len, 10, len, EXIT2); // 10 means length of actually read data
     ICUNIT_GOTO_STRING_EQUAL(readbuf, "1234567890", readbuf, EXIT2);
@@ -111,7 +111,7 @@ EXIT:
 * -@texpect
 1. Return successed
 2. Return successed
-3. Sucessful operation
+3. Successful operation
 4. N/A
 * -@tprior 1
 * -@tauto TRUE

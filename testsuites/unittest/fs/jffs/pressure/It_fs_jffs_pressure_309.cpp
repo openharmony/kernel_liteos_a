@@ -48,11 +48,11 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
     for (i = 0; i < JFFS_SHORT_ARRAY_LENGTH; i++) {
-        memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
-        memset_s(pathname2[i], JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1071_%d", i);
-        strcat_s(pathname2[i], JFFS_STANDARD_NAME_LENGTH, pathname1);
-        strcat_s(pathname2[i], JFFS_STANDARD_NAME_LENGTH, bufname);
+        (void)memset_s(bufname, JFFS_SHORT_ARRAY_LENGTH, 0, JFFS_SHORT_ARRAY_LENGTH);
+        (void)memset_s(pathname2[i], JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)snprintf_s(bufname, JFFS_SHORT_ARRAY_LENGTH, JFFS_SHORT_ARRAY_LENGTH - 1, "/1071_%d", i);
+        (void)strcat_s(pathname2[i], JFFS_STANDARD_NAME_LENGTH, pathname1);
+        (void)strcat_s(pathname2[i], JFFS_STANDARD_NAME_LENGTH, bufname);
         fd[i] = open(pathname2[i], O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_NOT_EQUAL(fd[i], -1, fd[i], EXIT2);
     }

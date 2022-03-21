@@ -57,11 +57,11 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(statbuf1.st_size, 0, statbuf1.st_size, EXIT);
 
     while (i < 100) { // loop times: 100
-        memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", i);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
+        (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", i);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
         ret = mkdir(pathname3, HIGHEST_AUTHORITY);
         printf("[%d]mkdir cycle:%d name: %s, errno:%d\n", __LINE__, i, pathname3, errno);
         if (ret == -1) {
@@ -94,11 +94,11 @@ static UINT32 TestCase(VOID)
 
     for (j = 0; j < i; j++) {
         errno = 0;
-        memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", j);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
+        (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", j);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
 
         ret = remove(pathname3);
         printf("[%d]remove cycle:%d name: %s, errno:%d\n", __LINE__, j, pathname3, errno);
@@ -120,11 +120,11 @@ EXIT2:
     mount(JFFS_DEV_PATH0, JFFS_MOUNT_DIR0, JFFS_FILESYS_TYPE, 0, NULL);
 EXIT1:
     for (j = 0; j < i; j++) {
-        memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", j);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
+        (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", j);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
 
         remove(pathname3);
     }

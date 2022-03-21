@@ -60,11 +60,11 @@ static UINT32 TestCase(VOID)
 
     while (i < 1024) { // loop times: 1024
         errno = 0;
-        memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", i);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
+        (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", i);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
 
         fd = open(pathname3, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
         printf("[%d]open cycle:%d name :%s, fd:%d, errno:%d\n", __LINE__, i, pathname3, fd, errno);
@@ -101,11 +101,11 @@ static UINT32 TestCase(VOID)
     ICUNIT_GOTO_EQUAL(statbuf2.st_size, statbuf1.st_size, statbuf2.st_size, EXIT1);
 
     for (j = 0; j < i; j++) {
-        memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", j);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
+        (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", j);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
 
         ret = remove(pathname3);
         printf("[%d] cycle:%d remove name :%s, errno:%d\n", __LINE__, j, pathname3, errno);
@@ -128,11 +128,11 @@ EXIT2:
 EXIT1:
     close(fd);
     for (j = 0; j < i; j++) {
-        memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
-        snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", j);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
-        strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
+        (void)memset_s(bufname, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)memset_s(pathname3, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+        (void)snprintf_s(bufname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/_%d", j);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, pathname2);
+        (void)strcat_s(pathname3, JFFS_STANDARD_NAME_LENGTH, bufname);
 
         remove(pathname3);
     }

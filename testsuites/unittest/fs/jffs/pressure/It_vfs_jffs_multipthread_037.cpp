@@ -44,12 +44,12 @@ static VOID *PthreadF01(void *arg)
     DIR *dir = NULL;
 
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1%d", JFFS_PATH_NAME0,
             i);
         ret = mkdir(pathname, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1_%d", JFFS_PATH_NAME0,
             i);
         ret = rename(pathname, pathname1);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
@@ -59,7 +59,7 @@ static VOID *PthreadF01(void *arg)
     }
 
     for (j = i - 1; j >= 0; j--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1_%d", JFFS_PATH_NAME0,
             j);
         ret = rmdir(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -70,11 +70,11 @@ static VOID *PthreadF01(void *arg)
     return NULL;
 
 EXIT1:
-    snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1%d", JFFS_PATH_NAME0, i);
+    (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1%d", JFFS_PATH_NAME0, i);
     rmdir(pathname);
 EXIT:
     for (j = i - 1; j >= 0; j--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test1_%d", JFFS_PATH_NAME0,
             j);
         rmdir(pathname);
     }
@@ -94,12 +94,12 @@ static VOID *PthreadF02(void *arg)
     DIR *dir = NULL;
 
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2%d", JFFS_PATH_NAME0,
             i);
         ret = mkdir(pathname, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2_%d", JFFS_PATH_NAME0,
             i);
         ret = rename(pathname, pathname1);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
@@ -109,7 +109,7 @@ static VOID *PthreadF02(void *arg)
     }
 
     for (j = i - 1; j >= 0; j--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2_%d", JFFS_PATH_NAME0,
             j);
         ret = rmdir(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -120,11 +120,11 @@ static VOID *PthreadF02(void *arg)
     return NULL;
 
 EXIT1:
-    snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2%d", JFFS_PATH_NAME0, i);
+    (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2%d", JFFS_PATH_NAME0, i);
     rmdir(pathname);
 EXIT:
     for (j = i - 1; j >= 0; j--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test2_%d", JFFS_PATH_NAME0,
             j);
         rmdir(pathname);
     }
@@ -144,12 +144,12 @@ static VOID *PthreadF03(void *arg)
     DIR *dir = NULL;
 
     for (i = 0; i < JFFS_MIDDLE_CYCLES; i++) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3%d", JFFS_PATH_NAME0,
             i);
         ret = mkdir(pathname, HIGHEST_AUTHORITY);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
 
-        snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3_%d", JFFS_PATH_NAME0,
             i);
         ret = rename(pathname, pathname1);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
@@ -159,7 +159,7 @@ static VOID *PthreadF03(void *arg)
     }
 
     for (j = i - 1; j >= 0; j--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3_%d", JFFS_PATH_NAME0,
             j);
         ret = rmdir(pathname);
         ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT);
@@ -170,11 +170,11 @@ static VOID *PthreadF03(void *arg)
     return NULL;
 
 EXIT1:
-    snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3%d", JFFS_PATH_NAME0, i);
+    (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3%d", JFFS_PATH_NAME0, i);
     rmdir(pathname);
 EXIT:
     for (j = i - 1; j >= 0; j--) {
-        snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3_%d", JFFS_PATH_NAME0,
+        (void)snprintf_s(pathname, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "%s/test3_%d", JFFS_PATH_NAME0,
             j);
         rmdir(pathname);
     }

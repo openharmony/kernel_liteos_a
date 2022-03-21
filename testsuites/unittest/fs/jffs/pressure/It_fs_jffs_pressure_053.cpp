@@ -58,12 +58,12 @@ static VOID *PthreadF01(void *arg)
 
     time(&tTime);
     pstTM = localtime(&tTime);
-    memset_s(g_jffsPathname4, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
+    (void)memset_s(g_jffsPathname4, JFFS_STANDARD_NAME_LENGTH, 0, JFFS_STANDARD_NAME_LENGTH);
     strftime(g_jffsPathname4, JFFS_STANDARD_NAME_LENGTH - 1, "%Y-%m-%d_%H.%M.%S", pstTM);
-    snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/%s_#%d", g_jffsPathname4,
+    (void)snprintf_s(pathname1, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "/storage/%s_#%d", g_jffsPathname4,
         (INT32)(INTPTR)arg);
 
-    snprintf_s(g_jffsPathname4, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "testfile#%d",
+    (void)snprintf_s(g_jffsPathname4, JFFS_STANDARD_NAME_LENGTH, JFFS_STANDARD_NAME_LENGTH - 1, "testfile#%d",
         (INT32)(INTPTR)arg);
     prctl(PR_SET_NAME, (unsigned long)g_jffsPathname4, 0, 0, 0);
 

@@ -41,11 +41,11 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname1, sizeof(pathname1), "/dir");
+    (void)strcat_s(pathname1, sizeof(pathname1), "/dir");
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
-    strcat_s(pathname, sizeof(pathname), "/files");
+    (void)strcat_s(pathname, sizeof(pathname), "/files");
     fd = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT3);
 

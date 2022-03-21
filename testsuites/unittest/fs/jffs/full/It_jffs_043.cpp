@@ -55,7 +55,7 @@ static UINT32 Testcase(VOID)
     DIR adir = { 0 };
     DIR *dir1 = &adir;
 
-    strcat_s(pathname01, JFFS_STANDARD_NAME_LENGTH, "/test1");
+    (void)strcat_s(pathname01, JFFS_STANDARD_NAME_LENGTH, "/test1");
     ret = mkdir(pathname01, HIGHEST_AUTHORITY);
     if (ret != 0) {
         if (errno != EEXIST) {
