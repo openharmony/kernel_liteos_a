@@ -86,18 +86,18 @@ extern "C" {
 #define PERIPH_UNCACHED_SIZE    U32_C(PERIPH_PMM_SIZE)
 #endif
 
-#define IO_DEVICE_ADDR(paddr)        (paddr - PERIPH_PMM_BASE + PERIPH_DEVICE_BASE)
-#define IO_CACHED_ADDR(paddr)        (paddr - PERIPH_PMM_BASE + PERIPH_CACHED_BASE)
-#define IO_UNCACHED_ADDR(paddr)      (paddr - PERIPH_PMM_BASE + PERIPH_UNCACHED_BASE)
+#define IO_DEVICE_ADDR(paddr)        ((paddr) - PERIPH_PMM_BASE + PERIPH_DEVICE_BASE)
+#define IO_CACHED_ADDR(paddr)        ((paddr) - PERIPH_PMM_BASE + PERIPH_CACHED_BASE)
+#define IO_UNCACHED_ADDR(paddr)      ((paddr) - PERIPH_PMM_BASE + PERIPH_UNCACHED_BASE)
 
-#define MEM_CACHED_ADDR(paddr)       (paddr - DDR_MEM_ADDR + KERNEL_VMM_BASE)
-#define MEM_UNCACHED_ADDR(paddr)     (paddr - DDR_MEM_ADDR + UNCACHED_VMM_BASE)
+#define MEM_CACHED_ADDR(paddr)       ((paddr) - DDR_MEM_ADDR + KERNEL_VMM_BASE)
+#define MEM_UNCACHED_ADDR(paddr)     ((paddr) - DDR_MEM_ADDR + UNCACHED_VMM_BASE)
 
-#define VMM_TO_UNCACHED_ADDR(vaddr)  (vaddr - KERNEL_VMM_BASE + UNCACHED_VMM_BASE)
-#define UNCACHED_TO_VMM_ADDR(vaddr)  (vaddr - UNCACHED_VMM_BASE + KERNEL_VMM_BASE)
+#define VMM_TO_UNCACHED_ADDR(vaddr)  ((vaddr) - KERNEL_VMM_BASE + UNCACHED_VMM_BASE)
+#define UNCACHED_TO_VMM_ADDR(vaddr)  ((vaddr) - UNCACHED_VMM_BASE + KERNEL_VMM_BASE)
 
-#define VMM_TO_DMA_ADDR(vaddr)  (vaddr - KERNEL_VMM_BASE + SYS_MEM_BASE)
-#define DMA_TO_VMM_ADDR(vaddr)  (vaddr - SYS_MEM_BASE + KERNEL_VMM_BASE)
+#define VMM_TO_DMA_ADDR(vaddr)  ((vaddr) - KERNEL_VMM_BASE + SYS_MEM_BASE)
+#define DMA_TO_VMM_ADDR(vaddr)  ((vaddr) - SYS_MEM_BASE + KERNEL_VMM_BASE)
 
 #if (PERIPH_UNCACHED_BASE >= (0xFFFFFFFFU - PERIPH_UNCACHED_SIZE))
 #error "Kernel virtual memory space has overflowed!"

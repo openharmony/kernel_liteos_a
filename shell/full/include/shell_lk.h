@@ -62,7 +62,7 @@ extern "C" {
  * @param  level    [IN] print level.
  * @param  func     [IN] means which func calls print func.
  * @param  line     [IN] means which line calls print func.
- * @param  fmt      [IN] other infomation by user define.
+ * @param  fmt      [IN] other information by user define.
  * @param  ap       [IN] the para list.
  *
  * @retval None.
@@ -85,7 +85,7 @@ typedef VOID (*LK_FUNC)(INT32 level, const CHAR *func, INT32 line, const CHAR *f
  * @param  level    [IN] print level.
  * @param  func     [IN] means which func calls print func.
  * @param  line     [IN] means which line calls print func.
- * @param  fmt      [IN] other infomation by user define
+ * @param  fmt      [IN] other information by user define
  *
  * @retval NONE
  * @par Dependency:

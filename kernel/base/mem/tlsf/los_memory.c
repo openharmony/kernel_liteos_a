@@ -636,7 +636,7 @@ STATIC INLINE UINT32 OsMemFreeListIndexGet(UINT32 size)
 }
 
 STATIC INLINE struct OsMemFreeNodeHead *OsMemFindCurSuitableBlock(struct OsMemPoolHead *poolHead,
-                                        UINT32 index, UINT32 size)
+                                                                  UINT32 index, UINT32 size)
 {
     struct OsMemFreeNodeHead *node = NULL;
 
@@ -649,9 +649,12 @@ STATIC INLINE struct OsMemFreeNodeHead *OsMemFindCurSuitableBlock(struct OsMemPo
     return NULL;
 }
 
+#define BITMAP_INDEX(index) ((index) >> 5)
 STATIC INLINE UINT32 OsMemNotEmptyIndexGet(struct OsMemPoolHead *poolHead, UINT32 index)
 {
-    UINT32 mask = poolHead->freeListBitmap[index >> 5]; /* 5: Divide by 32 to calculate the index of the bitmap array. */
+    UINT32 mask;
+
+    mask = poolHead->freeListBitmap[BITMAP_INDEX(index)];
     mask &= ~((1 << (index & OS_MEM_BITMAP_MASK)) - 1);
     if (mask != 0) {
         index = OsMemFFS(mask) + (index & ~OS_MEM_BITMAP_MASK);
@@ -685,8 +688,8 @@ STATIC INLINE struct OsMemFreeNodeHead *OsMemFindNextSuitableBlock(VOID *pool, U
             goto DONE;
         }
 
-        for (index = LOS_Align(index + 1, 32); index < OS_MEM_FREE_LIST_COUNT; index += 32) {
-            mask = poolHead->freeListBitmap[index >> 5]; /* 5: Divide by 32 to calculate the index of the bitmap array. */
+        for (index = LOS_Align(index + 1, 32); index < OS_MEM_FREE_LIST_COUNT; index += 32) { /* 32: align size */
+            mask = poolHead->freeListBitmap[BITMAP_INDEX(index)];
             if (mask != 0) {
                 index = OsMemFFS(mask) + index;
                 goto DONE;
@@ -707,12 +710,12 @@ DONE:
 
 STATIC INLINE VOID OsMemSetFreeListBit(struct OsMemPoolHead *head, UINT32 index)
 {
-    head->freeListBitmap[index >> 5] |= 1U << (index & 0x1f); /* 5: Divide by 32 to calculate the index of the bitmap array. */
+    head->freeListBitmap[BITMAP_INDEX(index)] |= 1U << (index & 0x1f);
 }
 
 STATIC INLINE VOID OsMemClearFreeListBit(struct OsMemPoolHead *head, UINT32 index)
 {
-    head->freeListBitmap[index >> 5] &= ~(1U << (index & 0x1f)); /* 5: Divide by 32 to calculate the index of the bitmap array. */
+    head->freeListBitmap[BITMAP_INDEX(index)] &= ~(1U << (index & 0x1f));
 }
 
 STATIC INLINE VOID OsMemListAdd(struct OsMemPoolHead *pool, UINT32 listIndex, struct OsMemFreeNodeHead *node)
@@ -1183,42 +1186,45 @@ STATIC INLINE BOOL OsMemIsNodeValid(const struct OsMemNodeHead *node, const stru
     return TRUE;
 }
 
+STATIC  BOOL MemCheckUsedNode(const struct OsMemPoolHead *pool, const struct OsMemNodeHead *node,
+                              const struct OsMemNodeHead *startNode, const struct OsMemNodeHead *endNode)
+{
+    if (!OsMemIsNodeValid(node, startNode, endNode, pool)) {
+        return FALSE;
+    }
+
+    if (!OS_MEM_NODE_GET_USED_FLAG(node->sizeAndFlag)) {
+        return FALSE;
+    }
+
+    const struct OsMemNodeHead *nextNode = OS_MEM_NEXT_NODE(node);
+    if (!OsMemIsNodeValid(nextNode, startNode, endNode, pool)) {
+        return FALSE;
+    }
+
+    if (!OS_MEM_NODE_GET_LAST_FLAG(nextNode->sizeAndFlag)) {
+        if (nextNode->ptr.prev != node) {
+            return FALSE;
+        }
+    }
+
+    if ((node != startNode) &&
+        ((!OsMemIsNodeValid(node->ptr.prev, startNode, endNode, pool)) ||
+        (OS_MEM_NEXT_NODE(node->ptr.prev) != node))) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 STATIC UINT32 OsMemCheckUsedNode(const struct OsMemPoolHead *pool, const struct OsMemNodeHead *node)
 {
     struct OsMemNodeHead *startNode = (struct OsMemNodeHead *)OS_MEM_FIRST_NODE(pool);
     struct OsMemNodeHead *endNode = (struct OsMemNodeHead *)OS_MEM_END_NODE(pool, pool->info.totalSize);
-    struct OsMemNodeHead *nextNode = NULL;
     BOOL doneFlag = FALSE;
 
     do {
-        do {
-            if (!OsMemIsNodeValid(node, startNode, endNode, pool)) {
-                break;
-            }
-
-            if (!OS_MEM_NODE_GET_USED_FLAG(node->sizeAndFlag)) {
-                break;
-            }
-
-            nextNode = OS_MEM_NEXT_NODE(node);
-            if (!OsMemIsNodeValid(nextNode, startNode, endNode, pool)) {
-                break;
-            }
-
-            if (!OS_MEM_NODE_GET_LAST_FLAG(nextNode->sizeAndFlag)) {
-                if (nextNode->ptr.prev != node) {
-                    break;
-                }
-            }
-
-            if ((node != startNode) &&
-                ((!OsMemIsNodeValid(node->ptr.prev, startNode, endNode, pool)) ||
-                (OS_MEM_NEXT_NODE(node->ptr.prev) != node))) {
-                break;
-            }
-            doneFlag = TRUE;
-        } while (0);
-
+        doneFlag = MemCheckUsedNode(pool, node, startNode, endNode);
         if (!doneFlag) {
 #if OS_MEM_EXPAND_ENABLE
             if (OsMemIsLastSentinelNode(endNode) == FALSE) {
@@ -1291,16 +1297,17 @@ STATIC INLINE UINT32 OsMemFree(struct OsMemPoolHead *pool, struct OsMemNodeHead 
 
 UINT32 LOS_MemFree(VOID *pool, VOID *ptr)
 {
+    UINT32 intSave;
+    UINT32 ret = LOS_NOK;
+
     if ((pool == NULL) || (ptr == NULL) || !OS_MEM_IS_ALIGNED(pool, sizeof(VOID *)) ||
         !OS_MEM_IS_ALIGNED(ptr, sizeof(VOID *))) {
-        return LOS_NOK;
+        return ret;
     }
     OsHookCall(LOS_HOOK_TYPE_MEM_FREE, pool, ptr);
 
-    UINT32 ret = LOS_NOK;
     struct OsMemPoolHead *poolHead = (struct OsMemPoolHead *)pool;
     struct OsMemNodeHead *node = NULL;
-    UINT32 intSave;
 
     do {
         UINT32 gapSize = *(UINT32 *)((UINTPTR)ptr - sizeof(UINT32));
@@ -1397,7 +1404,7 @@ STATIC INLINE VOID *OsGetRealPtr(const VOID *pool, VOID *ptr)
 }
 
 STATIC INLINE VOID *OsMemRealloc(struct OsMemPoolHead *pool, const VOID *ptr,
-                struct OsMemNodeHead *node, UINT32 size, UINT32 intSave)
+                                 struct OsMemNodeHead *node, UINT32 size, UINT32 intSave)
 {
     struct OsMemNodeHead *nextNode = NULL;
     UINT32 allocSize = OS_MEM_ALIGN(size + OS_MEM_NODE_HEAD_SIZE, OS_MEM_ALIGN_SIZE);
@@ -1619,7 +1626,7 @@ STATIC UINT32 OsMemAddrValidCheckPrint(const VOID *pool, struct OsMemFreeNodeHea
 }
 
 STATIC UINT32 OsMemIntegrityCheckSub(struct OsMemNodeHead **tmpNode, const VOID *pool,
-                const struct OsMemNodeHead *endNode)
+                                     const struct OsMemNodeHead *endNode)
 {
     if (!OS_MEM_MAGIC_VALID(*tmpNode)) {
         OsMemMagicCheckPrint(tmpNode);
@@ -1635,7 +1642,7 @@ STATIC UINT32 OsMemIntegrityCheckSub(struct OsMemNodeHead **tmpNode, const VOID 
 }
 
 STATIC UINT32 OsMemFreeListNodeCheck(const struct OsMemPoolHead *pool,
-                const struct OsMemFreeNodeHead *node)
+                                     const struct OsMemFreeNodeHead *node)
 {
     if (!OsMemAddrValidCheck(pool, node) ||
         !OsMemAddrValidCheck(pool, node->prev) ||
@@ -1698,7 +1705,7 @@ OUT:
 }
 
 STATIC UINT32 OsMemIntegrityCheck(const struct OsMemPoolHead *pool, struct OsMemNodeHead **tmpNode,
-                struct OsMemNodeHead **preNode)
+                                  struct OsMemNodeHead **preNode)
 {
     struct OsMemNodeHead *endNode = OS_MEM_END_NODE(pool, pool->info.totalSize);
 
@@ -1846,7 +1853,7 @@ ERROR_OUT:
 }
 
 STATIC INLINE VOID OsMemInfoGet(struct OsMemPoolHead *poolInfo, struct OsMemNodeHead *node,
-                LOS_MEM_POOL_STATUS *poolStatus)
+                                LOS_MEM_POOL_STATUS *poolStatus)
 {
     UINT32 totalUsedSize = 0;
     UINT32 totalFreeSize = 0;
@@ -1994,8 +2001,10 @@ UINT32 LOS_MemFreeNodeShow(VOID *pool)
         } else {
             UINT32 val = 1 << (((index - OS_MEM_SMALL_BUCKET_COUNT) >> OS_MEM_SLI) + OS_MEM_LARGE_START_BUCKET);
             UINT32 offset = val >> OS_MEM_SLI;
-            PRINTK("size: [%#x, %#x], num: %u\n", (offset * ((index - OS_MEM_SMALL_BUCKET_COUNT) % (1 << OS_MEM_SLI))) + val,
-                    ((offset * (((index - OS_MEM_SMALL_BUCKET_COUNT) % (1 << OS_MEM_SLI)) + 1)) + val - 1), countNum[index]);
+            PRINTK("size: [%#x, %#x], num: %u\n",
+                   (offset * ((index - OS_MEM_SMALL_BUCKET_COUNT) % (1 << OS_MEM_SLI))) + val,
+                   ((offset * (((index - OS_MEM_SMALL_BUCKET_COUNT) % (1 << OS_MEM_SLI)) + 1)) + val - 1),
+                   countNum[index]);
         }
     }
     PRINTK("\n   ********************************************************************\n\n");
