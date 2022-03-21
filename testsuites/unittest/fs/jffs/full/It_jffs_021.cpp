@@ -41,7 +41,7 @@ static UINT32 Testcase(VOID)
     struct dirent *dp2 = (struct dirent *)malloc(sizeof(struct dirent));
     struct dirent *dp2Bak = dp2;
 
-    strcat_s(pathname01, JFFS_STANDARD_NAME_LENGTH, "/test1");
+    (void)strcat_s(pathname01, JFFS_STANDARD_NAME_LENGTH, "/test1");
     ret = mkdir(pathname01, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, JFFS_NO_ERROR, ret, EXIT1);
 

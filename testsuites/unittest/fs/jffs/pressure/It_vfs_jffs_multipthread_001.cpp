@@ -57,31 +57,31 @@ static VOID *PthreadF01(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(bufW, NULL, 0);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     bufW1 = (CHAR *)malloc(bufW1Len + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW1, NULL, 0, EXIT2);
-    memset_s(bufW1, bufW1Len + 1, 0, bufW1Len + 1);
+    (void)memset_s(bufW1, bufW1Len + 1, 0, bufW1Len + 1);
 
     bufW2 = (CHAR *)malloc(bufW2Len + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW2, NULL, 0, EXIT3);
-    memset_s(bufW2, bufW2Len + 1, 0, bufW2Len + 1);
+    (void)memset_s(bufW2, bufW2Len + 1, 0, bufW2Len + 1);
 
     for (j = 0; j < bufW2Len / strlen(filebuf); j++) {
-        strcat_s(bufW2, bufW2Len + 1, filebuf);
+        (void)strcat_s(bufW2, bufW2Len + 1, filebuf);
     }
 
     for (j = 0; j < bufW1Len / bufW2Len; j++) {
-        strcat_s(bufW1, bufW1Len + 1, bufW2);
+        (void)strcat_s(bufW1, bufW1Len + 1, bufW2);
     }
 
     for (i = 0; i < bufWLen / bufW1Len; i++) {
-        strcat_s(bufW, bufWLen + 1, bufW1);
+        (void)strcat_s(bufW, bufWLen + 1, bufW1);
     }
     free(bufW1);
     free(bufW2);
 
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/001.txt");
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/001.txt");
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT2);
 
@@ -157,31 +157,31 @@ static VOID *PthreadF02(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(bufW, NULL, 0);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     bufW1 = (CHAR *)malloc(bufW1Len + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW1, NULL, 0, EXIT2);
-    memset_s(bufW1, bufW1Len + 1, 0, bufW1Len + 1);
+    (void)memset_s(bufW1, bufW1Len + 1, 0, bufW1Len + 1);
 
     bufW2 = (CHAR *)malloc(bufW2Len + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW2, NULL, 0, EXIT3);
-    memset_s(bufW2, bufW2Len + 1, 0, bufW2Len + 1);
+    (void)memset_s(bufW2, bufW2Len + 1, 0, bufW2Len + 1);
 
     for (j = 0; j < bufW2Len / strlen(filebuf); j++) {
-        strcat_s(bufW2, bufW2Len + 1, filebuf);
+        (void)strcat_s(bufW2, bufW2Len + 1, filebuf);
     }
 
     for (j = 0; j < bufW1Len / bufW2Len; j++) {
-        strcat_s(bufW1, bufW1Len + 1, bufW2);
+        (void)strcat_s(bufW1, bufW1Len + 1, bufW2);
     }
 
     for (i = 0; i < bufWLen / bufW1Len; i++) {
-        strcat_s(bufW, bufWLen + 1, bufW1);
+        (void)strcat_s(bufW, bufWLen + 1, bufW1);
     }
     free(bufW1);
     free(bufW2);
 
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/002.txt");
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/002.txt");
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT2);
 
@@ -258,31 +258,31 @@ static VOID *PthreadF03(void *arg)
 
     bufW = (CHAR *)malloc(bufWLen + 1);
     ICUNIT_ASSERT_NOT_EQUAL_NULL(bufW, NULL, 0);
-    memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
+    (void)memset_s(bufW, bufWLen + 1, 0, bufWLen + 1);
 
     bufW1 = (CHAR *)malloc(bufW1Len + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW1, NULL, 0, EXIT2);
-    memset_s(bufW1, bufW1Len + 1, 0, bufW1Len + 1);
+    (void)memset_s(bufW1, bufW1Len + 1, 0, bufW1Len + 1);
 
     bufW2 = (CHAR *)malloc(bufW2Len + 1);
     ICUNIT_GOTO_NOT_EQUAL(bufW2, NULL, 0, EXIT3);
-    memset_s(bufW2, bufW2Len + 1, 0, bufW2Len + 1);
+    (void)memset_s(bufW2, bufW2Len + 1, 0, bufW2Len + 1);
 
     for (j = 0; j < bufW2Len / strlen(filebuf); j++) {
-        strcat_s(bufW2, bufW2Len + 1, filebuf);
+        (void)strcat_s(bufW2, bufW2Len + 1, filebuf);
     }
 
     for (j = 0; j < bufW1Len / bufW2Len; j++) {
-        strcat_s(bufW1, bufW1Len + 1, bufW2);
+        (void)strcat_s(bufW1, bufW1Len + 1, bufW2);
     }
 
     for (i = 0; i < bufWLen / bufW1Len; i++) {
-        strcat_s(bufW, bufWLen + 1, bufW1);
+        (void)strcat_s(bufW, bufWLen + 1, bufW1);
     }
     free(bufW1);
     free(bufW2);
 
-    strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/003.txt");
+    (void)strcat_s(pathname1, JFFS_STANDARD_NAME_LENGTH, "/003.txt");
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, JFFS_IS_ERROR, fd, EXIT2);
 

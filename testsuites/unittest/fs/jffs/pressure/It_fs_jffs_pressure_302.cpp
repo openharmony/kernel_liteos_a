@@ -45,11 +45,11 @@ static UINT32 TestCase(VOID)
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname1, sizeof(pathname1), "/dir");
+    (void)strcat_s(pathname1, sizeof(pathname1), "/dir");
     ret = mkdir(pathname1, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
-    strcat_s(buffile, sizeof(buffile), "/dir/files");
+    (void)strcat_s(buffile, sizeof(buffile), "/dir/files");
     fd = open(buffile, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT3);
 

@@ -41,7 +41,7 @@ static UINT32 Testcase(VOID)
     CHAR pathname1[JFFS_STANDARD_NAME_LENGTH] = { JFFS_PATH_NAME0 };
     off_t off;
 
-    strcat_s(pathname1, sizeof(pathname1), "1139.txt");
+    (void)strcat_s(pathname1, sizeof(pathname1), "1139.txt");
     fd = open(pathname1, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT1);
 
@@ -53,7 +53,7 @@ static UINT32 Testcase(VOID)
     ICUNIT_GOTO_EQUAL(len, 10, len, EXIT1); // 10 means write len
 
     off = lseek(fd, 0, SEEK_CUR);
-    ICUNIT_GOTO_EQUAL(off, 10, off, EXIT1); // 10 means current file positon
+    ICUNIT_GOTO_EQUAL(off, 10, off, EXIT1); // 10 means current file position
 
     len = read(fd, readbuf, 20); // 20 means read len
     ICUNIT_GOTO_EQUAL(len, 0, len, EXIT1);

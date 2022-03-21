@@ -51,7 +51,7 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT);
 
-    strcat_s(pathname, sizeof(pathname), "/test");
+    (void)strcat_s(pathname, sizeof(pathname), "/test");
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT1);
 
@@ -63,7 +63,7 @@ static UINT32 Testcase(VOID)
     ret = mkdir(pathname, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(ret, 0, ret, EXIT3);
 
-    strcat_s(pathname, sizeof(pathname), "/test1file");
+    (void)strcat_s(pathname, sizeof(pathname), "/test1file");
     fd1 = open(pathname, O_NONBLOCK | O_CREAT | O_RDWR, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_NOT_EQUAL(fd, -1, fd, EXIT4);
 

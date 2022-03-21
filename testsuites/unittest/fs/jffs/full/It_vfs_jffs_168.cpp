@@ -47,7 +47,7 @@ static UINT32 Testcase(VOID)
     fd = open("/", O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT2);
 
-    strcat_s(pathname2, sizeof(pathname2), "/");
+    (void)strcat_s(pathname2, sizeof(pathname2), "/");
     fd = open(pathname2, O_NONBLOCK | O_CREAT | O_RDWR | O_EXCL, HIGHEST_AUTHORITY);
     ICUNIT_GOTO_EQUAL(fd, -1, fd, EXIT1);
 
