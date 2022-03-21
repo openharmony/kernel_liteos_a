@@ -198,7 +198,7 @@ __attribute__((noinline)) VOID UartPrintf(const CHAR *fmt, ...)
     va_end(ap);
 }
 
-__attribute__ ((noinline)) VOID dprintf(const CHAR *fmt, ...)
+__attribute__((noinline)) VOID dprintf(const CHAR *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -229,7 +229,7 @@ VOID DmesgPrintf(const CHAR *fmt, va_list ap)
 #endif
 
 #ifdef LOSCFG_PLATFORM_UART_WITHOUT_VFS
-__attribute__ ((noinline)) INT32 printf(const CHAR *fmt, ...)
+__attribute__((noinline)) INT32 printf(const CHAR *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);

@@ -94,5 +94,5 @@ OpenHarmony LiteOS-A内核支持Hi3518EV300（[介绍](https://gitee.com/openhar
 
 [drivers\_liteos](https://gitee.com/openharmony/drivers_liteos/blob/master/README_zh.md)
 
-**kernel\_liteos\_a**
+[kernel\_liteos\_a](https://gitee.com/openharmony/kernel_liteos_a/blob/master/README_zh.md)
 

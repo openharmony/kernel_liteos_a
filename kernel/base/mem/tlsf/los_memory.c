@@ -169,7 +169,7 @@ struct OsMemPoolHead {
 
 /* The memory pool support expand. */
 #define OS_MEM_POOL_EXPAND_ENABLE  0x01
-/* The memory pool ssupport no lock. */
+/* The memory pool support no lock. */
 #define OS_MEM_POOL_LOCK_ENABLE    0x02
 
 #define OS_MEM_NODE_MAGIC        0xABCDDCBA
@@ -486,7 +486,7 @@ STATIC INLINE VOID OsLmsAllocAlignMark(VOID *ptr, VOID *alignedPtr, UINT32 size)
         g_lms->simpleMark((UINTPTR)ptr + sizeof(UINT32), (UINTPTR)alignedPtr, LMS_SHADOW_REDZONE_U8);
     }
 
-    /* mark remining as redzone */
+    /* mark remaining as redzone */
     g_lms->simpleMark(LMS_ADDR_ALIGN((UINTPTR)alignedPtr + size), (UINTPTR)OS_MEM_NEXT_NODE(allocNode),
         LMS_SHADOW_REDZONE_U8);
 }
@@ -1804,7 +1804,7 @@ STATIC VOID OsMemIntegrityCheckError(struct OsMemPoolHead *pool,
               tmpNode, preNode, taskCB->taskName);
 #else
     MEM_UNLOCK(pool, intSave);
-    LOS_Panic("Memory interity check error, cur node: %#x, pre node: %#x\n", tmpNode, preNode);
+    LOS_Panic("Memory integrity check error, cur node: %#x, pre node: %#x\n", tmpNode, preNode);
 #endif
 }
 

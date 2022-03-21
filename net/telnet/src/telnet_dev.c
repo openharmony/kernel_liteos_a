@@ -191,7 +191,7 @@ STATIC INT32 TelnetClose(struct file *file)
 }
 
 /*
- * Description : When a command resolver task trys to read the telnet device,
+ * Description : When a command resolver task tries to read the telnet device,
  *               this method is called, and it will take out user's commands from the FIFO to run.
  * Return      : -1                   --- On failure
  *               Non-negative integer --- length of commands taken out from the FIFO of the telnet device.
@@ -236,7 +236,7 @@ STATIC ssize_t TelnetRead(struct file *file, CHAR *buf, size_t bufLen)
 }
 
 /*
- * Description : When a command resolver task trys to write command results to the telnet device,
+ * Description : When a command resolver task tries to write command results to the telnet device,
  *               just use lwIP send function to send out results.
  * Return      : -1                   --- buffer is NULL
  *               Non-negative integer --- length of written data, maybe 0.

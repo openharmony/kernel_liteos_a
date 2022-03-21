@@ -637,7 +637,7 @@ void ls(const char *pathname)
 
     if (statInfo.st_mode & S_IFDIR) { /* list all directory and file */
         ret = LsDir((pathname == NULL) ? path : pathname);
-    } else { /* show the file infomation */
+    } else { /* show the file information */
         ret = LsFile(path);
     }
     if (ret < 0) {

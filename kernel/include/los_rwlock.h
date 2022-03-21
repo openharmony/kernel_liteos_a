@@ -184,7 +184,7 @@ extern UINT32 LOS_RwlockTryRdLock(LosRwlock *rwlock);
  * the task scheduling.</li>
  * is disabled.</li>
  * <li>Do not wait on a rwlock during an interrupt.</li>
- * <li>The funtion fails when other tasks have the read or write lock.</li>
+ * <li>The function fails when other tasks have the read or write lock.</li>
  * <li>A recursive rwlock can be locked more than once by the same thread.</li>
  * <li>Do not call this API in software timer callback. </li>
  * </ul>
@@ -218,7 +218,7 @@ extern UINT32 LOS_RwlockWrLock(LosRwlock *rwlock, UINT32 timeout);
  * when the task scheduling.</li>
  * is disabled.</li>
  * <li>Do not wait on a rwlock during an interrupt.</li>
- * <li>The funtion fails when other tasks have the read or write lock.</li>
+ * <li>The function fails when other tasks have the read or write lock.</li>
  * <li>A recursive rwlock can be locked more than once by the same thread.</li>
  * <li>Do not call this API in software timer callback. </li>
  * </ul>

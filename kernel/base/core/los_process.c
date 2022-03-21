@@ -176,7 +176,7 @@ STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
         }
     }
 
-    PRINT_INFO("%s is find group : %u failed!\n", __FUNCTION__, gid);
+    PRINT_INFO("%s failed! group id = %u\n", __FUNCTION__, gid);
     return NULL;
 }
 
@@ -2001,6 +2001,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
 LITE_OS_SEC_TEXT VOID LOS_Exit(INT32 status)
 {
     UINT32 intSave;
+
+    (void)status;
 
     /* The exit of a kernel - state process must be kernel - state and all threads must actively exit */
     LosProcessCB *processCB = OsCurrProcessGet();

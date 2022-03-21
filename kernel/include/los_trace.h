@@ -235,7 +235,7 @@ typedef struct {
 
 /**
  * @ingroup los_trace
- * struct to store the event infomation
+ * struct to store the event information
  */
 typedef struct {
     UINT32  eventType;                               /**< event type */
@@ -331,9 +331,9 @@ extern TRACE_EVENT_HOOK g_traceEventHook;
  * <li>The first param is treat as key, keep at least this param if you want trace this event.</li>
  * <li>All parameters were treated as UINTPTR.</li>
  * </ul>
- * eg. Trace a event as:
+ * eg. Trace an event as:
  * #define TASK_PRIOSET_PARAMS(taskId, taskStatus, oldPrio, newPrio) taskId, taskStatus, oldPrio, newPrio
- * eg. Not Trace a event as:
+ * eg. Not Trace an event as:
  * #define TASK_PRIOSET_PARAMS(taskId, taskStatus, oldPrio, newPrio)
  * eg. Trace only you need parmas as:
  * #define TASK_PRIOSET_PARAMS(taskId, taskStatus, oldPrio, newPrio) taskId
@@ -377,8 +377,8 @@ extern TRACE_EVENT_HOOK g_traceEventHook;
 #define QUEUE_CREATE_PARAMS(queueId, queueSz, itemSz, queueAddr, memType) \
     queueId, queueSz, itemSz, queueAddr, memType
 #define QUEUE_DELETE_PARAMS(queueId, state, readable)   queueId, state, readable
-#define QUEUE_RW_PARAMS(queueId, queueSize, bufSize, operateType, readable, writeable, timeout) \
-    queueId, queueSize, bufSize, operateType, readable, writeable, timeout
+#define QUEUE_RW_PARAMS(queueId, queueSize, bufSize, operateType, readable, writable, timeout) \
+    queueId, queueSize, bufSize, operateType, readable, writable, timeout
 
 #define SEM_CREATE_PARAMS(semId, type, count)           semId, type, count
 #define SEM_DELETE_PARAMS(semId, delRetCode)            semId, delRetCode

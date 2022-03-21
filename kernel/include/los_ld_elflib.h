@@ -90,10 +90,10 @@ extern VOID *LOS_SoLoad(CHAR *elfFileName);
 
 /**
  * @ingroup dynload
- * @brief Load a object file.
+ * @brief Load an object file.
  *
  * @par Description:
- * This API is used to load a object file under a particular module file path.
+ * This API is used to load an object file under a particular module file path.
  * @attention
  * <ul>
  * <li>The parameter passed to this API should be a legal path of an object file.</li>
