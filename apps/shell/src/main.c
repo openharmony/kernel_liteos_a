@@ -108,11 +108,15 @@ static int DoShellExec(char **argv)
     if (!cmdLine) {
         return ret;
     }
-    memset_s(cmdLine, len, 0, len);
+    errno_t ret1 = memset_s(cmdLine, len, 0, len);
+    if (ret1 != EOK) {
+        free(cmdLine);
+        return ret1;
+    }
 
     for (j = 0; j < i; j++) {
-        strcat_s(cmdLine, len,  argv[j]);
-        strcat_s(cmdLine, len, " ");
+        (void)strcat_s(cmdLine, len,  argv[j]);
+        (void)strcat_s(cmdLine, len, " ");
     }
 
     cmdLine[len - 2] = '\0'; /* 2, (len - 2) is the end of cmdline buf */

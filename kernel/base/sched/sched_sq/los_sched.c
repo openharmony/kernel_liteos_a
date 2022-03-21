@@ -169,6 +169,29 @@ UINT32 OsShellShowTickRespo(VOID)
 #endif
 
 #ifdef LOSCFG_SCHED_DEBUG
+STATIC VOID SchedDataGet(LosTaskCB *taskCB, UINT64 *runTime, UINT64 *timeSlice, UINT64 *pendTime, UINT64 *schedWait)
+{
+    if (taskCB->schedStat.switchCount >= 1) {
+        UINT64 averRunTime = taskCB->schedStat.runTime / taskCB->schedStat.switchCount;
+        *runTime = (averRunTime * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+    }
+
+    if (taskCB->schedStat.timeSliceCount > 1) {
+        UINT64 averTimeSlice = taskCB->schedStat.timeSliceTime / (taskCB->schedStat.timeSliceCount - 1);
+        *timeSlice = (averTimeSlice * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+    }
+
+    if (taskCB->schedStat.pendCount > 1) {
+        UINT64 averPendTime = taskCB->schedStat.pendTime / taskCB->schedStat.pendCount;
+        *pendTime = (averPendTime * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+    }
+
+    if (taskCB->schedStat.waitSchedCount > 0) {
+        UINT64 averSchedWait = taskCB->schedStat.waitSchedTime / taskCB->schedStat.waitSchedCount;
+        *schedWait = (averSchedWait * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
+    }
+}
+
 UINT32 OsShellShowSchedParam(VOID)
 {
     UINT64 averRunTime;
@@ -198,25 +221,7 @@ UINT32 OsShellShowSchedParam(VOID)
         averPendTime = 0;
         averSchedWait = 0;
 
-        if (taskCB->schedStat.switchCount >= 1) {
-            averRunTime = taskCB->schedStat.runTime / taskCB->schedStat.switchCount;
-            averRunTime = (averRunTime * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        }
-
-        if (taskCB->schedStat.timeSliceCount > 1) {
-            averTimeSlice = taskCB->schedStat.timeSliceTime / (taskCB->schedStat.timeSliceCount - 1);
-            averTimeSlice = (averTimeSlice * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        }
-
-        if (taskCB->schedStat.pendCount > 1) {
-            averPendTime = taskCB->schedStat.pendTime / taskCB->schedStat.pendCount;
-            averPendTime = (averPendTime * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        }
-
-        if (taskCB->schedStat.waitSchedCount > 0) {
-            averSchedWait = taskCB->schedStat.waitSchedTime / taskCB->schedStat.waitSchedCount;
-            averSchedWait = (averSchedWait * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        }
+        SchedDataGet(taskCB, &averRunTime, &averTimeSlice, &averPendTime, &averSchedWait);
 
         PRINTK("%5u%19llu%15llu%19llu%18llu%19llu%18llu  %-32s\n", taskCB->taskID,
                averRunTime, taskCB->schedStat.switchCount,
@@ -578,7 +583,7 @@ BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priori
     }
 
     taskCB->priority = priority;
-    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, taskCB->priority); 
+    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, taskCB->priority);
     if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {
         OsSchedTaskEnQueue(taskCB);
         return TRUE;
@@ -771,7 +776,9 @@ BOOL OsSchedSwtmrTimeListFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg)
     for (UINT16 cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
         SchedRunQue *rq = OsSchedRunQueByID(cpuid);
         SortLinkAttribute *swtmrSortLink = &rq->swtmrSortLink;
-        return SchedSwtmrRunQueFind(swtmrSortLink, checkFunc, arg);
+        if (SchedSwtmrRunQueFind(swtmrSortLink, checkFunc, arg)) {
+            return TRUE;
+        }
     }
     return FALSE;
 }
