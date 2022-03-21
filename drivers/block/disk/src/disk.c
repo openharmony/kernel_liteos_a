@@ -107,7 +107,7 @@ INT32 los_alloc_diskid_byname(const CHAR *diskName)
     size_t nameLen;
 
     if (diskName == NULL) {
-        PRINT_ERR("The paramter disk_name is NULL");
+        PRINT_ERR("The parameter disk_name is NULL");
         return VFS_ERROR;
     }
 
@@ -163,7 +163,7 @@ INT32 los_get_diskid_byname(const CHAR *diskName)
     size_t diskNameLen;
 
     if (diskName == NULL) {
-        PRINT_ERR("The paramter diskName is NULL");
+        PRINT_ERR("The parameter diskName is NULL");
         return VFS_ERROR;
     }
 
@@ -756,7 +756,7 @@ INT32 DiskPartitionRegister(los_disk *disk)
     los_part *part = NULL;
     struct disk_divide_info parInfo;
 
-    /* Fill disk_divide_info structure to set partition's infomation. */
+    /* Fill disk_divide_info structure to set partition's information. */
     (VOID)memset_s(parInfo.part, sizeof(parInfo.part), 0, sizeof(parInfo.part));
     partSize = sizeof(parInfo.part) / sizeof(parInfo.part[0]);
 
@@ -788,7 +788,7 @@ INT32 DiskPartitionRegister(los_disk *disk)
     }
 
     for (i = 0; i < partSize; i++) {
-        /* Read the disk_divide_info structure to get partition's infomation. */
+        /* Read the disk_divide_info structure to get partition's information. */
         if ((parInfo.part[i].type != 0) && (parInfo.part[i].type != EXTENDED_PAR) &&
             (parInfo.part[i].type != EXTENDED_8G)) {
             part = get_part(DiskAddPart(disk, parInfo.part[i].sector_start, parInfo.part[i].sector_count, TRUE));

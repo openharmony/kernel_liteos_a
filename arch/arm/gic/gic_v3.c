@@ -362,7 +362,7 @@ VOID HalIrqInit(VOID)
     GicWaitForRwp(GICD_CTLR);
     ISB;
 
-    /* set externel interrupts to be level triggered, active low. */
+    /* set external interrupts to be level triggered, active low. */
     for (i = 32; i < OS_HWI_MAX_NUM; i += 16) {
         GIC_REG_32(GICD_ICFGR(i / 16)) = 0;
     }

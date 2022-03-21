@@ -84,7 +84,7 @@ void sys_init(void)
 
 u32_t sys_now(void)
 {
-    /* Lwip docs mentioned like wraparound is not a problem in this funtion */
+    /* Lwip docs mentioned like wraparound is not a problem in this function */
     return (u32_t)((LOS_TickCountGet() * OS_SYS_MS_PER_SECOND) / LOSCFG_BASE_CORE_TICK_PER_SECOND);
 }
 

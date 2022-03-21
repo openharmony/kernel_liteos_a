@@ -334,12 +334,12 @@ char *GetCmdName(const char *cmdline, unsigned int len)
         /* If reach a double quotes, switch the quotes matching status */
         if (*tmpStr == '\"') {
             SWITCH_QUOTES_STATUS(quotes);
-            /* Ignore the double quote charactor itself */
+            /* Ignore the double quote character itself */
             tmpStr++;
             continue;
         }
         /* If detected a space which the quotes matching status is false */
-        /* which said has detected the first space for seperator, finish this scan operation */
+        /* which said has detected the first space for separator, finish this scan operation */
         if ((*tmpStr == ' ') && (QUOTES_STATUS_CLOSE(quotes))) {
             break;
         }
@@ -503,7 +503,7 @@ unsigned int PreHandleCmdline(const char *input, char **output, unsigned int *ou
     *output = shiftStr;
     *outputlen = shiftLen;
 
-    /* Check and parse "./", located at the first two charaters of the cmd */
+    /* Check and parse "./", located at the first two characters of the cmd */
     if ((shiftLen > removeLen) && (shiftStr[0] == '.') && (shiftStr[1] == '/')) {
         execLen = strlen(execCmd);
         newLen = execLen + shiftLen - removeLen; /* i.e., newLen - execLen == shiftLen - removeLen */

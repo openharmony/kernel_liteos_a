@@ -94,7 +94,7 @@ typedef struct {
 
 /**
  * @ingroup los_trace
- * struct to store the event infomation
+ * struct to store the event information
  */
 typedef struct {
     UINT32 cmd;     /* trace start or stop cmd */

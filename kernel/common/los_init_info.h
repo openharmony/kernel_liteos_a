@@ -162,7 +162,7 @@ struct ModuleInitInfo {
 */
 #define OS_INIT_LEVEL_REG(_type, _num, _list)       \
     INIT_LABEL_REG_##_num(EXTERN_LABEL, _type)      \
-    STATIC struct ModuleInitInfo* _list [] = {      \
+    STATIC struct ModuleInitInfo *_list[] = {       \
         INIT_LABEL_REG_##_num(GET_LABEL, _type)     \
     }
 

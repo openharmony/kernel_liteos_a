@@ -34,11 +34,9 @@
 
 LITE_OS_SEC_TEXT_INIT INT32 main(VOID)
 {
-    UINT32 uwRet;
-
-    uwRet = OsMain();
-    if (uwRet != LOS_OK) {
-        return LOS_NOK;
+    UINT32 ret = OsMain();
+    if (ret != LOS_OK) {
+        return (INT32)LOS_NOK;
     }
     CPU_MAP_SET(0, OsHwIDGet());
 
