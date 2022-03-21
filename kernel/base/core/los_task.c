@@ -279,7 +279,7 @@ STATIC INLINE UINT32 OsTaskSyncWait(const LosTaskCB *taskCB)
      * triggered right at the timeout has reached, we set the timeout as double
      * of the gc period.
      */
-    if (LOS_SemPend(taskCB->syncSignal, OS_MP_GC_PERIOD * 2) != LOS_OK) {
+    if (LOS_SemPend(taskCB->syncSignal, OS_MP_GC_PERIOD * 2) != LOS_OK) { /* 2: Wait 200 ms */
         ret = LOS_ERRNO_TSK_MP_SYNC_FAILED;
     }
 

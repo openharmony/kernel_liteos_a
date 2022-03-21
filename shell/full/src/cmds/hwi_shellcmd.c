@@ -74,7 +74,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdHwi(INT32 argc, const CHAR **argv)
         }
         /* Different cores has different hwi form implementation */
         if (HWI_IS_REGISTED(i)) {
-            PRINTK(" %10d:%11u%11llu", i, count, cycles);
+            PRINTK(" %10u:%11u%11llu", i, count, cycles);
         } else {
             continue;
         }

@@ -168,6 +168,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSwtmrInit(VOID)
     return LOS_OK;
 
 ERROR:
+    (VOID)LOS_MemFree(m_aucSysMem0, g_swtmrCBArray);
+    g_swtmrCBArray = NULL;
+    (VOID)LOS_MemFree(m_aucSysMem1, g_swtmrHandlerPool);
+    g_swtmrHandlerPool = NULL;
     PRINT_ERR("OsSwtmrInit error! ret = %u\n", ret);
     return ret;
 }
