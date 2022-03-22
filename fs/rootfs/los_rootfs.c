@@ -327,7 +327,7 @@ STATIC INT32 CheckValidation(UINT64 rootAddr, UINT64 rootSize, UINT64 userAddr, 
 
     if ((rootAddr & (alignSize - 1)) || (rootSize & (alignSize - 1)) ||
         (userAddr & (alignSize - 1)) || (userSize & (alignSize - 1))) {
-        PRINT_ERR("The address or size value should be 0x%x aligned!\n", alignSize);
+        PRINT_ERR("The address or size value should be 0x%llx aligned!\n", alignSize);
         return LOS_NOK;
     }
 

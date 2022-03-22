@@ -1748,7 +1748,7 @@ STATIC VOID OsMemNodeInfo(const struct OsMemNodeHead *tmpNode,
                usedNode->header.ptr.prev, usedNode->header.magic, usedNode->header.sizeAndFlag);
     } else {
         freeNode = (struct OsMemFreeNodeHead *)tmpNode;
-        PRINTK("\n broken node head: %#x  %#x  %#x  %#x, ",
+        PRINTK("\n broken node head: %#x  %#x  %#x  %#x, %#x",
                freeNode->header.ptr.prev, freeNode->next, freeNode->prev, freeNode->header.magic,
                freeNode->header.sizeAndFlag);
     }
@@ -1759,7 +1759,7 @@ STATIC VOID OsMemNodeInfo(const struct OsMemNodeHead *tmpNode,
                usedNode->header.ptr.prev, usedNode->header.magic, usedNode->header.sizeAndFlag);
     } else {
         freeNode = (struct OsMemFreeNodeHead *)preNode;
-        PRINTK("prev node head: %#x  %#x  %#x  %#x, ",
+        PRINTK("prev node head: %#x  %#x  %#x  %#x, %#x",
                freeNode->header.ptr.prev, freeNode->next, freeNode->prev, freeNode->header.magic,
                freeNode->header.sizeAndFlag);
     }
