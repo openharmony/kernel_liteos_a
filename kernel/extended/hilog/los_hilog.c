@@ -148,7 +148,7 @@ static int HiLogBufferCopy(unsigned char *dst, unsigned dstLen, const unsigned c
 
 static int HiLogReadRingBuffer(unsigned char *buffer, size_t bufLen)
 {
-    size_t retval;
+    int retval;
     size_t bufLeft = HILOG_BUFFER - g_hiLogDev.headOffset;
     if (bufLeft > bufLen) {
         retval = HiLogBufferCopy(buffer, bufLen, HiLogBufferHead(), bufLen);
@@ -165,7 +165,7 @@ static int HiLogReadRingBuffer(unsigned char *buffer, size_t bufLen)
 
 static ssize_t HiLogRead(struct file *filep, char *buffer, size_t bufLen)
 {
-    size_t retval;
+    int retval;
     struct HiLogEntry header;
 
     (void)filep;
@@ -209,7 +209,7 @@ out:
         g_hiLogDev.count = 0;
     }
     (VOID)LOS_MuxRelease(&g_hiLogDev.mtx);
-    return retval;
+    return (ssize_t)retval;
 }
 
 static int HiLogWriteRingBuffer(unsigned char *buffer, size_t bufLen)
