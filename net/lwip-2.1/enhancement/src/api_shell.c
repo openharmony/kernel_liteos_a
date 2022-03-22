@@ -1337,10 +1337,10 @@ out:
 
 LWIP_STATIC void lwip_arp_usage(const char *cmd)
 {
-    PRINTK("Usage:"\
-         "\n%s"
-           "\n%s [-i IF] -s IPADDR HWADDR"\
-         "\n%s [-i IF] -d IPADDR\n",
+    PRINTK("Usage:"
+           "\n%s"
+           "\n%s [-i IF] -s IPADDR HWADDR"
+           "\n%s [-i IF] -d IPADDR\n",
            cmd, cmd, cmd);
 }
 
