@@ -117,8 +117,10 @@ VOID OsExcStackInfoReg(const StackInfo *stackInfo, UINT32 stackNum)
 VOID OsStackInit(VOID *stacktop, UINT32 stacksize)
 {
     /* initialize the task stack, write magic num to stack top */
-    (VOID)memset_s(stacktop, stacksize, (INT32)OS_STACK_INIT, stacksize);
-    *((UINTPTR *)stacktop) = OS_STACK_MAGIC_WORD;
+    errno_t ret = memset_s(stacktop, stacksize, (INT32)OS_STACK_INIT, stacksize);
+    if (ret == EOK) {
+        *((UINTPTR *)stacktop) = OS_STACK_MAGIC_WORD;
+    }
 }
 
 #ifdef LOSCFG_SHELL_CMD_DEBUG

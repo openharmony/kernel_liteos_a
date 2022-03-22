@@ -654,7 +654,7 @@ static int os_shell_cmd_do_cp(const char *src_filepath, const char *dst_filename
   char *dst_filepath = NULL;
   char *buf = NULL;
   const char *filename = NULL;
-  size_t r_size, w_size;
+  ssize_t r_size, w_size;
   int src_fd = -1;
   int dst_fd = -1;
   struct stat stat_buf;
@@ -1391,8 +1391,8 @@ int checkNum(const char *arg)
 #ifdef LOSCFG_KERNEL_SYSCALL
 int osShellCmdSu(int argc, const char **argv)
 {
-  unsigned int su_uid;
-  unsigned int su_gid;
+  int su_uid;
+  int su_gid;
 
   if (argc == 0)
     {
