@@ -149,6 +149,9 @@ static int TestSpawnAttr(short flag)
     ICUNIT_GOTO_EQUAL(status, 0, status, EXIT);
 
     fd = open("/storage/testspawnattr.txt", O_RDWR | O_CREAT, 0644); // 0644, open config
+    if (fd < 0) {
+        goto EXIT;
+    }
     ret = read(fd, temp, NUMMAX);
     ICUNIT_GOTO_EQUAL(ret, NUMMAX, ret, EXIT1);
 
