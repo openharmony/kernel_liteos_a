@@ -223,6 +223,7 @@ STATIC VOID OsQueueBufferOperate(LosQueueCB *queueCB, UINT32 operateType, VOID *
             PRINT_ERR("get msgdatasize failed\n");
             return;
         }
+        msgDataSize = (*bufferSize < msgDataSize) ? *bufferSize : msgDataSize;
         if (memcpy_s(bufferAddr, *bufferSize, queueNode, msgDataSize) != EOK) {
             PRINT_ERR("copy message to buffer failed\n");
             return;
@@ -249,9 +250,7 @@ STATIC UINT32 OsQueueOperateParamCheck(const LosQueueCB *queueCB, UINT32 queueID
         return LOS_ERRNO_QUEUE_NOT_CREATE;
     }
 
-    if (OS_QUEUE_IS_READ(operateType) && (*bufferSize < (queueCB->queueSize - sizeof(UINT32)))) {
-        return LOS_ERRNO_QUEUE_READ_SIZE_TOO_SMALL;
-    } else if (OS_QUEUE_IS_WRITE(operateType) && (*bufferSize > (queueCB->queueSize - sizeof(UINT32)))) {
+    if (OS_QUEUE_IS_WRITE(operateType) && (*bufferSize > (queueCB->queueSize - sizeof(UINT32)))) {
         return LOS_ERRNO_QUEUE_WRITE_SIZE_TOO_BIG;
     }
     return LOS_OK;
