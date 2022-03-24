@@ -1249,19 +1249,19 @@ EXIT:
     return err;
 }
 
-UINT32 OsUserTaskOperatePermissionsCheck(LosTaskCB *taskCB)
+INT32 OsUserTaskOperatePermissionsCheck(const LosTaskCB *taskCB)
 {
     return OsUserProcessOperatePermissionsCheck(taskCB, OsCurrProcessGet()->processID);
 }
 
-UINT32 OsUserProcessOperatePermissionsCheck(LosTaskCB *taskCB, UINT32 processID)
+INT32 OsUserProcessOperatePermissionsCheck(const LosTaskCB *taskCB, UINT32 processID)
 {
     if (taskCB == NULL) {
         return LOS_EINVAL;
     }
 
     if (processID == OS_INVALID_VALUE) {
-        return OS_INVALID_VALUE;
+        return LOS_EINVAL;
     }
 
     if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
