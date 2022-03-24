@@ -112,16 +112,16 @@ STATIC VOID OsFutexShowTaskNodeAttr(const LOS_DL_LIST *futexList)
     LOS_DL_LIST *queueList = NULL;
 
     tempNode = OS_FUTEX_FROM_FUTEXLIST(futexList);
-    PRINTK("key(pid)           : 0x%x(%d) : ->", tempNode->key, tempNode->pid);
+    PRINTK("key(pid)           : 0x%x(%u) : ->", tempNode->key, tempNode->pid);
 
     for (queueList = &tempNode->queueList; ;) {
         lastNode = OS_FUTEX_FROM_QUEUELIST(queueList);
         if (!LOS_ListEmpty(&(lastNode->pendList))) {
             taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(lastNode->pendList)));
-            PRINTK(" %d(%d) ->", taskCB->taskID, taskCB->priority);
+            PRINTK(" %u(%u) ->", taskCB->taskID, taskCB->priority);
         } else {
             taskCB = LOS_DL_LIST_ENTRY(lastNode, LosTaskCB, futex);
-            PRINTK(" %d(%d) ->", taskCB->taskID, -1);
+            PRINTK(" %u(%d) ->", taskCB->taskID, -1);
         }
         queueList = queueList->pstNext;
         if (queueList == &tempNode->queueList) {
