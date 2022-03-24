@@ -73,7 +73,7 @@ OpenHarmony LiteOS Cortex-A supports the  [Hi3518E V300](https://gitee.com/openh
 
 You need to set up the compilation environment on Linux.
 
--   [Compilation environment on Linux](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-env-setup-linux.md)
+-   [Compilation environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-env-setup-linux.md)
 -   For Hi3518E V300, see  [Setting Up the Hi3518 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3518-setting.md).
 -   For Hi3516D V300, see  [Setting Up the Hi3516 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3516-setting.md).
 
