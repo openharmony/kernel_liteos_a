@@ -173,7 +173,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdDumpSched(VOID)
 
         affinity = (UINT32)taskCB->cpuAffiMask;
 
-        PRINTK("%-30s0x%-6x%+16lf ms  %10d\n", taskCB->taskName, taskCB->taskID,
+        PRINTK("%-30s0x%-6x%+16lf ms  %10u\n", taskCB->taskName, taskCB->taskID,
                (DOUBLE)(taskCB->schedStat.allRuntime) / NS_PER_MS,
                taskCB->schedStat.allContextSwitch);
 
@@ -183,7 +183,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsShellCmdDumpSched(VOID)
             }
 
             PRINTK("                                                                           "
-                   "CPU%d    %+16lf ms  %12d\n", cpuid,
+                   "CPU%u    %+16lf ms  %12u\n", cpuid,
                    (DOUBLE)(taskCB->schedStat.schedPercpu[cpuid].runtime) / NS_PER_MS,
                    taskCB->schedStat.schedPercpu[cpuid].contexSwitch);
         }
@@ -251,7 +251,7 @@ LITE_OS_SEC_TEXT_MINOR VOID OsMpStaticShow(UINT64 mpStaticPastTime)
            "----------    ----------    ----------    ----------\n");
 
     for (cpuid = 0; cpuid < LOSCFG_KERNEL_CORE_NUM; cpuid++) {
-        PRINTK("CPU%d   %+10lf%14d%14d%14d   %+11lf   %+11lf   %+11lf%14d   %+11lf\n", cpuid,
+        PRINTK("CPU%u   %+10lf%14u%14u%14u   %+11lf   %+11lf   %+11lf%14u   %+11lf\n", cpuid,
                ((DOUBLE)(g_mpStatPercpu[cpuid].idleRuntime) / mpStaticPastTime) * DECIMAL_TO_PERCENTAGE,
                g_mpStatPercpu[cpuid].contexSwitch,
                g_mpStatPercpu[cpuid].hwiNum,
