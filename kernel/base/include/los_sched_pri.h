@@ -37,7 +37,7 @@
 #include "los_hwi.h"
 #include "hal_timer.h"
 #ifdef LOSCFG_SCHED_DEBUG
-#include "los_stat_pri.h"
+#include "los_statistics_pri.h"
 #endif
 #include "los_stackinfo_pri.h"
 #include "los_futex_pri.h"
@@ -531,13 +531,6 @@ VOID OsSchedIrqEndCheckNeedSched(VOID);
 */
 LOS_DL_LIST *OsSchedLockPendFindPos(const LosTaskCB *runTask, LOS_DL_LIST *lockList);
 
-#ifdef LOSCFG_SCHED_DEBUG
-#ifdef LOSCFG_SCHED_TICK_DEBUG
-VOID OsSchedDebugRecordData(VOID);
-#endif
-UINT32 OsShellShowTickRespo(VOID);
-UINT32 OsShellShowSchedParam(VOID);
-#endif
 #ifdef __cplusplus
 #if __cplusplus
 }
