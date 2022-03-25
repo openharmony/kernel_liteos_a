@@ -617,13 +617,13 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdDumpTask(INT32 argc, const CHAR **argv)
 #ifdef LOSCFG_SCHED_DEBUG
 #ifdef LOSCFG_SCHED_TICK_DEBUG
         } else if (strcmp("-i", argv[0]) == 0) {
-            if (!OsShellShowTickRespo()) {
+            if (!OsShellShowTickResponse()) {
                 return LOS_OK;
             }
             goto TASK_HELP;
 #endif
         } else if (strcmp("-t", argv[0]) == 0) {
-            if (!OsShellShowSchedParam()) {
+            if (!OsShellShowSchedStatistics()) {
                 return LOS_OK;
             }
             goto TASK_HELP;
