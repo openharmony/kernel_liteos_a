@@ -41,11 +41,6 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct {
-    UINT64      runtime;
-    UINT32      contexSwitch;
-} SchedPercpu;
-
-typedef struct {
     UINT64      allRuntime;
     UINT64      runTime;
     UINT64      switchCount;          /* sched switch count */
@@ -56,8 +51,16 @@ typedef struct {
     UINT64      pendCount;
     UINT64      waitSchedTime;        /* task status is ready to running times */
     UINT64      waitSchedCount;
-    SchedPercpu schedPercpu[LOSCFG_KERNEL_CORE_NUM];
 } SchedStat;
+
+#ifdef LOSCFG_SCHED_DEBUG
+#ifdef LOSCFG_SCHED_TICK_DEBUG
+VOID OsSchedDebugRecordData(VOID);
+UINT32 OsShellShowTickResponse(VOID);
+UINT32 OsShellShowSchedStatistics(VOID);
+UINT32 OsSchedDebugInit(VOID);
+#endif
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

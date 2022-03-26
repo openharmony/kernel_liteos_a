@@ -46,7 +46,7 @@
 #endif
 #include "los_mp.h"
 #ifdef LOSCFG_SCHED_DEBUG
-#include "los_stat_pri.h"
+#include "los_statistics_pri.h"
 #endif
 #include "los_pm_pri.h"
 
@@ -75,167 +75,6 @@ typedef struct {
 
 SchedRunQue g_schedRunQue[LOSCFG_KERNEL_CORE_NUM];
 STATIC Sched g_sched;
-
-#ifdef LOSCFG_SCHED_TICK_DEBUG
-#define OS_SCHED_DEBUG_DATA_NUM  1000
-typedef struct {
-    UINT32 tickResporeTime[OS_SCHED_DEBUG_DATA_NUM];
-    UINT32 index;
-    UINT32 setTickCount;
-    UINT64 oldResporeTime;
-} SchedTickDebug;
-STATIC SchedTickDebug *g_schedTickDebug = NULL;
-
-STATIC UINT32 OsSchedDebugInit(VOID)
-{
-    UINT32 size = sizeof(SchedTickDebug) * LOSCFG_KERNEL_CORE_NUM;
-    g_schedTickDebug = (SchedTickDebug *)LOS_MemAlloc(m_aucSysMem0, size);
-    if (g_schedTickDebug == NULL) {
-        return LOS_ERRNO_TSK_NO_MEMORY;
-    }
-
-    (VOID)memset_s(g_schedTickDebug, size, 0, size);
-    return LOS_OK;
-}
-
-VOID OsSchedDebugRecordData(VOID)
-{
-    SchedTickDebug *schedDebug = &g_schedTickDebug[ArchCurrCpuid()];
-    if (schedDebug->index < OS_SCHED_DEBUG_DATA_NUM) {
-        UINT64 currTime = OsGetCurrSchedTimeCycle();
-        schedDebug->tickResporeTime[schedDebug->index] = currTime - schedDebug->oldResporeTime;
-        schedDebug->oldResporeTime = currTime;
-        schedDebug->index++;
-    }
-}
-
-SchedTickDebug *OsSchedDebugGet(VOID)
-{
-    return g_schedTickDebug;
-}
-
-UINT32 OsShellShowTickRespo(VOID)
-{
-    UINT32 intSave;
-    UINT16 cpu;
-    UINT64 allTime;
-
-    UINT32 tickSize = sizeof(SchedTickDebug) * LOSCFG_KERNEL_CORE_NUM;
-    SchedTickDebug *schedDebug = (SchedTickDebug *)LOS_MemAlloc(m_aucSysMem1, tickSize);
-    if (schedDebug == NULL) {
-        return LOS_NOK;
-    }
-
-    UINT32 sortLinkNum[LOSCFG_KERNEL_CORE_NUM];
-    SCHEDULER_LOCK(intSave);
-    (VOID)memcpy_s((CHAR *)schedDebug, tickSize, (CHAR *)OsSchedDebugGet(), tickSize);
-    (VOID)memset_s((CHAR *)OsSchedDebugGet(), tickSize, 0, tickSize);
-    for (cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
-        SchedRunQue *rq = OsSchedRunQueByID(cpu);
-        sortLinkNum[cpu] = OsGetSortLinkNodeNum(&rq->taskSortLink);
-    }
-    SCHEDULER_UNLOCK(intSave);
-
-    for (cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
-        SchedTickDebug *schedData = &schedDebug[cpu];
-        PRINTK("cpu : %u sched data num : %u set time count : %u SortMax : %u\n",
-               cpu, schedData->index, schedData->setTickCount, sortLinkNum[cpu]);
-        UINT32 *data = schedData->tickResporeTime;
-        allTime = 0;
-        for (UINT32 i = 1; i < schedData->index; i++) {
-            allTime += data[i];
-            UINT32 timeUs = (data[i] * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-            PRINTK("     %u(%u)", timeUs, timeUs / OS_US_PER_TICK);
-            if ((i != 0) && ((i % 5) == 0)) { /* A row of 5 data */
-                PRINTK("\n");
-            }
-        }
-
-        allTime = (allTime * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-        PRINTK("\nTick Indicates the average response period: %llu(us)\n", allTime / (schedData->index - 1));
-    }
-
-    (VOID)LOS_MemFree(m_aucSysMem1, schedDebug);
-    return LOS_OK;
-}
-#endif
-
-#ifdef LOSCFG_SCHED_DEBUG
-STATIC VOID SchedDataGet(LosTaskCB *taskCB, UINT64 *runTime, UINT64 *timeSlice, UINT64 *pendTime, UINT64 *schedWait)
-{
-    if (taskCB->schedStat.switchCount >= 1) {
-        UINT64 averRunTime = taskCB->schedStat.runTime / taskCB->schedStat.switchCount;
-        *runTime = (averRunTime * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-    }
-
-    if (taskCB->schedStat.timeSliceCount > 1) {
-        UINT64 averTimeSlice = taskCB->schedStat.timeSliceTime / (taskCB->schedStat.timeSliceCount - 1);
-        *timeSlice = (averTimeSlice * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-    }
-
-    if (taskCB->schedStat.pendCount > 1) {
-        UINT64 averPendTime = taskCB->schedStat.pendTime / taskCB->schedStat.pendCount;
-        *pendTime = (averPendTime * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-    }
-
-    if (taskCB->schedStat.waitSchedCount > 0) {
-        UINT64 averSchedWait = taskCB->schedStat.waitSchedTime / taskCB->schedStat.waitSchedCount;
-        *schedWait = (averSchedWait * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US;
-    }
-}
-
-UINT32 OsShellShowSchedParam(VOID)
-{
-    UINT64 averRunTime;
-    UINT64 averTimeSlice;
-    UINT64 averSchedWait;
-    UINT64 averPendTime;
-    UINT32 taskLinkNum[LOSCFG_KERNEL_CORE_NUM];
-    UINT32 intSave;
-    UINT32 size = g_taskMaxNum * sizeof(LosTaskCB);
-    LosTaskCB *taskCBArray = LOS_MemAlloc(m_aucSysMem1, size);
-    if (taskCBArray == NULL) {
-        return LOS_NOK;
-    }
-
-    SCHEDULER_LOCK(intSave);
-    (VOID)memcpy_s(taskCBArray, size, g_taskCBArray, size);
-    for (UINT16 cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
-        SchedRunQue *rq = OsSchedRunQueByID(cpu);
-        taskLinkNum[cpu] = OsGetSortLinkNodeNum(&rq->taskSortLink);
-    }
-    SCHEDULER_UNLOCK(intSave);
-
-    for (UINT16 cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
-        PRINTK("cpu: %u Task SortMax: %u\n", cpu, taskLinkNum[cpu]);
-    }
-
-    PRINTK("  Tid    AverRunTime(us)    SwitchCount  AverTimeSlice(us)    TimeSliceCount  AverReadyWait(us)  "
-           "AverPendTime(us)  TaskName \n");
-    for (UINT32 tid = 0; tid < g_taskMaxNum; tid++) {
-        LosTaskCB *taskCB = taskCBArray + tid;
-        if (OsTaskIsUnused(taskCB)) {
-            continue;
-        }
-
-        averRunTime = 0;
-        averTimeSlice = 0;
-        averPendTime = 0;
-        averSchedWait = 0;
-
-        SchedDataGet(taskCB, &averRunTime, &averTimeSlice, &averPendTime, &averSchedWait);
-
-        PRINTK("%5u%19llu%15llu%19llu%18llu%19llu%18llu  %-32s\n", taskCB->taskID,
-               averRunTime, taskCB->schedStat.switchCount,
-               averTimeSlice, taskCB->schedStat.timeSliceCount - 1,
-               averSchedWait, averPendTime, taskCB->taskName);
-    }
-
-    (VOID)LOS_MemFree(m_aucSysMem1, taskCBArray);
-
-    return LOS_OK;
-}
-#endif
 
 STATIC INLINE VOID TimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
 {
@@ -294,13 +133,6 @@ STATIC INLINE VOID SchedSetNextExpireTime(UINT32 responseID, UINT64 taskEndTime,
 
     UINT64 nextResponseTime = nextExpireTime - currTime;
     rq->responseTime = currTime + HalClockTickTimerReload(nextResponseTime);
-
-#ifdef LOSCFG_SCHED_TICK_DEBUG
-    SchedTickDebug *schedDebug = &g_schedTickDebug[ArchCurrCpuid()];
-    if (schedDebug->index < OS_SCHED_DEBUG_DATA_NUM) {
-        schedDebug->setTickCount++;
-    }
-#endif
 }
 
 VOID OsSchedUpdateExpireTime(VOID)
