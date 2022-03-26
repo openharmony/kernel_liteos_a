@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -32,7 +32,7 @@
 #include "los_magickey.h"
 #include "console.h"
 #include "los_task_pri.h"
-
+#include "los_process_pri.h"
 
 #ifdef LOSCFG_ENABLE_MAGICKEY
 
@@ -97,9 +97,7 @@ STATIC VOID OsMagicHelp(VOID)
 
 STATIC VOID OsMagicTaskShow(VOID)
 {
-    const CHAR *arg = "-a";
-
-    (VOID)OsShellCmdDumpTask(1, &arg);
+    (VOID)OsShellCmdTskInfoGet(OS_ALL_TASK_MASK, NULL, OS_PROCESS_INFO_ALL);
     return;
 }
 
