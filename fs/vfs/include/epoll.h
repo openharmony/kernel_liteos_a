@@ -72,7 +72,7 @@ struct epoll_event {
     epoll_data_t data;
 };
 
-int epoll_create(int size);
+int epoll_create1(int flags);
 int epoll_close(int epfd);
 int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev);
 int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout);
