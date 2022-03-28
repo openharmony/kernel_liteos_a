@@ -2623,7 +2623,6 @@ static int DoEpollCreate1(int flags)
 
 int SysEpollCreate(int size)
 {
-
     (void)size;
     return DoEpollCreate1(0);
 }
