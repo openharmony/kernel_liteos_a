@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -64,6 +64,7 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
     int ret;
     unsigned int intSave;
     bool needSched = false;
+    SchedParam param = { 0 };
 
     if (OS_TID_CHECK_INVALID(tid)) {
         return EINVAL;
@@ -85,8 +86,10 @@ static int OsUserTaskSchedulerSet(unsigned int tid, unsigned short policy, unsig
         return ret;
     }
 
-    policy = (policyFlag == true) ? policy : taskCB->policy;
-    needSched = OsSchedModifyTaskSchedParam(taskCB, policy, priority);
+    taskCB->ops->schedParamGet(taskCB, &param);
+    param.policy = (policyFlag == true) ? policy : param.policy;
+    param.priority = priority;
+    needSched = taskCB->ops->schedParamModify(taskCB, &param);
     SCHEDULER_UNLOCK(intSave);
 
     LOS_MpSchedule(OS_MP_CPU_ALL);
@@ -108,7 +111,7 @@ void SysSchedYield(int type)
 int SysSchedGetScheduler(int id, int flag)
 {
     unsigned int intSave;
-    int policy;
+    SchedParam param = { 0 };
     int ret;
 
     if (flag < 0) {
@@ -124,9 +127,9 @@ int SysSchedGetScheduler(int id, int flag)
             return -ret;
         }
 
-        policy = (int)taskCB->policy;
+        taskCB->ops->schedParamGet(taskCB, &param);
         SCHEDULER_UNLOCK(intSave);
-        return policy;
+        return (int)param.policy;
     }
 
     return LOS_GetProcessScheduler(id);
@@ -158,7 +161,7 @@ int SysSchedSetScheduler(int id, int policy, int prio, int flag)
 
 int SysSchedGetParam(int id, int flag)
 {
-    int prio;
+    SchedParam param = { 0 };
     unsigned int intSave;
 
     if (flag < 0) {
@@ -168,15 +171,15 @@ int SysSchedGetParam(int id, int flag)
 
         LosTaskCB *taskCB = OS_TCB_FROM_TID(id);
         SCHEDULER_LOCK(intSave);
-        prio = OsUserTaskOperatePermissionsCheck(taskCB);
-        if (prio != LOS_OK) {
+        int ret = OsUserTaskOperatePermissionsCheck(taskCB);
+        if (ret != LOS_OK) {
             SCHEDULER_UNLOCK(intSave);
-            return -prio;
+            return -ret;
         }
 
-        prio = (int)taskCB->priority;
+        taskCB->ops->schedParamGet(taskCB, &param);
         SCHEDULER_UNLOCK(intSave);
-        return prio;
+        return (int)param.priority;
     }
 
     if (id == 0) {
@@ -250,6 +253,7 @@ int SysSchedRRGetInterval(int pid, struct timespec *tp)
 {
     unsigned int intSave;
     int ret;
+    SchedParam param = { 0 };
     time_t timeSlice = 0;
     struct timespec tv;
     LosTaskCB *taskCB = NULL;
@@ -277,8 +281,11 @@ int SysSchedRRGetInterval(int pid, struct timespec *tp)
     }
 
     LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &processCB->threadSiblingList, LosTaskCB, threadList) {
-        if (!OsTaskIsInactive(taskCB) && (taskCB->policy == LOS_SCHED_RR)) {
-            timeSlice += taskCB->initTimeSlice;
+        if (!OsTaskIsInactive(taskCB)) {
+            taskCB->ops->schedParamGet(taskCB, &param);
+            if (param.policy == LOS_SCHED_RR) {
+                timeSlice += param.timeSlice;
+            }
         }
     }
 

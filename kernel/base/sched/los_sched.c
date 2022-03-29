@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -45,65 +45,15 @@
 #include "los_stackinfo_pri.h"
 #endif
 #include "los_mp.h"
-#ifdef LOSCFG_SCHED_DEBUG
-#include "los_statistics_pri.h"
-#endif
-#include "los_pm_pri.h"
 
-#define OS_32BIT_MAX               0xFFFFFFFFUL
-#define OS_SCHED_FIFO_TIMEOUT      0x7FFFFFFF
-#define OS_PRIORITY_QUEUE_NUM      32
-#define PRIQUEUE_PRIOR0_BIT        0x80000000U
-#define OS_SCHED_TIME_SLICES_MIN   ((5000 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE)  /* 5ms */
-#define OS_SCHED_TIME_SLICES_MAX   ((LOSCFG_BASE_CORE_TIMESLICE_TIMEOUT * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE)
-#define OS_SCHED_TIME_SLICES_DIFF  (OS_SCHED_TIME_SLICES_MAX - OS_SCHED_TIME_SLICES_MIN)
-#define OS_SCHED_READY_MAX         30
-#define OS_TIME_SLICE_MIN          (INT32)((50 * OS_SYS_NS_PER_US) / OS_NS_PER_CYCLE) /* 50us */
-#define OS_TASK_STATUS_BLOCKED     (OS_TASK_STATUS_INIT | OS_TASK_STATUS_PENDING | \
-                                    OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)
+SchedRunqueue g_schedRunqueue[LOSCFG_KERNEL_CORE_NUM];
 
-typedef struct {
-    LOS_DL_LIST priQueueList[OS_PRIORITY_QUEUE_NUM];
-    UINT32      readyTasks[OS_PRIORITY_QUEUE_NUM];
-    UINT32      queueBitmap;
-} SchedQueue;
-
-typedef struct {
-    SchedQueue queueList[OS_PRIORITY_QUEUE_NUM];
-    UINT32     queueBitmap;
-} Sched;
-
-SchedRunQue g_schedRunQue[LOSCFG_KERNEL_CORE_NUM];
-STATIC Sched g_sched;
-
-STATIC INLINE VOID TimeSliceUpdate(LosTaskCB *taskCB, UINT64 currTime)
+STATIC INLINE VOID SchedNextExpireTimeSet(UINT32 responseID, UINT64 taskEndTime, UINT32 oldResponseID)
 {
-    LOS_ASSERT(currTime >= taskCB->startTime);
-
-    INT32 incTime = (currTime - taskCB->startTime - taskCB->irqUsedTime);
-
-    LOS_ASSERT(incTime >= 0);
-
-    if (taskCB->policy == LOS_SCHED_RR) {
-        taskCB->timeSlice -= incTime;
-#ifdef LOSCFG_SCHED_DEBUG
-        taskCB->schedStat.timeSliceRealTime += incTime;
-#endif
-    }
-    taskCB->irqUsedTime = 0;
-    taskCB->startTime = currTime;
-
-#ifdef LOSCFG_SCHED_DEBUG
-    taskCB->schedStat.allRuntime += incTime;
-#endif
-}
-
-STATIC INLINE VOID SchedSetNextExpireTime(UINT32 responseID, UINT64 taskEndTime, UINT32 oldResponseID)
-{
-    SchedRunQue *rq = OsSchedRunQue();
+    SchedRunqueue *rq = OsSchedRunqueue();
     BOOL isTimeSlice = FALSE;
     UINT64 currTime = OsGetCurrSchedTimeCycle();
-    UINT64 nextExpireTime = OsGetSortLinkNextExpireTime(&rq->taskSortLink, currTime, OS_TICK_RESPONSE_PRECISION);
+    UINT64 nextExpireTime = OsGetSortLinkNextExpireTime(&rq->timeoutQueue, currTime, OS_TICK_RESPONSE_PRECISION);
 
     rq->schedFlag &= ~INT_PEND_TICK;
     if (rq->responseID == oldResponseID) {
@@ -135,372 +85,22 @@ STATIC INLINE VOID SchedSetNextExpireTime(UINT32 responseID, UINT64 taskEndTime,
     rq->responseTime = currTime + HalClockTickTimerReload(nextResponseTime);
 }
 
-VOID OsSchedUpdateExpireTime(VOID)
+VOID OsSchedExpireTimeUpdate(VOID)
 {
-    UINT64 endTime;
-    LosTaskCB *runTask = OsCurrTaskGet();
-
+    UINT32 intSave;
     if (!OS_SCHEDULER_ACTIVE || OS_INT_ACTIVE) {
-        OsSchedRunQuePendingSet();
+        OsSchedRunqueuePendingSet();
         return;
     }
 
-    if (runTask->policy == LOS_SCHED_RR) {
-        LOS_SpinLock(&g_taskSpin);
-        INT32 timeSlice = (runTask->timeSlice <= OS_TIME_SLICE_MIN) ? runTask->initTimeSlice : runTask->timeSlice;
-        endTime = runTask->startTime + timeSlice;
-        LOS_SpinUnlock(&g_taskSpin);
-    } else {
-        endTime = OS_SCHED_MAX_RESPONSE_TIME - OS_TICK_RESPONSE_PRECISION;
-    }
-
-    SchedSetNextExpireTime(runTask->taskID, endTime, runTask->taskID);
-}
-
-STATIC INLINE UINT32 SchedCalculateTimeSlice(UINT16 proPriority, UINT16 priority)
-{
-    UINT32 retTime;
-    UINT32 readyTasks;
-
-    SchedQueue *queueList = &g_sched.queueList[proPriority];
-    readyTasks = queueList->readyTasks[priority];
-    if (readyTasks > OS_SCHED_READY_MAX) {
-        return OS_SCHED_TIME_SLICES_MIN;
-    }
-    retTime = ((OS_SCHED_READY_MAX - readyTasks) * OS_SCHED_TIME_SLICES_DIFF) / OS_SCHED_READY_MAX;
-    return (retTime + OS_SCHED_TIME_SLICES_MIN);
-}
-
-STATIC INLINE VOID SchedPriQueueEnHead(UINT32 proPriority, LOS_DL_LIST *priqueueItem, UINT32 priority)
-{
-    SchedQueue *queueList = &g_sched.queueList[proPriority];
-    LOS_DL_LIST *priQueueList = &queueList->priQueueList[0];
-    UINT32 *bitMap = &queueList->queueBitmap;
-
-    /*
-     * Task control blocks are inited as zero. And when task is deleted,
-     * and at the same time would be deleted from priority queue or
-     * other lists, task pend node will restored as zero.
-     */
-    LOS_ASSERT(priqueueItem->pstNext == NULL);
-
-    if (*bitMap == 0) {
-        g_sched.queueBitmap |= PRIQUEUE_PRIOR0_BIT >> proPriority;
-    }
-
-    if (LOS_ListEmpty(&priQueueList[priority])) {
-        *bitMap |= PRIQUEUE_PRIOR0_BIT >> priority;
-    }
-
-    LOS_ListHeadInsert(&priQueueList[priority], priqueueItem);
-    queueList->readyTasks[priority]++;
-}
-
-STATIC INLINE VOID SchedPriQueueEnTail(UINT32 proPriority, LOS_DL_LIST *priqueueItem, UINT32 priority)
-{
-    SchedQueue *queueList = &g_sched.queueList[proPriority];
-    LOS_DL_LIST *priQueueList = &queueList->priQueueList[0];
-    UINT32 *bitMap = &queueList->queueBitmap;
-
-    /*
-     * Task control blocks are inited as zero. And when task is deleted,
-     * and at the same time would be deleted from priority queue or
-     * other lists, task pend node will restored as zero.
-     */
-    LOS_ASSERT(priqueueItem->pstNext == NULL);
-
-    if (*bitMap == 0) {
-        g_sched.queueBitmap |= PRIQUEUE_PRIOR0_BIT >> proPriority;
-    }
-
-    if (LOS_ListEmpty(&priQueueList[priority])) {
-        *bitMap |= PRIQUEUE_PRIOR0_BIT >> priority;
-    }
-
-    LOS_ListTailInsert(&priQueueList[priority], priqueueItem);
-    queueList->readyTasks[priority]++;
-}
-
-STATIC INLINE VOID SchedPriQueueDelete(UINT32 proPriority, LOS_DL_LIST *priqueueItem, UINT32 priority)
-{
-    SchedQueue *queueList = &g_sched.queueList[proPriority];
-    LOS_DL_LIST *priQueueList = &queueList->priQueueList[0];
-    UINT32 *bitMap = &queueList->queueBitmap;
-
-    LOS_ListDelete(priqueueItem);
-    queueList->readyTasks[priority]--;
-    if (LOS_ListEmpty(&priQueueList[priority])) {
-        *bitMap &= ~(PRIQUEUE_PRIOR0_BIT >> priority);
-    }
-
-    if (*bitMap == 0) {
-        g_sched.queueBitmap &= ~(PRIQUEUE_PRIOR0_BIT >> proPriority);
-    }
-}
-
-STATIC INLINE VOID SchedEnTaskQueue(LosTaskCB *taskCB)
-{
-    LOS_ASSERT(!(taskCB->taskStatus & OS_TASK_STATUS_READY));
-
-    switch (taskCB->policy) {
-        case LOS_SCHED_RR: {
-            if (taskCB->timeSlice > OS_TIME_SLICE_MIN) {
-                SchedPriQueueEnHead(taskCB->basePrio, &taskCB->pendList, taskCB->priority);
-            } else {
-                taskCB->initTimeSlice = SchedCalculateTimeSlice(taskCB->basePrio, taskCB->priority);
-                taskCB->timeSlice = taskCB->initTimeSlice;
-                SchedPriQueueEnTail(taskCB->basePrio, &taskCB->pendList, taskCB->priority);
-#ifdef LOSCFG_SCHED_DEBUG
-                taskCB->schedStat.timeSliceTime = taskCB->schedStat.timeSliceRealTime;
-                taskCB->schedStat.timeSliceCount++;
-#endif
-            }
-            break;
-        }
-        case LOS_SCHED_FIFO: {
-            /* The time slice of FIFO is always greater than 0 unless the yield is called */
-            if ((taskCB->timeSlice > OS_TIME_SLICE_MIN) && (taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
-                SchedPriQueueEnHead(taskCB->basePrio, &taskCB->pendList, taskCB->priority);
-            } else {
-                taskCB->initTimeSlice = OS_SCHED_FIFO_TIMEOUT;
-                taskCB->timeSlice = taskCB->initTimeSlice;
-                SchedPriQueueEnTail(taskCB->basePrio, &taskCB->pendList, taskCB->priority);
-            }
-            break;
-        }
-        case LOS_SCHED_IDLE:
-#ifdef LOSCFG_SCHED_DEBUG
-            taskCB->schedStat.timeSliceCount = 1;
-#endif
-            break;
-        default:
-            LOS_ASSERT(0);
-            break;
-    }
-
-    taskCB->taskStatus &= ~OS_TASK_STATUS_BLOCKED;
-    taskCB->taskStatus |= OS_TASK_STATUS_READY;
-}
-
-VOID OsSchedTaskDeQueue(LosTaskCB *taskCB)
-{
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        if (taskCB->policy != LOS_SCHED_IDLE) {
-            SchedPriQueueDelete(taskCB->basePrio, &taskCB->pendList, taskCB->priority);
-        }
-        taskCB->taskStatus &= ~OS_TASK_STATUS_READY;
-    }
-}
-
-VOID OsSchedTaskEnQueue(LosTaskCB *taskCB)
-{
-#ifdef LOSCFG_SCHED_DEBUG
-    if (!(taskCB->taskStatus & OS_TASK_STATUS_RUNNING)) {
-        taskCB->startTime = OsGetCurrSchedTimeCycle();
-    }
-#endif
-    SchedEnTaskQueue(taskCB);
-}
-
-VOID OsSchedTaskExit(LosTaskCB *taskCB)
-{
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        OsSchedTaskDeQueue(taskCB);
-    } else if (taskCB->taskStatus & OS_TASK_STATUS_PENDING) {
-        LOS_ListDelete(&taskCB->pendList);
-        taskCB->taskStatus &= ~OS_TASK_STATUS_PENDING;
-    }
-
-    if (taskCB->taskStatus & (OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME)) {
-        OsSchedDeTaskFromTimeList(taskCB);
-        taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME);
-    }
-}
-
-VOID OsSchedYield(VOID)
-{
     LosTaskCB *runTask = OsCurrTaskGet();
-
-    runTask->timeSlice = 0;
-
-    runTask->startTime = OsGetCurrSchedTimeCycle();
-    OsSchedTaskEnQueue(runTask);
-    OsSchedResched();
+    SCHEDULER_LOCK(intSave);
+    UINT64 deadline = runTask->ops->deadlineGet(runTask);
+    SCHEDULER_UNLOCK(intSave);
+    SchedNextExpireTimeSet(runTask->taskID, deadline, runTask->taskID);
 }
 
-VOID OsSchedDelay(LosTaskCB *runTask, UINT64 waitTime)
-{
-    runTask->taskStatus |= OS_TASK_STATUS_DELAY;
-    runTask->waitTime = waitTime;
-
-    OsSchedResched();
-}
-
-UINT32 OsSchedTaskWait(LOS_DL_LIST *list, UINT32 ticks, BOOL needSched)
-{
-    LosTaskCB *runTask = OsCurrTaskGet();
-
-    runTask->taskStatus |= OS_TASK_STATUS_PENDING;
-    LOS_ListTailInsert(list, &runTask->pendList);
-
-    if (ticks != LOS_WAIT_FOREVER) {
-        runTask->taskStatus |= OS_TASK_STATUS_PEND_TIME;
-        runTask->waitTime = OS_SCHED_TICK_TO_CYCLE(ticks);
-    }
-
-    if (needSched == TRUE) {
-        OsSchedResched();
-        if (runTask->taskStatus & OS_TASK_STATUS_TIMEOUT) {
-            runTask->taskStatus &= ~OS_TASK_STATUS_TIMEOUT;
-            return LOS_ERRNO_TSK_TIMEOUT;
-        }
-    }
-
-    return LOS_OK;
-}
-
-VOID OsSchedTaskWake(LosTaskCB *resumedTask)
-{
-    LOS_ListDelete(&resumedTask->pendList);
-    resumedTask->taskStatus &= ~OS_TASK_STATUS_PENDING;
-
-    if (resumedTask->taskStatus & OS_TASK_STATUS_PEND_TIME) {
-        OsSchedDeTaskFromTimeList(resumedTask);
-        resumedTask->taskStatus &= ~OS_TASK_STATUS_PEND_TIME;
-    }
-
-    if (!(resumedTask->taskStatus & OS_TASK_STATUS_SUSPENDED)) {
-#ifdef LOSCFG_SCHED_DEBUG
-        resumedTask->schedStat.pendTime += OsGetCurrSchedTimeCycle() - resumedTask->startTime;
-        resumedTask->schedStat.pendCount++;
-#endif
-        OsSchedTaskEnQueue(resumedTask);
-    }
-}
-
-BOOL OsSchedModifyTaskSchedParam(LosTaskCB *taskCB, UINT16 policy, UINT16 priority)
-{
-    if (taskCB->policy != policy) {
-        taskCB->policy = policy;
-        taskCB->timeSlice = 0;
-    }
-
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        OsSchedTaskDeQueue(taskCB);
-        taskCB->priority = priority;
-        OsSchedTaskEnQueue(taskCB);
-        return TRUE;
-    }
-
-    taskCB->priority = priority;
-    OsHookCall(LOS_HOOK_TYPE_TASK_PRIMODIFY, taskCB, taskCB->priority);
-    if (taskCB->taskStatus & OS_TASK_STATUS_INIT) {
-        OsSchedTaskEnQueue(taskCB);
-        return TRUE;
-    }
-
-    if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-BOOL OsSchedModifyProcessSchedParam(UINT32 pid, UINT16 policy, UINT16 priority)
-{
-    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
-    LosTaskCB *taskCB = NULL;
-    BOOL needSched = FALSE;
-    (VOID)policy;
-
-    LOS_DL_LIST_FOR_EACH_ENTRY(taskCB, &processCB->threadSiblingList, LosTaskCB, threadList) {
-        if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-            SchedPriQueueDelete(taskCB->basePrio, &taskCB->pendList, taskCB->priority);
-            SchedPriQueueEnTail(priority, &taskCB->pendList, taskCB->priority);
-            needSched = TRUE;
-        } else if (taskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
-            needSched = TRUE;
-        }
-        taskCB->basePrio = priority;
-    }
-
-    return needSched;
-}
-
-STATIC VOID SchedFreezeTask(LosTaskCB *taskCB)
-{
-    UINT64 responseTime;
-
-    if (!OsIsPmMode()) {
-        return;
-    }
-
-    if (!(taskCB->taskStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY))) {
-        return;
-    }
-
-    responseTime = GET_SORTLIST_VALUE(&taskCB->sortList);
-    OsSchedDeTaskFromTimeList(taskCB);
-    SET_SORTLIST_VALUE(&taskCB->sortList, responseTime);
-    taskCB->taskStatus |= OS_TASK_FLAG_FREEZE;
-    return;
-}
-
-STATIC VOID SchedUnfreezeTask(LosTaskCB *taskCB)
-{
-    UINT64 currTime, responseTime;
-
-    if (!(taskCB->taskStatus & OS_TASK_FLAG_FREEZE)) {
-        return;
-    }
-
-    taskCB->taskStatus &= ~OS_TASK_FLAG_FREEZE;
-    currTime = OsGetCurrSchedTimeCycle();
-    responseTime = GET_SORTLIST_VALUE(&taskCB->sortList);
-    if (responseTime > currTime) {
-        OsSchedAddTask2TimeList(taskCB, responseTime);
-        return;
-    }
-
-    SET_SORTLIST_VALUE(&taskCB->sortList, OS_SORT_LINK_INVALID_TIME);
-    if (taskCB->taskStatus & OS_TASK_STATUS_PENDING) {
-        LOS_ListDelete(&taskCB->pendList);
-    }
-    taskCB->taskStatus &= ~(OS_TASK_STATUS_DELAY | OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_PENDING);
-    return;
-}
-
-VOID OsSchedSuspend(LosTaskCB *taskCB)
-{
-    if (taskCB->taskStatus & OS_TASK_STATUS_READY) {
-        OsSchedTaskDeQueue(taskCB);
-    }
-
-    SchedFreezeTask(taskCB);
-
-    taskCB->taskStatus |= OS_TASK_STATUS_SUSPENDED;
-    OsHookCall(LOS_HOOK_TYPE_MOVEDTASKTOSUSPENDEDLIST, taskCB);
-    if (taskCB == OsCurrTaskGet()) {
-        OsSchedResched();
-    }
-}
-
-BOOL OsSchedResume(LosTaskCB *taskCB)
-{
-    BOOL needSched = FALSE;
-
-    SchedUnfreezeTask(taskCB);
-
-    taskCB->taskStatus &= ~OS_TASK_STATUS_SUSPENDED;
-    if (!OsTaskIsBlocked(taskCB)) {
-        OsSchedTaskEnQueue(taskCB);
-        needSched = TRUE;
-    }
-
-    return needSched;
-}
-
-STATIC INLINE VOID SchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, BOOL *needSchedule)
+STATIC INLINE VOID SchedTimeoutTaskWake(SchedRunqueue *rq, UINT64 currTime, LosTaskCB *taskCB, BOOL *needSched)
 {
 #ifndef LOSCFG_SCHED_DEBUG
     (VOID)currTime;
@@ -522,19 +122,19 @@ STATIC INLINE VOID SchedWakePendTimeTask(UINT64 currTime, LosTaskCB *taskCB, BOO
             taskCB->schedStat.pendTime += currTime - taskCB->startTime;
             taskCB->schedStat.pendCount++;
 #endif
-            OsSchedTaskEnQueue(taskCB);
-            *needSchedule = TRUE;
+            taskCB->ops->enqueue(rq, taskCB);
+            *needSched = TRUE;
         }
     }
 
     LOS_SpinUnlock(&g_taskSpin);
 }
 
-STATIC INLINE BOOL SchedScanTaskTimeList(SchedRunQue *rq)
+STATIC INLINE BOOL SchedTimeoutQueueScan(SchedRunqueue *rq)
 {
-    BOOL needSchedule = FALSE;
-    SortLinkAttribute *taskSortLink = &rq->taskSortLink;
-    LOS_DL_LIST *listObject = &taskSortLink->sortLink;
+    BOOL needSched = FALSE;
+    SortLinkAttribute *timeoutQueue = &rq->timeoutQueue;
+    LOS_DL_LIST *listObject = &timeoutQueue->sortLink;
     /*
      * When task is pended with timeout, the task block is on the timeout sortlink
      * (per cpu) and ipc(mutex,sem and etc.)'s block at the same time, it can be waken
@@ -543,23 +143,23 @@ STATIC INLINE BOOL SchedScanTaskTimeList(SchedRunQue *rq)
      * Now synchronize sortlink procedure is used, therefore the whole task scan needs
      * to be protected, preventing another core from doing sortlink deletion at same time.
      */
-    LOS_SpinLock(&taskSortLink->spinLock);
+    LOS_SpinLock(&timeoutQueue->spinLock);
 
     if (LOS_ListEmpty(listObject)) {
-        LOS_SpinUnlock(&taskSortLink->spinLock);
-        return needSchedule;
+        LOS_SpinUnlock(&timeoutQueue->spinLock);
+        return needSched;
     }
 
     SortLinkList *sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
     UINT64 currTime = OsGetCurrSchedTimeCycle();
     while (sortList->responseTime <= currTime) {
         LosTaskCB *taskCB = LOS_DL_LIST_ENTRY(sortList, LosTaskCB, sortList);
-        OsDeleteNodeSortLink(taskSortLink, &taskCB->sortList);
-        LOS_SpinUnlock(&taskSortLink->spinLock);
+        OsDeleteNodeSortLink(timeoutQueue, &taskCB->sortList);
+        LOS_SpinUnlock(&timeoutQueue->spinLock);
 
-        SchedWakePendTimeTask(currTime, taskCB, &needSchedule);
+        SchedTimeoutTaskWake(rq, currTime, taskCB, &needSched);
 
-        LOS_SpinLock(&taskSortLink->spinLock);
+        LOS_SpinLock(&timeoutQueue->spinLock);
         if (LOS_ListEmpty(listObject)) {
             break;
         }
@@ -567,17 +167,17 @@ STATIC INLINE BOOL SchedScanTaskTimeList(SchedRunQue *rq)
         sortList = LOS_DL_LIST_ENTRY(listObject->pstNext, SortLinkList, sortLinkNode);
     }
 
-    LOS_SpinUnlock(&taskSortLink->spinLock);
+    LOS_SpinUnlock(&timeoutQueue->spinLock);
 
-    return needSchedule;
+    return needSched;
 }
 
 VOID OsSchedTick(VOID)
 {
-    SchedRunQue *rq = OsSchedRunQue();
+    SchedRunqueue *rq = OsSchedRunqueue();
 
     if (rq->responseID == OS_INVALID_VALUE) {
-        if (SchedScanTaskTimeList(rq)) {
+        if (SchedTimeoutQueueScan(rq)) {
             LOS_MpSchedule(OS_MP_CPU_ALL);
             rq->schedFlag |= INT_PEND_RESCH;
         }
@@ -586,47 +186,34 @@ VOID OsSchedTick(VOID)
     rq->responseTime = OS_SCHED_MAX_RESPONSE_TIME;
 }
 
-VOID OsSchedSetIdleTaskSchedParam(LosTaskCB *idleTask)
+VOID OsSchedResponseTimeReset(UINT64 responseTime)
 {
-    idleTask->basePrio = OS_TASK_PRIORITY_LOWEST;
-    idleTask->policy = LOS_SCHED_IDLE;
-    idleTask->initTimeSlice = OS_SCHED_FIFO_TIMEOUT;
-    idleTask->timeSlice = idleTask->initTimeSlice;
-    OsSchedTaskEnQueue(idleTask);
+    OsSchedRunqueue()->responseTime = responseTime;
 }
 
-VOID OsSchedResetSchedResponseTime(UINT64 responseTime)
-{
-    OsSchedRunQue()->responseTime = responseTime;
-}
-
-VOID OsSchedRunQueInit(VOID)
+VOID OsSchedRunqueueInit(VOID)
 {
     if (ArchCurrCpuid() != 0) {
         return;
     }
 
     for (UINT16 index = 0; index < LOSCFG_KERNEL_CORE_NUM; index++) {
-        SchedRunQue *rq = OsSchedRunQueByID(index);
-        OsSortLinkInit(&rq->taskSortLink);
+        SchedRunqueue *rq = OsSchedRunqueueByID(index);
+        OsSortLinkInit(&rq->timeoutQueue);
         rq->responseTime = OS_SCHED_MAX_RESPONSE_TIME;
     }
 }
 
-VOID OsSchedRunQueIdleInit(UINT32 idleTaskID)
+VOID OsSchedRunqueueIdleInit(UINT32 idleTaskID)
 {
-    SchedRunQue *rq = OsSchedRunQue();
+    SchedRunqueue *rq = OsSchedRunqueue();
     rq->idleTaskID = idleTaskID;
 }
 
 UINT32 OsSchedInit(VOID)
 {
-    for (UINT16 index = 0; index < OS_PRIORITY_QUEUE_NUM; index++) {
-        SchedQueue *queueList = &g_sched.queueList[index];
-        LOS_DL_LIST *priList = &queueList->priQueueList[0];
-        for (UINT16 pri = 0; pri < OS_PRIORITY_QUEUE_NUM; pri++) {
-            LOS_ListInit(&priList[pri]);
-        }
+    for (UINT16 cpuId = 0; cpuId < LOSCFG_KERNEL_CORE_NUM; cpuId++) {
+        HPFSchedPolicyInit(OsSchedRunqueueByID(cpuId));
     }
 
 #ifdef LOSCFG_SCHED_TICK_DEBUG
@@ -638,40 +225,69 @@ UINT32 OsSchedInit(VOID)
     return LOS_OK;
 }
 
-STATIC LosTaskCB *GetTopTask(SchedRunQue *rq)
+/*
+ * If the return value greater than 0,  task1 has a lower priority than task2.
+ * If the return value less than 0, task1 has a higher priority than task2.
+ * If the return value is 0, task1 and task2 have the same priority.
+ */
+INT32 OsSchedParamCompare(const LosTaskCB *task1, const LosTaskCB *task2)
 {
-    UINT32 priority, processPriority;
-    UINT32 bitmap;
-    LosTaskCB *newTask = NULL;
-    UINT32 processBitmap = g_sched.queueBitmap;
-#ifdef LOSCFG_KERNEL_SMP
-    UINT32 cpuid = ArchCurrCpuid();
-#endif
+    SchedHPF *rp1 = (SchedHPF *)&task1->sp;
+    SchedHPF *rp2 = (SchedHPF *)&task2->sp;
 
-    while (processBitmap) {
-        processPriority = CLZ(processBitmap);
-        SchedQueue *queueList = &g_sched.queueList[processPriority];
-        bitmap = queueList->queueBitmap;
-            while (bitmap) {
-                priority = CLZ(bitmap);
-                LOS_DL_LIST_FOR_EACH_ENTRY(newTask, &queueList->priQueueList[priority], LosTaskCB, pendList) {
-#ifdef LOSCFG_KERNEL_SMP
-                    if (newTask->cpuAffiMask & (1U << cpuid)) {
-#endif
-                        goto FIND_TASK;
-#ifdef LOSCFG_KERNEL_SMP
-                    }
-#endif
-                }
-            bitmap &= ~(1U << (OS_PRIORITY_QUEUE_NUM - priority - 1));
-        }
-        processBitmap &= ~(1U << (OS_PRIORITY_QUEUE_NUM - processPriority - 1));
+    if (rp1->policy == rp2->policy) {
+        return task1->ops->schedParamCompare(&task1->sp, &task2->sp);
     }
 
-    newTask = OS_TCB_FROM_TID(rq->idleTaskID);
+    if (rp1->policy == LOS_SCHED_IDLE) {
+        return 1;
+    } else if (rp2->policy == LOS_SCHED_IDLE) {
+        return -1;
+    }
+    return 0;
+}
 
-FIND_TASK:
-    OsSchedTaskDeQueue(newTask);
+UINT32 OsSchedParamInit(LosTaskCB *taskCB, UINT16 policy, const SchedParam *parentParam, const TSK_INIT_PARAM_S *param)
+{
+    switch (policy) {
+        case LOS_SCHED_FIFO:
+        case LOS_SCHED_RR:
+            HPFTaskSchedParamInit(taskCB, policy, parentParam, param);
+            break;
+        case LOS_SCHED_IDLE:
+            IdleTaskSchedParamInit(taskCB);
+            break;
+        default:
+            return LOS_NOK;
+    }
+
+    return LOS_OK;
+}
+
+VOID OsSchedProcessDefaultSchedParamGet(UINT16 policy, SchedParam *param)
+{
+    switch (policy) {
+        case LOS_SCHED_FIFO:
+        case LOS_SCHED_RR:
+            HPFProcessDefaultSchedParamGet(param);
+            break;
+        case LOS_SCHED_IDLE:
+        default:
+            PRINT_ERR("Invalid process-level scheduling policy, %u\n", policy);
+            break;
+    }
+    return;
+}
+
+STATIC LosTaskCB *TopTaskGet(SchedRunqueue *rq)
+{
+    LosTaskCB *newTask = HPFRunqueueTopTaskGet(rq->hpfRunqueue);
+
+    if (newTask == NULL) {
+        newTask = OS_TCB_FROM_TID(rq->idleTaskID);
+    }
+
+    newTask->ops->start(rq, newTask);
     return newTask;
 }
 
@@ -686,8 +302,8 @@ VOID OsSchedStart(VOID)
 
     OsTickStart();
 
-    SchedRunQue *rq = OsSchedRunQue();
-    LosTaskCB *newTask = GetTopTask(rq);
+    SchedRunqueue *rq = OsSchedRunqueue();
+    LosTaskCB *newTask = TopTaskGet(rq);
     newTask->taskStatus |= OS_TASK_STATUS_RUNNING;
 
 #ifdef LOSCFG_KERNEL_SMP
@@ -708,7 +324,8 @@ VOID OsSchedStart(VOID)
     OS_SCHEDULER_SET(cpuid);
 
     rq->responseID = OS_INVALID;
-    SchedSetNextExpireTime(newTask->taskID, newTask->startTime + newTask->timeSlice, OS_INVALID);
+    UINT64 deadline = newTask->ops->deadlineGet(newTask);
+    SchedNextExpireTimeSet(newTask->taskID, deadline, OS_INVALID);
     OsTaskContextLoad(newTask);
 }
 
@@ -746,10 +363,8 @@ STATIC INLINE VOID SchedSwitchCheck(LosTaskCB *runTask, LosTaskCB *newTask)
     OsHookCall(LOS_HOOK_TYPE_TASK_SWITCHEDIN, newTask, runTask);
 }
 
-STATIC VOID SchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
+STATIC VOID SchedTaskSwitch(SchedRunqueue *rq, LosTaskCB *runTask, LosTaskCB *newTask)
 {
-    UINT64 endTime;
-
     SchedSwitchCheck(runTask, newTask);
 
     runTask->taskStatus &= ~OS_TASK_STATUS_RUNNING;
@@ -782,19 +397,15 @@ STATIC VOID SchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
         /* The currently running task is blocked */
         newTask->startTime = OsGetCurrSchedTimeCycle();
         /* The task is in a blocking state and needs to update its time slice before pend */
-        TimeSliceUpdate(runTask, newTask->startTime);
+        runTask->ops->timeSliceUpdate(rq, runTask, newTask->startTime);
 
         if (runTask->taskStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY)) {
-            OsSchedAddTask2TimeList(runTask, runTask->startTime + runTask->waitTime);
+            OsSchedTimeoutQueueAdd(runTask, runTask->startTime + runTask->waitTime);
         }
     }
 
-    if (newTask->policy == LOS_SCHED_RR) {
-        endTime = newTask->startTime + newTask->timeSlice;
-    } else {
-        endTime = OS_SCHED_MAX_RESPONSE_TIME - OS_TICK_RESPONSE_PRECISION;
-    }
-    SchedSetNextExpireTime(newTask->taskID, endTime, runTask->taskID);
+    UINT64 deadline = newTask->ops->deadlineGet(newTask);
+    SchedNextExpireTimeSet(newTask->taskID, deadline, runTask->taskID);
 
 #ifdef LOSCFG_SCHED_DEBUG
     newTask->schedStat.waitSchedTime += newTask->startTime - waitStartTime;
@@ -808,24 +419,21 @@ STATIC VOID SchedTaskSwitch(LosTaskCB *runTask, LosTaskCB *newTask)
 
 VOID OsSchedIrqEndCheckNeedSched(VOID)
 {
-    SchedRunQue *rq = OsSchedRunQue();
+    SchedRunqueue *rq = OsSchedRunqueue();
     LosTaskCB *runTask = OsCurrTaskGet();
 
-    TimeSliceUpdate(runTask, OsGetCurrSchedTimeCycle());
-    if (runTask->timeSlice <= OS_TIME_SLICE_MIN) {
-        rq->schedFlag |= INT_PEND_RESCH;
-    }
+    runTask->ops->timeSliceUpdate(rq, runTask, OsGetCurrSchedTimeCycle());
 
     if (OsPreemptable() && (rq->schedFlag & INT_PEND_RESCH)) {
         rq->schedFlag &= ~INT_PEND_RESCH;
 
         LOS_SpinLock(&g_taskSpin);
 
-        OsSchedTaskEnQueue(runTask);
+        runTask->ops->enqueue(rq, runTask);
 
-        LosTaskCB *newTask = GetTopTask(rq);
+        LosTaskCB *newTask = TopTaskGet(rq);
         if (runTask != newTask) {
-            SchedTaskSwitch(runTask, newTask);
+            SchedTaskSwitch(rq, runTask, newTask);
             LOS_SpinUnlock(&g_taskSpin);
             return;
         }
@@ -834,14 +442,14 @@ VOID OsSchedIrqEndCheckNeedSched(VOID)
     }
 
     if (rq->schedFlag & INT_PEND_TICK) {
-        OsSchedUpdateExpireTime();
+        OsSchedExpireTimeUpdate();
     }
 }
 
 VOID OsSchedResched(VOID)
 {
     LOS_ASSERT(LOS_SpinHeld(&g_taskSpin));
-    SchedRunQue *rq = OsSchedRunQue();
+    SchedRunqueue *rq = OsSchedRunqueue();
 #ifdef LOSCFG_KERNEL_SMP
     LOS_ASSERT(rq->taskLockCnt == 1);
 #else
@@ -850,21 +458,22 @@ VOID OsSchedResched(VOID)
 
     rq->schedFlag &= ~INT_PEND_RESCH;
     LosTaskCB *runTask = OsCurrTaskGet();
-    LosTaskCB *newTask = GetTopTask(rq);
+    LosTaskCB *newTask = TopTaskGet(rq);
     if (runTask == newTask) {
         return;
     }
 
-    SchedTaskSwitch(runTask, newTask);
+    SchedTaskSwitch(rq, runTask, newTask);
 }
 
 VOID LOS_Schedule(VOID)
 {
     UINT32 intSave;
     LosTaskCB *runTask = OsCurrTaskGet();
+    SchedRunqueue *rq = OsSchedRunqueue();
 
     if (OS_INT_ACTIVE) {
-        OsSchedRunQuePendingSet();
+        OsSchedRunqueuePendingSet();
         return;
     }
 
@@ -879,10 +488,10 @@ VOID LOS_Schedule(VOID)
      */
     SCHEDULER_LOCK(intSave);
 
-    TimeSliceUpdate(runTask, OsGetCurrSchedTimeCycle());
+    runTask->ops->timeSliceUpdate(rq, runTask, OsGetCurrSchedTimeCycle());
 
     /* add run task back to ready queue */
-    OsSchedTaskEnQueue(runTask);
+    runTask->ops->enqueue(rq, runTask);
 
     /* reschedule to new thread */
     OsSchedResched();
@@ -890,44 +499,40 @@ VOID LOS_Schedule(VOID)
     SCHEDULER_UNLOCK(intSave);
 }
 
-STATIC INLINE LOS_DL_LIST *OsSchedLockPendFindPosSub(const LosTaskCB *runTask, const LOS_DL_LIST *lockList)
+STATIC INLINE LOS_DL_LIST *SchedLockPendFindPosSub(const LosTaskCB *runTask, const LOS_DL_LIST *lockList)
 {
     LosTaskCB *pendedTask = NULL;
-    LOS_DL_LIST *node = NULL;
 
     LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, lockList, LosTaskCB, pendList) {
-        if (pendedTask->priority < runTask->priority) {
+        INT32 ret = OsSchedParamCompare(pendedTask, runTask);
+        if (ret < 0) {
             continue;
-        } else if (pendedTask->priority > runTask->priority) {
-            node = &pendedTask->pendList;
-            break;
+        } else if (ret > 0) {
+            return &pendedTask->pendList;
         } else {
-            node = pendedTask->pendList.pstNext;
-            break;
+            return pendedTask->pendList.pstNext;
         }
     }
-
-    return node;
+    return NULL;
 }
 
 LOS_DL_LIST *OsSchedLockPendFindPos(const LosTaskCB *runTask, LOS_DL_LIST *lockList)
 {
-    LOS_DL_LIST *node = NULL;
-
     if (LOS_ListEmpty(lockList)) {
-        node = lockList;
-    } else {
-        LosTaskCB *pendedTask1 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(lockList));
-        LosTaskCB *pendedTask2 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_LAST(lockList));
-        if (pendedTask1->priority > runTask->priority) {
-            node = lockList->pstNext;
-        } else if (pendedTask2->priority <= runTask->priority) {
-            node = lockList;
-        } else {
-            node = OsSchedLockPendFindPosSub(runTask, lockList);
-        }
+        return lockList;
     }
 
-    return node;
-}
+    LosTaskCB *pendedTask1 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(lockList));
+    INT32 ret = OsSchedParamCompare(pendedTask1, runTask);
+    if (ret > 0) {
+        return lockList->pstNext;
+    }
 
+    LosTaskCB *pendedTask2 = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_LAST(lockList));
+    ret = OsSchedParamCompare(pendedTask2, runTask);
+    if (ret <= 0) {
+        return lockList;
+    }
+
+    return SchedLockPendFindPosSub(runTask, lockList);
+}

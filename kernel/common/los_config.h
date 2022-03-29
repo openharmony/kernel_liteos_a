@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -270,6 +270,15 @@ extern UINT32 __heap_end;
  */
 #ifndef LOSCFG_BASE_IPC_MUX
 #define LOSCFG_BASE_IPC_MUX
+#endif
+
+/****************************** rwlock module configuration ******************************/
+/**
+ * @ingroup los_config
+ * Configuration item for rwlock module tailoring
+ */
+#ifndef LOSCFG_BASE_IPC_RWLOCK
+#define LOSCFG_BASE_IPC_RWLOCK
 #endif
 
 /****************************** Queue module configuration ********************************/
