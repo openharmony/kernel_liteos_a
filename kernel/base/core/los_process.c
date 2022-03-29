@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -87,7 +87,7 @@ VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB)
     OsTaskInsertToRecycleList(taskCB);
 }
 
-UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB)
+UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB, SchedParam *param)
 {
     UINT32 intSave;
     UINT16 numCount;
@@ -100,12 +100,14 @@ UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB)
     if (OsProcessIsUserMode(processCB)) {
         taskCB->taskStatus |= OS_TASK_FLAG_USER_MODE;
         if (processCB->threadNumber > 0) {
-            taskCB->basePrio = OS_TCB_FROM_TID(processCB->threadGroupID)->basePrio;
+            LosTaskCB *task = OS_TCB_FROM_TID(processCB->threadGroupID);
+            task->ops->schedParamGet(task, param);
         } else {
-            taskCB->basePrio = OS_USER_PROCESS_PRIORITY_HIGHEST;
+            OsSchedProcessDefaultSchedParamGet(param->policy, param);
         }
     } else {
-        taskCB->basePrio = OsCurrTaskGet()->basePrio;
+        LosTaskCB *runTask = OsCurrTaskGet();
+        runTask->ops->schedParamGet(runTask, param);
     }
 
 #ifdef LOSCFG_KERNEL_VM
@@ -283,7 +285,7 @@ STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32
 VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
 {
     taskCB->waitID = wakePID;
-    OsSchedTaskWake(taskCB);
+    taskCB->ops->wake(taskCB);
 #ifdef LOSCFG_KERNEL_SMP
     LOS_MpSchedule(OS_MP_CPU_ALL);
 #endif
@@ -897,7 +899,7 @@ STATIC INLINE INT32 OsProcessSchedlerParamCheck(INT32 which, INT32 pid, UINT16 p
 }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
-STATIC BOOL OsProcessCapPermitCheck(const LosProcessCB *processCB, UINT16 prio)
+STATIC BOOL OsProcessCapPermitCheck(const LosProcessCB *processCB, const SchedParam *param, UINT16 prio)
 {
     LosProcessCB *runProcess = OsCurrProcessGet();
 
@@ -907,7 +909,7 @@ STATIC BOOL OsProcessCapPermitCheck(const LosProcessCB *processCB, UINT16 prio)
     }
 
     /* user mode process can reduce the priority of itself */
-    if ((runProcess->processID == processCB->processID) && (prio > OsCurrTaskGet()->basePrio)) {
+    if ((runProcess->processID == processCB->processID) && (prio > param->basePrio)) {
         return TRUE;
     }
 
@@ -921,31 +923,33 @@ STATIC BOOL OsProcessCapPermitCheck(const LosProcessCB *processCB, UINT16 prio)
 
 LITE_OS_SEC_TEXT INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy)
 {
-    LosProcessCB *processCB = NULL;
-    BOOL needSched = FALSE;
+    SchedParam param = { 0 };
     UINT32 intSave;
-    INT32 ret;
 
-    ret = OsProcessSchedlerParamCheck(which, pid, prio, policy);
+    INT32 ret = OsProcessSchedlerParamCheck(which, pid, prio, policy);
     if (ret != LOS_OK) {
         return -ret;
     }
 
+    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
     SCHEDULER_LOCK(intSave);
-    processCB = OS_PCB_FROM_PID(pid);
     if (OsProcessIsInactive(processCB)) {
         ret = LOS_ESRCH;
         goto EXIT;
     }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
-    if (!OsProcessCapPermitCheck(processCB, prio)) {
+    if (!OsProcessCapPermitCheck(processCB, &param, prio)) {
         ret = LOS_EPERM;
         goto EXIT;
     }
 #endif
 
-    needSched = OsSchedModifyProcessSchedParam(pid, policy, prio);
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(processCB->threadGroupID);
+    taskCB->ops->schedParamGet(taskCB, &param);
+    param.basePrio = prio;
+
+    BOOL needSched = taskCB->ops->schedParamModify(taskCB, &param);
     SCHEDULER_UNLOCK(intSave);
 
     LOS_MpSchedule(OS_MP_CPU_ALL);
@@ -993,6 +997,7 @@ LITE_OS_SEC_TEXT INT32 OsGetProcessPriority(INT32 which, INT32 pid)
 {
     INT32 prio;
     UINT32 intSave;
+    SchedParam param = { 0 };
     (VOID)which;
 
     if (OS_PID_CHECK_INVALID(pid)) {
@@ -1010,11 +1015,12 @@ LITE_OS_SEC_TEXT INT32 OsGetProcessPriority(INT32 which, INT32 pid)
         goto OUT;
     }
 
-    prio = (INT32)OS_TCB_FROM_TID(processCB->threadGroupID)->basePrio;
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(processCB->threadGroupID);
+    taskCB->ops->schedParamGet(taskCB, &param);
 
 OUT:
     SCHEDULER_UNLOCK(intSave);
-    return prio;
+    return param.basePrio;
 }
 
 LITE_OS_SEC_TEXT INT32 LOS_GetProcessPriority(INT32 pid)
@@ -1050,8 +1056,7 @@ STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *proces
     /* if runTask->waitFlag == OS_PROCESS_WAIT_PRO,
      * this node is inserted directly into the header of the waitList
      */
-
-    (VOID)OsSchedTaskWait(list->pstNext, LOS_WAIT_FOREVER, TRUE);
+    (VOID)runTask->ops->wait(runTask, list->pstNext, LOS_WAIT_FOREVER);
     return;
 }
 
@@ -1202,13 +1207,10 @@ STATIC INT32 OsWait(INT32 pid, USER INT32 *status, USER siginfo_t *info, UINT32 
     UINT32 ret;
     UINT32 intSave;
     LosProcessCB *childCB = NULL;
-    LosProcessCB *processCB = NULL;
-    LosTaskCB *runTask = NULL;
 
+    LosProcessCB *processCB = OsCurrProcessGet();
+    LosTaskCB *runTask = OsCurrTaskGet();
     SCHEDULER_LOCK(intSave);
-    processCB = OsCurrProcessGet();
-    runTask = OsCurrTaskGet();
-
     ret = OsWaitChildProcessCheck(processCB, pid, &childCB);
     if (ret != LOS_OK) {
         pid = -ret;
@@ -1725,47 +1727,37 @@ STATIC UINT32 OsCopyUser(LosProcessCB *childCB, LosProcessCB *parentCB)
     return LOS_OK;
 }
 
-STATIC VOID OsInitCopyTaskParam(LosProcessCB *childProcessCB, const CHAR *name, UINTPTR entry, UINT32 size,
-                                TSK_INIT_PARAM_S *childPara)
-{
-    LosTaskCB *mainThread = NULL;
-    UINT32 intSave;
-
-    SCHEDULER_LOCK(intSave);
-    mainThread = OsCurrTaskGet();
-
-    if (OsProcessIsUserMode(childProcessCB)) {
-        childPara->pfnTaskEntry = mainThread->taskEntry;
-        childPara->uwStackSize = mainThread->stackSize;
-        childPara->userParam.userArea = mainThread->userArea;
-        childPara->userParam.userMapBase = mainThread->userMapBase;
-        childPara->userParam.userMapSize = mainThread->userMapSize;
-    } else {
-        childPara->pfnTaskEntry = (TSK_ENTRY_FUNC)entry;
-        childPara->uwStackSize = size;
-    }
-    childPara->pcName = (CHAR *)name;
-    childPara->policy = mainThread->policy;
-    childPara->usTaskPrio = mainThread->priority;
-    childPara->processID = childProcessCB->processID;
-    if (mainThread->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
-        childPara->uwResved = LOS_TASK_ATTR_JOINABLE;
-    }
-
-    SCHEDULER_UNLOCK(intSave);
-}
-
 STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR *name, UINTPTR entry, UINT32 size)
 {
     LosTaskCB *runTask = OsCurrTaskGet();
-    TSK_INIT_PARAM_S childPara = { 0 };
-    UINT32 ret;
-    UINT32 intSave;
-    UINT32 taskID;
+    TSK_INIT_PARAM_S taskParam = { 0 };
+    UINT32 ret, taskID, intSave;
+    SchedParam param = { 0 };
 
-    OsInitCopyTaskParam(childProcessCB, name, entry, size, &childPara);
+    SCHEDULER_LOCK(intSave);
+    if (OsProcessIsUserMode(childProcessCB)) {
+        taskParam.pfnTaskEntry = runTask->taskEntry;
+        taskParam.uwStackSize = runTask->stackSize;
+        taskParam.userParam.userArea = runTask->userArea;
+        taskParam.userParam.userMapBase = runTask->userMapBase;
+        taskParam.userParam.userMapSize = runTask->userMapSize;
+    } else {
+        taskParam.pfnTaskEntry = (TSK_ENTRY_FUNC)entry;
+        taskParam.uwStackSize = size;
+    }
+    if (runTask->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
+        taskParam.uwResved = LOS_TASK_ATTR_JOINABLE;
+    }
 
-    ret = LOS_TaskCreateOnly(&taskID, &childPara);
+    runTask->ops->schedParamGet(runTask, &param);
+    SCHEDULER_UNLOCK(intSave);
+
+    taskParam.pcName = (CHAR *)name;
+    taskParam.policy = param.policy;
+    taskParam.usTaskPrio = param.priority;
+    taskParam.processID = childProcessCB->processID;
+
+    ret = LOS_TaskCreateOnly(&taskID, &taskParam);
     if (ret != LOS_OK) {
         if (ret == LOS_ERRNO_TSK_TCB_UNAVAILABLE) {
             return LOS_EAGAIN;
@@ -1775,7 +1767,7 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
 
     LosTaskCB *childTaskCB = OS_TCB_FROM_TID(taskID);
     childTaskCB->taskStatus = runTask->taskStatus;
-    childTaskCB->basePrio = runTask->basePrio;
+    childTaskCB->ops->schedParamModify(childTaskCB, &param);
     if (childTaskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
         childTaskCB->taskStatus &= ~OS_TASK_STATUS_RUNNING;
     } else {
@@ -1882,6 +1874,7 @@ STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *
     UINT32 ret;
     ProcessGroup *group = NULL;
 
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(child->threadGroupID);
     SCHEDULER_LOCK(intSave);
     if (run->group->groupID == OS_USER_PRIVILEGE_PROCESS_GROUP) {
         ret = OsSetProcessGroupIDUnsafe(child->processID, child->processID, &group);
@@ -1892,7 +1885,7 @@ STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *
     }
 
     child->processStatus &= ~OS_PROCESS_STATUS_INIT;
-    OsSchedTaskEnQueue(OS_TCB_FROM_TID(child->threadGroupID));
+    taskCB->ops->enqueue(OsSchedRunqueue(), taskCB);
     SCHEDULER_UNLOCK(intSave);
 
     (VOID)LOS_MemFree(m_aucSysMem1, group);

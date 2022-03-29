@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -118,10 +118,10 @@ STATIC VOID OsFutexShowTaskNodeAttr(const LOS_DL_LIST *futexList)
         lastNode = OS_FUTEX_FROM_QUEUELIST(queueList);
         if (!LOS_ListEmpty(&(lastNode->pendList))) {
             taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(lastNode->pendList)));
-            PRINTK(" %u(%u) ->", taskCB->taskID, taskCB->priority);
+            PRINTK(" %u ->", taskCB->taskID);
         } else {
             taskCB = LOS_DL_LIST_ENTRY(lastNode, LosTaskCB, futex);
-            PRINTK(" %u(%d) ->", taskCB->taskID, -1);
+            PRINTK(" %u ->", taskCB->taskID);
         }
         queueList = queueList->pstNext;
         if (queueList == &tempNode->queueList) {
@@ -336,20 +336,19 @@ STATIC INT32 OsFutexInsertFindFormBackToFront(LOS_DL_LIST *queueList, const LosT
 {
     LOS_DL_LIST *listHead = queueList;
     LOS_DL_LIST *listTail = queueList->pstPrev;
-    FutexNode *tempNode = NULL;
-    LosTaskCB *taskTail = NULL;
 
     for (; listHead != listTail; listTail = listTail->pstPrev) {
-        tempNode = OS_FUTEX_FROM_QUEUELIST(listTail);
+        FutexNode *tempNode = OS_FUTEX_FROM_QUEUELIST(listTail);
         tempNode = OsFutexDeleteAlreadyWakeTaskAndGetNext(tempNode, NULL, FALSE);
         if (tempNode == NULL) {
             return LOS_NOK;
         }
-        taskTail = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tempNode->pendList)));
-        if (runTask->priority >= taskTail->priority) {
+        LosTaskCB *taskTail = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tempNode->pendList)));
+        INT32 ret = OsSchedParamCompare(runTask, taskTail);
+        if (ret >= 0) {
             LOS_ListHeadInsert(&(tempNode->queueList), &(node->queueList));
             return LOS_OK;
-        } else if (runTask->priority < taskTail->priority) {
+        } else {
             if (listTail->pstPrev == listHead) {
                 LOS_ListTailInsert(&(tempNode->queueList), &(node->queueList));
                 return LOS_OK;
@@ -364,26 +363,25 @@ STATIC INT32 OsFutexInsertFindFromFrontToBack(LOS_DL_LIST *queueList, const LosT
 {
     LOS_DL_LIST *listHead = queueList;
     LOS_DL_LIST *listTail = queueList->pstPrev;
-    FutexNode *tempNode = NULL;
-    LosTaskCB *taskHead = NULL;
 
     for (; listHead != listTail; listHead = listHead->pstNext) {
-        tempNode = OS_FUTEX_FROM_QUEUELIST(listHead);
+        FutexNode *tempNode = OS_FUTEX_FROM_QUEUELIST(listHead);
         tempNode = OsFutexDeleteAlreadyWakeTaskAndGetNext(tempNode, NULL, FALSE);
         if (tempNode == NULL) {
             return LOS_NOK;
         }
-        taskHead = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tempNode->pendList)));
+        LosTaskCB *taskHead = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tempNode->pendList)));
         /* High priority comes before low priority,
          * in the case of the same priority, after the current node
          */
-        if (runTask->priority >= taskHead->priority) {
+        INT32 ret = OsSchedParamCompare(runTask, taskHead);
+        if (ret >= 0) {
             if (listHead->pstNext == listTail) {
                 LOS_ListHeadInsert(&(tempNode->queueList), &(node->queueList));
                 return LOS_OK;
             }
             continue;
-        } else if (runTask->priority < taskHead->priority) {
+        } else {
             LOS_ListTailInsert(&(tempNode->queueList), &(node->queueList));
             return LOS_OK;
         }
@@ -414,10 +412,9 @@ STATIC INT32 OsFutexInsertTasktoPendList(FutexNode **firstNode, FutexNode *node,
 {
     LosTaskCB *taskHead = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&((*firstNode)->pendList)));
     LOS_DL_LIST *queueList = &((*firstNode)->queueList);
-    FutexNode *tailNode = NULL;
-    LosTaskCB *taskTail = NULL;
 
-    if (run->priority < taskHead->priority) {
+    INT32 ret1 = OsSchedParamCompare(run, taskHead);
+    if (ret1 < 0) {
         /* The one with the highest priority is inserted at the top of the queue */
         LOS_ListTailInsert(queueList, &(node->queueList));
         OsFutexReplaceQueueListHeadNode(*firstNode, node);
@@ -425,16 +422,16 @@ STATIC INT32 OsFutexInsertTasktoPendList(FutexNode **firstNode, FutexNode *node,
         return LOS_OK;
     }
 
-    if (LOS_ListEmpty(queueList) && (run->priority >= taskHead->priority)) {
+    if (LOS_ListEmpty(queueList) && (ret1 >= 0)) {
         /* Insert the next position in the queue with equal priority */
         LOS_ListHeadInsert(queueList, &(node->queueList));
         return LOS_OK;
     }
 
-    tailNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_LAST(queueList));
-    taskTail = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tailNode->pendList)));
-    if ((run->priority >= taskTail->priority) ||
-        ((run->priority - taskHead->priority) > (taskTail->priority - run->priority))) {
+    FutexNode *tailNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_LAST(queueList));
+    LosTaskCB *taskTail = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(tailNode->pendList)));
+    INT32 ret2 = OsSchedParamCompare(taskTail, run);
+    if ((ret2 <= 0) || (ret1 > ret2)) {
         return OsFutexInsertFindFormBackToFront(queueList, run, node);
     }
 
@@ -569,7 +566,7 @@ STATIC INT32 OsFutexInsertTaskToHash(LosTaskCB **taskCB, FutexNode **node, const
     return LOS_OK;
 }
 
-STATIC INT32 OsFutexWaitTask(const UINT32 *userVaddr, const UINT32 flags, const UINT32 val, const UINT32 timeOut)
+STATIC INT32 OsFutexWaitTask(const UINT32 *userVaddr, const UINT32 flags, const UINT32 val, const UINT32 timeout)
 {
     INT32 futexRet;
     UINT32 intSave, lockVal;
@@ -600,9 +597,9 @@ STATIC INT32 OsFutexWaitTask(const UINT32 *userVaddr, const UINT32 flags, const 
     }
 
     SCHEDULER_LOCK(intSave);
-    OsTaskWaitSetPendMask(OS_TASK_WAIT_FUTEX, futexKey, timeOut);
-    OsSchedTaskWait(&(node->pendList), timeOut, FALSE);
     OsSchedLock();
+    OsTaskWaitSetPendMask(OS_TASK_WAIT_FUTEX, futexKey, timeout);
+    taskCB->ops->wait(taskCB, &(node->pendList), timeout);
     LOS_SpinUnlock(&g_taskSpin);
 
     futexRet = OsFutexUnlock(&hashNode->listLock);
@@ -639,17 +636,17 @@ EXIT_UNLOCK_ERR:
 INT32 OsFutexWait(const UINT32 *userVaddr, UINT32 flags, UINT32 val, UINT32 absTime)
 {
     INT32 ret;
-    UINT32 timeOut = LOS_WAIT_FOREVER;
+    UINT32 timeout = LOS_WAIT_FOREVER;
 
     ret = OsFutexWaitParamCheck(userVaddr, flags, absTime);
     if (ret) {
         return ret;
     }
     if (absTime != LOS_WAIT_FOREVER) {
-        timeOut = OsNS2Tick((UINT64)absTime * OS_SYS_NS_PER_US);
+        timeout = OsNS2Tick((UINT64)absTime * OS_SYS_NS_PER_US);
     }
 
-    return OsFutexWaitTask(userVaddr, flags, val, timeOut);
+    return OsFutexWaitTask(userVaddr, flags, val, timeout);
 }
 
 STATIC INT32 OsFutexWakeParamCheck(const UINT32 *userVaddr, UINT32 flags)
@@ -693,7 +690,7 @@ STATIC VOID OsFutexCheckAndWakePendTask(FutexNode *headNode, const INT32 wakeNum
         node = *nextNode;
         taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(node->pendList)));
         OsTaskWakeClearPendMask(taskCB);
-        OsSchedTaskWake(taskCB);
+        taskCB->ops->wake(taskCB);
         *wakeAny = TRUE;
         *nextNode = OS_FUTEX_FROM_QUEUELIST(LOS_DL_LIST_FIRST(&(node->queueList)));
         if (node != headNode) {

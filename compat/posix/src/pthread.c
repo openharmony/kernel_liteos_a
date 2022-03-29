@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -158,7 +158,7 @@ STATIC VOID SetPthreadAttr(const _pthread_data *self, const pthread_attr_t *attr
     }
     if (outAttr->inheritsched == PTHREAD_INHERIT_SCHED) {
         if (self->task == NULL) {
-            outAttr->schedparam.sched_priority = ((LosTaskCB *)(OsCurrTaskGet()))->priority;
+            outAttr->schedparam.sched_priority = LOS_TaskPriGet(OsCurrTaskGet()->taskID);
         } else {
             outAttr->schedpolicy = self->attr.schedpolicy;
             outAttr->schedparam  = self->attr.schedparam;

@@ -104,7 +104,7 @@ VOID OsInterrupt(UINT32 intNum)
     ++g_hwiFormCnt[cpuid][intNum];
 
     OsHookCall(LOS_HOOK_TYPE_ISR_EXIT, intNum);
-    OsSchedIrqUpdateUsedTime();
+    OsSchedIrqUsedTimeUpdate();
 
 #ifdef LOSCFG_CPUP_INCLUDE_IRQ
     OsCpupIrqEnd(cpuid, intNum);

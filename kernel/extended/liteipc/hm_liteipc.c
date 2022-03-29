@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -1054,7 +1054,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     OsHookCall(LOS_HOOK_TYPE_IPC_WRITE, &buf->msg, dstTid, tcb->processID, tcb->waitFlag);
     if (tcb->waitFlag == OS_TASK_WAIT_LITEIPC) {
         OsTaskWakeClearPendMask(tcb);
-        OsSchedTaskWake(tcb);
+        tcb->ops->wake(tcb);
         SCHEDULER_UNLOCK(intSave);
         LOS_MpSchedule(OS_MP_CPU_ALL);
         LOS_Schedule();
@@ -1138,7 +1138,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
         if (LOS_ListEmpty(listHead)) {
             OsTaskWaitSetPendMask(OS_TASK_WAIT_LITEIPC, OS_INVALID_VALUE, timeout);
             OsHookCall(LOS_HOOK_TYPE_IPC_TRY_READ, syncFlag ? MT_REPLY : MT_REQUEST, tcb->waitFlag);
-            ret = OsSchedTaskWait(&g_ipcPendlist, timeout, TRUE);
+            ret = tcb->ops->wait(tcb, &g_ipcPendlist, timeout);
             if (ret == LOS_ERRNO_TSK_TIMEOUT) {
                 OsHookCall(LOS_HOOK_TYPE_IPC_READ_TIMEOUT, syncFlag ? MT_REPLY : MT_REQUEST, tcb->waitFlag);
                 SCHEDULER_UNLOCK(intSave);

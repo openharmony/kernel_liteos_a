@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -257,40 +257,36 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxDestroy(LosMux *mutex)
     return LOS_OK;
 }
 
-STATIC VOID OsMuxBitmapSet(const LosMux *mutex, const LosTaskCB *runTask, LosTaskCB *owner)
+STATIC VOID OsMuxBitmapSet(const LosMux *mutex, const LosTaskCB *runTask)
 {
-    if ((owner->priority > runTask->priority) && (mutex->attr.protocol == LOS_MUX_PRIO_INHERIT)) {
-        LOS_BitmapSet(&(owner->priBitMap), owner->priority);
-        (VOID)OsSchedModifyTaskSchedParam(owner, owner->policy, runTask->priority);
-    }
-}
-
-VOID OsMuxBitmapRestore(const LosMux *mutex, const LosTaskCB *taskCB, LosTaskCB *owner)
-{
-    UINT16 bitMapPri;
-
     if (mutex->attr.protocol != LOS_MUX_PRIO_INHERIT) {
         return;
     }
 
-    if (owner->priority >= taskCB->priority) {
-        bitMapPri = LOS_LowBitGet(owner->priBitMap);
-        if (bitMapPri != LOS_INVALID_BIT_INDEX) {
-            LOS_BitmapClr(&(owner->priBitMap), bitMapPri);
-            OsSchedModifyTaskSchedParam(owner, owner->policy, bitMapPri);
-        }
-    } else {
-        if (LOS_HighBitGet(owner->priBitMap) != taskCB->priority) {
-            LOS_BitmapClr(&(owner->priBitMap), taskCB->priority);
-        }
+    SchedParam param = { 0 };
+    LosTaskCB *owner = (LosTaskCB *)mutex->owner;
+    INT32 ret = OsSchedParamCompare(owner, runTask);
+    if (ret > 0) {
+        runTask->ops->schedParamGet(runTask, &param);
+        owner->ops->priorityInheritance(owner, &param);
     }
+}
+
+VOID OsMuxBitmapRestore(const LosMux *mutex, const LOS_DL_LIST *list, const LosTaskCB *runTask)
+{
+    if (mutex->attr.protocol != LOS_MUX_PRIO_INHERIT) {
+        return;
+    }
+
+    SchedParam param = { 0 };
+    LosTaskCB *owner = (LosTaskCB *)mutex->owner;
+    runTask->ops->schedParamGet(runTask, &param);
+    owner->ops->priorityRestore(owner, list, &param);
 }
 
 STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
 {
     UINT32 ret;
-    LOS_DL_LIST *node = NULL;
-    LosTaskCB *owner = NULL;
 
     if ((mutex->muxList.pstPrev == NULL) || (mutex->muxList.pstNext == NULL)) {
         /* This is for mutex macro initialization. */
@@ -303,9 +299,11 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
         mutex->muxCount++;
         mutex->owner = (VOID *)runTask;
         LOS_ListTailInsert(&runTask->lockList, &mutex->holdList);
-        if ((mutex->attr.protocol == LOS_MUX_PRIO_PROTECT) && (runTask->priority > mutex->attr.prioceiling)) {
-            LOS_BitmapSet(&runTask->priBitMap, runTask->priority);
-            (VOID)OsSchedModifyTaskSchedParam(runTask, runTask->policy, mutex->attr.prioceiling);
+        if (mutex->attr.protocol == LOS_MUX_PRIO_PROTECT) {
+            SchedParam param = { 0 };
+            runTask->ops->schedParamGet(runTask, &param);
+            param.priority = mutex->attr.prioceiling;
+            runTask->ops->priorityInheritance(runTask, &param);
         }
         return LOS_OK;
     }
@@ -323,25 +321,21 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
         return LOS_EDEADLK;
     }
 
-    OsMuxBitmapSet(mutex, runTask, (LosTaskCB *)mutex->owner);
+    OsMuxBitmapSet(mutex, runTask);
 
-    owner = (LosTaskCB *)mutex->owner;
     runTask->taskMux = (VOID *)mutex;
-    node = OsSchedLockPendFindPos(runTask, &mutex->muxList);
+    LOS_DL_LIST *node = OsSchedLockPendFindPos(runTask, &mutex->muxList);
     if (node == NULL) {
         ret = LOS_NOK;
         return ret;
     }
 
     OsTaskWaitSetPendMask(OS_TASK_WAIT_MUTEX, (UINTPTR)mutex, timeout);
-    ret = OsSchedTaskWait(node, timeout, TRUE);
+    ret = runTask->ops->wait(runTask, node, timeout);
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {
+        OsMuxBitmapRestore(mutex, NULL, runTask);
         runTask->taskMux = NULL;
         ret = LOS_ETIMEDOUT;
-    }
-
-    if (timeout != LOS_WAIT_FOREVER) {
-        OsMuxBitmapRestore(mutex, runTask, owner);
     }
 
     return ret;
@@ -440,50 +434,23 @@ LITE_OS_SEC_TEXT UINT32 LOS_MuxTrylock(LosMux *mutex)
     return ret;
 }
 
-STATIC VOID OsMuxPostOpSub(LosTaskCB *taskCB, LosMux *mutex)
-{
-    LosTaskCB *pendedTask = NULL;
-    UINT16 bitMapPri;
-
-    if (!LOS_ListEmpty(&mutex->muxList)) {
-        bitMapPri = LOS_HighBitGet(taskCB->priBitMap);
-        LOS_DL_LIST_FOR_EACH_ENTRY(pendedTask, (&mutex->muxList), LosTaskCB, pendList) {
-            if (bitMapPri != pendedTask->priority) {
-                LOS_BitmapClr(&taskCB->priBitMap, pendedTask->priority);
-            }
-        }
-    }
-    bitMapPri = LOS_LowBitGet(taskCB->priBitMap);
-    LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);
-    (VOID)OsSchedModifyTaskSchedParam((LosTaskCB *)mutex->owner, ((LosTaskCB *)mutex->owner)->policy, bitMapPri);
-}
-
 STATIC UINT32 OsMuxPostOp(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
 {
-    LosTaskCB *resumedTask = NULL;
-
     if (LOS_ListEmpty(&mutex->muxList)) {
         LOS_ListDelete(&mutex->holdList);
         mutex->owner = NULL;
         return LOS_OK;
     }
 
-    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(mutex->muxList)));
-    if (mutex->attr.protocol == LOS_MUX_PRIO_INHERIT) {
-        if (resumedTask->priority > taskCB->priority) {
-            if (LOS_HighBitGet(taskCB->priBitMap) != resumedTask->priority) {
-                LOS_BitmapClr(&taskCB->priBitMap, resumedTask->priority);
-            }
-        } else if (taskCB->priBitMap != 0) {
-            OsMuxPostOpSub(taskCB, mutex);
-        }
-    }
+    LosTaskCB *resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(mutex->muxList)));
+    OsMuxBitmapRestore(mutex, &mutex->muxList, resumedTask);
+
     mutex->muxCount = 1;
     mutex->owner = (VOID *)resumedTask;
     LOS_ListDelete(&mutex->holdList);
     LOS_ListTailInsert(&resumedTask->lockList, &mutex->holdList);
     OsTaskWakeClearPendMask(resumedTask);
-    OsSchedTaskWake(resumedTask);
+    resumedTask->ops->wake(resumedTask);
     resumedTask->taskMux = NULL;
     if (needSched != NULL) {
         *needSched = TRUE;
@@ -494,8 +461,6 @@ STATIC UINT32 OsMuxPostOp(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
 
 UINT32 OsMuxUnlockUnsafe(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
 {
-    UINT16 bitMapPri;
-
     if (mutex->magic != OS_MUX_MAGIC) {
         return LOS_EBADF;
     }
@@ -517,11 +482,9 @@ UINT32 OsMuxUnlockUnsafe(LosTaskCB *taskCB, LosMux *mutex, BOOL *needSched)
     }
 
     if (mutex->attr.protocol == LOS_MUX_PRIO_PROTECT) {
-        bitMapPri = LOS_HighBitGet(taskCB->priBitMap);
-        if (bitMapPri != LOS_INVALID_BIT_INDEX) {
-            LOS_BitmapClr(&taskCB->priBitMap, bitMapPri);
-            (VOID)OsSchedModifyTaskSchedParam(taskCB, taskCB->policy, bitMapPri);
-        }
+        SchedParam param = { 0 };
+        taskCB->ops->schedParamGet(taskCB, &param);
+        taskCB->ops->priorityRestore(taskCB, NULL, &param);
     }
 
     /* Whether a task block the mutex lock. */
