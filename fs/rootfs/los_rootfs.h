@@ -66,6 +66,17 @@
 #define ROOTFS_SIZE             0x1B00000
 #define USERFS_SIZE             (CFIFLASH_CAPACITY - ROOTFS_ADDR - ROOTFS_SIZE)
 #elif defined (LOSCFG_STORAGE_EMMC)
+#if defined(LOSCFG_PLATFORM_STM32MP157)
+#define ROOT_DEV_NAME           "/dev/mmcblk1p0"
+#ifdef LOSCFG_PLATFORM_PATCHFS
+#define PATCH_DEV_NAME          "/dev/mmcblk0p1"
+#define USER_DEV_NAME           "/dev/mmcblk0p2"
+#define USERDATA_DEV_NAME       "/dev/mmcblk0p3"
+#else
+#define USER_DEV_NAME           "/dev/mmcblk1p1"
+#define USERDATA_DEV_NAME       "/dev/mmcblk1p2"
+#endif
+#else
 #define ROOT_DEV_NAME           "/dev/mmcblk0p0"
 #ifdef LOSCFG_PLATFORM_PATCHFS
 #define PATCH_DEV_NAME          "/dev/mmcblk0p1"
@@ -74,6 +85,7 @@
 #else
 #define USER_DEV_NAME           "/dev/mmcblk0p1"
 #define USERDATA_DEV_NAME       "/dev/mmcblk0p2"
+#endif
 #endif
 #define ROOTFS_ADDR             0xA00000
 #define ROOTFS_SIZE             0x1400000

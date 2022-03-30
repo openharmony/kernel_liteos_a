@@ -3,6 +3,7 @@ config PLATFORM
     default "hi3516dv300"     if PLATFORM_HI3516DV300
     default "hi3518ev300"     if PLATFORM_HI3518EV300
     default "virt"            if PLATFORM_QEMU_ARM_VIRT_CA7
+    default "stm32mp157"      if PLATFORM_STM32MP157
 
 config PRODUCT_NAME
     string "product name"
@@ -11,12 +12,14 @@ config PRODUCT_NAME
     default "hispark_taurus" if PRODUCT_HISPARK_TAURUS
     default "hispark_aries" if PRODUCT_HISPARK_ARIES
     default "arm_virt" if PRODUCT_QEMU_ARM
+    default "stm32mp157_liteos" if PRODUCT_STM32MP157_LITEOS
 
 config DEVICE_COMPANY
     string "vendor name"
     default "hisilicon" if PLATFORM_HI3516DV300
     default "hisilicon" if PLATFORM_HI3518EV300
     default "qemu" if PLATFORM_QEMU_ARM_VIRT_CA7
+    default "st" if PLATFORM_STM32MP157
 
 choice
     prompt "Chip"
@@ -27,6 +30,7 @@ choice
        - hi3518ev300
       Qemu ARM Virt variants (based on different CPU types):
        - qemu_arm_virt_ca7
+       - stm32mp157
 
 config PLATFORM_HI3516DV300
     bool "hi3516dv300"
@@ -41,7 +45,9 @@ config PLATFORM_QEMU_ARM_VIRT_CA7
     select ARCH_CORTEX_A7
     help
         QEMU ARM Virtual Platform using Cortex-A7 CPU.
-
+config PLATFORM_STM32MP157
+    bool "stm32mp157"
+    select ARCH_CORTEX_A7
 endchoice
 
 choice
@@ -61,6 +67,9 @@ config PRODUCT_HISPARK_ARIES
 
 config PRODUCT_QEMU_ARM
     bool "arm_virt" if PLATFORM_QEMU_ARM_VIRT_CA7
+
+config PRODUCT_STM32MP157_LITEOS
+    bool "stm32mp157_liteos" if PLATFORM_STM32MP157
 endchoice
 
 config BOARD_CONFIG_PATH
@@ -70,7 +79,7 @@ config BOARD_CONFIG_PATH
 config TEE_ENABLE
     bool "Enable TEE"
     default n
-    depends on PLATFORM_HI3516DV300
+    depends on PLATFORM_HI3516DV300 || PLATFORM_STM32MP157
     help
         Enable teeos in platform
 
