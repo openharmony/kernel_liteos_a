@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -258,15 +258,13 @@ STATIC UINT32 OsQueueOperateParamCheck(const LosQueueCB *queueCB, UINT32 queueID
 
 UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT32 *bufferSize, UINT32 timeout)
 {
-    LosQueueCB *queueCB = NULL;
-    LosTaskCB *resumedTask = NULL;
     UINT32 ret;
     UINT32 readWrite = OS_QUEUE_READ_WRITE_GET(operateType);
     UINT32 intSave;
     OsHookCall(LOS_HOOK_TYPE_QUEUE_READ, (LosQueueCB *)GET_QUEUE_HANDLE(queueID), operateType, *bufferSize, timeout);
 
     SCHEDULER_LOCK(intSave);
-    queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);
+    LosQueueCB *queueCB = (LosQueueCB *)GET_QUEUE_HANDLE(queueID);
     ret = OsQueueOperateParamCheck(queueCB, queueID, operateType, bufferSize);
     if (ret != LOS_OK) {
         goto QUEUE_END;
@@ -283,8 +281,9 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
             goto QUEUE_END;
         }
 
+        LosTaskCB *runTask = OsCurrTaskGet();
         OsTaskWaitSetPendMask(OS_TASK_WAIT_QUEUE, queueCB->queueID, timeout);
-        ret = OsSchedTaskWait(&queueCB->readWriteList[readWrite], timeout, TRUE);
+        ret = runTask->ops->wait(runTask, &queueCB->readWriteList[readWrite], timeout);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             ret = LOS_ERRNO_QUEUE_TIMEOUT;
             goto QUEUE_END;
@@ -296,9 +295,9 @@ UINT32 OsQueueOperate(UINT32 queueID, UINT32 operateType, VOID *bufferAddr, UINT
     OsQueueBufferOperate(queueCB, operateType, bufferAddr, bufferSize);
 
     if (!LOS_ListEmpty(&queueCB->readWriteList[!readWrite])) {
-        resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));
+        LosTaskCB *resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&queueCB->readWriteList[!readWrite]));
         OsTaskWakeClearPendMask(resumedTask);
-        OsSchedTaskWake(resumedTask);
+        resumedTask->ops->wake(resumedTask);
         SCHEDULER_UNLOCK(intSave);
         LOS_MpSchedule(OS_MP_CPU_ALL);
         LOS_Schedule();

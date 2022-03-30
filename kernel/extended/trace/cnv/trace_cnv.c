@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -155,12 +155,25 @@ STATIC VOID LOS_TraceMuxDelete(const LosMux *muxCB)
 
 STATIC VOID LOS_TraceTaskCreate(const LosTaskCB *taskCB)
 {
-    LOS_TRACE(TASK_CREATE, taskCB->taskID, taskCB->taskStatus, taskCB->priority);
+#ifdef LOSCFG_KERNEL_TRACE
+    SchedParam param = { 0 };
+    taskCB->ops->schedParamGet(taskCB, &param);
+    LOS_TRACE(TASK_CREATE, taskCB->taskID, taskCB->taskStatus, param.priority);
+#else
+    (VOID)taskCB;
+#endif
 }
 
 STATIC VOID LOS_TraceTaskPriModify(const LosTaskCB *taskCB, UINT32 prio)
 {
-    LOS_TRACE(TASK_PRIOSET, taskCB->taskID, taskCB->taskStatus, taskCB->priority, prio);
+#ifdef LOSCFG_KERNEL_TRACE
+    SchedParam param = { 0 };
+    taskCB->ops->schedParamGet(taskCB, &param);
+    LOS_TRACE(TASK_PRIOSET, taskCB->taskID, taskCB->taskStatus, param.priority, prio);
+#else
+    (VOID)taskCB;
+    (VOID)prio;
+#endif
 }
 
 STATIC VOID LOS_TraceTaskDelete(const LosTaskCB *taskCB)
@@ -170,13 +183,28 @@ STATIC VOID LOS_TraceTaskDelete(const LosTaskCB *taskCB)
 
 STATIC VOID LOS_TraceTaskSwitchedIn(const LosTaskCB *newTask, const LosTaskCB *runTask)
 {
-    LOS_TRACE(TASK_SWITCH, newTask->taskID, runTask->priority, runTask->taskStatus,
-        newTask->priority, newTask->taskStatus);
+#ifdef LOSCFG_KERNEL_TRACE
+    SchedParam runParam = { 0 };
+    SchedParam newParam = { 0 };
+    runTask->ops->schedParamGet(runTask, &runParam);
+    newTask->ops->schedParamGet(newTask, &newParam);
+    LOS_TRACE(TASK_SWITCH, newTask->taskID, runParam.priority, runTask->taskStatus,
+              newParam.priority, newTask->taskStatus);
+#else
+    (VOID)newTask;
+    (VOID)runTask;
+#endif
 }
 
 STATIC VOID LOS_TraceTaskResume(const LosTaskCB *taskCB)
 {
-    LOS_TRACE(TASK_RESUME, taskCB->taskID, taskCB->taskStatus, taskCB->priority);
+#ifdef LOSCFG_KERNEL_TRACE
+    SchedParam param = { 0 };
+    taskCB->ops->schedParamGet(taskCB, &param);
+    LOS_TRACE(TASK_RESUME, taskCB->taskID, taskCB->taskStatus, param.priority);
+#else
+    (VOID)taskCB;
+#endif
 }
 
 STATIC VOID LOS_TraceTaskSuspend(const LosTaskCB *taskCB)

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -36,7 +36,6 @@
 #include "los_task_pri.h"
 #include "los_exc.h"
 #include "los_sched_pri.h"
-
 
 #ifdef LOSCFG_BASE_IPC_RWLOCK
 #define RWLOCK_COUNT_MASK 0x00FFFFFFU
@@ -120,7 +119,7 @@ STATIC BOOL OsRwlockPriCompare(LosTaskCB *runTask, LOS_DL_LIST *rwList)
 {
     if (!LOS_ListEmpty(rwList)) {
         LosTaskCB *highestTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(rwList));
-        if (runTask->priority < highestTask->priority) {
+        if (OsSchedParamCompare(runTask, highestTask) < 0) {
             return TRUE;
         }
         return FALSE;
@@ -164,7 +163,7 @@ STATIC UINT32 OsRwlockRdPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 tim
      * is lower than the first pended write task, current read task will be pended.
      */
     LOS_DL_LIST *node = OsSchedLockPendFindPos(runTask, &(rwlock->readList));
-    ret = OsSchedTaskWait(node, timeout, TRUE);
+    ret = runTask->ops->wait(runTask, node, timeout);
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {
         return LOS_ETIMEDOUT;
     }
@@ -205,7 +204,7 @@ STATIC UINT32 OsRwlockWrPendOp(LosTaskCB *runTask, LosRwlock *rwlock, UINT32 tim
      * write task will be pended.
      */
     LOS_DL_LIST *node =  OsSchedLockPendFindPos(runTask, &(rwlock->writeList));
-    ret = OsSchedTaskWait(node, timeout, TRUE);
+    ret = runTask->ops->wait(runTask, node, timeout);
     if (ret == LOS_ERRNO_TSK_TIMEOUT) {
         ret = LOS_ETIMEDOUT;
     }
@@ -355,7 +354,7 @@ STATIC UINT32 OsRwlockGetMode(LOS_DL_LIST *readList, LOS_DL_LIST *writeList)
     }
     LosTaskCB *pendedReadTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(readList));
     LosTaskCB *pendedWriteTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(writeList));
-    if (pendedWriteTask->priority <= pendedReadTask->priority) {
+    if (OsSchedParamCompare(pendedWriteTask, pendedReadTask) <= 0) {
         return RWLOCK_WRITEFIRST_MODE;
     }
     return RWLOCK_READFIRST_MODE;
@@ -365,7 +364,6 @@ STATIC UINT32 OsRwlockPostOp(LosRwlock *rwlock, BOOL *needSched)
 {
     UINT32 rwlockMode;
     LosTaskCB *resumedTask = NULL;
-    UINT16 pendedWriteTaskPri;
 
     rwlock->rwCount = 0;
     rwlock->writeOwner = NULL;
@@ -378,29 +376,29 @@ STATIC UINT32 OsRwlockPostOp(LosRwlock *rwlock, BOOL *needSched)
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)));
         rwlock->rwCount = -1;
         rwlock->writeOwner = (VOID *)resumedTask;
-        OsSchedTaskWake(resumedTask);
+        resumedTask->ops->wake(resumedTask);
         if (needSched != NULL) {
             *needSched = TRUE;
         }
         return LOS_OK;
     }
-    /* In this case, rwlock will wake the valid pended read task. */
-    if (rwlockMode == RWLOCK_READFIRST_MODE) {
-        pendedWriteTaskPri = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)))->priority;
-    }
-    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->readList)));
+
     rwlock->rwCount = 1;
-    OsSchedTaskWake(resumedTask);
+    resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->readList)));
+    resumedTask->ops->wake(resumedTask);
     while (!LOS_ListEmpty(&(rwlock->readList))) {
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->readList)));
-        if ((rwlockMode == RWLOCK_READFIRST_MODE) && (resumedTask->priority >= pendedWriteTaskPri)) {
-            break;
+        if (rwlockMode == RWLOCK_READFIRST_MODE) {
+            LosTaskCB *pendedWriteTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(rwlock->writeList)));
+            if (OsSchedParamCompare(resumedTask, pendedWriteTask) >= 0) {
+                break;
+            }
         }
         if (rwlock->rwCount == INT8_MAX) {
             return EINVAL;
         }
         rwlock->rwCount++;
-        OsSchedTaskWake(resumedTask);
+        resumedTask->ops->wake(resumedTask);
     }
     if (needSched != NULL) {
         *needSched = TRUE;
