@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -147,7 +147,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 OsEventReadImp(PEVENT_CB_S eventCB, UINT32 eventM
         runTask->eventMode = mode;
         runTask->taskEvent = eventCB;
         OsTaskWaitSetPendMask(OS_TASK_WAIT_EVENT, eventMask, timeout);
-        ret = OsSchedTaskWait(&eventCB->stEventList, timeout, TRUE);
+        ret = runTask->ops->wait(runTask, &eventCB->stEventList, timeout);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             return LOS_ERRNO_EVENT_READ_TIMEOUT;
         }
@@ -185,7 +185,7 @@ LITE_OS_SEC_TEXT STATIC UINT8 OsEventResume(LosTaskCB *resumedTask, const PEVENT
 
         resumedTask->taskEvent = NULL;
         OsTaskWakeClearPendMask(resumedTask);
-        OsSchedTaskWake(resumedTask);
+        resumedTask->ops->wake(resumedTask);
     }
 
     return exitFlag;

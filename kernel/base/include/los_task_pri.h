@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -73,7 +73,7 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * The task control block is unused.
  */
-#define OS_TASK_STATUS_UNUSED       0x0200U
+#define OS_TASK_STATUS_UNUSED       0x0400U
 
 /**
  * @ingroup los_task
@@ -81,7 +81,7 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * The task is joinable.
  */
-#define OS_TASK_FLAG_PTHREAD_JOIN   0x0400U
+#define OS_TASK_FLAG_PTHREAD_JOIN   0x0800U
 
 /**
  * @ingroup los_task
@@ -89,7 +89,7 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * The task is user mode task.
  */
-#define OS_TASK_FLAG_USER_MODE      0x0800U
+#define OS_TASK_FLAG_USER_MODE      0x1000U
 
 /**
  * @ingroup los_task
@@ -97,7 +97,7 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * The task is system-level task, like idle, swtmr and etc.
  */
-#define OS_TASK_FLAG_SYSTEM_TASK    0x1000U
+#define OS_TASK_FLAG_SYSTEM_TASK    0x2000U
 
 /**
  * @ingroup los_task
@@ -105,7 +105,7 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * The task is no-delete system task, like resourceTask.
  */
-#define OS_TASK_FLAG_NO_DELETE      0x2000U
+#define OS_TASK_FLAG_NO_DELETE      0x4000U
 
 /**
  * @ingroup los_task
@@ -113,15 +113,7 @@ extern SPIN_LOCK_S g_taskSpin;
  *
  * Kills the thread during process exit.
  */
-#define OS_TASK_FLAG_EXIT_KILL       0x4000U
-
-/**
- * @ingroup los_task
- * Flag that indicates the task or task control block status.
- *
- * The delayed operation of this task is frozen.
- */
-#define OS_TASK_FLAG_FREEZE          0x8000U
+#define OS_TASK_FLAG_EXIT_KILL       0x8000U
 
 /**
  * @ingroup los_task

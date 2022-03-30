@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -295,11 +295,6 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)
     return (processCB->processMode == OS_USER_MODE);
 }
 
-#define LOS_SCHED_NORMAL  0U
-#define LOS_SCHED_FIFO    1U
-#define LOS_SCHED_RR      2U
-#define LOS_SCHED_IDLE    3U
-
 #define LOS_PRIO_PROCESS  0U
 #define LOS_PRIO_PGRP     1U
 #define LOS_PRIO_USER     2U
@@ -488,7 +483,7 @@ extern UINTPTR OsGetSigHandler(VOID);
 extern VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID);
 extern INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission);
 extern INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission);
-extern UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB);
+extern UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB, SchedParam *param);
 extern VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB);
 extern VOID OsProcessThreadGroupDestroy(VOID);
 

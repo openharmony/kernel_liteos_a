@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -129,7 +129,7 @@ STATIC INLINE VOID OsSigWaitTaskWake(LosTaskCB *taskCB, INT32 signo)
     if (!LOS_ListEmpty(&sigcb->waitList) && OsSigIsMember(&sigcb->sigwaitmask, signo)) {
         OsMoveTmpInfoToUnbInfo(sigcb, signo);
         OsTaskWakeClearPendMask(taskCB);
-        OsSchedTaskWake(taskCB);
+        taskCB->ops->wake(taskCB);
         OsSigEmptySet(&sigcb->sigwaitmask);
     }
 }
@@ -152,19 +152,19 @@ STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
             break;
         case OS_TASK_WAIT_JOIN:
             OsTaskWakeClearPendMask(taskCB);
-            OsSchedTaskWake(taskCB);
+            taskCB->ops->wake(taskCB);
             break;
         case OS_TASK_WAIT_SIGNAL:
             OsSigWaitTaskWake(taskCB, signo);
             break;
         case OS_TASK_WAIT_LITEIPC:
             OsTaskWakeClearPendMask(taskCB);
-            OsSchedTaskWake(taskCB);
+            taskCB->ops->wake(taskCB);
             break;
         case OS_TASK_WAIT_FUTEX:
             OsFutexNodeDeleteFromFutexHash(&taskCB->futex, TRUE, NULL, NULL);
             OsTaskWakeClearPendMask(taskCB);
-            OsSchedTaskWake(taskCB);
+            taskCB->ops->wake(taskCB);
             break;
         default:
             break;
@@ -567,7 +567,7 @@ int OsSigTimedWaitNoLock(sigset_t *set, siginfo_t *info, unsigned int timeout)
 
         sigcb->sigwaitmask |= *set;
         OsTaskWaitSetPendMask(OS_TASK_WAIT_SIGNAL, sigcb->sigwaitmask, timeout);
-        ret = OsSchedTaskWait(&sigcb->waitList, timeout, TRUE);
+        ret = task->ops->wait(task, &sigcb->waitList, timeout);
         if (ret == LOS_ERRNO_TSK_TIMEOUT) {
             ret = -EAGAIN;
         }

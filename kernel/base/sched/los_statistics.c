@@ -55,7 +55,7 @@ UINT32 OsSchedDebugInit(VOID)
 
 VOID OsSchedDebugRecordData(VOID)
 {
-    SchedRunQue *rq = OsSchedRunQue();
+    SchedRunqueue *rq = OsSchedRunqueue();
     SchedTickDebug *schedDebug = &g_schedTickDebug[ArchCurrCpuid()];
     UINT64 currTime = OsGetCurrSchedTimeCycle();
     LOS_ASSERT(currTime >= rq->responseTime);
@@ -131,8 +131,8 @@ UINT32 OsShellShowSchedStatistics(VOID)
 
     SCHEDULER_LOCK(intSave);
     for (UINT16 cpu = 0; cpu < LOSCFG_KERNEL_CORE_NUM; cpu++) {
-        SchedRunQue *rq = OsSchedRunQueByID(cpu);
-        taskLinkNum[cpu] = OsGetSortLinkNodeNum(&rq->taskSortLink);
+        SchedRunqueue *rq = OsSchedRunqueueByID(cpu);
+        taskLinkNum[cpu] = OsGetSortLinkNodeNum(&rq->timeoutQueue);
     }
     SCHEDULER_UNLOCK(intSave);
 

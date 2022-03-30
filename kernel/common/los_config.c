@@ -70,7 +70,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 EarliestInit(VOID)
     /* Must be placed at the beginning of the boot process */
     OsSetMainTask();
     OsCurrTaskSet(OsGetMainTask());
-    OsSchedRunQueInit();
+    OsSchedRunqueueInit();
 
     g_sysClock = OS_SYS_CLOCK;
     g_tickPerSecond =  LOSCFG_BASE_CORE_TICK_PER_SECOND;

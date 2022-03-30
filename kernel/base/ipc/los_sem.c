@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -225,7 +225,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_SemPend(UINT32 semHandle, UINT32 timeout)
 
     OsHookCall(LOS_HOOK_TYPE_SEM_PEND, semPended, runTask, timeout);
     OsTaskWaitSetPendMask(OS_TASK_WAIT_SEM, semPended->semID, timeout);
-    retErr = OsSchedTaskWait(&semPended->semList, timeout, TRUE);
+    retErr = runTask->ops->wait(runTask, &semPended->semList, timeout);
     if (retErr == LOS_ERRNO_TSK_TIMEOUT) {
         retErr = LOS_ERRNO_SEM_TIMEOUT;
     }
@@ -237,10 +237,8 @@ OUT:
 
 LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
 {
-    LosSemCB *semPosted = NULL;
     LosTaskCB *resumedTask = NULL;
-
-    semPosted = GET_SEM(semHandle);
+    LosSemCB *semPosted = GET_SEM(semHandle);
     if ((semPosted->semID != semHandle) || (semPosted->semStat == OS_SEM_UNUSED)) {
         return LOS_ERRNO_SEM_INVALID;
     }
@@ -254,7 +252,7 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
     if (!LOS_ListEmpty(&semPosted->semList)) {
         resumedTask = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(&(semPosted->semList)));
         OsTaskWakeClearPendMask(resumedTask);
-        OsSchedTaskWake(resumedTask);
+        resumedTask->ops->wake(resumedTask);
         if (needSched != NULL) {
             *needSched = TRUE;
         }
