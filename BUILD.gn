@@ -382,10 +382,6 @@ build_ext_component("build_kernel_image") {
   command +=
       " && sh -c '$objdump -t $liteos_name | sort >$liteos_name.sym.sorted'"
   command += " && sh -c '$objdump -d $liteos_name >$liteos_name.asm'"
-
-  if (defined(LOSCFG_PLATFORM_STM32MP157)) {
-    command += " && sh -c 'mkimage -A arm -O linux -T kernel -C none -a 0xC0100000 -e 0xC0100000 -n liteos-a -d $liteos_name.bin $liteos_name.stm32' "
-  }
 }
 
 build_ext_component("make") {
