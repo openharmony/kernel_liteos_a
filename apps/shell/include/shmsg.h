@@ -32,6 +32,7 @@
 #ifndef _SHMSG_H
 #define _SHMSG_H
 
+#include "shell_list.h"
 #include "shell.h"
 
 #ifdef __cplusplus
@@ -61,8 +62,7 @@ extern "C" {
 
 typedef void (* OutputFunc)(const char *fmt, ...);
 extern int ShellTaskInit(ShellCB *shellCB);
-extern int ShellEntryInit(ShellCB *shellCB);
-extern void ChildExec(const char *cmdName, char *const paramArray[]);
+extern void ChildExec(const char *cmdName, char *const paramArray[], bool foreground);
 extern void ShellCmdLineParse(char c, OutputFunc outputFunc, ShellCB *shellCB);
 extern int ShellNotify(ShellCB *shellCB);
 
