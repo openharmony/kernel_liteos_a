@@ -31,13 +31,16 @@
 
 #define _GNU_SOURCE
 
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 #include "show.h"
 #include "shmsg.h"
 #include "shcmd.h"
+#include "shell_pri.h"
 #include "semaphore.h"
 #include "securec.h"
-#include "unistd.h"
-#include <sys/syscall.h>
 
 ShellCB *g_shellCB = NULL;
 
@@ -77,13 +80,8 @@ static int OsShellCreateTask(ShellCB *shellCB)
         goto OUT;
     }
 
-    ret = ShellEntryInit(shellCB);
-    if (ret != SH_OK) {
-        goto OUT;
-    }
-
-    (void)pthread_join(shellCB->shellTaskHandle, NULL);
-    (void)pthread_join(shellCB->shellEntryHandle, NULL);
+    shellCB->shellEntryHandle = pthread_self();
+    return 0;
 
 OUT:
     ShellDeinit(shellCB);
@@ -98,7 +96,7 @@ static int DoShellExec(char **argv)
     char *cmdLine = NULL;
 
     if (strncmp(argv[0], SHELL_EXEC_COMMAND, SHELL_EXEC_COMMAND_BYTES) == 0) {
-        ChildExec(argv[1], argv + 1);
+        ChildExec(argv[1], argv + 1, FALSE);
     }
     for (i = 0; argv[i]; i++) {
         len += strlen(argv[i]);
@@ -125,10 +123,21 @@ static int DoShellExec(char **argv)
     return ret;
 }
 
+static void ShellSigChildHook(int sig)
+{
+    (void)sig;
+
+    while (waitpid(-1, NULL, WNOHANG) > 0) {
+        continue;
+    }
+}
+
 int main(int argc, char **argv)
 {
     int ret = SH_NOK;
     ShellCB *shellCB = NULL;
+
+    (void)signal(SIGCHLD, ShellSigChildHook);
 
     if (argc > 1) {
         ret = DoShellExec(argv + 1);
@@ -165,7 +174,12 @@ int main(int argc, char **argv)
     sem_init(&shellCB->shellSem, 0, 0);
 
     g_shellCB = shellCB;
-    return OsShellCreateTask(shellCB);
+    ret = OsShellCreateTask(shellCB);
+    if (ret != SH_OK) {
+        goto ERR_OUT3;
+    }
+
+    ShellEntry(shellCB);
 
 ERR_OUT3:
     (void)pthread_mutex_destroy(&shellCB->historyMutex);
