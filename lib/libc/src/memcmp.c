@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,6 +31,9 @@
 #include <string.h>
 #include <stdint.h>
 
+#define SIZE_U64    (sizeof(uint64_t))
+#define SIZE_U32    (sizeof(uint32_t))
+
 int memcmp(const void *str1, const void *str2, size_t n)
 {
 
@@ -38,26 +41,26 @@ int memcmp(const void *str1, const void *str2, size_t n)
     const unsigned char *s2 = str2;
     size_t num = n;
 
-    while (num >= 8) { /* 8, compare size,  the number of chars of one uint64_t data */
+    while (num >= SIZE_U64) {
         if (*(const uint64_t *)(s1) != *(const uint64_t *)(s2)) {
-            goto L8_byte_diff;
+            goto L4_byte_cmp;
         }
-        s1 += 8; /* 8, compare size,  the number of chars of one uint64_t data */
-        s2 += 8; /* 8, compare size,  the number of chars of one uint64_t data */
-        num -= 8; /* 8, compare size,  the number of chars of one uint64_t data */
+        s1 += SIZE_U64;
+        s2 += SIZE_U64;
+        num -= SIZE_U64;
     }
     if (num == 0) {
         return 0;
     }
 
-    /* L4_byte_cmp */
-    if (num >= 4) { /* 4, compare size,  the number of chars of one uint32_t data */
+L4_byte_cmp:
+    if (num >= SIZE_U32) {
         if (*(const uint32_t *)(s1) != *(const uint32_t *)(s2)) {
             goto L4_byte_diff;
         }
-        s1 += 4; /* 4, compare size,  the number of chars of one uint32_t data */
-        s2 += 4; /* 4, compare size,  the number of chars of one uint32_t data */
-        num -= 4; /* 4, compare size,  the number of chars of one uint32_t data */
+        s1 += SIZE_U32;
+        s2 += SIZE_U32;
+        num -= SIZE_U32;
     }
     if (num == 0) {
         return 0;
@@ -66,13 +69,4 @@ L4_byte_diff:
     for (; num && (*s1 == *s2); num--, s1++, s2++) {
     }
     return num ? *s1 - *s2 : 0;
-
-L8_byte_diff:
-    if (*(const uint32_t *)(s1) != *(const uint32_t *)(s2)) {
-            goto L4_byte_diff;
-    }
-    s1 += 4; /* 4, compare size,  the number of chars of one uint32_t data */
-    s2 += 4; /* 4, compare size,  the number of chars of one uint32_t data */
-    num -= 4; /* 4, compare size,  the number of chars of one uint32_t data */
-    goto L4_byte_diff;
 }
