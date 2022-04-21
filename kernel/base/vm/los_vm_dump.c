@@ -373,8 +373,8 @@ VOID OsDumpRegion2(LosVmSpace *space, LosVmMapRegion *region)
     if (flagsStr == NULL) {
         return;
     }
-    PRINTK("\t %#010x  %-32.32s %#010x %#010x %-15.15s %4d    %4d\n",
-        region, OsGetRegionNameOrFilePath(region), region->range.base,
+    PRINTK("\t %#010x  %-32.32s %#010x %#010x %-15.15s %4u    %4u\n",
+        (UINTPTR)region, OsGetRegionNameOrFilePath(region), region->range.base,
         region->range.size, flagsStr, regionPages, pssPages);
     (VOID)LOS_MemFree(m_aucSysMem0, flagsStr);
 }
@@ -394,7 +394,7 @@ VOID OsDumpAspace(LosVmSpace *space)
     spacePages = OsCountAspacePages(space);
     PRINTK("\r\n PID    aspace     name       base       size     pages \n");
     PRINTK(" ----   ------     ----       ----       -----     ----\n");
-    PRINTK(" %-4d %#010x %-10.10s %#010x %#010x     %d\n", pcb->processID, space, pcb->processName,
+    PRINTK(" %-4u %#010x %-10.10s %#010x %#010x     %u\n", pcb->processID, space, pcb->processName,
         space->base, space->size, spacePages);
     PRINTK("\r\n\t region      name                base       size       mmu_flags      pages   pg/ref\n");
     PRINTK("\t ------      ----                ----       ----       ---------      -----   -----\n");
@@ -467,7 +467,7 @@ VOID OsDumpPte(VADDR_T vaddr)
     }
     return;
 ERR:
-    PRINTK("%s, error vaddr: %#x, l2Table: %#x, l2Index: %#x\n", __FUNCTION__, vaddr, l2Table, l2Index);
+    PRINTK("%s, error vaddr: %#x, l2Table: %#x, l2Index: %#x\n", __FUNCTION__, vaddr, (UINTPTR)l2Table, l2Index);
 }
 
 UINT32 OsVmPhySegPagesGet(LosVmPhysSeg *seg)
@@ -504,7 +504,7 @@ VOID OsVmPhysDump(VOID)
             PRINTK("\r\n phys_seg      base         size        free_pages    \n");
             PRINTK(" --------      -------      ----------  ---------  \n");
 #endif
-            PRINTK(" 0x%08x    0x%08x   0x%08x   %8u  \n", seg, seg->start, seg->size, segFreePages);
+            PRINTK(" 0x%08x    0x%08x   0x%08x   %8u  \n", (UINTPTR)seg, seg->start, seg->size, segFreePages);
             totalFreePages += segFreePages;
             totalPages += (seg->size >> PAGE_SHIFT);
 

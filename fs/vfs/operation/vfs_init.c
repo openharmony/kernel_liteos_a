@@ -59,24 +59,24 @@ void los_vfs_init(void)
 
     retval = VnodesInit();
     if (retval != LOS_OK) {
-        PRINT_ERR("los_vfs_init VnodeInit failed error %d\n", retval);
+        PRINT_ERR("los_vfs_init VnodeInit failed error %u\n", retval);
         return;
     }
 
     retval = PathCacheInit();
     if (retval != LOS_OK) {
-        PRINT_ERR("los_vfs_init PathCacheInit failed error %d\n", retval);
+        PRINT_ERR("los_vfs_init PathCacheInit failed error %u\n", retval);
         return;
     }
     retval = VnodeHashInit();
     if (retval != LOS_OK) {
-        PRINT_ERR("los_vfs_init VnodeHashInit failed error %d\n", retval);
+        PRINT_ERR("los_vfs_init VnodeHashInit failed error %u\n", retval);
         return;
     }
 
     retval = VnodeDevInit();
     if (retval != LOS_OK) {
-        PRINT_ERR("los_vfs_init VnodeDevInit failed error %d\n", retval);
+        PRINT_ERR("los_vfs_init VnodeDevInit failed error %u\n", retval);
         return;
     }
  

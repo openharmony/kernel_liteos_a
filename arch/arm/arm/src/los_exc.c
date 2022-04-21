@@ -454,7 +454,7 @@ STATIC VOID OsDumpExcVaddrRegion(LosVmSpace *space, LosVmMapRegion *region)
             mmuFlag = FALSE;
         }
         PrintExcInfo("       0x%08x   0x%08x   0x%08x\n",
-                     startVaddr, LOS_PaddrToKVaddr(startPaddr), (UINT32)pageCount << PAGE_SHIFT);
+                     startVaddr, (UINTPTR)LOS_PaddrToKVaddr(startPaddr), (UINT32)pageCount << PAGE_SHIFT);
         pageCount = 0;
         startPaddr = 0;
     }
@@ -515,7 +515,7 @@ VOID OsDumpContextMem(const ExcContext *excBufAddr)
 
     for (excReg = &(excBufAddr->R0); count <= DUMPREGS; excReg++, count++) {
         if (IS_VALID_ADDR(*excReg)) {
-            PrintExcInfo("\ndump mem around R%u:%p", count, (*excReg));
+            PrintExcInfo("\ndump mem around R%u:0x%x", count, (*excReg));
             OsDumpMemByte(DUMPSIZE, ((*excReg) - (DUMPSIZE >> 1)));
         }
     }
@@ -811,7 +811,7 @@ VOID OsCallStackInfo(VOID)
     PrintExcInfo("runTask->stackPointer = 0x%x\n"
                  "runTask->topOfStack = 0x%x\n"
                  "text_start:0x%x,text_end:0x%x\n",
-                 stackPointer, runTask->topOfStack, &__text_start, &__text_end);
+                 (UINTPTR)stackPointer, runTask->topOfStack, &__text_start, &__text_end);
 
     while ((stackPointer > (UINT32 *)runTask->topOfStack) && (count < OS_MAX_BACKTRACE)) {
         if ((*stackPointer > (UINTPTR)(&__text_start)) &&

@@ -397,7 +397,7 @@ INT32 OsGetKernelVaddr(const LosVmSpace *space, VADDR_T vaddr, VADDR_T *kvaddr)
     PADDR_T paddr = 0;
 
     if ((space == NULL) || (vaddr == 0) || (kvaddr == NULL)) {
-        PRINT_ERR("%s[%d], space: %#x, vaddr: %#x\n", __FUNCTION__, __LINE__, space, vaddr);
+        PRINT_ERR("%s[%d], space: %#x, vaddr: %#x\n", __FUNCTION__, __LINE__, (UINTPTR)space, vaddr);
         return LOS_NOK;
     }
 
@@ -546,7 +546,7 @@ STATIC CHAR *OsGetParamPtr(CHAR * const *ptr, INT32 index)
     }
     ret = LOS_GetUser(&userStrPtr, (UINTPTR *)(ptr + index));
     if (ret != LOS_OK) {
-        PRINT_ERR("%s[%d], %#x\n", __FUNCTION__, __LINE__, ptr);
+        PRINT_ERR("%s[%d], %#x\n", __FUNCTION__, __LINE__, (UINTPTR)ptr);
         return NULL;
     }
 
@@ -841,7 +841,7 @@ STATIC INT32 OsPutParamToStack(ELFLoadInfo *loadInfo, const UINTPTR *auxVecInfo,
 
     size = LOS_ArchCopyToUser(argsPtr, auxVecInfo, vecIndex * sizeof(UINTPTR));
     if (size != 0) {
-        PRINT_ERR("%s[%d], Failed to copy strings! Bytes not copied: %d\n", __FUNCTION__, __LINE__, size);
+        PRINT_ERR("%s[%d], Failed to copy strings! Bytes not copied: %u\n", __FUNCTION__, __LINE__, size);
         return -EFAULT;
     }
 

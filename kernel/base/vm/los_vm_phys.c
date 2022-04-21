@@ -163,7 +163,7 @@ STATIC VOID OsVmPhysFreeListAdd(LosVmPage *page, UINT8 order)
     struct VmFreeList *list = NULL;
 
     if (page->segID >= VM_PHYS_SEG_MAX) {
-        LOS_Panic("The page segment id(%d) is invalid\n", page->segID);
+        LOS_Panic("The page segment id(%u) is invalid\n", page->segID);
     }
 
     page->order = order;
@@ -180,7 +180,7 @@ STATIC VOID OsVmPhysFreeListAddUnsafe(LosVmPage *page, UINT8 order)
     struct VmFreeList *list = NULL;
 
     if (page->segID >= VM_PHYS_SEG_MAX) {
-        LOS_Panic("The page segment id(%d) is invalid\n", page->segID);
+        LOS_Panic("The page segment id(%u) is invalid\n", page->segID);
     }
 
     page->order = order;
@@ -242,7 +242,7 @@ LosVmPage *OsVmPhysToPage(paddr_t pa, UINT8 segID)
     paddr_t offset;
 
     if (segID >= VM_PHYS_SEG_MAX) {
-        LOS_Panic("The page segment id(%d) is invalid\n", segID);
+        LOS_Panic("The page segment id(%u) is invalid\n", segID);
     }
     seg = &g_vmPhysSeg[segID];
     if ((pa < seg->start) || (pa >= (seg->start + seg->size))) {

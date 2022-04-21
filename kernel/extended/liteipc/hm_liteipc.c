@@ -111,7 +111,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsLiteIpcInit(VOID)
     }
     ret = (UINT32)register_driver(LITEIPC_DRIVER, &g_liteIpcFops, LITEIPC_DRIVER_MODE, NULL);
     if (ret != LOS_OK) {
-        PRINT_ERR("register lite_ipc driver failed:%d\n", ret);
+        PRINT_ERR("register lite_ipc driver failed:%u\n", ret);
     }
     LOS_ListInit(&(g_ipcPendlist));
     for (i = 0; i < LOSCFG_BASE_CORE_PROCESS_LIMIT; i++) {
@@ -295,15 +295,15 @@ LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf
 LITE_OS_SEC_TEXT STATIC VOID *LiteIpcNodeAlloc(UINT32 processID, UINT32 size)
 {
     VOID *ptr = LOS_MemAlloc(OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, size);
-    PRINT_INFO("LiteIpcNodeAlloc pid:%d, pool:%x buf:%x size:%d\n",
-               processID, OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, ptr, size);
+    PRINT_INFO("LiteIpcNodeAlloc pid:%u, pool:%x buf:%x size:%u\n",
+               processID, (UINTPTR)OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, (UINTPTR)ptr, size);
     return ptr;
 }
 
 LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcNodeFree(UINT32 processID, VOID *buf)
 {
-    PRINT_INFO("LiteIpcNodeFree pid:%d, pool:%x buf:%x\n",
-               processID, OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, buf);
+    PRINT_INFO("LiteIpcNodeFree pid:%u, pool:%x buf:%x\n",
+               processID, (UINTPTR)OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, (UINTPTR)buf);
     return LOS_MemFree(OS_PCB_FROM_PID(processID)->ipcInfo.pool.kvaddr, buf);
 }
 
@@ -455,7 +455,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 SetIpcTask(VOID)
         OsCurrProcessGet()->ipcInfo.ipcTaskID = LOS_CurTaskIDGet();
         return OsCurrProcessGet()->ipcInfo.ipcTaskID;
     }
-    PRINT_ERR("curprocess %d IpcTask already set!\n", OsCurrProcessGet()->processID);
+    PRINT_ERR("curprocess %u IpcTask already set!\n", OsCurrProcessGet()->processID);
     return -EINVAL;
 }
 
@@ -812,7 +812,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CopyDataFromUser(IpcListNode *node, UINT32 bufSz,
         node->msg.offsets = (VOID *)((UINTPTR)node + sizeof(IpcListNode) + msg->dataSz);
         ret = copy_from_user((VOID *)(node->msg.offsets), msg->offsets, msg->spObjNum * sizeof(UINT32));
         if (ret != LOS_OK) {
-            PRINT_DEBUG("%s, %d, %x, %x, %d\n", __FUNCTION__, __LINE__, node->msg.offsets, msg->offsets, msg->spObjNum);
+            PRINT_DEBUG("%s, %d, %x, %x, %u\n", __FUNCTION__, __LINE__, (UINTPTR)node->msg.offsets, (UINTPTR)msg->offsets, msg->spObjNum);
             return ret;
         }
     } else {
@@ -899,7 +899,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
 #endif
                 OsHookCall(LOS_HOOK_TYPE_IPC_WRITE_DROP, msg, *dstTid,
                  (*dstTid == INVAILD_ID) ? INVAILD_ID : OS_TCB_FROM_TID(*dstTid)->processID, 0);
-                PRINT_ERR("A timeout reply, request timestamp:%lld, now:%lld\n", msg->timestamp, now);
+                PRINT_ERR("A timeout reply, request timestamp:%llu, now:%llu\n", msg->timestamp, now);
                 return -ETIME;
             }
 #endif
@@ -1091,7 +1091,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcMsgHandle(IpcContent *con)
     if ((content->flag & BUFF_FREE) == BUFF_FREE) {
         ret = CheckUsedBuffer(content->buffToFree, &nodeNeedFree);
         if (ret != LOS_OK) {
-            PRINT_ERR("CheckUsedBuffer failed:%d\n", ret);
+            PRINT_ERR("CheckUsedBuffer failed:%u\n", ret);
             return ret;
         }
     }
@@ -1137,7 +1137,7 @@ BUFFER_FREE:
         UINT32 offset = LOS_OFF_SET_OF(IpcContent, inMsg);
         ret = copy_to_user((char*)con + offset, (char*)content + offset, sizeof(IpcMsg *));
         if (ret != LOS_OK) {
-            PRINT_ERR("%s, %d, %d\n", __FUNCTION__, __LINE__, ret);
+            PRINT_ERR("%s, %d, %u\n", __FUNCTION__, __LINE__, ret);
             return -EINVAL;
         }
     }
