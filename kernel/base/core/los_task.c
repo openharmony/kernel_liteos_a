@@ -226,6 +226,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
     ret = LOS_TaskCreateOnly(&idleTaskID, &taskInitParam);
+    if (ret != LOS_OK) {
+        return ret;
+    }
     LosTaskCB *idleTask = OS_TCB_FROM_TID(idleTaskID);
     idleTask->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;
     OsSchedRunqueueIdleInit(idleTaskID);

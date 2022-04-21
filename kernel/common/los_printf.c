@@ -198,6 +198,7 @@ __attribute__((noinline)) VOID UartPrintf(const CHAR *fmt, ...)
     va_end(ap);
 }
 
+#ifndef LOSCFG_LIBC_NEWLIB
 __attribute__((noinline)) VOID dprintf(const CHAR *fmt, ...)
 {
     va_list ap;
@@ -210,6 +211,7 @@ __attribute__((noinline)) VOID dprintf(const CHAR *fmt, ...)
 #endif
     va_end(ap);
 }
+#endif
 
 VOID LkDprintf(const CHAR *fmt, va_list ap)
 {
@@ -279,7 +281,7 @@ VOID LOS_LkPrint(INT32 level, const CHAR *func, INT32 line, const CHAR *fmt, ...
     }
 
     if ((level != LOS_COMMON_LEVEL) && ((level > LOS_EMG_LEVEL) && (level <= LOS_TRACE_LEVEL))) {
-        dprintf("[%s][%s:%s]", g_logString[level],
+        PRINTK("[%s][%s:%s]", g_logString[level],
                 ((OsCurrProcessGet() == NULL) ? "NULL" : OsCurrProcessGet()->processName),
                 ((OsCurrTaskGet() == NULL) ? "NULL" : OsCurrTaskGet()->taskName));
     }

@@ -204,7 +204,7 @@ LIB_SUBDIRS         += lib/libscrew
 LITEOS_LIBSCREW_INCLUDE += -I $(LITEOSTOPDIR)/lib/libscrew/include
 
 ifeq ($(LOSCFG_LIB_LIBC), y)
-    LIB_SUBDIRS           += lib/libc
+    LIB_SUBDIRS           += lib/libc/musl
     LITEOS_BASELIB        += -lc
     LITEOS_LIBC_INCLUDE   += \
         -isystem $(LITEOSTHIRDPARTY)/musl/porting/liteos_a/kernel/include
