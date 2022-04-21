@@ -41,7 +41,9 @@
 #endif
 #include "los_stackinfo_pri.h"
 #include "los_futex_pri.h"
+#ifdef LOSCFG_KERNEL_PM
 #include "los_pm_pri.h"
+#endif
 #include "los_signal.h"
 #ifdef LOSCFG_KERNEL_CPUP
 #include "los_cpup_pri.h"
@@ -555,9 +557,11 @@ STATIC INLINE VOID SchedTaskFreeze(LosTaskCB *taskCB)
 {
     UINT64 responseTime;
 
+#ifdef LOSCFG_KERNEL_PM
     if (!OsIsPmMode()) {
         return;
     }
+#endif
 
     if (!(taskCB->taskStatus & (OS_TASK_STATUS_PEND_TIME | OS_TASK_STATUS_DELAY))) {
         return;
