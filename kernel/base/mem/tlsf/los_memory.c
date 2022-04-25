@@ -312,7 +312,7 @@ STATIC INLINE struct OsMemNodeHead *PreSentinelNodeGet(const VOID *pool, const s
     sentinelNode = OS_MEM_END_NODE(pool, ((struct OsMemPoolHead *)pool)->info.totalSize);
     while (sentinelNode != NULL) {
         if (OsMemIsLastSentinelNode(sentinelNode)) {
-            PRINT_ERR("PreSentinelNodeGet can not find node %#x\n", node);
+            PRINT_ERR("PreSentinelNodeGet can not find node %#x\n", (UINTPTR)node);
             return NULL;
         }
         nextNode = OsMemSentinelNodeGet(sentinelNode);
@@ -363,7 +363,7 @@ STATIC INLINE BOOL TryShrinkPool(const VOID *pool, const struct OsMemNodeHead *n
     }
 
     if (OsMemLargeNodeFree(node) != LOS_OK) {
-        PRINT_ERR("TryShrinkPool free %#x failed!\n", node);
+        PRINT_ERR("TryShrinkPool free %#x failed!\n", (UINTPTR)node);
         return FALSE;
     }
 
@@ -1474,13 +1474,13 @@ STATIC UINT32 OsMemAddrValidCheckPrint(const VOID *pool, struct OsMemFreeNodeHea
     if (((*tmpNode)->prev != NULL) && !OsMemAddrValidCheck(pool, (*tmpNode)->prev)) {
         PRINT_ERR("[%s], %d, memory check error!\n"
                   " freeNode.prev:%#x is out of legal mem range\n",
-                  __FUNCTION__, __LINE__, (*tmpNode)->prev);
+                  __FUNCTION__, __LINE__, (UINTPTR)(*tmpNode)->prev);
         return LOS_NOK;
     }
     if (((*tmpNode)->next != NULL) && !OsMemAddrValidCheck(pool, (*tmpNode)->next)) {
         PRINT_ERR("[%s], %d, memory check error!\n"
                   " freeNode.next:%#x is out of legal mem range\n",
-                  __FUNCTION__, __LINE__, (*tmpNode)->next);
+                  __FUNCTION__, __LINE__, (UINTPTR)(*tmpNode)->next);
         return LOS_NOK;
     }
     return LOS_OK;
@@ -1538,7 +1538,7 @@ STATIC VOID OsMemPoolHeadCheck(const struct OsMemPoolHead *pool)
             if (OsMemFreeListNodeCheck(pool, tmpNode)) {
                 flag = 1;
                 PRINT_ERR("FreeListIndex: %u, node: %#x, bNode: %#x, prev: %#x, next: %#x\n",
-                          index, tmpNode, tmpNode->header.ptr.prev, tmpNode->prev, tmpNode->next);
+                          index, (UINTPTR)tmpNode, (UINTPTR)tmpNode->header.ptr.prev, (UINTPTR)tmpNode->prev, (UINTPTR)tmpNode->next);
                 goto OUT;
             }
         }
@@ -1546,7 +1546,7 @@ STATIC VOID OsMemPoolHeadCheck(const struct OsMemPoolHead *pool)
 
 OUT:
     if (flag) {
-        PRINTK("mem pool info: poolAddr: %#x, poolSize: 0x%x\n", pool, pool->info.totalSize);
+        PRINTK("mem pool info: poolAddr: %#x, poolSize: 0x%x\n", (UINTPTR)pool, pool->info.totalSize);
 #ifdef LOSCFG_MEM_WATERLINE
         PRINTK("mem pool info: poolWaterLine: 0x%x, poolCurUsedSize: 0x%x\n", pool->info.waterLine,
                pool->info.curUsedSize);
@@ -1559,7 +1559,7 @@ OUT:
             size = OS_MEM_NODE_GET_SIZE(sentinel->sizeAndFlag);
             node = OsMemSentinelNodeGet(sentinel);
             sentinel = OS_MEM_END_NODE(node, size);
-            PRINTK("expand node info: nodeAddr: %#x, nodeSize: 0x%x\n", node, size);
+            PRINTK("expand node info: nodeAddr: %#x, nodeSize: 0x%x\n", (UINTPTR)node, size);
         }
 #endif
     }
@@ -1606,23 +1606,23 @@ STATIC VOID OsMemNodeInfo(const struct OsMemNodeHead *tmpNode,
     if (OS_MEM_NODE_GET_USED_FLAG(tmpNode->sizeAndFlag)) {
         usedNode = (struct OsMemUsedNodeHead *)tmpNode;
         PRINTK("\n broken node head: %#x  %#x  %#x, ",
-               usedNode->header.ptr.prev, usedNode->header.magic, usedNode->header.sizeAndFlag);
+               (UINTPTR)usedNode->header.ptr.prev, usedNode->header.magic, usedNode->header.sizeAndFlag);
     } else {
         freeNode = (struct OsMemFreeNodeHead *)tmpNode;
         PRINTK("\n broken node head: %#x  %#x  %#x  %#x, ",
-               freeNode->header.ptr.prev, freeNode->next, freeNode->prev, freeNode->header.magic,
-               freeNode->header.sizeAndFlag);
+               (UINTPTR)freeNode->header.ptr.prev, (UINTPTR)freeNode->next, (UINTPTR)freeNode->prev,
+               freeNode->header.magic, freeNode->header.sizeAndFlag);
     }
 
     if (OS_MEM_NODE_GET_USED_FLAG(preNode->sizeAndFlag)) {
         usedNode = (struct OsMemUsedNodeHead *)preNode;
         PRINTK("prev node head: %#x  %#x  %#x\n",
-               usedNode->header.ptr.prev, usedNode->header.magic, usedNode->header.sizeAndFlag);
+               (UINTPTR)usedNode->header.ptr.prev, usedNode->header.magic, usedNode->header.sizeAndFlag);
     } else {
         freeNode = (struct OsMemFreeNodeHead *)preNode;
         PRINTK("prev node head: %#x  %#x  %#x  %#x, ",
-               freeNode->header.ptr.prev, freeNode->next, freeNode->prev, freeNode->header.magic,
-               freeNode->header.sizeAndFlag);
+               (UINTPTR)freeNode->header.ptr.prev, (UINTPTR)freeNode->next, (UINTPTR)freeNode->prev,
+               freeNode->header.magic, freeNode->header.sizeAndFlag);
     }
 
 #ifdef LOSCFG_MEM_LEAKCHECK
@@ -1630,11 +1630,11 @@ STATIC VOID OsMemNodeInfo(const struct OsMemNodeHead *tmpNode,
 #endif
 
     PRINTK("\n---------------------------------------------\n");
-    PRINTK(" dump mem tmpNode:%#x ~ %#x\n", tmpNode, ((UINTPTR)tmpNode + OS_MEM_NODE_DUMP_SIZE));
+    PRINTK(" dump mem tmpNode:%#x ~ %#x\n", (UINTPTR)tmpNode, ((UINTPTR)tmpNode + OS_MEM_NODE_DUMP_SIZE));
     OsDumpMemByte(OS_MEM_NODE_DUMP_SIZE, (UINTPTR)tmpNode);
     PRINTK("\n---------------------------------------------\n");
     if (preNode != tmpNode) {
-        PRINTK(" dump mem :%#x ~ tmpNode:%#x\n", ((UINTPTR)tmpNode - OS_MEM_NODE_DUMP_SIZE), tmpNode);
+        PRINTK(" dump mem :%#x ~ tmpNode:%#x\n", ((UINTPTR)tmpNode - OS_MEM_NODE_DUMP_SIZE), (UINTPTR)tmpNode);
         OsDumpMemByte(OS_MEM_NODE_DUMP_SIZE, ((UINTPTR)tmpNode - OS_MEM_NODE_DUMP_SIZE));
         PRINTK("\n---------------------------------------------\n");
     }
@@ -1669,10 +1669,10 @@ STATIC VOID OsMemIntegrityCheckError(struct OsMemPoolHead *pool,
     }
     MEM_UNLOCK(pool, intSave);
     LOS_Panic("cur node: %#x\npre node: %#x\npre node was allocated by task:%s\n",
-              tmpNode, preNode, taskCB->taskName);
+              (UINTPTR)tmpNode, (UINTPTR)preNode, taskCB->taskName);
 #else
     MEM_UNLOCK(pool, intSave);
-    LOS_Panic("Memory interity check error, cur node: %#x, pre node: %#x\n", tmpNode, preNode);
+    LOS_Panic("Memory interity check error, cur node: %#x, pre node: %#x\n", (UINTPTR)tmpNode, (UINTPTR)preNode);
 #endif
 }
 
@@ -1753,7 +1753,7 @@ UINT32 LOS_MemInfoGet(VOID *pool, LOS_MEM_POOL_STATUS *poolStatus)
     }
 
     if ((pool == NULL) || (poolInfo->info.pool != pool)) {
-        PRINT_ERR("wrong mem pool addr: %#x, line:%d\n", poolInfo, __LINE__);
+        PRINT_ERR("wrong mem pool addr: %#x, line:%d\n", (UINTPTR)poolInfo, __LINE__);
         return LOS_NOK;
     }
 

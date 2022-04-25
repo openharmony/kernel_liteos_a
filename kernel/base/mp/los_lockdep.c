@@ -111,7 +111,7 @@ STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
 
     PrintExcInfo("lockdep check failed\n");
     PrintExcInfo("error type   : %s\n", OsLockDepErrorStringGet(errType));
-    PrintExcInfo("request addr : 0x%x\n", requestAddr);
+    PrintExcInfo("request addr : 0x%x\n", (UINTPTR)requestAddr);
 
     while (1) {
         PrintExcInfo("task name    : %s\n", temp->taskName);
@@ -121,7 +121,7 @@ STATIC VOID OsLockDepDumpLock(const LosTaskCB *task, const SPIN_LOCK_S *lock,
         for (i = 0; i < lockDep->lockDepth; i++) {
             if (lockDep->heldLocks[i].lockPtr == lock) {
                 PrintExcInfo("[%d] %s <-- addr:0x%x\n", i, LOCKDEP_GET_NAME(lockDep, i),
-                             LOCKDEP_GET_ADDR(lockDep, i));
+                             (UINTPTR)LOCKDEP_GET_ADDR(lockDep, i));
             } else {
                 PrintExcInfo("[%d] %s \n", i, LOCKDEP_GET_NAME(lockDep, i));
             }

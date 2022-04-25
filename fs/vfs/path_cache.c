@@ -71,7 +71,7 @@ void PathCacheDump(void)
         LIST_HEAD *nhead = &g_pathCacheHashEntrys[i];
 
         LOS_DL_LIST_FOR_EACH_ENTRY(pc, nhead, struct PathCache, hashEntry) {
-            PRINTK("    pathCache dump hash %d item %s %p %p %d\n", i,
+            PRINTK("    pathCache dump hash %d item %s %p %p %u\n", i,
                 pc->name, pc->parentVnode, pc->childVnode, pc->nameLen);
         }
     }

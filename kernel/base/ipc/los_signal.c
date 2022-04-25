@@ -698,7 +698,7 @@ VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
             sigcb->sigFlag = 0;
             process->sigShare = 0;
             SCHEDULER_UNLOCK(intSave);
-            PRINT_ERR("The signal processing function for the current process pid =%d is NULL!\n", task->processID);
+            PRINT_ERR("The signal processing function for the current process pid =%u is NULL!\n", task->processID);
             return sp;
         }
         /* One pthread do the share signal */
@@ -732,7 +732,7 @@ VOID *OsRestorSignalContext(VOID *sp)
     SCHEDULER_LOCK(intSave);
     if (sigcb->count != 1) {
         SCHEDULER_UNLOCK(intSave);
-        PRINT_ERR("sig error count : %d\n", sigcb->count);
+        PRINT_ERR("sig error count : %u\n", sigcb->count);
         return sp;
     }
 

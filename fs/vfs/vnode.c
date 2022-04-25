@@ -669,7 +669,7 @@ void VnodeMemoryDump(void)
     }
 
     PRINTK("Vnode number = %d\n", vnodeCount);
-    PRINTK("Vnode memory size = %d(B)\n", vnodeCount * sizeof(struct Vnode));
+    PRINTK("Vnode memory size = %u(B)\n", vnodeCount * sizeof(struct Vnode));
 }
 
 LIST_HEAD* GetVnodeFreeList()

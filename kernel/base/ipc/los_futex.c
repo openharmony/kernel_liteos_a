@@ -519,7 +519,7 @@ STATIC INT32 OsFutexWaitParamCheck(const UINT32 *userVaddr, UINT32 flags, UINT32
     }
 
     if (flags && (OsFutexKeyShmPermCheck(userVaddr, flags) != LOS_OK)) {
-        PRINT_ERR("Futex wait param check failed! error shared memory perm userVaddr: 0x%x\n", userVaddr);
+        PRINT_ERR("Futex wait param check failed! error shared memory perm userVaddr: 0x%x\n", (UINTPTR)userVaddr);
         return LOS_EINVAL;
     }
 
@@ -663,12 +663,12 @@ STATIC INT32 OsFutexWakeParamCheck(const UINT32 *userVaddr, UINT32 flags)
     }
 
     if ((vaddr % sizeof(INT32)) || (vaddr < OS_FUTEX_KEY_BASE) || (vaddr >= OS_FUTEX_KEY_MAX)) {
-        PRINT_ERR("Futex wake param check failed! error userVaddr: 0x%x\n", userVaddr);
+        PRINT_ERR("Futex wake param check failed! error userVaddr: 0x%x\n", (UINTPTR)userVaddr);
         return LOS_EINVAL;
     }
 
     if (flags && (OsFutexKeyShmPermCheck(userVaddr, flags) != LOS_OK)) {
-        PRINT_ERR("Futex wake param check failed! error shared memory perm userVaddr: 0x%x\n", userVaddr);
+        PRINT_ERR("Futex wake param check failed! error shared memory perm userVaddr: 0x%x\n", (UINTPTR)userVaddr);
         return LOS_EINVAL;
     }
 
@@ -941,12 +941,12 @@ STATIC INT32 OsFutexRequeueParamCheck(const UINT32 *oldUserVaddr, UINT32 flags, 
     }
 
     if ((oldVaddr % sizeof(INT32)) || (oldVaddr < OS_FUTEX_KEY_BASE) || (oldVaddr >= OS_FUTEX_KEY_MAX)) {
-        PRINT_ERR("Futex requeue param check failed! error old userVaddr: 0x%x\n", oldUserVaddr);
+        PRINT_ERR("Futex requeue param check failed! error old userVaddr: 0x%x\n", (UINTPTR)oldUserVaddr);
         return LOS_EINVAL;
     }
 
     if ((newVaddr % sizeof(INT32)) || (newVaddr < OS_FUTEX_KEY_BASE) || (newVaddr >= OS_FUTEX_KEY_MAX)) {
-        PRINT_ERR("Futex requeue param check failed! error new userVaddr: 0x%x\n", newUserVaddr);
+        PRINT_ERR("Futex requeue param check failed! error new userVaddr: 0x%x\n", (UINTPTR)newUserVaddr);
         return LOS_EINVAL;
     }
 

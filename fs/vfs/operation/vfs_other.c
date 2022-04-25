@@ -535,7 +535,7 @@ static void PrintFileInfo64(const struct stat64 *stat64Info, const char *name)
         dirFlag = '-';
     }
 
-    PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
+    PRINTK("%c%s%s%s %-8lld u:%-5u g:%-5u %-10s\n", dirFlag,
            str[0], str[1], str[UGO_NUMS - 1], stat64Info->st_size, stat64Info->st_uid, stat64Info->st_gid, name);
 }
 
@@ -561,7 +561,7 @@ static void PrintFileInfo(const struct stat *statInfo, const char *name)
         dirFlag = '-';
     }
 
-    PRINTK("%c%s%s%s %-8lld u:%-5d g:%-5d %-10s\n", dirFlag,
+    PRINTK("%c%s%s%s %-8lld u:%-5u g:%-5u %-10s\n", dirFlag,
            str[0], str[1], str[UGO_NUMS - 1], statInfo->st_size, statInfo->st_uid, statInfo->st_gid, name);
 }
 
@@ -736,7 +736,7 @@ void lsfd(void)
     while (i < CONFIG_NFILE_DESCRIPTORS) {
         node = files_get_openfile(i);
         if (node) {
-            PRINTK("%5d   %s\n", i, f_list->fl_files[i].f_path);
+            PRINTK("%5u   %s\n", i, f_list->fl_files[i].f_path);
         }
         i++;
     }
