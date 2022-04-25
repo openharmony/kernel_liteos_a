@@ -214,7 +214,7 @@ UINT64 LOS_SizeStrToNum(CHAR *value)
     UINT64 num = 0;
 
     /* If the string is a hexadecimal value */
-    if (sscanf_s(value, "0x%x", &num) > 0) {
+    if (sscanf_s(value, "0x%x", (UINTPTR)(&num)) > 0) {
         value += strlen("0x");
         if (strspn(value, "0123456789abcdefABCDEF") < strlen(value)) {
             goto ERROUT;
@@ -223,7 +223,7 @@ UINT64 LOS_SizeStrToNum(CHAR *value)
     }
 
     /* If the string is a decimal value in unit *Bytes */
-    INT32 ret = sscanf_s(value, "%d", &num);
+    INT32 ret = sscanf_s(value, "%llu", &num);
     INT32 decOffset = strspn(value, "0123456789");
     CHAR *endPos = value + decOffset;
     if ((ret <= 0) || (decOffset < (strlen(value) - 1))) {

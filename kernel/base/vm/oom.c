@@ -210,10 +210,10 @@ LITE_OS_SEC_TEXT_MINOR VOID OomSetCheckInterval(UINT32 checkInterval)
 {
     if ((checkInterval >= OOM_CHECK_MIN) && (checkInterval <= OOM_CHECK_MAX)) {
         g_oomCB->checkInterval = checkInterval;
-        PRINTK("[oom] set oom check interval (%d)ms successful\n",
+        PRINTK("[oom] set oom check interval (%u)ms successful\n",
                g_oomCB->checkInterval);
     } else {
-        PRINTK("[oom] set oom check interval (%d)ms failed, should be in [%d, %d]\n",
+        PRINTK("[oom] set oom check interval (%u)ms failed, should be in [%d, %d]\n",
                g_oomCB->checkInterval, OOM_CHECK_MIN, OOM_CHECK_MAX);
     }
 }

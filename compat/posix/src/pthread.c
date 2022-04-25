@@ -231,7 +231,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
 
     SetPthreadAttr(self, attr, &userAttr);
 
-    (VOID)snprintf_s(name, sizeof(name), sizeof(name) - 1, "pth%02d", pthreadNumber);
+    (VOID)snprintf_s(name, sizeof(name), sizeof(name) - 1, "pth%02u", pthreadNumber);
     pthreadNumber++;
 
     taskInitParam.pcName       = name;

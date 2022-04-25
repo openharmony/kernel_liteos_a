@@ -63,7 +63,7 @@ VOID OsDumpMemByte(size_t length, UINTPTR addr)
     }
     while (dataLen) {
         if (IS_ALIGNED(count, sizeof(CHAR *))) {
-            PRINTK("\n 0x%lx :", alignAddr);
+            PRINTK("\n 0x%lx :", (UINTPTR)alignAddr);
 #ifdef LOSCFG_SAVE_EXCINFO
             WriteExcInfoToBuf("\n 0x%lx :", alignAddr);
 #endif

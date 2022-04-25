@@ -100,7 +100,7 @@ VOID OsExcStackInfo(VOID)
             stack = (UINTPTR *)((UINTPTR)stackTop + g_stackInfo[index].stackSize);
             (VOID)OsStackWaterLineGet(stack, stackTop, &size);
 
-            PrintExcInfo("%11s      %-5d    %-10p     0x%-8x   0x%-4x\n", g_stackInfo[index].stackName,
+            PrintExcInfo("%11s      %-5u    %-10p     0x%-8x   0x%-4x\n", g_stackInfo[index].stackName,
                          LOSCFG_KERNEL_CORE_NUM - 1 - cpuid, stackTop, g_stackInfo[index].stackSize, size);
         }
     }

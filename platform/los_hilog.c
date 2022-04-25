@@ -179,7 +179,7 @@ static ssize_t HiLogRead(struct file *filep, char *buffer, size_t bufLen)
     }
 
     if (bufLen < header.len + sizeof(header)) {
-        dprintf("buffer too small,bufLen=%d, header.len=%d,%d\n", bufLen, header.len, header.hdrSize);
+        dprintf("buffer too small,bufLen=%u, header.len=%u,%u\n", bufLen, header.len, header.hdrSize);
         retval = -ENOMEM;
         goto out;
     }

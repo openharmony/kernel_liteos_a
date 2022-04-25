@@ -338,7 +338,7 @@ STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosPro
 LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 {
     if (!(processCB->processStatus & (OS_PROCESS_STATUS_INIT | OS_PROCESS_STATUS_RUNNING))) {
-        PRINT_ERR("The process(%d) has no permission to release process(%d) resources!\n",
+        PRINT_ERR("The process(%u) has no permission to release process(%u) resources!\n",
                   OsCurrProcessGet()->processID, processCB->processID);
     }
 

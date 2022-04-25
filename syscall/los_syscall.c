@@ -104,7 +104,7 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
     UINT32 cmd = regs->reserved2;
 
     if (cmd >= SYS_CALL_NUM) {
-        PRINT_ERR("Syscall ID: error %d !!!\n", cmd);
+        PRINT_ERR("Syscall ID: error %u !!!\n", cmd);
         return;
     }
 
@@ -112,7 +112,7 @@ VOID OsArmA32SyscallHandle(TaskContext *regs)
     nArgs = g_syscallNArgs[cmd / NARG_PER_BYTE]; /* 4bit per nargs */
     nArgs = (cmd & 1) ? (nArgs >> NARG_BITS) : (nArgs & NARG_MASK);
     if ((handle == 0) || (nArgs > ARG_NUM_7)) {
-        PRINT_ERR("Unsupport syscall ID: %d nArgs: %d\n", cmd, nArgs);
+        PRINT_ERR("Unsupport syscall ID: %u nArgs: %u\n", cmd, nArgs);
         regs->R0 = -ENOSYS;
         return;
     }

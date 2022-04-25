@@ -920,7 +920,7 @@ VOID OsSchedStart(VOID)
     OsPercpuGet()->responseID = OS_INVALID;
     OsSchedSetNextExpireTime(newTask->startTime, newTask->taskID, newTask->startTime + newTask->timeSlice, OS_INVALID);
 
-    PRINTK("cpu %d entering scheduler\n", cpuid);
+    PRINTK("cpu %u entering scheduler\n", cpuid);
     OsTaskContextLoad(newTask);
 }
 
@@ -939,7 +939,7 @@ VOID OsSchedToUserReleaseLock(VOID)
 STATIC VOID OsTaskStackCheck(LosTaskCB *runTask, LosTaskCB *newTask)
 {
     if (!OS_STACK_MAGIC_CHECK(runTask->topOfStack)) {
-        LOS_Panic("CURRENT task ID: %s:%d stack overflow!\n", runTask->taskName, runTask->taskID);
+        LOS_Panic("CURRENT task ID: %s:%u stack overflow!\n", runTask->taskName, runTask->taskID);
     }
 
     if (((UINTPTR)(newTask->stackPointer) <= newTask->topOfStack) ||

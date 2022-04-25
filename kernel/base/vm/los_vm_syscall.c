@@ -220,7 +220,7 @@ VOID *LOS_DoBrk(VOID *addr)
     size = (UINTPTR)addr - (UINTPTR)space->heapBase;
     size = ROUNDUP(size, PAGE_SIZE);
     alignAddr = (CHAR *)(UINTPTR)(space->heapBase) + size;
-    PRINT_INFO("brk addr %p , size 0x%x, alignAddr %p, align %d\n", addr, size, alignAddr, PAGE_SIZE);
+    PRINT_INFO("brk addr %p , size 0x%x, alignAddr %p, align %u\n", addr, size, alignAddr, PAGE_SIZE);
 
     (VOID)LOS_MuxAcquire(&space->regionMux);
     if (addr < (VOID *)(UINTPTR)space->heapNow) {
