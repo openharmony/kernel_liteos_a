@@ -995,7 +995,6 @@ LITE_OS_SEC_TEXT INT32 LOS_SetProcessPriority(INT32 pid, UINT16 prio)
 
 LITE_OS_SEC_TEXT INT32 OsGetProcessPriority(INT32 which, INT32 pid)
 {
-    INT32 prio;
     UINT32 intSave;
     SchedParam param = { 0 };
     (VOID)which;
@@ -1011,14 +1010,13 @@ LITE_OS_SEC_TEXT INT32 OsGetProcessPriority(INT32 which, INT32 pid)
     LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
     SCHEDULER_LOCK(intSave);
     if (OsProcessIsUnused(processCB)) {
-        prio = -LOS_ESRCH;
-        goto OUT;
+        SCHEDULER_UNLOCK(intSave);
+        return -LOS_ESRCH;
     }
 
     LosTaskCB *taskCB = OS_TCB_FROM_TID(processCB->threadGroupID);
     taskCB->ops->schedParamGet(taskCB, &param);
 
-OUT:
     SCHEDULER_UNLOCK(intSave);
     return param.basePrio;
 }
