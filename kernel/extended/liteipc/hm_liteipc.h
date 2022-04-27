@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -114,12 +114,17 @@ typedef enum {
     MT_NUM
 } MsgType;
 
+typedef struct {
+    int32_t driverVersion;
+} IpcVersion;
+
 /* lite ipc ioctl */
 #define IPC_IOC_MAGIC       'i'
 #define IPC_SET_CMS         _IO(IPC_IOC_MAGIC, 1)
 #define IPC_CMS_CMD         _IOWR(IPC_IOC_MAGIC, 2, CmsCmdContent)
 #define IPC_SET_IPC_THREAD  _IO(IPC_IOC_MAGIC, 3)
 #define IPC_SEND_RECV_MSG   _IOWR(IPC_IOC_MAGIC, 4, IpcContent)
+#define IPC_GET_VERSION     _IOR(IPC_IOC_MAGIC, 5, IpcVersion)
 
 typedef enum {
     CMS_GEN_HANDLE,

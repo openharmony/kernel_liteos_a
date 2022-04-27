@@ -63,6 +63,10 @@
 #define LITEIPC_TIMEOUT_MS 5000UL
 #define LITEIPC_TIMEOUT_NS 5000000000ULL
 
+#define MAJOR_VERSION (2)
+#define MINOR_VERSION (0)
+#define DRIVER_VERSION (MAJOR_VERSION | MINOR_VERSION << 16)
+
 typedef struct {
     LOS_DL_LIST list;
     VOID *ptr;
@@ -479,6 +483,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 AddServiceAccess(UINT32 taskID, UINT32 serviceHan
         PRINT_ERR("Liteipc AddServiceAccess GetTid failed\n");
         return ret;
     }
+
     LosTaskCB *tcb = OS_TCB_FROM_TID(serviceTid);
     UINT32 processID = OS_TCB_FROM_TID(taskID)->processID;
     LosProcessCB *pcb = OS_PCB_FROM_PID(processID);
@@ -758,22 +763,45 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(UINT32 processID, SpecialObj *obj, BOOL
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT STATIC UINT32 HandleSvc(UINT32 dstTid, const SpecialObj *obj, BOOL isRollback)
+LITE_OS_SEC_TEXT STATIC UINT32 HandleSvc(UINT32 dstTid, SpecialObj *obj, BOOL isRollback)
 {
     UINT32 taskID = 0;
     if (isRollback == FALSE) {
+        if (obj->content.svc.handle == -1) {
+            if (obj->content.svc.token != 1) {
+                PRINT_ERR("Liteipc HandleSvc wrong svc token\n");
+                return -EINVAL;
+            }
+            UINT32 selfTid = LOS_CurTaskIDGet();
+            LosTaskCB *tcb = OS_TCB_FROM_TID(selfTid);
+            if (tcb->ipcTaskInfo == NULL) {
+                tcb->ipcTaskInfo = LiteIpcTaskInit();
+            }
+            uint32_t serviceHandle = 0;
+            UINT32 ret = GenerateServiceHandle(selfTid, HANDLE_REGISTED, &serviceHandle);
+            if (ret != LOS_OK) {
+                PRINT_ERR("Liteipc GenerateServiceHandle failed.\n");
+                return ret;
+            }
+            obj->content.svc.handle = serviceHandle;
+            (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
+            AddServiceAccess(dstTid, serviceHandle);
+            (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
+        }
         if (IsTaskAlive(obj->content.svc.handle) == FALSE) {
             PRINT_ERR("Liteipc HandleSvc wrong svctid\n");
             return -EINVAL;
         }
         if (HasServiceAccess(obj->content.svc.handle) == FALSE) {
-            PRINT_ERR("Liteipc %s, %d\n", __FUNCTION__, __LINE__);
+            PRINT_ERR("Liteipc %s, %d, svchandle:%d, tid:%d\n", __FUNCTION__, __LINE__, obj->content.svc.handle, LOS_CurTaskIDGet());
             return -EACCES;
         }
+        LosTaskCB *taskCb = OS_TCB_FROM_TID(obj->content.svc.handle);
+        if (taskCb->ipcTaskInfo == NULL) {
+            taskCb->ipcTaskInfo = LiteIpcTaskInit();
+        }
         if (GetTid(obj->content.svc.handle, &taskID) == 0) {
-            if (taskID == OS_PCB_FROM_PID(OS_TCB_FROM_TID(taskID)->processID)->ipcInfo->ipcTaskID) {
-                AddServiceAccess(dstTid, obj->content.svc.handle);
-            }
+            AddServiceAccess(dstTid, obj->content.svc.handle);
         }
     }
     return LOS_OK;
@@ -791,7 +819,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleObj(UINT32 dstTid, SpecialObj *obj, BOOL is
             ret = HandlePtr(processID, obj, isRollback);
             break;
         case OBJ_SVC:
-            ret = HandleSvc(dstTid, (const SpecialObj *)obj, isRollback);
+            ret = HandleSvc(dstTid, (SpecialObj *)obj, isRollback);
             break;
         default:
             ret = -EINVAL;
@@ -1288,6 +1316,22 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleCmsCmd(CmsCmdContent *content)
     return ret;
 }
 
+LITE_OS_SEC_TEXT STATIC UINT32 HandleGetVersion(IpcVersion *version)
+{
+    UINT32 ret = LOS_OK;
+    IpcVersion localIpcVersion;
+    if (version == NULL) {
+        return -EINVAL;
+    }
+
+    localIpcVersion.driverVersion = DRIVER_VERSION;
+    ret = copy_to_user((void *)version, (const void *)(&localIpcVersion), sizeof(IpcVersion));
+    if (ret != LOS_OK) {
+        PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
+    }
+    return ret; 
+}
+
 LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg)
 {
     UINT32 ret = LOS_OK;
@@ -1309,6 +1353,8 @@ LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg
             return (INT32)SetCms(arg);
         case IPC_CMS_CMD:
             return (INT32)HandleCmsCmd((CmsCmdContent *)(UINTPTR)arg);
+        case IPC_GET_VERSION:
+            return (INT32)HandleGetVersion((IpcVersion *)(UINTPTR)arg);
         case IPC_SET_IPC_THREAD:
             if (IsCmsSet() == FALSE) {
                 PRINT_ERR("Liteipc ServiceManager not set!\n");
