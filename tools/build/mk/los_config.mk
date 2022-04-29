@@ -306,8 +306,8 @@ endif
 
 
 ifeq ($(LOSCFG_FS_JFFS), y)
-    LITEOS_BASELIB  += -ljffs2
-    LIB_SUBDIRS     += fs/jffs2
+#    LITEOS_BASELIB  += -ljffs2
+#    LIB_SUBDIRS     += fs/jffs2
 endif
 
 ifeq ($(LOSCFG_PLATFORM_ROOTFS), y)
