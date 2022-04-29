@@ -75,7 +75,6 @@ generate_notice_file("kernel_notice_file") {
     "$LITEOSTHIRDPARTY/musl",
     "$LITEOSTHIRDPARTY/zlib",
     "$LITEOSTHIRDPARTY/FatFs",
-    "$LITEOSTHIRDPARTY/Linux_Kernel",
     "$LITEOSTHIRDPARTY/lwip",
     "$LITEOSTHIRDPARTY/NuttX",
     "$LITEOSTHIRDPARTY/mtd-utils",
