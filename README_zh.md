@@ -66,7 +66,7 @@ OpenHarmony LiteOS-A内核是基于Huawei LiteOS内核演进发展的新一代�
 
 ## 使用说明<a name="section741617511812"></a>
 
-OpenHarmony LiteOS-A内核支持（[Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3518.md)）、（[Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3516.md)）单板。开发者可基于两种单板开发运行自己的应用程序。
+OpenHarmony LiteOS-A内核支持[Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3518.md)及[Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3516.md)单板。开发者可基于两种单板开发运行自己的应用程序。
 
 ### 准备<a name="section1579912573329"></a>
 
@@ -82,7 +82,7 @@ OpenHarmony LiteOS-A内核支持（[Hi3518EV300](https://gitee.com/openharmony/d
 
 ### 编译构建<a name="section2081013992812"></a>
 
-开发者开发第一个应用程序可参考：
+如果这是您的首次应用程序开发，可参考：
 
 -   [helloworld for Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3518-running.md)；
 
