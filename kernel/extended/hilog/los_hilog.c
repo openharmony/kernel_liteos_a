@@ -179,7 +179,7 @@ static ssize_t HiLogRead(struct file *filep, char *buffer, size_t bufLen)
     }
 
     if (bufLen < header.len + sizeof(header)) {
-        dprintf("buffer too small,bufLen=%d, header.len=%d,%d\n", bufLen, header.len, header.hdrSize);
+        PRINTK("buffer too small,bufLen=%d, header.len=%d,%d\n", bufLen, header.len, header.hdrSize);
         retval = -ENOMEM;
         goto out;
     }
@@ -238,7 +238,7 @@ static void HiLogHeadInit(struct HiLogEntry *header, size_t len)
 
     ret = clock_gettime(CLOCK_REALTIME, &now);
     if (ret != 0) {
-        dprintf("In %s line %d,clock_gettime fail\n", __FUNCTION__, __LINE__);
+        PRINTK("In %s line %d,clock_gettime fail\n", __FUNCTION__, __LINE__);
         return;
     }
 
@@ -274,7 +274,7 @@ static void HiLogCoverOldLog(size_t bufLen)
     if (isLastTimeFull == 1 && isThisTimeFull == 0) {
         /* so we can only print one log if hilog ring buffer is full in a short time */
         if (dropLogLines > 0) {
-            dprintf("hilog ringbuffer full, drop %d line(s) log\n", dropLogLines);
+            PRINTK("hilog ringbuffer full, drop %d line(s) log\n", dropLogLines);
         }
         isLastTimeFull = 0;
         dropLogLines = 0;
@@ -319,7 +319,7 @@ out:
         wake_up_interruptible(&g_hiLogDev.wq);
     }
     if (retval < 0) {
-        dprintf("write fail retval=%d\n", retval);
+        PRINTK("write fail retval=%d\n", retval);
     }
     return retval;
 }
@@ -328,7 +328,7 @@ static ssize_t HiLogWrite(struct file *filep, const char *buffer, size_t bufLen)
 {
     (void)filep;
     if (bufLen + sizeof(struct HiLogEntry) > HILOG_BUFFER) {
-        dprintf("input too large\n");
+        PRINTK("input too large\n");
         return -ENOMEM;
     }
 
@@ -339,7 +339,7 @@ static void HiLogDeviceInit(void)
 {
     g_hiLogDev.buffer = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, HILOG_BUFFER);
     if (g_hiLogDev.buffer == NULL) {
-        dprintf("In %s line %d,LOS_MemAlloc fail\n", __FUNCTION__, __LINE__);
+        PRINTK("In %s line %d,LOS_MemAlloc fail\n", __FUNCTION__, __LINE__);
     }
 
     init_waitqueue_head(&g_hiLogDev.wq);
