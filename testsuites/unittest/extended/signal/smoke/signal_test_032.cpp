@@ -34,9 +34,9 @@
 static int g_sigCount = 0;
 static void SigPrint(int sig)
 {
-    (void)sig;
+    (void)sig;c
     g_sigCount++;
-    printf("signal receive sucess\n");
+    printf("signal receive success\n");
 }
 
 static UINT32 TestCase(VOID)
