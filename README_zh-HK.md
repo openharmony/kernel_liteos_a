@@ -62,19 +62,18 @@ OpenHarmony LiteOS-A內核是基於Huawei LiteOS內核演進發展的新一代�
 ## 約束<a name="section119744591305"></a>
 
 - 開發語言：C/C++；
-- 適用於Hi3518EV300、Hi3516DV300單板；
-- Hi3518EV300默認使用jffs2文件系統，Hi3516DV300默認使用FAT文件系統。
+- 適用於Hi3516DV300單板；
+- Hi3516DV300默認使用FAT文件系統。
 
 ## 使用說明<a name="section741617511812"></a>
 
-OpenHarmony LiteOS-A內核支持Hi3518EV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3518.md)）、Hi3516DV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3516.md)）單板，開發者可基於兩種單板開發運行自己的應用程序。
+OpenHarmony LiteOS-A內核支持Hi3516DV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3516.md)）單板，開發者可基於此單板開發運行自己的應用程序。
 
 ### 準備<a name="section1579912573329"></a>
 
 開發者需要在Linux上搭建編譯環境：
 
-- [編譯環境凖備](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-package-environment.md);
-- Hi3518EV300單板：參考[環境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3518-setting.md)；
+- [編譯環境凖備](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-env-setup.md);
 - Hi3516DV300單板：參考[環境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3516-setting.md)。
 
 ### 獲取源碼<a name="section11443189655"></a>
@@ -84,8 +83,6 @@ OpenHarmony LiteOS-A內核支持Hi3518EV300（[介紹](https://gitee.com/openhar
 ### 編譯構建<a name="section2081013992812"></a>
 
 開發者開發第一個應用程序可參考：
-
-- [helloworld for Hi3518EV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3518-running.md)；
 
 - [helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3516-running.md)。
 

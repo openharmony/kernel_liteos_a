@@ -62,19 +62,18 @@ The OpenHarmony LiteOS Cortex-A is a new-generation kernel developed based on th
 ## Constraints<a name="section119744591305"></a>
 
 -   Programming languages: C and C++
--   Applicable development boards: Hi3518E V300 and Hi3516D V300
--   Hi3518E V300 uses the JFFS2 file system by default, and Hi3516D V300 uses the FAT file system by default.
+-   Applicable development boards: Hi3516D V300
+-   Hi3516D V300 uses the FAT file system by default.
 
 ## Usage<a name="section741617511812"></a>
 
-OpenHarmony LiteOS Cortex-A supports the  [Hi3518E V300](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-introduction-hi3518.md)  and  [Hi3516D V300](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-introduction-hi3516.md). You can develop and run your applications based on both development boards.
+OpenHarmony LiteOS Cortex-A supports the  [Hi3516D V300](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-introduction-hi3516.md). You can develop and run your applications based on this development board.
 
 ### Preparations<a name="section1579912573329"></a>
 
 You need to set up the compilation environment on Linux.
 
--   [Compilation environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-env-setup-linux.md)
--   For Hi3518E V300, see  [Setting Up the Hi3518 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3518-setting.md).
+-   [Setting Up Ubuntu Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-env-setup.md)
 -   For Hi3516D V300, see  [Setting Up the Hi3516 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3516-setting.md).
 
 ### Source Code Acquisition<a name="section11443189655"></a>
@@ -84,8 +83,6 @@ Download and decompress a set of source code on a Linux server to acquire the  [
 ### Compilation and Building<a name="section2081013992812"></a>
 
 For details about how to develop the first application, see:
-
--   [Developing the First Example Program Running on Hi3518](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3518-running.md)
 
 -   [Developing the First Example Program Running on Hi3516](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3516-running.md)
 
