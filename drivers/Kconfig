@@ -5,7 +5,7 @@ config DRIVERS
       Answer Y to enable LiteOS support driver.
 
 source "bsd/dev/usb/Kconfig"
-source "../../drivers/adapter/khdf/liteos/Kconfig"
+source "../../drivers/hdf_core/adapter/khdf/liteos/Kconfig"
 
 # Device driver Kconfig import
 source "$(DEVICE_PATH)/drivers/Kconfig"
