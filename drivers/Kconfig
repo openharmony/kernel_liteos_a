@@ -17,5 +17,4 @@ source "drivers/char/video/Kconfig"
 source "drivers/char/trace/Kconfig"
 source "drivers/char/perf/Kconfig"
 
-source "../../drivers/liteos/tzdriver/Kconfig"
 source "../../drivers/liteos/hievent/Kconfig"
