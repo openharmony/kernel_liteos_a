@@ -243,7 +243,7 @@ struct ifconfig_option {
     unsigned char ethaddr[6];
     u16_t mtu;
     /* when using telnet, print to the telnet socket will result in system  */
-    /* deadlock. So we cahe the prinf data to a buf, and when the tcpip      */
+    /* deadlock. So we cache the print data to a buf, and when the tcpip    */
     /* callback returns, then print the data out to the telnet socket       */
     sys_sem_t cb_completed;
     char cb_print_buf[PRINT_BUF_LEN];
@@ -1158,9 +1158,9 @@ struct arp_option {
     unsigned int ipaddr;
     /* hw addr */
     unsigned char ethaddr[6];
-    /* when using telnet, printf to the telnet socket will result in system  */
-    /* deadlock.so don't do it.cahe the data to prinf to a buf, and when     */
-    /* callback returns, then printf the data out to the telnet socket       */
+    /* when using telnet, print to the telnet socket will result in system  */
+    /* deadlock.so don't do it. cache the data to print to a buf, and when  */
+    /* callback returns, then print the data out to the telnet socket       */
     sys_sem_t cb_completed;
     char cb_print_buf[PRINT_BUF_LEN];
     int print_buf_len;
@@ -1326,7 +1326,7 @@ out:
         } else if (ret == ERR_RTE) {
             (void)snprintf_s(arp_cmd->cb_print_buf, PRINT_BUF_LEN, (PRINT_BUF_LEN - 1), "Network is unreachable\n");
         } else {
-            (void)snprintf_s(arp_cmd->cb_print_buf, PRINT_BUF_LEN, (PRINT_BUF_LEN - 1), "Successed\n");
+            (void)snprintf_s(arp_cmd->cb_print_buf, PRINT_BUF_LEN, (PRINT_BUF_LEN - 1), "Succeeded\n");
         }
     }
 #endif
@@ -2234,13 +2234,13 @@ u32_t osShellPing6(int argc, const char **argv)
             }
 
             if ((u32_t)ret < sizeof(struct icmp6_echo_hdr *)) {
-                /* Drop the packet if its too short [Doesnot contain even the header !!] */
+                /* Drop the packet if its too short [Doesn't contain even the header !!] */
                 PRINTK("ping6 : received ICMP echo response too short\n");
                 goto REDUCE_SELECT_TIME;
             }
 
             /* Acceping the ICMPv6 payload. */
-            /* Here, pbuf_resp->payload wont contain IPv6 Header since its an AF_INET6 RAW Socket */
+            /* Here, pbuf_resp->payload won't contain IPv6 Header since its an AF_INET6 RAW Socket */
             iecho_resp = (struct icmp6_echo_hdr *)pbuf_resp->payload;
 
             if (iecho_resp->id == icmpv6_id) {
@@ -2283,7 +2283,7 @@ u32_t osShellPing6(int argc, const char **argv)
 
                     /* Checking if its a delayed packet */
                     if ((iecho_resp->seqno != icmpv6_seq) && (nsent < ping6_params.pingcount)) {
-                        /* Incase of delayed packet wait on socket for other response before sending a new PING */
+                        /* In case of delayed packet wait on socket for other response before sending a new PING */
                         /* We have to reduce the timeout value now when selecting on socket */
                         goto REDUCE_SELECT_TIME;
                     }
@@ -2313,7 +2313,7 @@ REDUCE_SELECT_TIME:
            nsent, nrecieve, (float)(((float)(nsent - nrecieve)) * ((float)(100)) / ((float)(nsent))),
            ((last.tv_sec - first.tv_sec) * 1000 + (last.tv_nsec - first.tv_nsec) / 1000000));
     if (nrecieve) {
-        /* Display rtt stats only if atleast one packet is received */
+        /* Display rtt stats only if at least one packet is received */
         PRINTK("rtt min/avg/max = %u/%.2f/%u ms\n", ping6_stats.min_rtt, ping6_stats.avg_rtt, ping6_stats.max_rtt);
     }
 
@@ -2778,7 +2778,7 @@ int netstat_get_udp_sendQLen6(struct udp_pcb *udppcb, struct pbuf *udpbuf)
         goto FUNC_OUT;
     }
 
-    /* check if there is enough space for atleast udp header available */
+    /* check if there is enough space for at least udp header available */
     if (udpbuf->tot_len < UDP_HLEN) {
         goto FUNC_OUT;
     }
