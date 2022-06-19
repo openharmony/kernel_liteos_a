@@ -601,7 +601,7 @@ LWIP_STATIC void handle_request(struct netif *netif, struct dhcps *dhcps, struct
         dhcp_common_option_byte(srvr_msg, DHCP_NAK, &options_len);
 
         /* Just set this here, so that the NAK message is brcasted.
-        The correct flags has already been added in the respose message during base message creation */
+        The correct flags has already been added in the response message during base message creation */
         client_msg->flags |= htons(DHCP_BROADCAST_FLAG);
         client_msg->ciaddr.addr = 0; /* This is done so that NAK Gets brcasted */
 #ifdef  LWIP_DEV_DEBUG
