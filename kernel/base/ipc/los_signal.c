@@ -284,7 +284,7 @@ static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
         return 0;
     }
 
-    /* If the default tcb is not setted, then set this one as default. */
+    /* If the default tcb is not set, then set this one as default. */
     if (!info->defaultTcb) {
         info->defaultTcb = tcb;
     }
@@ -305,7 +305,7 @@ static int SigProcessSignalHandler(LosTaskCB *tcb, void *arg)
     /* Is this signal unblocked on this thread? */
     isMember = OsSigIsMember(&tcb->sig.sigprocmask, info->sigInfo->si_signo);
     if ((!isMember) && (!info->receivedTcb) && (tcb != info->awakenedTcb)) {
-        /* if unblockedTcb of this signal is not setted, then set it. */
+        /* if unblockedTcb of this signal is not set, then set it. */
         if (!info->unblockedTcb) {
             info->unblockedTcb = tcb;
         }
