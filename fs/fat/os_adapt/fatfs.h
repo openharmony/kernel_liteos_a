@@ -64,7 +64,7 @@ extern "C" {
 #define MBR_PRIMARY_PART_NUM 4
 #define JUMP_CODE "\xEB\xFE\x90"
 
-/* Partiton type */
+/* Partition type */
 #define FAT12                  0x01 /* FAT12 as primary partition in first physical 32MB */
 #define FAT16                  0x04 /* FAT16 with less than 65536 sectors(32MB) */
 #define EXTENDED_PARTITION_CHS  0x05
