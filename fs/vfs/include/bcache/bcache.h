@@ -138,7 +138,7 @@ typedef struct tagOsBcache {
  * <li>The block number is automatically adjusted if position is greater than block size.</li>
  * </ul>
  *
- * @retval #0           read succeded
+ * @retval #0           read succeeded
  * @retval #INT32       read failed
  *
  * @par Dependency:
@@ -168,7 +168,7 @@ INT32 BlockCacheRead(OsBcache *bc,
  * <li>The block number is automatically adjusted if position is greater than block size.</li>
  * </ul>
  *
- * @retval #0           write succeded
+ * @retval #0           write succeeded
  * @retval #INT32       write failed
  *
  * @par Dependency:
@@ -193,7 +193,7 @@ INT32 BlockCacheWrite(OsBcache *bc,
  * <li>None.</li>
  * </ul>
  *
- * @retval #0           sync succeded
+ * @retval #0           sync succeeded
  * @retval #INT32       sync failed
  *
  * @par Dependency:
@@ -219,7 +219,7 @@ INT32 BlockCacheSync(OsBcache *bc);
  * <li>None.</li>
  * </ul>
  *
- * @retval #OsBcache *      init succeded
+ * @retval #OsBcache *      init succeeded
  * @retval #NULL            init failed
  *
  * @par Dependency:

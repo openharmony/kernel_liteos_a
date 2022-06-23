@@ -500,7 +500,7 @@ static void lwip_tftp_send_error(s32_t iSockNum, u32_t ulError, const char *szEr
     }
 }
 
-/* INTEFACE to get a file using filename
+/* INTERFACE to get a file using filename
     ulHostAddr - IP address of Host
     szSrcFileName - Source file
     szDestDirPath - Destination file path
@@ -1419,7 +1419,7 @@ err_handler:
 }
 
 #ifdef TFTP_TO_RAWMEM
-/* INTEFACE to get a file using filename
+/* INTERFACE to get a file using filename
     ulHostAddr - IP address of Host
     szSrcFileName - Source file
     szDestMemAddr - The target memory address in the client

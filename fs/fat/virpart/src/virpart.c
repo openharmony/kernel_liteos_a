@@ -179,7 +179,7 @@ static INT FatfsDisablePart(void *handle)
  * Scan the FAT inside the boundary of CHILD FATFS limit, and update the free cluster and last cluster
  * for all CHILD FATFS.
  * Acceptable Return Value:
- * - FR_OK              : Successfully scaned the FAT and update field.
+ * - FR_OK              : Successfully scanned the FAT and update field.
  * Others Return Value:
  * - FR_INVAILD_FATFS   : The FATFS object has error or the info in it has been occuried
  * - FR_DENIED          : The virtual partition feature has been shut down by switcher

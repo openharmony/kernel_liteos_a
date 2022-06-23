@@ -977,7 +977,7 @@ extern UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInfo);
  *
  * @attention
  * <ul>
- * <li>If any low LOSCFG_KERNEL_CORE_NUM bit of the mask is not setted, an error is reported.</li>
+ * <li>If any low LOSCFG_KERNEL_CORE_NUM bit of the mask is not set, an error is reported.</li>
  * </ul>
  *
  * @param  uwTaskID      [IN]  Type  #UINT32 Task ID. The task id value is obtained from task creation.
@@ -987,7 +987,7 @@ extern UINT32 LOS_TaskInfoGet(UINT32 taskID, TSK_INFO_S *taskInfo);
  * @retval #LOS_ERRNO_TSK_ID_INVALID                Invalid task ID.
  * @retval #LOS_ERRNO_TSK_NOT_CREATED               The task is not created.
  * @retval #LOS_ERRNO_TSK_CPU_AFFINITY_MASK_ERR     The task cpu affinity mask is incorrect.
- * @retval #LOS_OK                                  The task cpu affinity mask is successfully setted.
+ * @retval #LOS_OK                                  The task cpu affinity mask is successfully set.
  * @par Dependency:
  * <ul><li>los_task.h: the header file that contains the API declaration.</li></ul>
  * @see LOS_TaskCpuAffiGet
