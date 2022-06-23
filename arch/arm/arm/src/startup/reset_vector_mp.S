@@ -276,11 +276,11 @@ mmu_setup:
     mov     r12, #0x7                           /* 0b0111 */
     mcr     p15, 0, r12, c3, c0, 0              /* Set DACR with 0b0111, client and manager domian */
     isb
-    mrc    p15, 0, r12, c1, c0, 1               /* ACTLR, Auxlliary Control Register */
+    mrc    p15, 0, r12, c1, c0, 1               /* ACTLR, Auxiliary Control Register */
     orr    r12, r12, #(1 << 6)                  /* SMP, Enables coherent requests to the processor. */
     orr    r12, r12, #(1 << 2)                  /* Enable D-side prefetch */
     orr    r12, r12, #(1 << 11)                 /* Global BP Enable bit */
-    mcr    p15, 0, r12, c1, c0, 1               /* ACTLR, Auxlliary Control Register */
+    mcr    p15, 0, r12, c1, c0, 1               /* ACTLR, Auxiliary Control Register */
     dsb
     mrc     p15, 0, r12, c1, c0, 0
     bic     r12, #(1 << 29 | 1 << 28)           /* Disable TRE/AFE */

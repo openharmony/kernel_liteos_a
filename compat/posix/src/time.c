@@ -71,7 +71,7 @@
 
 #ifdef LOSCFG_AARCH64
 /*
- * This two structures originally did't exit,
+ * This two structures originally didn't exit,
  * they added by liteos to support 64bit interfaces on 32bit platform,
  * in 64bit platform, timeval64 define to timeval which is platform adaptive.
  */

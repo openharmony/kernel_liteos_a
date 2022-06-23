@@ -1026,7 +1026,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
 #endif
             break;
         default:
-            PRINT_DEBUG("Unknow msg type:%d\n", msg->type);
+            PRINT_DEBUG("Unknown msg type:%d\n", msg->type);
             return -EINVAL;
     }
 
@@ -1118,13 +1118,13 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *c
             }
 #if (USE_TIMESTAMP == 1)
             if (node->msg.timestamp != content->outMsg->timestamp) {
-                PRINT_ERR("Recieve a unmatch reply, drop it\n");
+                PRINT_ERR("Receive a unmatch reply, drop it\n");
                 ret = -EINVAL;
             }
 #else
             if ((node->msg.code != content->outMsg->code) ||
                 (node->msg.target.token != content->outMsg->target.token)) {
-                PRINT_ERR("Recieve a unmatch reply, drop it\n");
+                PRINT_ERR("Receive a unmatch reply, drop it\n");
                 ret = -EINVAL;
             }
 #endif
@@ -1132,7 +1132,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *c
         case MT_DEATH_NOTIFY:
             break;
         default:
-            PRINT_ERR("Unknow msg type:%d\n", node->msg.type);
+            PRINT_ERR("Unknown msg type:%d\n", node->msg.type);
             ret =  -EINVAL;
     }
     if (ret != LOS_OK) {
@@ -1310,7 +1310,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleCmsCmd(CmsCmdContent *content)
             }
             return AddServiceAccess(localContent.taskID, localContent.serviceHandle);
         default:
-            PRINT_DEBUG("Unknow cmd cmd:%d\n", localContent.cmd);
+            PRINT_DEBUG("Unknown cmd cmd:%d\n", localContent.cmd);
             return -EINVAL;
     }
     return ret;
@@ -1375,7 +1375,7 @@ LITE_OS_SEC_TEXT int LiteIpcIoctl(struct file *filep, int cmd, unsigned long arg
             }
             break;
         default:
-            PRINT_ERR("Unknow liteipc ioctl cmd:%d\n", cmd);
+            PRINT_ERR("Unknown liteipc ioctl cmd:%d\n", cmd);
             return -EINVAL;
     }
     return (INT32)ret;
