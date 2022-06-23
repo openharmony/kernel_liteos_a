@@ -33,6 +33,7 @@ OpenHarmony LiteOS-A内核是基于Huawei LiteOS内核演进发展的新一代�
 │       ├── quickstart     # 系统快速启动接口目录
 │       ├── random         # 随机数设备驱动
 │       └── video          # framebuffer驱动框架
+├── figures                # 内核架构图
 ├── fs                     # 文件系统模块，主要来源于NuttX开源项目
 │   ├── fat                # fat文件系统
 │   ├── jffs2              # jffs2文件系统
@@ -54,7 +55,9 @@ OpenHarmony LiteOS-A内核是基于Huawei LiteOS内核演进发展的新一代�
 │   ├── include            # 对外暴露头文件存放目录
 │   └── uart               # 串口相关逻辑代码
 ├── security               # 安全特性相关的代码，包括进程权限管理和虚拟id映射管理
+├── shell                  # 接收用户输入的命令，内核去执行
 ├── syscall                # 系统调用
+├── testsuilts             # 测试套件
 └── tools                  # 构建工具及相关配置和代码
 ```
 
