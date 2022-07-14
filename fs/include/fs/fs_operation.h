@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -244,8 +244,9 @@ extern int chattr(const char *pathname, struct IATTR *attr);
  *
  * @retval #0  On success.
  * @retval #-1 On failure with errno set.
- * @retval CONTINE_NUTTX_FCNTL doesn't support some cmds in VfsFcntl, needs to continue going through Nuttx vfs operation.</li>
- *
+ * @retval CONTINE_NUTTX_FCNTL doesn't support some cmds in VfsFcntl, needs to continue going through 
+ * Nuttx vfs operation.</li>
+ *     
  * @par Dependency:
  * <ul><li>fs.h</li></ul>
  * @see None

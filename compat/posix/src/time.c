@@ -478,7 +478,6 @@ static int PthreadGetCputime(clockid_t clockID, struct timespec *ats)
     uint64_t runtime;
     UINT32 intSave;
     UINT32 tid = GetTidFromClockID(clockID);
-
     if (OS_TID_CHECK_INVALID(tid)) {
         return -EINVAL;
     }

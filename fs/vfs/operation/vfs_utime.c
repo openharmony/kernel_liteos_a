@@ -57,7 +57,6 @@ int utime(const char *path, const struct utimbuf *ptimes)
 
     /* Sanity checks */
 
-
     if (path == NULL) {
         ret = -EINVAL;
         goto errout;

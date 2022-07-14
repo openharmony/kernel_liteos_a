@@ -62,8 +62,8 @@ int OsShellCmdWriteProc(int argc, char **argv)
 
     if (argc == WRITEPROC_ARGC) {
         value = argv[0];
-        path = argv[2];
-        len = strlen(value) + 1;  /* +1:add the \0 */
+        path = argv[2]; // 2: index of path
+        len = strlen(value) + 1;  /* + 1:add the \0 */
         if (strncmp(argv[1], ">>", strlen(">>")) == 0) {
             if ((realpath(path, realPath) == NULL) || (strncmp(realPath, rootProcDir, strlen(rootProcDir)) != 0)) {
                 PRINT_ERR("No such file or directory\n");

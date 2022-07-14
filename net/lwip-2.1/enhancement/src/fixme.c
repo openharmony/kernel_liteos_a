@@ -412,7 +412,7 @@ int ip6addr_aton(const char *cp, ip6_addr_t *addr)
     int squash_pos = ipv6_blocks;
     int i;
     const char *s = cp;
-    const char *ss = cp-1;
+    const char *ss = cp - 1;
 
     for (; ; s++) {
         if (current_block_index >= ipv6_blocks) {
