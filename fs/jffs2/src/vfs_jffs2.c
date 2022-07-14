@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -682,7 +682,6 @@ int VfsJffs2Rmdir(struct Vnode *parentVnode, struct Vnode *targetVnode, const ch
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 
     ret = jffs2_rmdir(parentInode, targetInode, (const unsigned char *)path);
-
     if (ret == 0) {
         (void)jffs2_iput(targetInode);
     }
@@ -809,7 +808,6 @@ int VfsJffs2Unlink(struct Vnode *parentVnode, struct Vnode *targetVnode, const c
     LOS_MuxLock(&g_jffs2FsLock, (uint32_t)JFFS2_WAITING_FOREVER);
 
     ret = jffs2_unlink(parentInode, targetInode, (const unsigned char *)path);
-
     if (ret == 0) {
         (void)jffs2_iput(targetInode);
     }
