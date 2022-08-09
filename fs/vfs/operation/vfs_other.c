@@ -132,19 +132,19 @@ int VfsPermissionCheck(uint fuid, uint fgid, uint fileMode, int accMode)
 #ifdef VFS_USING_WORKDIR
 static int SetWorkDir(const char *dir, size_t len)
 {
-  errno_t ret;
-  uint lock_flags;
-  LosProcessCB *curr = OsCurrProcessGet();
+    errno_t ret;
+    uint lock_flags;
+    LosProcessCB *curr = OsCurrProcessGet();
 
-  spin_lock_irqsave(&curr->files->workdir_lock, lock_flags);
-  ret = strncpy_s(curr->files->workdir, PATH_MAX, dir, len);
-  curr->files->workdir[PATH_MAX - 1] = '\0';
-  spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
-  if (ret != EOK) {
-      return -1;
-  }
+    spin_lock_irqsave(&curr->files->workdir_lock, lock_flags);
+    ret = strncpy_s(curr->files->workdir, PATH_MAX, dir, len);
+    curr->files->workdir[PATH_MAX - 1] = '\0';
+    spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
+    if (ret != EOK) {
+        return -1;
+    }
 
-  return 0;
+        return 0;
 }
 #endif
 
@@ -154,7 +154,6 @@ int chdir(const char *path)
     char *fullpath = NULL;
     char *fullpath_bak = NULL;
     struct stat statBuff;
-
 
     if (!path) {
         set_errno(EFAULT);

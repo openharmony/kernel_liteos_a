@@ -58,7 +58,7 @@
 
 #define ip_addr_set_val(dest, src)  do { \
                                         IP_SET_TYPE_VAL(*dest, IP_GET_TYPE(src)); \
-                                        if(IP_IS_V6_VAL(*(src))) { \
+                                        if (IP_IS_V6_VAL(*(src))) { \
                                             ip6_addr_set(ip_2_ip6(dest), ip_2_ip6(src)); \
                                         } else { \
                                             ip4_addr_set(ip_2_ip4(dest), ip_2_ip4(src)); \

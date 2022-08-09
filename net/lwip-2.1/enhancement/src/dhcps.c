@@ -435,9 +435,9 @@ LWIP_STATIC void handle_discover(struct netif *netif, struct dhcps *dhcps,
     }
 #else
     else {
-      LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE,
-                  ("handle_discover: sendto(OFFER, IP_ADDR_BROADCAST, DHCP_CLIENT_PORT)\n"));
-      (void)udp_sendto_if_src(dhcps->pcb, out_msg, IP_ADDR_BROADCAST, DHCP_CLIENT_PORT, netif, &(netif->ip_addr));
+        LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE,
+                    ("handle_discover: sendto(OFFER, IP_ADDR_BROADCAST, DHCP_CLIENT_PORT)\n"));
+        (void)udp_sendto_if_src(dhcps->pcb, out_msg, IP_ADDR_BROADCAST, DHCP_CLIENT_PORT, netif, &(netif->ip_addr));
     }
 #endif
 

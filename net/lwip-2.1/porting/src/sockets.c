@@ -803,12 +803,10 @@ static u8_t lwip_ioctl_internal_SIOCSIFHWADDR(struct ifreq *ifr)
     }
 #endif
     else {
-
         /* bring netif down to clear all Neighbor Cache Entry */
         (void)netif_set_down(netif);
 
         ret = netif_set_hwaddr(netif, (const unsigned char *)ifr->ifr_hwaddr.sa_data, netif->hwaddr_len);
-
         if (ret != ERR_OK) {
             (void)netif_set_up(netif);
             return err_to_errno(ret);
@@ -979,7 +977,6 @@ static u8_t lwip_ioctl_internal_SIOCGIFFLAGS(struct ifreq *ifr)
 #endif /* LWIP_IGMP || LWIP_IPV6_MLD */
 
 #if LWIP_DHCP
-        //if ((netif->flags & NETIF_FLAG_DHCP) != 0) {
         if (dhcp_supplied_address(netif)) {
             ifr->ifr_flags = (short)((unsigned short)ifr->ifr_flags | IFF_DYNAMIC);
         } else {
@@ -1090,7 +1087,6 @@ static u8_t lwip_ioctl_internal_SIOCSIFNAME(struct ifreq *ifr)
 #endif
 
     netif = netif_find(ifr->ifr_name);
-
     if (netif == NULL) {
         return ENODEV;
     } else if (netif->link_layer_type == LOOPBACK_IF) {
@@ -1165,7 +1161,6 @@ static u8_t lwip_ioctl_internal_SIOCGIFMTU(struct ifreq *ifr)
 
     /* get netif hw addr */
     netif = netif_find(ifr->ifr_name);
-
     if (netif == NULL) {
         return ENODEV;
     } else {

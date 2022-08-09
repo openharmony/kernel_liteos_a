@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -239,7 +239,7 @@ BOOL VnodeInUseIter(const struct Mount *mount)
     return FALSE;
 }
 
-int VnodeHold()
+int VnodeHold(void)
 {
     int ret = LOS_MuxLock(&g_vnodeMux, LOS_WAIT_FOREVER);
     if (ret != LOS_OK) {
@@ -248,7 +248,7 @@ int VnodeHold()
     return ret;
 }
 
-int VnodeDrop()
+int VnodeDrop(void)
 {
     int ret = LOS_MuxUnlock(&g_vnodeMux);
     if (ret != LOS_OK) {
@@ -583,7 +583,7 @@ int VnodeCreate(struct Vnode *parent, const char *name, int mode, struct Vnode *
     return 0;
 }
 
-int VnodeDevInit()
+int VnodeDevInit(void)
 {
     struct Vnode *devNode = NULL;
     struct Mount *devMount = NULL;
@@ -616,7 +616,7 @@ int VnodeGetattr(struct Vnode *vnode, struct stat *buf)
     return LOS_OK;
 }
 
-struct Vnode *VnodeGetRoot()
+struct Vnode *VnodeGetRoot(void)
 {
     return g_rootVnode;
 }
@@ -697,7 +697,7 @@ LIST_HEAD* GetVnodeActiveList()
     return &g_vnodeActiveList;
 }
 
-int VnodeClearCache()
+int VnodeClearCache(void)
 {
     struct Vnode *item = NULL;
     struct Vnode *nextItem = NULL;
