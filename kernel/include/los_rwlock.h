@@ -50,8 +50,8 @@ extern "C" {
  * Rwlock object.
  */
 typedef struct OsRwlock {
-    INT32 magic:24;        /**< Magic number */
-    INT32 rwCount:8;       /**< Times of locking the rwlock, rwCount > 0 when rwkick is read mode, rwCount < 0
+    INT32 magic : 24;        /**< Magic number */
+    INT32 rwCount : 8;       /**< Times of locking the rwlock, rwCount > 0 when rwkick is read mode, rwCount < 0
                                 when the rwlock is write mode, rwCount = 0 when the lock is free. */
     VOID *writeOwner;      /**< The current write thread that is locking the rwlock */
     LOS_DL_LIST readList;  /**< Read waiting list */

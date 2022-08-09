@@ -98,10 +98,10 @@ driverif_output(struct netif *netif, struct pbuf *p)
 
 #if PF_PKT_SUPPORT
     if (all_pkt_raw_pcbs != NULL) {
-    p->flags = (u16_t)(p->flags & ~(PBUF_FLAG_LLMCAST | PBUF_FLAG_LLBCAST | PBUF_FLAG_HOST));
-    p->flags |= PBUF_FLAG_OUTGOING;
-    (void)raw_pkt_input(p, netif, NULL);
-  }
+        p->flags = (u16_t)(p->flags & ~(PBUF_FLAG_LLMCAST | PBUF_FLAG_LLBCAST | PBUF_FLAG_HOST));
+        p->flags |= PBUF_FLAG_OUTGOING;
+        (void)raw_pkt_input(p, netif, NULL);
+    }
 #endif
 
 #if ETH_PAD_SIZE
