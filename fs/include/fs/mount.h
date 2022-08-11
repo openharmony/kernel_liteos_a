@@ -49,7 +49,7 @@ struct Mount {
     LIST_HEAD vnodeList;               /* list of vnodes */
     int vnodeSize;                     /* size of vnode list */
     LIST_HEAD activeVnodeList;         /* list of active vnodes */
-    int activeVnodeSize;               /* szie of active vnodes list */
+    int activeVnodeSize;               /* size of active vnodes list */
     void *data;                        /* private data */
     uint32_t hashseed;                 /* Random seed for vfshash */
     unsigned long mountFlags;          /* Flags for mount */
