@@ -137,7 +137,7 @@ struct ProcData {
 #define S_IALLUGO (S_ISUID | S_ISGID | S_ISVTX | S_IRWXU | S_IRWXG | S_IRWXO)
 
 /**
- * Interface for modules using proc below internal proc moudule;
+ * Interface for modules using proc below internal proc module;
  */
 /**
  * @ingroup  procfs
