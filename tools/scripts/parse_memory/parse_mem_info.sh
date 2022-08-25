@@ -59,14 +59,14 @@ parse_line()
                 echo "Error: no such file: $i"
                 exit 1
             fi
-            FILE_LINE=$(get_line "$1" $i)
-            if [[ "${FILE_LINE}" == *"?"* ]] || [ -z "${FILE_LINE}" ]; then
+            ELF_FILE_LINE=$(get_line "$1" $i)
+            if [[ "${ELF_FILE_LINE}" == *"?"* ]] || [ -z "${ELF_FILE_LINE}" ]; then
                 echo "        * Error: you need ensure whether file: "$i" was compiled with -g or not! *"
                 exit 1
             fi
             LINE=$(echo $1 | tr -d '\r')
             LINE=$(echo ${LINE} | awk '{print $1,$2}')
-            echo "        "${LINE}" at "${FILE_LINE}
+            echo "        "${LINE}" at "${ELF_FILE_LINE}
             FLAG=true
             break
         fi
