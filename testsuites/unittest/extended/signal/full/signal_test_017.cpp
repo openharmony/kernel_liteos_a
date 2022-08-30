@@ -52,6 +52,8 @@ static void *ThreadSetFunc2(void *arg)
 
     retValue = sigwait(&set, &sig);
     ICUNIT_ASSERT_EQUAL_NULL(retValue, 0, retValue);
+
+	return NULL;
 }
 
 static void *ThreadSetDfl(void *arg)
@@ -69,6 +71,8 @@ static void *ThreadSetDfl(void *arg)
 
     retValue = sigwait(&set, &sig);
     ICUNIT_ASSERT_EQUAL_NULL(retValue, 0, retValue);
+
+	return NULL;
 }
 
 static void *ThreadKill(void *arg)
@@ -86,6 +90,8 @@ static void *ThreadKill(void *arg)
 
     retValue = sigwait(&set, &sig);
     ICUNIT_ASSERT_EQUAL_NULL(retValue, 0, retValue);
+
+	return NULL;
 }
 
 static int TestMultiPthreadFatherProcessExit()
