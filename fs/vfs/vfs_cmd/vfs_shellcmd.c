@@ -344,7 +344,7 @@ int osShellCmdMount(int argc, const char **argv)
 
         filessystemtype = (argc >= 4) ? (char *)argv[3] : NULL; /* 4: specify fs type, 3: fs type */
         mountfalgs = (argc >= 5) ? get_mountflags((const char *)argv[4]) : 0; /* 4: usr option */
-        data = (argc >= 6) ? (char *)argv[5] : NULL; /* 5: usr option data */
+        data = (argc >= 6) ? (char *)argv[5] : NULL; /* 5: usr option data, 6: six args needed for data */
 
         if (strcmp(argv[1], "0") == 0) {
             ret = mount((const char *)NULL, fullpath, filessystemtype, mountfalgs, data);
@@ -384,7 +384,7 @@ int osShellCmdMount(int argc, const char **argv)
         }
 
         mountfalgs = (argc >= 4) ? get_mountflags((const char *)argv[3]) : 0;  /* 3: usr option */
-        data = (argc >= 5) ? (char *)argv[4] : NULL; /* 4: usr option data */
+        data = (argc >= 5) ? (char *)argv[4] : NULL; /* 4: usr option data, 5: number of args needed for data */
 
         if (strcmp(argv[0], "0") == 0) {
             ret = mount((const char *)NULL, fullpath, argv[2], mountfalgs, data);
