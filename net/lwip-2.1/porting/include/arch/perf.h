@@ -34,8 +34,8 @@
 
 #if LWIP_PERF
 
-#define PERF_START    do {/* something to do */} while (0)
-#define PERF_STOP(x)  do {/* something to do */} while (0)
+#define PERF_START    do {} while (0) /* something to do */
+#define PERF_STOP(x)  do {} while (0) /* something to do */
 
 #endif
 
