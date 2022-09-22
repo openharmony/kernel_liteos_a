@@ -47,7 +47,7 @@ static int DnCompTest(void)
     unsigned char **lastdnptr = &dnptrs[6];
     int offset, ret;
 
-    offset = strlen(reinterpret_cast<const char *>(dnptrs[0]))+1;
+    offset = strlen(reinterpret_cast<const char *>(dnptrs[0])) + 1;
     ret = dn_comp("x.y.z.example.com", comp_dn + offset, sizeof(comp_dn) - offset, dnptrs, lastdnptr);
     dump(comp_dn + offset, ret);
     ICUNIT_ASSERT_EQUAL(ret, 19, ret);
