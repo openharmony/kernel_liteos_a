@@ -404,7 +404,7 @@ STATIC VOID EchoToTerminal(CONSOLE_CB *consoleCB, struct file *filep, const stru
 {
     if (consoleCB->consoleTermios.c_lflag & ECHO) {
         if (ch == '\b') {
-            (VOID)fops->write(filep, "\b \b", 3);
+            (VOID)fops->write(filep, "\b \b", 3); // 3: length of "\b \b"
         } else {
             (VOID)fops->write(filep, &ch, EACH_CHAR);
         }
