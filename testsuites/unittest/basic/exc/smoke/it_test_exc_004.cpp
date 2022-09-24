@@ -35,18 +35,14 @@
 
 static int TestThread(void)
 {
-    int *test = nullptr;
     int ret;
 
     pid_t pid = fork();
     ICUNIT_ASSERT_WITHIN_EQUAL(pid, 0, INVALID_PROCESS_ID, pid);
     if (pid == 0) {
-        *test = 0x1;
         while (1) {
         }
     }
-
-    *test = 0x1;
 
     ret = waitpid(pid, NULL, 0);
     ICUNIT_ASSERT_EQUAL(ret, pid, ret);
@@ -56,7 +52,6 @@ static int TestThread(void)
 
 static int TestCase(void)
 {
-    int *test = nullptr;
     int count = 5;
     int status = 0;
     int ret;

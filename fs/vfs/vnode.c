@@ -260,7 +260,7 @@ int VnodeDrop(void)
 static char *NextName(char *pos, uint8_t *len)
 {
     char *name = NULL;
-    while (*pos != 0 && *pos == '/') {
+    while (*pos == '/') {
         pos++;
     }
     if (*pos == '\0') {
