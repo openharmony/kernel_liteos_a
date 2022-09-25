@@ -1437,10 +1437,8 @@ u32_t lwip_tftp_get_file_by_filename_to_rawmem(u32_t ulHostAddr,
 {
     s32_t iSockNum = TFTP_NULL_INT32;
     u32_t ulSrcStrLen;
-    u32_t lDestStrLen;
     u32_t ulSize;
     u32_t ulRecvSize = TFTP_NULL_UINT32;
-    s32_t iErrCode;
     u32_t ulErrCode;
     u16_t usReadReq;
     u16_t usTempServPort;
