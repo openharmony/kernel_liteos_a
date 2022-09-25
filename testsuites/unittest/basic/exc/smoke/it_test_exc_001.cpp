@@ -33,12 +33,10 @@
 static int TestCase(void)
 {
     int ret;
-    int *test = NULL;
     int status = 0;
     pid_t pid = fork();
     ICUNIT_ASSERT_WITHIN_EQUAL(pid, 0, INVALID_PROCESS_ID, pid);
     if (pid == 0) {
-        *test = 0x1;
         exit(0);
     }
 
@@ -54,7 +52,6 @@ static int TestCase(void)
     pid = fork();
     ICUNIT_ASSERT_WITHIN_EQUAL(pid, 0, INVALID_PROCESS_ID, pid);
     if (pid == 0) {
-        *test = 0x1;
         exit(0);
     }
 

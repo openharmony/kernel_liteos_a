@@ -709,7 +709,6 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
 {
     INT32 cnt;
     size_t written = 0;
-    size_t toWrite = bufLen;
     UINT32 intSave;
 
 #ifdef LOSCFG_SHELL_DMESG
@@ -730,7 +729,6 @@ STATIC ssize_t DoWrite(CirBufSendCB *cirBufSendCB, CHAR *buffer, size_t bufLen)
         if (cnt <= 0) {
             break;
         }
-        toWrite -= cnt;
         written += cnt;
     }
     LOS_SpinUnlockRestore(&g_consoleWriteSpinLock, intSave);
@@ -1536,7 +1534,15 @@ STATIC ssize_t WriteToTerminal(const CONSOLE_CB *consoleCB, const CHAR *buffer, 
 
     fd = consoleCB->fd;
     ret = fs_getfilep(fd, &filep);
+    if (ret < 0) {
+        ret = -EPERM;
+        goto ERROUT;
+    }
     ret = GetFilepOps(filep, &privFilep, &fileOps);
+    if (ret != ENOERR) {
+        ret = -EINVAL;
+        goto ERROUT;
+    }
 
     if ((fileOps == NULL) || (fileOps->write == NULL)) {
         ret = EFAULT;

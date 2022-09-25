@@ -208,13 +208,10 @@ UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
     PADDR_T paddr;
     STATUS_T ret;
     INT32 shareRef;
+    UINT32 pmSize = 0;
 
     if (sharePm != NULL) {
         *sharePm = 0;
-    }
-
-    if (actualPm != NULL) {
-        *actualPm = 0;
     }
 
     ret = LOS_MuxAcquire(&space->regionMux);
@@ -240,19 +237,20 @@ UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
                 if (sharePm != NULL) {
                     *sharePm += PAGE_SIZE;
                 }
-                if (actualPm != NULL) {
-                    *actualPm += PAGE_SIZE / shareRef;
-                }
+                pmSize += PAGE_SIZE / shareRef;
             } else {
-                if (actualPm != NULL) {
-                    *actualPm += PAGE_SIZE;
-                }
+                pmSize += PAGE_SIZE;
             }
         }
     RB_SCAN_SAFE_END(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)
 
     (VOID)LOS_MuxRelease(&space->regionMux);
-    return *actualPm;
+
+    if (actualPm != NULL) {
+        *actualPm = pmSize;
+    }
+
+    return pmSize;
 }
 
 LosProcessCB *OsGetPIDByAspace(LosVmSpace *space)
@@ -305,7 +303,7 @@ UINT32 OsCountRegionPages(LosVmSpace *space, LosVmMapRegion *region, UINT32 *pss
     }
 
     if (pssPages != NULL) {
-        *pssPages = (UINT32)(pss + 0.5);
+        *pssPages = (UINT32)(pss + 0.5);    /* 0.5, for page alignment */
     }
 
     return regionPages;
