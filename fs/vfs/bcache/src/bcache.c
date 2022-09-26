@@ -581,8 +581,11 @@ static OsBcacheBlock *AllocNewBlock(OsBcache *bc, BOOL read, UINT64 num)
         DelBlock(bc, prefer);
     }
 
+    if (prefer->used) { /* do not combine with next check */
+        MergeSyncBlocks(bc, prefer); /* prefer->used may be changed here */
+    }
+
     if (prefer->used) {
-        MergeSyncBlocks(bc, prefer);
         BcacheSyncBlock(bc, prefer);
         DelBlock(bc, prefer);
     }
