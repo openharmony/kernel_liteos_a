@@ -36,13 +36,16 @@
 static int TestThread(void)
 {
     int ret;
+    int *test = nullptr; // For triggering an exceptioin
 
     pid_t pid = fork();
     ICUNIT_ASSERT_WITHIN_EQUAL(pid, 0, INVALID_PROCESS_ID, pid);
     if (pid == 0) {
+        *test = 0x1; // Deliberately trigger an exceptioin
         while (1) {
         }
     }
+    *test = 0x1; // Deliberately trigger an exceptioin
 
     ret = waitpid(pid, NULL, 0);
     ICUNIT_ASSERT_EQUAL(ret, pid, ret);
