@@ -96,7 +96,7 @@ UINT32 LOS_RwlockDestroy(LosRwlock *rwlock)
     return LOS_OK;
 }
 
-STATIC UINT32 OsRwlockCheck(LosRwlock *rwlock)
+STATIC UINT32 OsRwlockCheck(const LosRwlock *rwlock)
 {
     if (rwlock == NULL) {
         return LOS_EINVAL;

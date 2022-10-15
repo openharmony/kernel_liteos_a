@@ -233,7 +233,7 @@ LosVmSpace *OsCreateUserVmSpace(VOID)
     return space;
 }
 
-STATIC BOOL OsVmSpaceParamCheck(LosVmSpace *vmSpace)
+STATIC BOOL OsVmSpaceParamCheck(const LosVmSpace *vmSpace)
 {
     if (vmSpace == NULL) {
         return FALSE;
