@@ -125,10 +125,10 @@ VOID OsAddMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr)
     page->n_maps++;
 }
 
-LosMapInfo *OsGetMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr)
+LosMapInfo *OsGetMapInfo(const LosFilePage *page, const LosArchMmu *archMmu, VADDR_T vaddr)
 {
     LosMapInfo *info = NULL;
-    LOS_DL_LIST *immap = &page->i_mmap;
+    const LOS_DL_LIST *immap = &page->i_mmap;
 
     LOS_DL_LIST_FOR_EACH_ENTRY(info, immap, LosMapInfo, node) {
         if ((info->archMmu == archMmu) && (info->vaddr == vaddr) && (info->page == page)) {
@@ -214,7 +214,7 @@ VOID OsVmmFileRemove(LosVmMapRegion *region, LosArchMmu *archMmu, VM_OFFSET_T pg
     return;
 }
 
-VOID OsMarkPageDirty(LosFilePage *fpage, LosVmMapRegion *region, INT32 off, INT32 len)
+VOID OsMarkPageDirty(LosFilePage *fpage, const LosVmMapRegion *region, INT32 off, INT32 len)
 {
     if (region != NULL) {
         OsSetPageDirty(fpage->vmPage);

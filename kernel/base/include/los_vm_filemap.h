@@ -193,7 +193,7 @@ VOID OsVmmFileRegionFree(struct file *filep, LosProcessCB *processCB);
 
 LosFilePage *OsPageCacheAlloc(struct page_mapping *mapping, VM_OFFSET_T pgoff);
 LosFilePage *OsFindGetEntry(struct page_mapping *mapping, VM_OFFSET_T pgoff);
-LosMapInfo *OsGetMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr);
+LosMapInfo *OsGetMapInfo(const LosFilePage *page, const LosArchMmu *archMmu, VADDR_T vaddr);
 VOID OsAddMapInfo(LosFilePage *page, LosArchMmu *archMmu, VADDR_T vaddr);
 VOID OsDelMapInfo(LosVmMapRegion *region, LosVmPgFault *pgFault, BOOL cleanDirty);
 VOID OsFileCacheFlush(struct page_mapping *mapping);
@@ -208,7 +208,7 @@ VOID OsDeletePageCacheLru(LosFilePage *page);
 VOID OsPageRefDecNoLock(LosFilePage *page);
 VOID OsPageRefIncLocked(LosFilePage *page);
 int OsTryShrinkMemory(size_t nPage);
-VOID OsMarkPageDirty(LosFilePage *fpage, LosVmMapRegion *region, int off, int len);
+VOID OsMarkPageDirty(LosFilePage *fpage, const LosVmMapRegion *region, int off, int len);
 
 #ifdef LOSCFG_DEBUG_VERSION
 VOID ResetPageCacheHitInfo(int *try, int *hit);

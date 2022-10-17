@@ -253,7 +253,7 @@ UINT32 OsUProcessPmUsage(LosVmSpace *space, UINT32 *sharePm, UINT32 *actualPm)
     return pmSize;
 }
 
-LosProcessCB *OsGetPIDByAspace(LosVmSpace *space)
+LosProcessCB *OsGetPIDByAspace(const LosVmSpace *space)
 {
     UINT32 pid;
     UINT32 intSave;
