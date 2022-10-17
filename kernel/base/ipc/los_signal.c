@@ -78,7 +78,6 @@ STATIC VOID OsMoveTmpInfoToUnbInfo(sig_cb *sigcb, INT32 signo)
             /* delete tmpinfo from tmpList. */
             *prevHook = tmpInfoNode->next;
             (VOID)LOS_MemFree(m_aucSysMem0, tmpInfoNode);
-            tmpInfoNode = *prevHook;
             break;
         }
         prevHook = &tmpInfoNode->next;
