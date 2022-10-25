@@ -356,7 +356,7 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
         buf_len -= (unsigned int)ret;
     }
 
-    ret = snprintf_s(tmp, buf_len, (buf_len - 1), " %s\n", 
+    ret = snprintf_s(tmp, buf_len, (buf_len - 1), " %s\n",
                      (netif->flags & NETIF_FLAG_LINK_UP) ? "Link UP" : "Link Down");
     if ((ret <= 0) || ((unsigned int)ret >= buf_len))
         goto out;
