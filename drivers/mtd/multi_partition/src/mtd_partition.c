@@ -39,11 +39,6 @@
 #include "fs/driver.h"
 #include "mtd/mtd_legacy_lite.h"
 
-#ifdef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
-#include "cfiflash.h"
-#endif
-
-
 #define DRIVER_NAME_ADD_SIZE    3
 pthread_mutex_t g_mtdPartitionLock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -134,17 +129,10 @@ static VOID MtdNorParamAssign(partition_param *spinorParam, const struct MtdDev 
      * you can change the SPIBLK_NAME or SPICHR_NAME to NULL.
      */
     spinorParam->flash_mtd = (struct MtdDev *)spinorMtd;
-#ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
     spinorParam->flash_ops = GetDevSpinorOps();
     spinorParam->char_ops = GetMtdCharFops();
     spinorParam->blockname = SPIBLK_NAME;
     spinorParam->charname = SPICHR_NAME;
-#else
-    spinorParam->flash_ops = GetCfiBlkOps();
-    spinorParam->char_ops = NULL;
-    spinorParam->blockname = CFI_DRIVER;
-    spinorParam->charname = NULL;
-#endif
     spinorParam->partition_head = g_spinorPartitionHead;
     spinorParam->block_size = spinorMtd->eraseSize;
 }
@@ -158,11 +146,7 @@ static VOID MtdDeinitSpinorParam(VOID)
 
 static partition_param *MtdInitSpinorParam(partition_param *spinorParam)
 {
-#ifndef LOSCFG_PLATFORM_QEMU_ARM_VIRT_CA7
     struct MtdDev *spinorMtd = GetMtd("spinor");
-#else
-    struct MtdDev *spinorMtd = GetCfiMtdDev();
-#endif
     if (spinorMtd == NULL) {
         return NULL;
     }
