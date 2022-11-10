@@ -3348,7 +3348,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
  {
  	/*
  	 * Pick a inocache hash size based on the size of the medium.
-@@ -510,117 +386,17 @@ static int calculate_inocache_hashsize(uint32_t flash_size)
+@@ -510,118 +386,17 @@ static int calculate_inocache_hashsize(uint32_t flash_size)
  	return hashsize;
  }
  
@@ -3445,6 +3445,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
 -	jffs2_free_raw_node_refs(c);
 -	kvfree(c->blocks);
 -	jffs2_clear_xattr_subsystem(c);
+-	jffs2_sum_exit(c);
 - out_inohash:
 -	kfree(c->inocache_list);
 - out_wbuf:
@@ -3469,7 +3470,7 @@ diff -Nupr old/fs/jffs2/fs.c new/fs/jffs2/fs.c
  	struct jffs2_inode_cache *ic;
  
  	if (unlinked) {
-@@ -668,72 +444,9 @@ struct jffs2_inode_info *jffs2_gc_fetch_inode(struct jffs2_sb_info *c,
+@@ -669,72 +444,9 @@ struct jffs2_inode_info *jffs2_gc_fetch_inode(struct jffs2_sb_info *c,
  		   Just iget() it, and if read_inode() is necessary that's OK.
  		*/
  		inode = jffs2_iget(OFNI_BS_2SFFJ(c), inum);
