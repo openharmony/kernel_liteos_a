@@ -208,7 +208,7 @@ long SysSysconf(int name)
 int SysUgetrlimit(int resource, unsigned long long k_rlim[2])
 {
     int ret;
-    struct rlimit lim;
+    struct rlimit lim = { 0 };
 
     ret = getrlimit(resource, &lim);
     if (ret < 0) {
