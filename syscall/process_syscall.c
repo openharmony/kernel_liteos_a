@@ -255,7 +255,7 @@ int SysSchedRRGetInterval(int pid, struct timespec *tp)
     int ret;
     SchedParam param = { 0 };
     time_t timeSlice = 0;
-    struct timespec tv;
+    struct timespec tv = { 0 };
     LosTaskCB *taskCB = NULL;
     LosProcessCB *processCB = NULL;
 
