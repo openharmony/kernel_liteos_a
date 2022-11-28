@@ -49,7 +49,7 @@ ShellCB *OsGetShellCb()
     return g_shellCB;
 }
 
-void ShellDeinit(ShellCB *shellCB)
+static void ShellDeinit(ShellCB *shellCB)
 {
     (void)pthread_mutex_destroy(&shellCB->historyMutex);
     (void)pthread_mutex_destroy(&shellCB->keyMutex);
@@ -65,27 +65,23 @@ static int OsShellCreateTask(ShellCB *shellCB)
 
     ret = sched_getparam(getpid(), &param);
     if (ret != SH_OK) {
-        goto OUT;
+        return ret;
     }
 
     param.sched_priority = SHELL_PROCESS_PRIORITY_INIT;
 
     ret = sched_setparam(getpid(), &param);
     if (ret != SH_OK) {
-        goto OUT;
+        return ret;
     }
 
     ret = ShellTaskInit(shellCB);
     if (ret != SH_OK) {
-        goto OUT;
+        return ret;
     }
 
     shellCB->shellEntryHandle = pthread_self();
     return 0;
-
-OUT:
-    ShellDeinit(shellCB);
-    return ret;
 }
 
 static int DoShellExec(char **argv)
@@ -148,7 +144,7 @@ int main(int argc, char **argv)
 
     shellCB = (ShellCB *)malloc(sizeof(ShellCB));
     if (shellCB == NULL) {
-        goto ERR_OUT1;
+        return SH_NOK;
     }
     ret = memset_s(shellCB, sizeof(ShellCB), 0, sizeof(ShellCB));
     if (ret != SH_OK) {
@@ -176,7 +172,9 @@ int main(int argc, char **argv)
     g_shellCB = shellCB;
     ret = OsShellCreateTask(shellCB);
     if (ret != SH_OK) {
-        goto ERR_OUT3;
+        ShellDeinit(shellCB);
+        g_shellCB = NULL;
+        return ret;
     }
 
     ShellEntry(shellCB);
