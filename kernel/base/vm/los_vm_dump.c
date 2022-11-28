@@ -146,7 +146,6 @@ UINT32 OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
     LosVmSpace *space = NULL;
     LOS_DL_LIST *spaceList = NULL;
     UINT32 UProcessUsed = 0;
-    UINT32 pmTmp;
 
     if (actualPm == NULL) {
         return 0;
@@ -167,8 +166,7 @@ UINT32 OsKProcessPmUsage(LosVmSpace *kSpace, UINT32 *actualPm)
         if (space == LOS_GetKVmSpace()) {
             continue;
         }
-        (VOID)OsUProcessPmUsage(space, NULL, &pmTmp);
-        UProcessUsed += pmTmp;
+        UProcessUsed += OsUProcessPmUsage(space, NULL, NULL);
     }
     (VOID)LOS_MuxRelease(vmSpaceListMux);
 
