@@ -233,14 +233,8 @@ static int HiLogWriteRingBuffer(unsigned char *buffer, size_t bufLen)
 
 static void HiLogHeadInit(struct HiLogEntry *header, size_t len)
 {
-    struct timespec now;
-    int ret;
-
-    ret = clock_gettime(CLOCK_REALTIME, &now);
-    if (ret != 0) {
-        PRINTK("In %s line %d,clock_gettime fail\n", __FUNCTION__, __LINE__);
-        return;
-    }
+    struct timespec now = {0};
+    (void)clock_gettime(CLOCK_REALTIME, &now);
 
     header->len = len;
     header->pid = LOS_GetCurrProcessID();
