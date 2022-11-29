@@ -4,10 +4,10 @@
 - [目錄](#section161941989596)
 - [約束](#section119744591305)
 - [使用說明](#section741617511812)
-    - [準備](#section1579912573329)
-    - [獲取源碼](#section11443189655)
-    - [編譯構建](#section2081013992812)
-
+- [準備](#section1579912573329)
+- [獲取源碼](#section11443189655)
+- [編譯構建](#section2081013992812)
+- [貢獻](#section1371123476304)
 - [相關倉](#section1371113476307)
 
 ## 簡介<a name="section11660541593"></a>
@@ -67,30 +67,29 @@ OpenHarmony LiteOS-A內核是基於Huawei LiteOS內核演進發展的新一代�
 
 ## 使用說明<a name="section741617511812"></a>
 
-OpenHarmony LiteOS-A內核支持Hi3516DV300（[介紹](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-introduction-hi3516.md)）單板，開發者可基於此單板開發運行自己的應用程序。
+OpenHarmony LiteOS-A內核支持[Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-appendix-hi3516.md)單板，開發者可基於此單板開發運行自己的應用程序。
 
 ### 準備<a name="section1579912573329"></a>
 
-開發者需要在Linux上搭建編譯環境：
+開發者需要在Ubuntu上搭建編譯環境：
 
-- [編譯環境凖備](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-env-setup.md);
-- Hi3516DV300單板：參考[環境搭建](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3516-setting.md)。
+- [編譯環境凖備](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/Readme-CN.md);
 
 ### 獲取源碼<a name="section11443189655"></a>
 
-在Linux服務器上下載並解壓一套源代碼，源碼獲取方式參考[源碼獲取](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/get-code/sourcecode-acquire.md)。
+在Ubuntu服務器上下載並解壓一套源代碼，源碼獲取方式參考[源碼獲取](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/get-code/sourcecode-acquire.md)。
 
 ### 編譯構建<a name="section2081013992812"></a>
+
+開發者開發第一個應用程序可參考：[helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-pkg-3516-helloworld.md)。
+
+編譯可以參考：[編譯指導](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-pkg-3516-build.md)
 
 ## 貢獻<a name="section1371123476304"></a>
 
 [如何貢獻](https://gitee.com/openharmony/docs/blob/HEAD/zh-cn/contribute/%E5%8F%82%E4%B8%8E%E8%B4%A1%E7%8C%AE.md)
 
 [Commit message規範](https://gitee.com/openharmony/kernel_liteos_m/wikis/Commit%20message%E8%A7%84%E8%8C%83)
-
-開發者開發第一個應用程序可參考：
-
-- [helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3516-running.md)。
 
 ## 相關倉<a name="section1371113476307"></a>
 
