@@ -86,6 +86,12 @@ For details about how to develop the first application, see:
 
 -   [Developing the First Example Program Running on Hi3516](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3516-running.md)
 
+## Contribution<a name="section1371123476304"></a>
+
+[How to involve](https://gitee.com/openharmony/docs/blob/HEAD/en/contribute/contribution.md)
+
+[Commit message spec](https://gitee.com/openharmony/kernel_liteos_m/wikis/Commit%20message%E8%A7%84%E8%8C%83)
+
 ## Repositories Involved<a name="section1371113476307"></a>
 
 [Kernel subsystem](https://gitee.com/openharmony/docs/blob/master/en/readme/kernel.md)
