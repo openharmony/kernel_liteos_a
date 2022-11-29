@@ -82,6 +82,12 @@ OpenHarmony LiteOS-A內核支持Hi3516DV300（[介紹](https://gitee.com/openhar
 
 ### 編譯構建<a name="section2081013992812"></a>
 
+## 貢獻<a name="section1371123476304"></a>
+
+[如何貢獻](https://gitee.com/openharmony/docs/blob/HEAD/zh-cn/contribute/%E5%8F%82%E4%B8%8E%E8%B4%A1%E7%8C%AE.md)
+
+[Commit message規範](https://gitee.com/openharmony/kernel_liteos_m/wikis/Commit%20message%E8%A7%84%E8%8C%83)
+
 開發者開發第一個應用程序可參考：
 
 - [helloworld for Hi3516DV300](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-lite-steps-hi3516-running.md)。
