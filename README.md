@@ -4,10 +4,10 @@
 -   [Directory Structure](#section161941989596)
 -   [Constraints](#section119744591305)
 -   [Usage](#section741617511812)
-    -   [Preparations](#section1579912573329)
-    -   [Source Code Acquisition](#section11443189655)
-    -   [Compilation and Building](#section2081013992812)
-
+-   [Preparations](#section1579912573329)
+-   [Source Code Acquisition](#section11443189655)
+-   [Compilation and Building](#section2081013992812)
+-   [Contribution](#section1371123476304)
 -   [Repositories Involved](#section1371113476307)
 
 ## Introduction<a name="section11660541593"></a>
@@ -67,24 +67,23 @@ The OpenHarmony LiteOS Cortex-A is a new-generation kernel developed based on th
 
 ## Usage<a name="section741617511812"></a>
 
-OpenHarmony LiteOS Cortex-A supports the  [Hi3516D V300](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-introduction-hi3516.md). You can develop and run your applications based on this development board.
+OpenHarmony LiteOS Cortex-A supports the  [Hi3516D V300](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-appendix-hi3516.md). You can develop and run your applications based on this development board.
 
 ### Preparations<a name="section1579912573329"></a>
 
-You need to set up the compilation environment on Linux.
+You need to set up the compilation environment on Ubuntu.
 
--   [Setting Up Ubuntu Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-env-setup.md)
--   For Hi3516D V300, see  [Setting Up the Hi3516 Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3516-setting.md).
+-   [Setting Up Ubuntu Development Environment](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/Readme-EN.md)
 
 ### Source Code Acquisition<a name="section11443189655"></a>
 
-Download and decompress a set of source code on a Linux server to acquire the  [source code](https://gitee.com/openharmony/docs/blob/master/en/device-dev/get-code/sourcecode-acquire.md).
+Download and decompress a set of source code on a Ubuntu server to acquire the  [source code](https://gitee.com/openharmony/docs/blob/master/en/device-dev/get-code/sourcecode-acquire.md).
 
 ### Compilation and Building<a name="section2081013992812"></a>
 
-For details about how to develop the first application, see:
+For details about how to develop the first application, see: [Developing the First Example Program Running on Hi3516](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-pkg-3516-helloworld.md)
 
--   [Developing the First Example Program Running on Hi3516](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-lite-steps-hi3516-running.md)
+For compilation, please refer to the [compilation instructions](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-pkg-3516-build.md).
 
 ## Contribution<a name="section1371123476304"></a>
 
