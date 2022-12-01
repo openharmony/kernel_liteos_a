@@ -13,7 +13,7 @@
 ### 是否涉及对外变更（典型的如：对外API规格变更、新增对外接口等等）
 
 必须选择一项（在MarkDown模式下用[x]替换[ ]即可勾选对应选项）:
-- [ ] 是，涉及对外变更: 需要在commit message中按【[模板要求](https://gitee.com/openharmony/kernel_liteos_m/wikis/Commit%20message%E8%A7%84%E8%8C%83)】描述变更点
+- [ ] 是，涉及对外变更: 需要在commit message中按【[模板要求](https://gitee.com/openharmony/kernel_liteos_a/wikis/Commit%20message%20%E8%A7%84%E8%8C%83)】描述变更点
 - [ ] 否，不涉及对外变更
 
 ### 是否需要同步至release（如：3.0LTS ... ）分支？
