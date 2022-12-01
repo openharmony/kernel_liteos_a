@@ -89,7 +89,11 @@ OpenHarmony LiteOS-A內核支持[Hi3516DV300](https://gitee.com/openharmony/docs
 
 [如何貢獻](https://gitee.com/openharmony/docs/blob/HEAD/zh-cn/contribute/%E5%8F%82%E4%B8%8E%E8%B4%A1%E7%8C%AE.md)
 
-[Commit message規範](https://gitee.com/openharmony/kernel_liteos_m/wikis/Commit%20message%E8%A7%84%E8%8C%83)
+[Commit message規範](https://gitee.com/openharmony/kernel_liteos_a/wikis/Commit%20message%20%E8%A7%84%E8%8C%83)
+
+[OpenHarmony C&C++ 安全編程指南](https://gitee.com/openharmony/docs/blob/master/zh-cn/contribute/OpenHarmony-c-cpp-secure-coding-guide.md)
+
+[LiteOS-A 內核編碼規範指南](https://gitee.com/openharmony/kernel_liteos_a/wikis/LiteOS-A%20%E5%86%85%E6%A0%B8%E7%BC%96%E7%A0%81%E8%A7%84%E8%8C%83%E6%8C%87%E5%8D%97)
 
 ## 相關倉<a name="section1371113476307"></a>
 
