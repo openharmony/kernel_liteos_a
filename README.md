@@ -89,7 +89,11 @@ For compilation, please refer to the [compilation instructions](https://gitee.co
 
 [How to involve](https://gitee.com/openharmony/docs/blob/HEAD/en/contribute/contribution.md)
 
-[Commit message spec](https://gitee.com/openharmony/kernel_liteos_m/wikis/Commit%20message%E8%A7%84%E8%8C%83)
+[Commit message spec](https://gitee.com/openharmony/kernel_liteos_a/wikis/Commit%20message%20%E8%A7%84%E8%8C%83)
+
+[C&C++ Secure Coding Guide](https://gitee.com/openharmony/docs/blob/master/en/contribute/OpenHarmony-c-cpp-secure-coding-guide.md)
+
+[LiteOS-A Kernel Coding Style Guide](https://gitee.com/openharmony/kernel_liteos_a/wikis/LiteOS-A%20%E5%86%85%E6%A0%B8%E7%BC%96%E7%A0%81%E8%A7%84%E8%8C%83%E6%8C%87%E5%8D%97)
 
 ## Repositories Involved<a name="section1371113476307"></a>
 
