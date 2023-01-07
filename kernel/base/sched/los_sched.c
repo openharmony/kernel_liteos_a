@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -204,10 +204,10 @@ VOID OsSchedRunqueueInit(VOID)
     }
 }
 
-VOID OsSchedRunqueueIdleInit(UINT32 idleTaskID)
+VOID OsSchedRunqueueIdleInit(LosTaskCB *idleTask)
 {
     SchedRunqueue *rq = OsSchedRunqueue();
-    rq->idleTaskID = idleTaskID;
+    rq->idleTask = idleTask;
 }
 
 UINT32 OsSchedInit(VOID)
@@ -284,7 +284,7 @@ STATIC LosTaskCB *TopTaskGet(SchedRunqueue *rq)
     LosTaskCB *newTask = HPFRunqueueTopTaskGet(rq->hpfRunqueue);
 
     if (newTask == NULL) {
-        newTask = OS_TCB_FROM_TID(rq->idleTaskID);
+        newTask = rq->idleTask;
     }
 
     newTask->ops->start(rq, newTask);
@@ -384,7 +384,7 @@ STATIC VOID SchedTaskSwitch(SchedRunqueue *rq, LosTaskCB *runTask, LosTaskCB *ne
 #endif
 
 #ifdef LOSCFG_KERNEL_CPUP
-    OsCpupCycleEndStart(runTask->taskID, newTask->taskID);
+    OsCpupCycleEndStart(runTask, newTask);
 #endif
 
 #ifdef LOSCFG_SCHED_DEBUG

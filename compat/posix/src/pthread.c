@@ -240,9 +240,9 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     taskInitParam.usTaskPrio   = (UINT16)userAttr.schedparam.sched_priority;
     taskInitParam.uwStackSize  = userAttr.stacksize;
     if (OsProcessIsUserMode(OsCurrProcessGet())) {
-        taskInitParam.processID = OsGetKernelInitProcessID();
+        taskInitParam.processID = (UINTPTR)OsGetKernelInitProcess();
     } else {
-        taskInitParam.processID = OsCurrProcessGet()->processID;
+        taskInitParam.processID = (UINTPTR)OsCurrProcessGet();
     }
     if (userAttr.detachstate == PTHREAD_CREATE_DETACHED) {
         taskInitParam.uwResved = LOS_TASK_STATUS_DETACHED;

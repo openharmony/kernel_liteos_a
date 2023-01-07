@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -120,7 +120,7 @@ LITE_OS_SEC_TEXT_MINOR UINT32 OsShellCmdCpup(INT32 argc, const CHAR **argv)
         return LOS_OK;
     }
 
-    if (OsProcessIsDead(OS_PCB_FROM_PID(pid))) {
+    if (OsProcessIsUnused(OS_PCB_FROM_PID(pid)) || OsProcessIsDead(OS_PCB_FROM_PID(pid))) {
         PRINTK("\nUnknown pid: %u\n", pid);
         return LOS_OK;
     }

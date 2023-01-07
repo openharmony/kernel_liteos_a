@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -316,7 +316,6 @@ STATIC VOID LiteIpcPoolDelete(ProcIpcInfo *ipcInfo, UINT32 processID)
 LITE_OS_SEC_TEXT UINT32 LiteIpcPoolDestroy(UINT32 processID)
 {
     LosProcessCB *pcb = OS_PCB_FROM_PID(processID);
-
     if (pcb->ipcInfo == NULL) {
         return LOS_NOK;
     }
@@ -340,10 +339,10 @@ LITE_OS_SEC_TEXT_INIT STATIC IpcTaskInfo *LiteIpcTaskInit(VOID)
 }
 
 /* Only when kernenl no longer access ipc node content, can user free the ipc node */
-LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf)
+LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(LosProcessCB *pcb, VOID *buf)
 {
     UINT32 intSave;
-    ProcIpcInfo *ipcInfo = OS_PCB_FROM_PID(processID)->ipcInfo;
+    ProcIpcInfo *ipcInfo = pcb->ipcInfo;
     IpcUsedNode *node = (IpcUsedNode *)malloc(sizeof(IpcUsedNode));
     if (node != NULL) {
         node->ptr = buf;
@@ -353,26 +352,26 @@ LITE_OS_SEC_TEXT STATIC VOID EnableIpcNodeFreeByUser(UINT32 processID, VOID *buf
     }
 }
 
-LITE_OS_SEC_TEXT STATIC VOID *LiteIpcNodeAlloc(UINT32 processID, UINT32 size)
+LITE_OS_SEC_TEXT STATIC VOID *LiteIpcNodeAlloc(LosProcessCB *pcb, UINT32 size)
 {
-    VOID *ptr = LOS_MemAlloc(OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, size);
+    VOID *ptr = LOS_MemAlloc(pcb->ipcInfo->pool.kvaddr, size);
     PRINT_INFO("LiteIpcNodeAlloc pid:%d, pool:%x buf:%x size:%d\n",
-               processID, OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, ptr, size);
+               pcb->processID, pcb->ipcInfo->pool.kvaddr, ptr, size);
     return ptr;
 }
 
-LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcNodeFree(UINT32 processID, VOID *buf)
+LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcNodeFree(LosProcessCB *pcb, VOID *buf)
 {
     PRINT_INFO("LiteIpcNodeFree pid:%d, pool:%x buf:%x\n",
-               processID, OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, buf);
-    return LOS_MemFree(OS_PCB_FROM_PID(processID)->ipcInfo->pool.kvaddr, buf);
+               pcb->processID, pcb->ipcInfo->pool.kvaddr, buf);
+    return LOS_MemFree(pcb->ipcInfo->pool.kvaddr, buf);
 }
 
-LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(UINT32 processID, const VOID *buf)
+LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(LosProcessCB *pcb, const VOID *buf)
 {
     IpcUsedNode *node = NULL;
     UINT32 intSave;
-    ProcIpcInfo *ipcInfo = OS_PCB_FROM_PID(processID)->ipcInfo;
+    ProcIpcInfo *ipcInfo = pcb->ipcInfo;
     IPC_LOCK(intSave);
     LOS_DL_LIST_FOR_EACH_ENTRY(node, &ipcInfo->ipcUsedNodelist, IpcUsedNode, list) {
         if (node->ptr == buf) {
@@ -386,16 +385,16 @@ LITE_OS_SEC_TEXT STATIC BOOL IsIpcNode(UINT32 processID, const VOID *buf)
     return FALSE;
 }
 
-LITE_OS_SEC_TEXT STATIC INTPTR GetIpcUserAddr(UINT32 processID, INTPTR kernelAddr)
+LITE_OS_SEC_TEXT STATIC INTPTR GetIpcUserAddr(const LosProcessCB *pcb, INTPTR kernelAddr)
 {
-    IpcPool pool = OS_PCB_FROM_PID(processID)->ipcInfo->pool;
+    IpcPool pool = pcb->ipcInfo->pool;
     INTPTR offset = (INTPTR)(pool.uvaddr) - (INTPTR)(pool.kvaddr);
     return kernelAddr + offset;
 }
 
-LITE_OS_SEC_TEXT STATIC INTPTR GetIpcKernelAddr(UINT32 processID, INTPTR userAddr)
+LITE_OS_SEC_TEXT STATIC INTPTR GetIpcKernelAddr(const LosProcessCB *pcb, INTPTR userAddr)
 {
-    IpcPool pool = OS_PCB_FROM_PID(processID)->ipcInfo->pool;
+    IpcPool pool = pcb->ipcInfo->pool;
     INTPTR offset = (INTPTR)(pool.uvaddr) - (INTPTR)(pool.kvaddr);
     return userAddr - offset;
 }
@@ -409,8 +408,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckUsedBuffer(const VOID *node, IpcListNode **o
         ((INTPTR)node > (INTPTR)(pool.uvaddr) + pool.poolSize)) {
         return -EINVAL;
     }
-    ptr = (VOID *)GetIpcKernelAddr(pcb->processID, (INTPTR)(node));
-    if (IsIpcNode(pcb->processID, ptr) != TRUE) {
+    ptr = (VOID *)GetIpcKernelAddr(pcb, (INTPTR)(node));
+    if (IsIpcNode(pcb, ptr) != TRUE) {
         return -EFAULT;
     }
     *outPtr = (IpcListNode *)ptr;
@@ -485,13 +484,12 @@ LITE_OS_SEC_TEXT STATIC UINT32 AddServiceAccess(UINT32 taskID, UINT32 serviceHan
     }
 
     LosTaskCB *tcb = OS_TCB_FROM_TID(serviceTid);
-    UINT32 processID = OS_TCB_FROM_TID(taskID)->processID;
-    LosProcessCB *pcb = OS_PCB_FROM_PID(processID);
+    LosProcessCB *pcb = OS_PCB_FROM_TID(taskID);
     if ((tcb->ipcTaskInfo == NULL) || (pcb->ipcInfo == NULL)) {
-        PRINT_ERR("Liteipc AddServiceAccess ipc not create! pid %u tid %u\n", processID, tcb->taskID);
+        PRINT_ERR("Liteipc AddServiceAccess ipc not create! pid %u tid %u\n", pcb->processID, tcb->taskID);
         return -EINVAL;
     }
-    tcb->ipcTaskInfo->accessMap[processID] = TRUE;
+    tcb->ipcTaskInfo->accessMap[pcb->processID] = TRUE;
     pcb->ipcInfo->access[serviceTid] = TRUE;
     return LOS_OK;
 }
@@ -499,7 +497,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 AddServiceAccess(UINT32 taskID, UINT32 serviceHan
 LITE_OS_SEC_TEXT STATIC BOOL HasServiceAccess(UINT32 serviceHandle)
 {
     UINT32 serviceTid = 0;
-    UINT32 curProcessID = LOS_GetCurrProcessID();
+    LosProcessCB *curr = OsCurrProcessGet();
     UINT32 ret;
     if (serviceHandle >= MAX_SERVICE_NUM) {
         return FALSE;
@@ -512,15 +510,16 @@ LITE_OS_SEC_TEXT STATIC BOOL HasServiceAccess(UINT32 serviceHandle)
         PRINT_ERR("Liteipc HasServiceAccess GetTid failed\n");
         return FALSE;
     }
-    if (OS_TCB_FROM_TID(serviceTid)->processID == curProcessID) {
+    LosTaskCB *taskCB = OS_TCB_FROM_TID(serviceTid);
+    if (taskCB->processCB == (UINTPTR)curr) {
         return TRUE;
     }
 
-    if (OS_TCB_FROM_TID(serviceTid)->ipcTaskInfo == NULL) {
+    if (taskCB->ipcTaskInfo == NULL) {
         return FALSE;
     }
 
-    return OS_TCB_FROM_TID(serviceTid)->ipcTaskInfo->accessMap[curProcessID];
+    return taskCB->ipcTaskInfo->accessMap[curr->processID];
 }
 
 LITE_OS_SEC_TEXT STATIC UINT32 SetIpcTask(VOID)
@@ -541,12 +540,12 @@ LITE_OS_SEC_TEXT BOOL IsIpcTaskSet(VOID)
     return TRUE;
 }
 
-LITE_OS_SEC_TEXT STATIC UINT32 GetIpcTaskID(UINT32 processID, UINT32 *ipcTaskID)
+LITE_OS_SEC_TEXT STATIC UINT32 GetIpcTaskID(LosProcessCB *pcb, UINT32 *ipcTaskID)
 {
-    if (OS_PCB_FROM_PID(processID)->ipcInfo->ipcTaskID == INVAILD_ID) {
+    if (pcb->ipcInfo->ipcTaskID == INVAILD_ID) {
         return LOS_NOK;
     }
-    *ipcTaskID = OS_PCB_FROM_PID(processID)->ipcInfo->ipcTaskID;
+    *ipcTaskID = pcb->ipcInfo->ipcTaskID;
     return LOS_OK;
 }
 
@@ -564,7 +563,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 SendDeathMsg(UINT32 processID, UINT32 serviceHand
 
     pcb->ipcInfo->access[serviceHandle] = FALSE;
 
-    ret = GetIpcTaskID(processID, &ipcTaskID);
+    ret = GetIpcTaskID(pcb, &ipcTaskID);
     if (ret != LOS_OK) {
         return -EINVAL;
     }
@@ -593,7 +592,7 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
     LOS_DL_LIST *listHead = NULL;
     LOS_DL_LIST *listNode = NULL;
     IpcListNode *node = NULL;
-    UINT32 processID = taskCB->processID;
+    LosProcessCB *pcb = OS_PCB_FROM_TCB(taskCB);
 
     listHead = &(ipcTaskInfo->msgListHead);
     do {
@@ -607,12 +606,12 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
             node = LOS_DL_LIST_ENTRY(listNode, IpcListNode, listNode);
             SCHEDULER_UNLOCK(intSave);
             (VOID)HandleSpecialObjects(taskCB->taskID, node, TRUE);
-            (VOID)LiteIpcNodeFree(processID, (VOID *)node);
+            (VOID)LiteIpcNodeFree(pcb, (VOID *)node);
         }
     } while (1);
 
-    ipcTaskInfo->accessMap[processID] = FALSE;
-    for (j = 0; j < MAX_SERVICE_NUM; j++) {
+    ipcTaskInfo->accessMap[pcb->processID] = FALSE;
+    for (j = 0; j < LOSCFG_BASE_CORE_PROCESS_LIMIT; j++) {
         if (ipcTaskInfo->accessMap[j] == TRUE) {
             ipcTaskInfo->accessMap[j] = FALSE;
             (VOID)SendDeathMsg(j, taskCB->taskID);
@@ -630,7 +629,7 @@ LITE_OS_SEC_TEXT VOID LiteIpcRemoveServiceHandle(UINT32 taskID)
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     /* run deathHandler */
     if (i < MAX_SERVICE_NUM) {
-        for (j = 0; j < MAX_SERVICE_NUM; j++) {
+        for (j = 0; j < LOSCFG_BASE_CORE_PROCESS_LIMIT; j++) {
             if (ipcTaskInfo->accessMap[j] == TRUE) {
                 (VOID)SendDeathMsg(j, i);
             }
@@ -686,10 +685,10 @@ LITE_OS_SEC_TEXT STATIC BOOL IsCmsTask(UINT32 taskID)
     BOOL ret;
     (VOID)LOS_MuxLock(&g_serviceHandleMapMux, LOS_WAIT_FOREVER);
 #if (USE_TASKID_AS_HANDLE == 1)
-    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID == OS_TCB_FROM_TID(g_cmsTask.taskID)->processID) : FALSE;
+    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processCB == OS_TCB_FROM_TID(g_cmsTask.taskID)->processCB) : FALSE;
 #else
-    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processID ==
-        OS_TCB_FROM_TID(g_serviceHandleMap[0].taskID)->processID) : FALSE;
+    ret = IsCmsSet() ? (OS_TCB_FROM_TID(taskID)->processCB ==
+        OS_TCB_FROM_TID(g_serviceHandleMap[0].taskID)->processCB) : FALSE;
 #endif
     (VOID)LOS_MuxUnlock(&g_serviceHandleMapMux);
     return ret;
@@ -702,29 +701,29 @@ LITE_OS_SEC_TEXT STATIC BOOL IsTaskAlive(UINT32 taskID)
         return FALSE;
     }
     tcb = OS_TCB_FROM_TID(taskID);
-    if (!OsTaskIsUserMode(tcb)) {
-        return FALSE;
-    }
     if (OsTaskIsUnused(tcb)) {
         return FALSE;
     }
     if (OsTaskIsInactive(tcb)) {
         return FALSE;
     }
+    if (!OsTaskIsUserMode(tcb)) {
+        return FALSE;
+    }
     return TRUE;
 }
 
-LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(UINT32 processID, SpecialObj *obj, BOOL isRollback)
+LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(const LosProcessCB *pcb, SpecialObj *obj, BOOL isRollback)
 {
     int ret;
     if (isRollback == FALSE) {
-        ret = CopyFdToProc(obj->content.fd, processID);
+        ret = CopyFdToProc(obj->content.fd, pcb->processID);
         if (ret < 0) {
             return ret;
         }
         obj->content.fd = ret;
     } else {
-        ret = CloseProcFd(obj->content.fd, processID);
+        ret = CloseProcFd(obj->content.fd, pcb->processID);
         if (ret < 0) {
             return ret;
         }
@@ -733,7 +732,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleFd(UINT32 processID, SpecialObj *obj, BOOL 
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(UINT32 processID, SpecialObj *obj, BOOL isRollback)
+LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(LosProcessCB *pcb, SpecialObj *obj, BOOL isRollback)
 {
     VOID *buf = NULL;
     UINT32 ret;
@@ -745,20 +744,20 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandlePtr(UINT32 processID, SpecialObj *obj, BOOL
             PRINT_ERR("Liteipc Bad ptr address\n");
             return -EINVAL;
         }
-        buf = LiteIpcNodeAlloc(processID, obj->content.ptr.buffSz);
+        buf = LiteIpcNodeAlloc(pcb, obj->content.ptr.buffSz);
         if (buf == NULL) {
             PRINT_ERR("Liteipc DealPtr alloc mem failed\n");
             return -EINVAL;
         }
         ret = copy_from_user(buf, obj->content.ptr.buff, obj->content.ptr.buffSz);
         if (ret != LOS_OK) {
-            LiteIpcNodeFree(processID, buf);
+            LiteIpcNodeFree(pcb, buf);
             return ret;
         }
-        obj->content.ptr.buff = (VOID *)GetIpcUserAddr(processID, (INTPTR)buf);
-        EnableIpcNodeFreeByUser(processID, (VOID *)buf);
+        obj->content.ptr.buff = (VOID *)GetIpcUserAddr(pcb, (INTPTR)buf);
+        EnableIpcNodeFreeByUser(pcb, (VOID *)buf);
     } else {
-        (VOID)LiteIpcNodeFree(processID, (VOID *)GetIpcKernelAddr(processID, (INTPTR)obj->content.ptr.buff));
+        (VOID)LiteIpcNodeFree(pcb, (VOID *)GetIpcKernelAddr(pcb, (INTPTR)obj->content.ptr.buff));
     }
     return LOS_OK;
 }
@@ -810,13 +809,13 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleSvc(UINT32 dstTid, SpecialObj *obj, BOOL is
 LITE_OS_SEC_TEXT STATIC UINT32 HandleObj(UINT32 dstTid, SpecialObj *obj, BOOL isRollback)
 {
     UINT32 ret;
-    UINT32 processID = OS_TCB_FROM_TID(dstTid)->processID;
+    LosProcessCB *pcb = OS_PCB_FROM_TID(dstTid);
     switch (obj->type) {
         case OBJ_FD:
-            ret = HandleFd(processID, obj, isRollback);
+            ret = HandleFd(pcb, obj, isRollback);
             break;
         case OBJ_PTR:
-            ret = HandlePtr(processID, obj, isRollback);
+            ret = HandlePtr(pcb, obj, isRollback);
             break;
         case OBJ_SVC:
             ret = HandleSvc(dstTid, (SpecialObj *)obj, isRollback);
@@ -948,8 +947,8 @@ LITE_OS_SEC_TEXT STATIC UINT32 CopyDataFromUser(IpcListNode *node, UINT32 bufSz,
 
 LITE_OS_SEC_TEXT STATIC BOOL IsValidReply(const IpcContent *content)
 {
-    UINT32 curProcessID = LOS_GetCurrProcessID();
-    IpcListNode *node = (IpcListNode *)GetIpcKernelAddr(curProcessID, (INTPTR)(content->buffToFree));
+    LosProcessCB *curr = OsCurrProcessGet();
+    IpcListNode *node = (IpcListNode *)GetIpcKernelAddr(curr, (INTPTR)(content->buffToFree));
     IpcMsg *requestMsg = &node->msg;
     IpcMsg *replyMsg = content->outMsg;
     UINT32 reqDstTid = 0;
@@ -959,7 +958,7 @@ LITE_OS_SEC_TEXT STATIC BOOL IsValidReply(const IpcContent *content)
         (replyMsg->timestamp != requestMsg->timestamp) ||
         (replyMsg->target.handle != requestMsg->taskID) ||
         (GetTid(requestMsg->target.handle, &reqDstTid) != 0) ||
-        (OS_TCB_FROM_TID(reqDstTid)->processID != curProcessID)) {
+        (OS_TCB_FROM_TID(reqDstTid)->processCB != (UINTPTR)curr)) {
         return FALSE;
     }
     return TRUE;
@@ -1012,7 +1011,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckPara(IpcContent *content, UINT32 *dstTid)
                 }
 #endif
                 OsHookCall(LOS_HOOK_TYPE_IPC_WRITE_DROP, msg, *dstTid,
-                            (*dstTid == INVAILD_ID) ? INVAILD_ID : OS_TCB_FROM_TID(*dstTid)->processID, 0);
+                           (*dstTid == INVAILD_ID) ? INVAILD_ID : OS_PCB_FROM_TID(*dstTid)->processID, 0);
                 PRINT_ERR("Liteipc A timeout reply, request timestamp:%lld, now:%lld\n", msg->timestamp, now);
                 return -ETIME;
             }
@@ -1049,14 +1048,14 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     }
 
     LosTaskCB *tcb = OS_TCB_FROM_TID(dstTid);
-    LosProcessCB *pcb = OS_PCB_FROM_PID(tcb->processID);
+    LosProcessCB *pcb = OS_PCB_FROM_TCB(tcb);
     if (pcb->ipcInfo == NULL) {
-        PRINT_ERR("pid %u Liteipc not create\n", tcb->processID);
+        PRINT_ERR("pid %u Liteipc not create\n", pcb->processID);
         return -EINVAL;
     }
 
     UINT32 bufSz = sizeof(IpcListNode) + msg->dataSz + msg->spObjNum * sizeof(UINT32);
-    IpcListNode *buf = (IpcListNode *)LiteIpcNodeAlloc(tcb->processID, bufSz);
+    IpcListNode *buf = (IpcListNode *)LiteIpcNodeAlloc(pcb, bufSz);
     if (buf == NULL) {
         PRINT_ERR("%s, %d\n", __FUNCTION__, __LINE__);
         return -ENOMEM;
@@ -1079,7 +1078,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     /* add data to list and wake up dest task */
     SCHEDULER_LOCK(intSave);
     LOS_ListTailInsert(&(tcb->ipcTaskInfo->msgListHead), &(buf->listNode));
-    OsHookCall(LOS_HOOK_TYPE_IPC_WRITE, &buf->msg, dstTid, tcb->processID, tcb->waitFlag);
+    OsHookCall(LOS_HOOK_TYPE_IPC_WRITE, &buf->msg, dstTid, pcb->processID, tcb->waitFlag);
     if (tcb->waitFlag == OS_TASK_WAIT_LITEIPC) {
         OsTaskWakeClearPendMask(tcb);
         tcb->ops->wake(tcb);
@@ -1091,7 +1090,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
     }
     return LOS_OK;
 ERROR_COPY:
-    LiteIpcNodeFree(OS_TCB_FROM_TID(dstTid)->processID, buf);
+    LiteIpcNodeFree(pcb, buf);
     return ret;
 }
 
@@ -1138,7 +1137,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *c
     if (ret != LOS_OK) {
         OsHookCall(LOS_HOOK_TYPE_IPC_READ_DROP, &node->msg, tcb->waitFlag);
         (VOID)HandleSpecialObjects(LOS_CurTaskIDGet(), node, TRUE);
-        (VOID)LiteIpcNodeFree(LOS_GetCurrProcessID(), (VOID *)node);
+        (VOID)LiteIpcNodeFree(OsCurrProcessGet(), (VOID *)node);
     } else {
         OsHookCall(LOS_HOOK_TYPE_IPC_READ, &node->msg, tcb->waitFlag);
     }
@@ -1194,10 +1193,10 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
             }
         }
     } while (1);
-    node->msg.data = (VOID *)GetIpcUserAddr(LOS_GetCurrProcessID(), (INTPTR)(node->msg.data));
-    node->msg.offsets = (VOID *)GetIpcUserAddr(LOS_GetCurrProcessID(), (INTPTR)(node->msg.offsets));
-    content->inMsg = (VOID *)GetIpcUserAddr(LOS_GetCurrProcessID(), (INTPTR)(&(node->msg)));
-    EnableIpcNodeFreeByUser(LOS_GetCurrProcessID(), (VOID *)node);
+    node->msg.data = (VOID *)GetIpcUserAddr(OsCurrProcessGet(), (INTPTR)(node->msg.data));
+    node->msg.offsets = (VOID *)GetIpcUserAddr(OsCurrProcessGet(), (INTPTR)(node->msg.offsets));
+    content->inMsg = (VOID *)GetIpcUserAddr(OsCurrProcessGet(), (INTPTR)(&(node->msg)));
+    EnableIpcNodeFreeByUser(OsCurrProcessGet(), (VOID *)node);
     return LOS_OK;
 }
 
@@ -1248,7 +1247,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcMsgHandle(IpcContent *con)
     }
 BUFFER_FREE:
     if (nodeNeedFree != NULL) {
-        UINT32 freeRet = LiteIpcNodeFree(LOS_GetCurrProcessID(), nodeNeedFree);
+        UINT32 freeRet = LiteIpcNodeFree(OsCurrProcessGet(), nodeNeedFree);
         ret = (freeRet == LOS_OK) ? ret : freeRet;
     }
     if (ret != LOS_OK) {

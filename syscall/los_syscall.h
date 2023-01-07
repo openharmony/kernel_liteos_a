@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -84,6 +84,7 @@ extern int SysWait(int pid, USER int *status, int options, void *rusage);
 extern int SysWaitid(idtype_t type, int pid, USER siginfo_t *info, int options, void *rusage);
 extern int SysFork(void);
 extern int SysVfork(void);
+extern int SysClone(int flags, void *stack, int *parentTid, unsigned long tls, int *childTid);
 extern unsigned int SysGetPID(void);
 extern unsigned int SysGetPPID(void);
 extern int SysSetGroupID(unsigned int gid);
