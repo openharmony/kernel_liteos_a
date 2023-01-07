@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -275,7 +275,7 @@ typedef struct tagSwTmrCtrl {
     UINTPTR uwArg;      /**< Parameter passed in when the callback function
                              that handles software timer timeout is called */
     SWTMR_PROC_FUNC pfnHandler; /**< Callback function that handles software timer timeout */
-    UINT32          uwOwnerPid; /** Owner of this software timer */
+    UINTPTR uwOwnerPid; /** Owner of this software timer */
     UINT64 startTime;  /**< Software timer start time */
 } SWTMR_CTRL_S;
 

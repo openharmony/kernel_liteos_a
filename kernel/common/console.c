@@ -1420,7 +1420,7 @@ INT32 ConsoleTaskReg(INT32 consoleID, UINT32 taskID)
     if (!IsShellEntryRunning(g_console[consoleID - 1]->shellEntryId)) {
         g_console[consoleID - 1]->shellEntryId = taskID;
         LOS_SpinUnlockRestore(&g_consoleSpin, intSave);
-        (VOID)OsSetCurrProcessGroupID(OsGetUserInitProcessID());
+        (VOID)OsSetCurrProcessGroupID(OS_USER_ROOT_PROCESS_ID);
         return LOS_OK;
     }
     LOS_SpinUnlockRestore(&g_consoleSpin, intSave);

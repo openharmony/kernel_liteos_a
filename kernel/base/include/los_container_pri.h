@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,52 +28,29 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "los_smp.h"
-#include "arch_config.h"
+#ifndef _LOS_CONTAINER_PRI_H
+#define _LOS_CONTAINER_PRI_H
+
 #include "los_atomic.h"
-#include "los_task_pri.h"
-#include "los_init_pri.h"
-#include "los_process_pri.h"
-#include "los_sched_pri.h"
-#include "los_swtmr_pri.h"
-
-#ifdef LOSCFG_KERNEL_SMP
-STATIC struct SmpOps *g_smpOps = NULL;
-
-STATIC VOID OsSmpSecondaryInit(VOID *arg)
-{
-    UNUSED(arg);
-
-    OsCurrTaskSet(OsGetMainTask());
-
-#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
-    OsSwtmrInit();
+#ifdef LOSCFG_KERNEL_CONTAINER
+#ifdef LOSCFG_PID_CONTAINER
+#include "los_pid_container_pri.h"
 #endif
 
-    OsIdleTaskCreate((UINTPTR)OsGetIdleProcess());
-    OsInitCall(LOS_INIT_LEVEL_KMOD_TASK);
-
-    OsSchedStart();
-}
-
-VOID LOS_SmpOpsSet(struct SmpOps *ops)
-{
-    g_smpOps = ops;
-}
-
-VOID OsSmpInit(VOID)
-{
-    UINT32 cpuNum = 1;  /* Start the secondary cpus. */
-
-    if (g_smpOps == NULL) {
-        PRINT_ERR("Must call the interface(LOS_SmpOpsSet) to register smp operations firstly!\n");
-        return;
-    }
-
-    for (; cpuNum < CORE_NUM; cpuNum++) {
-        HalArchCpuOn(cpuNum, OsSmpSecondaryInit, g_smpOps, 0);
-    }
-
-    return;
-}
+typedef struct Container {
+    Atomic   rc;
+#ifdef LOSCFG_PID_CONTAINER
+    struct PidContainer *pidContainer;
+    struct PidContainer *pidForChildren;
 #endif
+} Container;
+
+VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
+
+VOID OsInitRootContainer(VOID);
+
+UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
+
+VOID OsContainersDestroy(LosProcessCB *processCB);
+#endif
+#endif /* _LOS_CONTAINER_PRI_H */

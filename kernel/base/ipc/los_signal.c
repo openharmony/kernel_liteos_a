@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -135,7 +135,7 @@ STATIC INLINE VOID OsSigWaitTaskWake(LosTaskCB *taskCB, INT32 signo)
 
 STATIC UINT32 OsPendingTaskWake(LosTaskCB *taskCB, INT32 signo)
 {
-    if (!OsTaskIsPending(taskCB) || !OsProcessIsUserMode(OS_PCB_FROM_PID(taskCB->processID))) {
+    if (!OsTaskIsPending(taskCB) || !OsProcessIsUserMode(OS_PCB_FROM_TCB(taskCB))) {
         return 0;
     }
 
@@ -381,8 +381,7 @@ int OsSigEmptySet(sigset_t *set)
 /* Privilege process can't send to kernel and privilege process */
 static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
 {
-    UINT32 gid = spcb->group->groupID;
-
+    UINTPTR gid = (UINTPTR)OS_GET_PGROUP_LEADER(spcb->pgroup);
     if (gid == OS_KERNEL_PROCESS_GROUP) {
         return -EPERM;
     } else if (gid == OS_USER_PRIVILEGE_PROCESS_GROUP) {
@@ -392,20 +391,14 @@ static int OsSignalPermissionToCheck(const LosProcessCB *spcb)
     return 0;
 }
 
-int OsDispatch(pid_t pid, siginfo_t *info, int permission)
+STATIC int SendSigPermissionCheck(LosProcessCB *spcb, int permission)
 {
-    if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
+    if (spcb == NULL) {
         return -ESRCH;
     }
 
-    LosProcessCB *spcb = OS_PCB_FROM_PID(pid);
     if (OsProcessIsUnused(spcb)) {
         return -ESRCH;
-    }
-
-    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
-    if (OsProcessIsInactive(spcb)) {
-        return LOS_OK;
     }
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -420,6 +413,50 @@ int OsDispatch(pid_t pid, siginfo_t *info, int permission)
     if ((permission == OS_USER_KILL_PERMISSION) && (OsSignalPermissionToCheck(spcb) < 0)) {
         return -EPERM;
     }
+    return LOS_OK;
+}
+
+int OsSendSigToProcess(LosProcessCB *spcb, int sig, int permission)
+{
+    siginfo_t info;
+    int ret = SendSigPermissionCheck(spcb, permission);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
+    if (OsProcessIsInactive(spcb)) {
+        return LOS_OK;
+    }
+
+    if (!GOOD_SIGNO(sig)) {
+        return -EINVAL;
+    }
+
+    info.si_signo = sig;
+    info.si_code = SI_USER;
+    info.si_value.sival_ptr = NULL;
+
+    return OsSigProcessSend(spcb, &info);
+}
+
+int OsDispatch(pid_t pid, siginfo_t *info, int permission)
+{
+    if (OsProcessIDUserCheckInvalid(pid) || pid < 0) {
+        return -ESRCH;
+    }
+
+    LosProcessCB *spcb = OS_PCB_FROM_PID(pid);
+    int ret = SendSigPermissionCheck(spcb, permission);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
+    /* If the process you want to kill had been inactive, but still exist. should return LOS_OK */
+    if (OsProcessIsInactive(spcb)) {
+        return LOS_OK;
+    }
+
     return OsSigProcessSend(spcb, info);
 }
 
@@ -706,7 +743,7 @@ VOID *OsSaveSignalContext(VOID *sp, VOID *newSp)
             sigcb->sigFlag = 0;
             process->sigShare = 0;
             SCHEDULER_UNLOCK(intSave);
-            PRINT_ERR("The signal processing function for the current process pid =%d is NULL!\n", task->processID);
+            PRINT_ERR("The signal processing function for the current process pid =%d is NULL!\n", process->processID);
             return sp;
         }
         /* One pthread do the share signal */

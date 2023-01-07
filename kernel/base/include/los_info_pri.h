@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,57 +28,76 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_CPUP_PRI_H
-#define _LOS_CPUP_PRI_H
+#ifndef _LOS_INFO_PRI_H
+#define _LOS_INFO_PRI_H
 
-#include "los_cpup.h"
+#include "los_process_pri.h"
+#include "los_sched_pri.h"
 
 #ifdef __cplusplus
 #if __cplusplus
-extern "C" {
+    extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/**
-* @ingroup los_cpup
-* Number of historical running time records
-*/
-#define OS_CPUP_HISTORY_RECORD_NUM   11
-
-typedef struct {
-    UINT64 allTime;    /**< Total running time */
-    UINT64 startTime;  /**< Time before a task is invoked */
-    UINT64 historyTime[OS_CPUP_HISTORY_RECORD_NUM + 1]; /**< Historical running time, the last one saves zero */
-} OsCpupBase;
-
-/**
- * @ingroup los_cpup
- * Count the CPU usage structures of a task.
- */
-typedef struct {
-    UINT32 id;         /**< irq ID */
-    UINT16 status;     /**< irq status */
-    UINT64 allTime;
-    UINT64 timeMax;
-    UINT64 count;
-    OsCpupBase cpup;   /**< irq cpup base */
-} OsIrqCpupCB;
-
-typedef struct TagTaskCB LosTaskCB;
-typedef struct TagTaskInfo TaskInfo;
-typedef struct TagProcessInfo ProcessInfo;
-
-extern UINT32 OsCpupInit(VOID);
-extern UINT32 OsCpupGuardCreator(VOID);
-extern VOID OsCpupCycleEndStart(LosTaskCB *runTask, LosTaskCB *newTask);
-extern UINT32 OsGetProcessAllCpuUsageUnsafe(OsCpupBase *processCpup, ProcessInfo *processInfo);
-extern UINT32 OsGetTaskAllCpuUsageUnsafe(OsCpupBase *taskCpup, TaskInfo *taskInfo);
-#ifdef LOSCFG_CPUP_INCLUDE_IRQ
-extern UINT32 OsGetAllIrqCpuUsageUnsafe(UINT16 mode, CPUP_INFO_S *cpupInfo, UINT32 len);
-extern VOID OsCpupIrqStart(UINT16);
-extern VOID OsCpupIrqEnd(UINT16, UINT32);
-extern OsIrqCpupCB *OsGetIrqCpupArrayBase(VOID);
+typedef struct TagTaskInfo {
+    UINT32  tid;
+    UINT32  pid;
+    UINT16  status;
+    UINT16  policy;
+    UINT16  priority;
+#ifdef LOSCFG_KERNEL_SMP
+    UINT16  currCpu;
+    UINT16  cpuAffiMask;
 #endif
+    UINT32  stackSize;
+    UINTPTR stackPoint;
+    UINTPTR topOfStack;
+    UINT32  waitFlag;
+    UINT32  waitID;
+    VOID    *taskMux;
+    UINT32  waterLine;
+#ifdef LOSCFG_KERNEL_CPUP
+    UINT32  cpup1sUsage;
+    UINT32  cpup10sUsage;
+    UINT32  cpupAllsUsage;
+#endif
+    CHAR    name[OS_TCB_NAME_LEN];
+} TaskInfo;
+
+typedef struct TagProcessInfo {
+    UINT32 pid;
+    UINT32 ppid;
+    UINT16 status;
+    UINT16 mode;
+    UINT32 pgroupID;
+    UINT32 userID;
+    UINT16 policy;
+    UINT32 basePrio;
+    UINT32 threadGroupID;
+    UINT32 threadNumber;
+#ifdef LOSCFG_KERNEL_VM
+    UINT32 virtualMem;
+    UINT32 shareMem;
+    UINT32 physicalMem;
+#endif
+#ifdef LOSCFG_KERNEL_CPUP
+    UINT32 cpup1sUsage;
+    UINT32 cpup10sUsage;
+    UINT32 cpupAllsUsage;
+#endif
+    CHAR   name[OS_PCB_NAME_LEN];
+} ProcessInfo;
+
+typedef struct TagProcessThreadInfo {
+    ProcessInfo processInfo;
+    UINT32      threadCount;
+    TaskInfo    taskInfo[LOSCFG_BASE_CORE_TSK_LIMIT];
+} ProcessThreadInfo;
+
+UINT32 OsGetAllProcessInfo(ProcessInfo *pcbArray);
+
+UINT32 OsGetProcessThreadInfo(UINT32 pid, ProcessThreadInfo *threadInfo);
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -87,4 +105,4 @@ extern OsIrqCpupCB *OsGetIrqCpupArrayBase(VOID);
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#endif /* _LOS_CPUP_PRI_H */
+#endif /* _LOS_INFO_PRI_H */
