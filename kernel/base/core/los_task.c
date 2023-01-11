@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -61,6 +61,9 @@
 #ifdef LOSCFG_ENABLE_OOM_LOOP_TASK
 #include "los_oom.h"
 #endif
+#ifdef LOSCFG_KERNEL_CONTAINER
+#include "los_container_pri.h"
+#endif
 
 #if (LOSCFG_BASE_CORE_TSK_LIMIT <= 0)
 #error "task maxnum cannot be zero"
@@ -81,12 +84,12 @@ STATIC VOID OsConsoleIDSetHook(UINT32 param1,
 /* temp task blocks for booting procedure */
 LITE_OS_SEC_BSS STATIC LosTaskCB                g_mainTask[LOSCFG_KERNEL_CORE_NUM];
 
-LosTaskCB *OsGetMainTask()
+LosTaskCB *OsGetMainTask(VOID)
 {
     return (LosTaskCB *)(g_mainTask + ArchCurrCpuid());
 }
 
-VOID OsSetMainTask()
+VOID OsSetMainTask(VOID)
 {
     UINT32 i;
     CHAR *name = "osMain";
@@ -99,7 +102,7 @@ VOID OsSetMainTask()
     for (i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
         g_mainTask[i].taskStatus = OS_TASK_STATUS_UNUSED;
         g_mainTask[i].taskID = LOSCFG_BASE_CORE_TSK_LIMIT;
-        g_mainTask[i].processID = OS_KERNEL_PROCESS_GROUP;
+        g_mainTask[i].processCB = OS_KERNEL_PROCESS_GROUP;
 #ifdef LOSCFG_KERNEL_SMP_LOCKDEP
         g_mainTask[i].lockDep.lockDepth = 0;
         g_mainTask[i].lockDep.waitLock = NULL;
@@ -107,6 +110,16 @@ VOID OsSetMainTask()
         (VOID)strncpy_s(g_mainTask[i].taskName, OS_TCB_NAME_LEN, name, OS_TCB_NAME_LEN - 1);
         LOS_ListInit(&g_mainTask[i].lockList);
         (VOID)OsSchedParamInit(&g_mainTask[i], schedParam.policy, &schedParam, NULL);
+    }
+}
+
+VOID OsSetMainTaskProcess(UINTPTR processCB)
+{
+    for (UINT32 i = 0; i < LOSCFG_KERNEL_CORE_NUM; i++) {
+        g_mainTask[i].processCB = processCB;
+#ifdef LOSCFG_PID_CONTAINER
+        g_mainTask[i].pidContainer = OS_PID_CONTAINER_FROM_PCB((LosProcessCB *)processCB);
+#endif
     }
 }
 
@@ -168,7 +181,7 @@ LITE_OS_SEC_TEXT UINT32 OsTaskSetDetachUnsafe(LosTaskCB *taskCB)
     return LOS_EINVAL;
 }
 
-LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
+LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(UINTPTR processCB)
 {
     UINT32 index;
     UINT32 size;
@@ -192,8 +205,13 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsTaskInit(VOID)
     for (index = 0; index < g_taskMaxNum; index++) {
         g_taskCBArray[index].taskStatus = OS_TASK_STATUS_UNUSED;
         g_taskCBArray[index].taskID = index;
+        g_taskCBArray[index].processCB = processCB;
         LOS_ListTailInsert(&g_losFreeTask, &g_taskCBArray[index].pendList);
     }
+
+    g_taskCBArray[index].taskStatus = OS_TASK_STATUS_UNUSED;
+    g_taskCBArray[index].taskID = index;
+    g_taskCBArray[index].processCB = processCB;
 
     ret = OsSchedInit();
 
@@ -206,10 +224,10 @@ EXIT:
 
 UINT32 OsGetIdleTaskId(VOID)
 {
-    return OsSchedRunqueueIdleGet();
+    return OsSchedRunqueueIdleGet()->taskID;
 }
 
-LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
+LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(UINTPTR processID)
 {
     UINT32 ret;
     TSK_INIT_PARAM_S taskInitParam;
@@ -221,7 +239,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     taskInitParam.pcName = "Idle";
     taskInitParam.policy = LOS_SCHED_IDLE;
     taskInitParam.usTaskPrio = OS_TASK_PRIORITY_LOWEST;
-    taskInitParam.processID = OsGetIdleProcessID();
+    taskInitParam.processID = processID;
 #ifdef LOSCFG_KERNEL_SMP
     taskInitParam.usCpuAffiMask = CPUID_TO_AFFI_MASK(ArchCurrCpuid());
 #endif
@@ -231,7 +249,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsIdleTaskCreate(VOID)
     }
     LosTaskCB *idleTask = OS_TCB_FROM_TID(idleTaskID);
     idleTask->taskStatus |= OS_TASK_FLAG_SYSTEM_TASK;
-    OsSchedRunqueueIdleInit(idleTaskID);
+    OsSchedRunqueueIdleInit(idleTask);
 
     return LOS_TaskResume(idleTaskID);
 }
@@ -250,7 +268,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_CurTaskIDGet(VOID)
     return runTask->taskID;
 }
 
-STATIC INLINE UINT32 OsTaskSyncCreate(LosTaskCB *taskCB)
+STATIC INLINE UINT32 TaskSyncCreate(LosTaskCB *taskCB)
 {
 #ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
     UINT32 ret = LOS_SemCreate(0, &taskCB->syncSignal);
@@ -310,11 +328,14 @@ STATIC INLINE VOID OsTaskSyncWake(const LosTaskCB *taskCB)
 
 STATIC INLINE VOID OsInsertTCBToFreeList(LosTaskCB *taskCB)
 {
+#ifdef LOSCFG_PID_CONTAINER
+    OsFreeVtid(taskCB);
+#endif
     UINT32 taskID = taskCB->taskID;
     (VOID)memset_s(taskCB, sizeof(LosTaskCB), 0, sizeof(LosTaskCB));
     taskCB->taskID = taskID;
+    taskCB->processCB = (UINTPTR)OsGetDefaultProcessCB();
     taskCB->taskStatus = OS_TASK_STATUS_UNUSED;
-    taskCB->processID = OS_INVALID_VALUE;
     LOS_ListAdd(&g_losFreeTask, &taskCB->pendList);
 }
 
@@ -340,12 +361,12 @@ STATIC VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
         taskCB->userArea = 0;
         SCHEDULER_UNLOCK(intSave);
 
-        LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+        LosProcessCB *processCB = OS_PCB_FROM_TCB(taskCB);
         LOS_ASSERT(!(OsProcessVmSpaceGet(processCB) == NULL));
         UINT32 ret = OsUnMMap(OsProcessVmSpaceGet(processCB), (UINTPTR)mapBase, mapSize);
         if ((ret != LOS_OK) && (mapBase != 0) && !OsProcessIsInit(processCB)) {
             PRINT_ERR("process(%u) unmmap user task(%u) stack failed! mapbase: 0x%x size :0x%x, error: %d\n",
-                      taskCB->processID, taskCB->taskID, mapBase, mapSize, ret);
+                      processCB->processID, taskCB->taskID, mapBase, mapSize, ret);
         }
 
 #ifdef LOSCFG_KERNEL_LITEIPC
@@ -416,11 +437,9 @@ LITE_OS_SEC_TEXT_INIT VOID OsTaskEntry(UINT32 taskID)
     OsRunningTaskToExit(taskCB, 0);
 }
 
-LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
-    TSK_INIT_PARAM_S *initParam, VOID **pool)
+STATIC UINT32 TaskCreateParamCheck(const UINT32 *taskID, TSK_INIT_PARAM_S *initParam)
 {
     UINT32 poolSize = OS_SYS_MEM_SIZE;
-    *pool = (VOID *)m_aucSysMem1;
 
     if (taskID == NULL) {
         return LOS_ERRNO_TSK_ID_INVALID;
@@ -430,8 +449,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
         return LOS_ERRNO_TSK_PTR_NULL;
     }
 
-    LosProcessCB *process = OS_PCB_FROM_PID(initParam->processID);
-    if (!OsProcessIsUserMode(process)) {
+    if (!OsProcessIsUserMode((LosProcessCB *)initParam->processID)) {
         if (initParam->pcName == NULL) {
             return LOS_ERRNO_TSK_NAME_EMPTY;
         }
@@ -461,24 +479,47 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsTaskCreateParamCheck(const UINT32 *taskID,
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT_INIT STATIC VOID OsTaskStackAlloc(VOID **topStack, UINT32 stackSize, VOID *pool)
+STATIC VOID TaskCBDeInit(LosTaskCB *taskCB)
 {
-    *topStack = (VOID *)LOS_MemAllocAlign(pool, stackSize, LOSCFG_STACK_POINT_ALIGN_SIZE);
+    UINT32 intSave;
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
+    if (taskCB->syncSignal != OS_INVALID_VALUE) {
+        OsTaskSyncDestroy(taskCB->syncSignal);
+        taskCB->syncSignal = OS_INVALID_VALUE;
+    }
+#endif
+
+    if (taskCB->topOfStack != (UINTPTR)NULL) {
+        (VOID)LOS_MemFree(m_aucSysMem1, (VOID *)taskCB->topOfStack);
+        taskCB->topOfStack = (UINTPTR)NULL;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    LosProcessCB *processCB = OS_PCB_FROM_TCB(taskCB);
+    if (processCB != OsGetDefaultProcessCB()) {
+        LOS_ListDelete(&taskCB->threadList);
+        processCB->threadNumber--;
+        processCB->threadCount--;
+    }
+
+    OsInsertTCBToFreeList(taskCB);
+    SCHEDULER_UNLOCK(intSave);
 }
 
-STATIC VOID TaskCBBaseInit(LosTaskCB *taskCB, const VOID *stackPtr, const VOID *topStack,
-                           const TSK_INIT_PARAM_S *initParam)
+STATIC VOID TaskCBBaseInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam)
 {
-    taskCB->stackPointer = (VOID *)stackPtr;
+    taskCB->stackPointer = NULL;
     taskCB->args[0]      = initParam->auwArgs[0]; /* 0~3: just for args array index */
     taskCB->args[1]      = initParam->auwArgs[1];
     taskCB->args[2]      = initParam->auwArgs[2];
     taskCB->args[3]      = initParam->auwArgs[3];
-    taskCB->topOfStack   = (UINTPTR)topStack;
+    taskCB->topOfStack   = (UINTPTR)NULL;
     taskCB->stackSize    = initParam->uwStackSize;
     taskCB->taskEntry    = initParam->pfnTaskEntry;
     taskCB->signal       = SIGNAL_NONE;
-
+#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
+    taskCB->syncSignal   = OS_INVALID_VALUE;
+#endif
 #ifdef LOSCFG_KERNEL_SMP
     taskCB->currCpu      = OS_TASK_INVALID_CPUID;
     taskCB->cpuAffiMask  = (initParam->usCpuAffiMask) ?
@@ -492,29 +533,25 @@ STATIC VOID TaskCBBaseInit(LosTaskCB *taskCB, const VOID *stackPtr, const VOID *
 
     LOS_ListInit(&taskCB->lockList);
     SET_SORTLIST_VALUE(&taskCB->sortList, OS_SORT_LINK_INVALID_TIME);
+#ifdef LOSCFG_KERNEL_VM
+    taskCB->futex.index = OS_INVALID_VALUE;
+#endif
 }
 
-STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
-                           const VOID *stackPtr, const VOID *topStack)
+STATIC UINT32 TaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam)
 {
     UINT32 ret;
     UINT32 numCount;
     SchedParam schedParam = { 0 };
     UINT16 policy = (initParam->policy == LOS_SCHED_NORMAL) ? LOS_SCHED_RR : initParam->policy;
 
-    TaskCBBaseInit(taskCB, stackPtr, topStack, initParam);
+    TaskCBBaseInit(taskCB, initParam);
 
     schedParam.policy = policy;
-    numCount = OsProcessAddNewTask(initParam->processID, taskCB, &schedParam);
-#ifdef LOSCFG_KERNEL_VM
-    taskCB->futex.index = OS_INVALID_VALUE;
-    if (taskCB->taskStatus & OS_TASK_FLAG_USER_MODE) {
-        taskCB->userArea = initParam->userParam.userArea;
-        taskCB->userMapBase = initParam->userParam.userMapBase;
-        taskCB->userMapSize = initParam->userParam.userMapSize;
-        OsUserTaskStackInit(taskCB->stackPointer, (UINTPTR)taskCB->taskEntry, initParam->userParam.userSP);
+    ret = OsProcessAddNewTask(initParam->processID, taskCB, &schedParam, &numCount);
+    if (ret != LOS_OK) {
+        return ret;
     }
-#endif
 
     ret = OsSchedParamInit(taskCB, policy, &schedParam, initParam);
     if (ret != LOS_OK) {
@@ -534,7 +571,27 @@ STATIC UINT32 OsTaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam,
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
+STATIC UINT32 TaskStackInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam)
+{
+    VOID *topStack = (VOID *)LOS_MemAllocAlign(m_aucSysMem1, initParam->uwStackSize, LOSCFG_STACK_POINT_ALIGN_SIZE);
+    if (topStack == NULL) {
+        return LOS_ERRNO_TSK_NO_MEMORY;
+    }
+
+    taskCB->topOfStack = (UINTPTR)topStack;
+    taskCB->stackPointer = OsTaskStackInit(taskCB->taskID, initParam->uwStackSize, topStack, TRUE);
+#ifdef LOSCFG_KERNEL_VM
+    if (taskCB->taskStatus & OS_TASK_FLAG_USER_MODE) {
+        taskCB->userArea = initParam->userParam.userArea;
+        taskCB->userMapBase = initParam->userParam.userMapBase;
+        taskCB->userMapSize = initParam->userParam.userMapSize;
+        OsUserTaskStackInit(taskCB->stackPointer, (UINTPTR)taskCB->taskEntry, initParam->userParam.userSP);
+    }
+#endif
+    return LOS_OK;
+}
+
+STATIC LosTaskCB *GetFreeTaskCB(VOID)
 {
     UINT32 intSave;
 
@@ -554,37 +611,31 @@ LITE_OS_SEC_TEXT LosTaskCB *OsGetFreeTaskCB(VOID)
 
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S *initParam)
 {
-    UINT32 intSave, errRet;
-    VOID *topStack = NULL;
-    VOID *pool = NULL;
-
-    errRet = OsTaskCreateParamCheck(taskID, initParam, &pool);
+    UINT32 errRet = TaskCreateParamCheck(taskID, initParam);
     if (errRet != LOS_OK) {
         return errRet;
     }
 
-    LosTaskCB *taskCB = OsGetFreeTaskCB();
+    LosTaskCB *taskCB = GetFreeTaskCB();
     if (taskCB == NULL) {
-        errRet = LOS_ERRNO_TSK_TCB_UNAVAILABLE;
-        goto LOS_ERREND;
+        return LOS_ERRNO_TSK_TCB_UNAVAILABLE;
     }
 
-    errRet = OsTaskSyncCreate(taskCB);
+    errRet = TaskCBInit(taskCB, initParam);
     if (errRet != LOS_OK) {
-        goto LOS_ERREND_REWIND_TCB;
+        goto DEINIT_TCB;
     }
 
-    OsTaskStackAlloc(&topStack, initParam->uwStackSize, pool);
-    if (topStack == NULL) {
-        errRet = LOS_ERRNO_TSK_NO_MEMORY;
-        goto LOS_ERREND_REWIND_SYNC;
-    }
-
-    VOID *stackPtr = OsTaskStackInit(taskCB->taskID, initParam->uwStackSize, topStack, TRUE);
-    errRet = OsTaskCBInit(taskCB, initParam, stackPtr, topStack);
+    errRet = TaskSyncCreate(taskCB);
     if (errRet != LOS_OK) {
-        goto LOS_ERREND_TCB_INIT;
+        goto DEINIT_TCB;
     }
+
+    errRet = TaskStackInit(taskCB, initParam);
+    if (errRet != LOS_OK) {
+        goto DEINIT_TCB;
+    }
+
     if (OsConsoleIDSetHook != NULL) {
         OsConsoleIDSetHook(taskCB->taskID, OsCurrTaskGet()->taskID);
     }
@@ -593,17 +644,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *taskID, TSK_INIT_PARAM_S
     OsHookCall(LOS_HOOK_TYPE_TASK_CREATE, taskCB);
     return LOS_OK;
 
-LOS_ERREND_TCB_INIT:
-    (VOID)LOS_MemFree(pool, topStack);
-LOS_ERREND_REWIND_SYNC:
-#ifdef LOSCFG_KERNEL_SMP_TASK_SYNC
-    OsTaskSyncDestroy(taskCB->syncSignal);
-#endif
-LOS_ERREND_REWIND_TCB:
-    SCHEDULER_LOCK(intSave);
-    OsInsertTCBToFreeList(taskCB);
-    SCHEDULER_UNLOCK(intSave);
-LOS_ERREND:
+DEINIT_TCB:
+    TaskCBDeInit(taskCB);
     return errRet;
 }
 
@@ -621,9 +663,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreate(UINT32 *taskID, TSK_INIT_PARAM_S *in
     }
 
     if (OsProcessIsUserMode(OsCurrProcessGet())) {
-        initParam->processID = OsGetKernelInitProcessID();
+        initParam->processID = (UINTPTR)OsGetKernelInitProcess();
     } else {
-        initParam->processID = OsCurrProcessGet()->processID;
+        initParam->processID = (UINTPTR)OsCurrProcessGet();
     }
 
     ret = LOS_TaskCreateOnly(taskID, initParam);
@@ -801,7 +843,7 @@ LITE_OS_SEC_TEXT VOID OsRunningTaskToExit(LosTaskCB *runTask, UINT32 status)
 {
     UINT32 intSave;
 
-    if (OsProcessThreadGroupIDGet(runTask) == runTask->taskID) {
+    if (OsIsProcessThreadGroup(runTask)) {
         OsProcessThreadGroupDestroy();
     }
 
@@ -812,11 +854,11 @@ LITE_OS_SEC_TEXT VOID OsRunningTaskToExit(LosTaskCB *runTask, UINT32 status)
         SCHEDULER_UNLOCK(intSave);
 
         OsTaskResourcesToFree(runTask);
-        OsProcessResourcesToFree(OS_PCB_FROM_PID(runTask->processID));
+        OsProcessResourcesToFree(OS_PCB_FROM_TCB(runTask));
 
         SCHEDULER_LOCK(intSave);
 
-        OsProcessNaturalExit(OS_PCB_FROM_PID(runTask->processID), status);
+        OsProcessNaturalExit(OS_PCB_FROM_TCB(runTask), status);
         OsTaskReleaseHoldLock(runTask);
         OsTaskStatusUnusedSet(runTask);
     } else if (runTask->taskStatus & OS_TASK_FLAG_PTHREAD_JOIN) {
@@ -881,8 +923,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 taskID)
     }
 
     SCHEDULER_LOCK(intSave);
-    if (taskCB->taskStatus & (OS_TASK_STATUS_UNUSED | OS_TASK_FLAG_SYSTEM_TASK | OS_TASK_FLAG_NO_DELETE)) {
-        if (taskCB->taskStatus & OS_TASK_STATUS_UNUSED) {
+    if (OsTaskIsNotDelete(taskCB)) {
+        if (OsTaskIsUnused(taskCB)) {
             ret = LOS_ERRNO_TSK_NOT_CREATED;
         } else {
             ret = LOS_ERRNO_TSK_OPERATE_SYSTEM_TASK;
@@ -1252,8 +1294,8 @@ LITE_OS_SEC_TEXT INT32 OsSetTaskName(LosTaskCB *taskCB, const CHAR *name, BOOL s
 
     err = LOS_OK;
     /* if thread is main thread, then set processName as taskName */
-    if ((taskCB->taskID == OsProcessThreadGroupIDGet(taskCB)) && (setPName == TRUE)) {
-        err = (INT32)OsSetProcessName(OS_PCB_FROM_PID(taskCB->processID), (const CHAR *)taskCB->taskName);
+    if (OsIsProcessThreadGroup(taskCB) && (setPName == TRUE)) {
+        err = (INT32)OsSetProcessName(OS_PCB_FROM_TCB(taskCB), (const CHAR *)taskCB->taskName);
         if (err != LOS_OK) {
             err = EINVAL;
         }
@@ -1266,16 +1308,16 @@ EXIT:
 
 INT32 OsUserTaskOperatePermissionsCheck(const LosTaskCB *taskCB)
 {
-    return OsUserProcessOperatePermissionsCheck(taskCB, OsCurrProcessGet()->processID);
+    return OsUserProcessOperatePermissionsCheck(taskCB, (UINTPTR)OsCurrProcessGet());
 }
 
-INT32 OsUserProcessOperatePermissionsCheck(const LosTaskCB *taskCB, UINT32 processID)
+INT32 OsUserProcessOperatePermissionsCheck(const LosTaskCB *taskCB, UINTPTR processCB)
 {
     if (taskCB == NULL) {
         return LOS_EINVAL;
     }
 
-    if (processID == OS_INVALID_VALUE) {
+    if (processCB == (UINTPTR)OsGetDefaultProcessCB()) {
         return LOS_EINVAL;
     }
 
@@ -1283,7 +1325,7 @@ INT32 OsUserProcessOperatePermissionsCheck(const LosTaskCB *taskCB, UINT32 proce
         return LOS_EINVAL;
     }
 
-    if (processID != taskCB->processID) {
+    if (processCB != taskCB->processCB) {
         return LOS_EPERM;
     }
 
@@ -1318,7 +1360,7 @@ LITE_OS_SEC_TEXT_INIT STATIC UINT32 OsCreateUserTaskParamCheck(UINT32 processID,
     return LOS_OK;
 }
 
-LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S *initParam)
+LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINTPTR processID, TSK_INIT_PARAM_S *initParam)
 {
     UINT32 taskID;
     UINT32 ret;
@@ -1335,7 +1377,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINT32 processID, TSK_INIT_PARAM_S
     if (processID == OS_INVALID_VALUE) {
         SCHEDULER_LOCK(intSave);
         LosProcessCB *processCB = OsCurrProcessGet();
-        initParam->processID = processCB->processID;
+        initParam->processID = (UINTPTR)processCB;
         initParam->consoleID = processCB->consoleID;
         SCHEDULER_UNLOCK(intSave);
     } else {
@@ -1462,7 +1504,7 @@ UINT32 LOS_TaskJoin(UINT32 taskID, UINTPTR *retval)
         return LOS_EINVAL;
     }
 
-    if (runTask->processID != taskCB->processID) {
+    if (runTask->processCB != taskCB->processCB) {
         SCHEDULER_UNLOCK(intSave);
         return LOS_EPERM;
     }
@@ -1505,7 +1547,7 @@ UINT32 LOS_TaskDetach(UINT32 taskID)
         return LOS_EINVAL;
     }
 
-    if (runTask->processID != taskCB->processID) {
+    if (runTask->processCB != taskCB->processCB) {
         SCHEDULER_UNLOCK(intSave);
         return LOS_EPERM;
     }
@@ -1523,6 +1565,11 @@ UINT32 LOS_TaskDetach(UINT32 taskID)
 LITE_OS_SEC_TEXT UINT32 LOS_GetSystemTaskMaximum(VOID)
 {
     return g_taskMaxNum;
+}
+
+LosTaskCB *OsGetDefaultTaskCB(VOID)
+{
+    return &g_taskCBArray[g_taskMaxNum];
 }
 
 LITE_OS_SEC_TEXT VOID OsWriteResourceEvent(UINT32 events)

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -52,6 +52,9 @@
 #include "hm_liteipc.h"
 #endif
 #include "los_mp.h"
+#ifdef LOSCFG_KERNEL_CONTAINER
+#include "los_container_pri.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -100,7 +103,7 @@ typedef struct {
     HPFRunqueue       *hpfRunqueue;
     UINT64            responseTime; /* Response time for current CPU tick interrupts */
     UINT32            responseID;   /* The response ID of the current CPU tick interrupt */
-    UINT32            idleTaskID;   /* idle task id */
+    LosTaskCB         *idleTask;   /* idle task id */
     UINT32            taskLockCnt;  /* task lock flag */
     UINT32            schedFlag;    /* pending scheduler flag */
 } SchedRunqueue;
@@ -199,9 +202,9 @@ STATIC INLINE BOOL OsPreemptableInSched(VOID)
     return preemptible;
 }
 
-STATIC INLINE UINT32 OsSchedRunqueueIdleGet(VOID)
+STATIC INLINE LosTaskCB *OsSchedRunqueueIdleGet(VOID)
 {
-    return OsSchedRunqueue()->idleTaskID;
+    return OsSchedRunqueue()->idleTask;
 }
 
 STATIC INLINE VOID OsSchedRunqueuePendingSet(VOID)
@@ -409,7 +412,7 @@ typedef struct TagTaskCB {
     UINT32          userMapSize;        /**< user thread stack size ,real size : userMapSize + USER_STACK_MIN_SIZE */
     FutexNode       futex;
 #endif
-    UINT32          processID;          /**< Which belong process */
+    UINTPTR         processCB;          /**< Which belong process */
     LOS_DL_LIST     joinList;           /**< join list */
     LOS_DL_LIST     lockList;           /**< Hold the lock list */
     UINTPTR         waitID;             /**< Wait for the PID or GID of the child process */
@@ -421,6 +424,9 @@ typedef struct TagTaskCB {
 #ifdef LOSCFG_KERNEL_PERF
     UINTPTR         pc;
     UINTPTR         fp;
+#endif
+#ifdef LOSCFG_PID_CONTAINER
+    PidContainer    *pidContainer;
 #endif
 } LosTaskCB;
 
@@ -660,7 +666,7 @@ VOID OsSchedTick(VOID);
 UINT32 OsSchedInit(VOID);
 VOID OsSchedStart(VOID);
 
-VOID OsSchedRunqueueIdleInit(UINT32 idleTaskID);
+VOID OsSchedRunqueueIdleInit(LosTaskCB *idleTask);
 VOID OsSchedRunqueueInit(VOID);
 
 /*

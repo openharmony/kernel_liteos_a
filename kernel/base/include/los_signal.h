@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -151,6 +151,8 @@ typedef struct {
     unsigned int count;
 } sig_cb;
 
+typedef struct ProcessCB LosProcessCB;
+
 #define SIGEV_THREAD_ID 4
 
 int sys_sigqueue(pid_t, int, const union sigval);
@@ -165,6 +167,7 @@ int OsSigEmptySet(sigset_t *);
 int OsSigAddSet(sigset_t *, int);
 int OsSigIsMember(const sigset_t *, int);
 int OsKill(pid_t pid, int sig, int permission);
+int OsSendSigToProcess(LosProcessCB *spcb, int sig, int permission);
 int OsDispatch(pid_t pid, siginfo_t *info, int permission);
 int OsSigTimedWait(sigset_t *set, siginfo_t *info, unsigned int timeout);
 int OsPause(void);

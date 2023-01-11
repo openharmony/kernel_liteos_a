@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,6 +33,7 @@
 #define _LOS_PROCESS_PRI_H
 
 #include "los_task_pri.h"
+#include "sched.h"
 #include "los_sem_pri.h"
 #include "los_process.h"
 #include "los_vm_map.h"
@@ -46,6 +47,9 @@
 #include "vid_type.h"
 #endif
 #include "sys/resource.h"
+#ifdef LOSCFG_KERNEL_CONTAINER
+#include "los_container_pri.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -68,11 +72,11 @@ typedef struct {
 } User;
 #endif
 
-typedef struct {
-    UINT32      groupID;         /**< Process group ID is the PID of the process that created the group */
-    LOS_DL_LIST processList;     /**< List of processes under this process group */
-    LOS_DL_LIST exitProcessList; /**< List of closed processes (zombie processes) under this group */
-    LOS_DL_LIST groupList;       /**< Process group list */
+typedef struct ProcessGroup {
+    UINTPTR      pgroupLeader;    /**< Process group leader is the the process that created the group */
+    LOS_DL_LIST  processList;     /**< List of processes under this process group */
+    LOS_DL_LIST  exitProcessList; /**< List of closed processes (zombie processes) under this group */
+    LOS_DL_LIST  groupList;       /**< Process group list */
 } ProcessGroup;
 
 typedef struct ProcessCB {
@@ -82,15 +86,15 @@ typedef struct ProcessCB {
                                                             running in the process */
     UINT16               consoleID;                    /**< The console id of task belongs  */
     UINT16               processMode;                  /**< Kernel Mode:0; User Mode:1; */
-    UINT32               parentProcessID;              /**< Parent process ID */
+    struct ProcessCB     *parentProcess;               /**< Parent process */
     UINT32               exitCode;                     /**< Process exit status */
     LOS_DL_LIST          pendList;                     /**< Block list to which the process belongs */
     LOS_DL_LIST          childrenList;                 /**< Children process list */
     LOS_DL_LIST          exitChildList;                /**< Exit children process list */
     LOS_DL_LIST          siblingList;                  /**< Linkage in parent's children list */
-    ProcessGroup         *group;                       /**< Process group to which a process belongs */
+    ProcessGroup         *pgroup;                      /**< Process group to which a process belongs */
     LOS_DL_LIST          subordinateGroupList;         /**< Linkage in group list */
-    UINT32               threadGroupID;                /**< Which thread group , is the main thread ID of the process */
+    LosTaskCB            *threadGroup;
     LOS_DL_LIST          threadSiblingList;            /**< List of threads under this process */
     volatile UINT32      threadNumber; /**< Number of threads alive under this process */
     UINT32               threadCount;  /**< Total number of threads created under this process */
@@ -126,20 +130,25 @@ typedef struct ProcessCB {
     OsCpupBase           *processCpup; /**< Process cpu usage */
 #endif
     struct rlimit        *resourceLimit;
+#ifdef LOSCFG_KERNEL_CONTAINER
+    struct Container     *container;
+#endif
 } LosProcessCB;
 
-#define CLONE_VM       0x00000100
-#define CLONE_FS       0x00000200
-#define CLONE_FILES    0x00000400
-#define CLONE_SIGHAND  0x00000800
-#define CLONE_PTRACE   0x00002000
-#define CLONE_VFORK    0x00004000
-#define CLONE_PARENT   0x00008000
-#define CLONE_THREAD   0x00010000
+extern LosProcessCB *g_processCBArray;
+extern UINT32 g_processMaxNum;
 
-#define OS_PCB_FROM_PID(processID) (((LosProcessCB *)g_processCBArray) + (processID))
-#define OS_PCB_FROM_SIBLIST(ptr)   LOS_DL_LIST_ENTRY((ptr), LosProcessCB, siblingList)
-#define OS_PCB_FROM_PENDLIST(ptr)  LOS_DL_LIST_ENTRY((ptr), LosProcessCB, pendList)
+#define OS_PCB_FROM_RPID(processID)     (((LosProcessCB *)g_processCBArray) + (processID))
+#ifdef LOSCFG_PID_CONTAINER
+#define OS_PCB_FROM_PID(processID)      OsGetPCBFromVpid(processID)
+#else
+#define OS_PCB_FROM_PID(processID)      OS_PCB_FROM_RPID(processID)
+#endif
+#define OS_PCB_FROM_TCB(taskCB)         ((LosProcessCB *)((taskCB)->processCB))
+#define OS_PCB_FROM_TID(taskID)         ((LosProcessCB *)(OS_TCB_FROM_TID(taskID)->processCB))
+#define OS_GET_PGROUP_LEADER(pgroup)    ((LosProcessCB *)((pgroup)->pgroupLeader))
+#define OS_PCB_FROM_SIBLIST(ptr)        LOS_DL_LIST_ENTRY((ptr), LosProcessCB, siblingList)
+#define OS_PCB_FROM_PENDLIST(ptr)       LOS_DL_LIST_ENTRY((ptr), LosProcessCB, pendList)
 
 /**
  * @ingroup los_process
@@ -246,12 +255,17 @@ STATIC INLINE BOOL OsProcessIsInactive(const LosProcessCB *processCB)
  */
 STATIC INLINE BOOL OsProcessIsDead(const LosProcessCB *processCB)
 {
-    return ((processCB->processStatus & (OS_PROCESS_FLAG_UNUSED | OS_PROCESS_STATUS_ZOMBIES)) != 0);
+    return ((processCB->processStatus & OS_PROCESS_STATUS_ZOMBIES) != 0);
 }
 
 STATIC INLINE BOOL OsProcessIsInit(const LosProcessCB *processCB)
 {
-    return (processCB->processStatus & OS_PROCESS_STATUS_INIT);
+    return ((processCB->processStatus & OS_PROCESS_STATUS_INIT) != 0);
+}
+
+STATIC INLINE BOOL OsProcessIsPGroupLeader(const LosProcessCB *processCB)
+{
+    return ((processCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) != 0);
 }
 
 /**
@@ -284,6 +298,24 @@ STATIC INLINE BOOL OsProcessIsInit(const LosProcessCB *processCB)
  */
 #define OS_PROCESS_USERINIT_PRIORITY     28
 
+/**
+ * @ingroup los_process
+ * ID of the kernel idle process
+ */
+#define OS_KERNEL_IDLE_PROCESS_ID       0U
+
+/**
+ * @ingroup los_process
+ * ID of the user root process
+ */
+#define OS_USER_ROOT_PROCESS_ID         1U
+
+/**
+ * @ingroup los_process
+ * ID of the kernel root process
+ */
+#define OS_KERNEL_ROOT_PROCESS_ID       2U
+
 #define OS_TASK_DEFAULT_STACK_SIZE      0x2000
 #define OS_USER_TASK_SYSCALL_STACK_SIZE 0x3000
 #define OS_USER_TASK_STACK_SIZE         0x100000
@@ -299,8 +331,8 @@ STATIC INLINE BOOL OsProcessIsUserMode(const LosProcessCB *processCB)
 #define LOS_PRIO_PGRP     1U
 #define LOS_PRIO_USER     2U
 
-#define OS_USER_PRIVILEGE_PROCESS_GROUP 1U
-#define OS_KERNEL_PROCESS_GROUP         2U
+#define OS_USER_PRIVILEGE_PROCESS_GROUP ((UINTPTR)OsGetUserInitProcess())
+#define OS_KERNEL_PROCESS_GROUP         ((UINTPTR)OsGetKernelInitProcess())
 
 /*
  * Process exit code
@@ -334,9 +366,6 @@ STATIC INLINE VOID OsProcessExitCodeSet(LosProcessCB *processCB, UINT32 code)
     processCB->exitCode |= ((code & 0x000000FFU) << 8U) & 0x0000FF00U; /* 8: Move 8 bits to the left, exitCode */
 }
 
-extern LosProcessCB *g_processCBArray;
-extern UINT32 g_processMaxNum;
-
 #define OS_PID_CHECK_INVALID(pid) (((UINT32)(pid)) >= g_processMaxNum)
 
 STATIC INLINE BOOL OsProcessIDUserCheckInvalid(UINT32 pid)
@@ -349,7 +378,7 @@ STATIC INLINE LosProcessCB *OsCurrProcessGet(VOID)
     UINT32 intSave;
 
     intSave = LOS_IntLock();
-    LosProcessCB *runProcess = OS_PCB_FROM_PID(OsCurrTaskGet()->processID);
+    LosProcessCB *runProcess = OS_PCB_FROM_TCB(OsCurrTaskGet());
     LOS_IntRestore(intSave);
     return runProcess;
 }
@@ -371,7 +400,7 @@ STATIC INLINE UINT32 OsProcessUserIDGet(const LosTaskCB *taskCB)
     UINT32 intSave = LOS_IntLock();
     UINT32 uid = OS_INVALID;
 
-    LosProcessCB *process = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *process = OS_PCB_FROM_TCB(taskCB);
     if (process->user != NULL) {
         uid = process->user->userID;
     }
@@ -380,14 +409,14 @@ STATIC INLINE UINT32 OsProcessUserIDGet(const LosTaskCB *taskCB)
 }
 #endif
 
-STATIC INLINE UINT32 OsProcessThreadGroupIDGet(const LosTaskCB *taskCB)
+STATIC INLINE BOOL OsIsProcessThreadGroup(const LosTaskCB *taskCB)
 {
-    return OS_PCB_FROM_PID(taskCB->processID)->threadGroupID;
+    return (OS_PCB_FROM_TCB(taskCB)->threadGroup == taskCB);
 }
 
 STATIC INLINE UINT32 OsProcessThreadNumberGet(const LosTaskCB *taskCB)
 {
-    return OS_PCB_FROM_PID(taskCB->processID)->threadNumber;
+    return OS_PCB_FROM_TCB(taskCB)->threadNumber;
 }
 
 #ifdef LOSCFG_KERNEL_VM
@@ -403,6 +432,17 @@ STATIC INLINE struct Vnode *OsProcessExecVnodeGet(const LosProcessCB *processCB)
     return processCB->execVnode;
 }
 #endif
+
+STATIC INLINE UINT32 OsGetPid(const LosProcessCB *processCB)
+{
+#ifdef LOSCFG_PID_CONTAINER
+    if (OS_PROCESS_CONTAINER_CHECK(processCB, OsCurrProcessGet())) {
+        return OsGetVpidFromCurrContainer(processCB);
+    }
+#endif
+    return processCB->processID;
+}
+
 /*
  * return immediately if no child has exited.
  */
@@ -460,6 +500,7 @@ extern UINTPTR __user_init_entry;
 extern UINTPTR __user_init_bss;
 extern UINTPTR __user_init_end;
 extern UINTPTR __user_init_load_addr;
+extern UINT32 OsProcessInit(VOID);
 extern UINT32 OsSystemProcessCreate(VOID);
 extern VOID OsProcessNaturalExit(LosProcessCB *processCB, UINT32 status);
 extern VOID OsProcessCBRecycleToFree(VOID);
@@ -473,20 +514,21 @@ extern UINT32 OsExecStart(const TSK_ENTRY_FUNC entry, UINTPTR sp, UINTPTR mapBas
 extern UINT32 OsSetProcessName(LosProcessCB *processCB, const CHAR *name);
 extern INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio, UINT16 policy);
 extern INT32 OsGetProcessPriority(INT32 which, INT32 pid);
-extern UINT32 OsGetUserInitProcessID(VOID);
-extern UINT32 OsGetIdleProcessID(VOID);
+extern LosProcessCB *OsGetUserInitProcess(VOID);
+extern LosProcessCB *OsGetIdleProcess(VOID);
 extern INT32 OsSetProcessGroupID(UINT32 pid, UINT32 gid);
 extern INT32 OsSetCurrProcessGroupID(UINT32 gid);
-extern UINT32 OsGetKernelInitProcessID(VOID);
+extern LosProcessCB *OsGetKernelInitProcess(VOID);
 extern VOID OsSetSigHandler(UINTPTR addr);
 extern UINTPTR OsGetSigHandler(VOID);
 extern VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID);
 extern INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission);
 extern INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission);
-extern UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB, SchedParam *param);
+extern UINT32 OsProcessAddNewTask(UINTPTR processID, LosTaskCB *taskCB, SchedParam *param, UINT32 *numCount);
 extern VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB);
 extern VOID OsProcessThreadGroupDestroy(VOID);
-
+extern UINT32 OsGetProcessGroupCB(UINT32 pid, UINTPTR *ppgroupLeader);
+extern LosProcessCB *OsGetDefaultProcessCB(VOID);
 #ifdef __cplusplus
 #if __cplusplus
 }

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -320,10 +320,10 @@ BOOL OsIsSwtmrTask(const LosTaskCB *taskCB)
     return FALSE;
 }
 
-LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINT32 processID)
+LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINTPTR ownerID)
 {
     for (UINT16 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {
-        if (g_swtmrCBArray[index].uwOwnerPid == processID) {
+        if (g_swtmrCBArray[index].uwOwnerPid == ownerID) {
             LOS_SwtmrDelete(index);
         }
     }
@@ -524,7 +524,7 @@ STATIC INLINE VOID SwtmrDelete(SWTMR_CTRL_S *swtmr)
     /* insert to free list */
     LOS_ListTailInsert(&g_swtmrFreeList, &swtmr->stSortList.sortLinkNode);
     swtmr->ucState = OS_SWTMR_STATUS_UNUSED;
-    swtmr->uwOwnerPid = 0;
+    swtmr->uwOwnerPid = OS_INVALID_VALUE;
 
     SwtmrDebugDataClear(swtmr->usTimerID);
 }
@@ -680,7 +680,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_SwtmrCreate(UINT32 interval,
     LOS_ListDelete(LOS_DL_LIST_FIRST(&g_swtmrFreeList));
     SWTMR_UNLOCK(intSave);
 
-    swtmr->uwOwnerPid = OsCurrProcessGet()->processID;
+    swtmr->uwOwnerPid = (UINTPTR)OsCurrProcessGet();
     swtmr->pfnHandler = handler;
     swtmr->ucMode = mode;
     swtmr->uwOverrun = 0;

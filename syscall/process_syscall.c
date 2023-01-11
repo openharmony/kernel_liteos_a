@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -45,14 +45,15 @@
 
 static int OsPermissionToCheck(unsigned int pid, unsigned int who)
 {
-    int ret = LOS_GetProcessGroupID(pid);
-    if (ret < 0) {
-        return ret;
-    } else if (ret == OS_KERNEL_PROCESS_GROUP) {
+    uintptr_t pgroupID = 0;
+    unsigned int ret = OsGetProcessGroupCB(pid, &pgroupID);
+    if (ret != 0) {
+        return -ret;
+    } else if (pgroupID == OS_KERNEL_PROCESS_GROUP) {
         return -EPERM;
-    } else if ((ret == OS_USER_PRIVILEGE_PROCESS_GROUP) && (pid != who)) {
+    } else if ((pgroupID == OS_USER_PRIVILEGE_PROCESS_GROUP) && (pid != who)) {
         return -EPERM;
-    } else if (pid == OsGetUserInitProcessID()) {
+    } else if ((UINTPTR)OS_PCB_FROM_PID(pid) == OS_USER_PRIVILEGE_PROCESS_GROUP) {
         return -EPERM;
     }
 
@@ -130,6 +131,10 @@ int SysSchedGetScheduler(int id, int flag)
         taskCB->ops->schedParamGet(taskCB, &param);
         SCHEDULER_UNLOCK(intSave);
         return (int)param.policy;
+    }
+
+    if (id == 0) {
+        id = (int)LOS_GetCurrProcessID();
     }
 
     return LOS_GetProcessScheduler(id);
@@ -355,9 +360,23 @@ int SysVfork(void)
     return OsClone(CLONE_VFORK, 0, 0);
 }
 
+int SysClone(int flags, void *stack, int *parentTid, unsigned long tls, int *childTid)
+{
+    (void)parentTid;
+    (void)tls;
+    (void)childTid;
+
+    return OsClone((UINT32)flags, (UINTPTR)stack, 0);
+}
+
 unsigned int SysGetPPID(void)
 {
-    return OsCurrProcessGet()->parentProcessID;
+#ifdef LOSCFG_PID_CONTAINER
+    if (OsCurrProcessGet()->processID == OS_USER_ROOT_PROCESS_ID) {
+        return 0;
+    }
+#endif
+    return OsCurrProcessGet()->parentProcess->processID;
 }
 
 unsigned int SysGetPID(void)
@@ -375,8 +394,6 @@ int SysSetProcessGroupID(unsigned int pid, unsigned int gid)
 
     if (gid == 0) {
         gid = pid;
-    } else if (gid <= OS_USER_PRIVILEGE_PROCESS_GROUP) {
-        return -EPERM;
     }
 
     ret = OsPermissionToCheck(pid, gid);
@@ -908,7 +925,7 @@ int SysSetThreadArea(const char *area)
 
     LosTaskCB *taskCB = OsCurrTaskGet();
     SCHEDULER_LOCK(intSave);
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *processCB = OS_PCB_FROM_TCB(taskCB);
     if (processCB->processMode != OS_USER_MODE) {
         ret = EPERM;
         goto OUT;
@@ -1031,8 +1048,12 @@ static int SchedAffinityParameterPreprocess(int id, int flag, unsigned int *task
         if (OS_PID_CHECK_INVALID(id)) {
             return -ESRCH;
         }
-        *taskID = (id == 0) ? (OsCurrTaskGet()->taskID) : (OS_PCB_FROM_PID((UINT32)id)->threadGroupID);
-        *processID = (id == 0) ? (OS_TCB_FROM_TID(*taskID)->processID) : id;
+        LosProcessCB *ProcessCB = OS_PCB_FROM_PID((UINT32)id);
+        if (ProcessCB->threadGroup == NULL) {
+            return -ESRCH;
+        }
+        *taskID = (id == 0) ? (OsCurrTaskGet()->taskID) : (ProcessCB->threadGroup->taskID);
+        *processID = (id == 0) ? (OS_PCB_FROM_TID(*taskID)->processID) : id;
     } else {
         if (OS_TID_CHECK_INVALID(id)) {
             return -ESRCH;
