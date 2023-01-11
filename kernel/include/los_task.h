@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -512,7 +512,7 @@ typedef struct tagTskInitParam {
     UINT32          uwResved;      /**< It is automatically deleted if set to LOS_TASK_STATUS_DETACHED.
                                         It is unable to be deleted if set to 0. */
     UINT16          consoleID;     /**< The console id of task belongs  */
-    UINT32          processID;
+    UINTPTR         processID;
     UserTaskParam   userParam;
 } TSK_INIT_PARAM_S;
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -58,18 +58,20 @@
 #include "los_vm_phys.h"
 #include "los_vm_syscall.h"
 
-
 LITE_OS_SEC_BSS LosProcessCB *g_processCBArray = NULL;
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_freeProcess;
 LITE_OS_SEC_DATA_INIT STATIC LOS_DL_LIST g_processRecycleList;
-LITE_OS_SEC_BSS UINT32 g_userInitProcess = OS_INVALID_VALUE;
-LITE_OS_SEC_BSS UINT32 g_kernelInitProcess = OS_INVALID_VALUE;
-LITE_OS_SEC_BSS UINT32 g_kernelIdleProcess = OS_INVALID_VALUE;
 LITE_OS_SEC_BSS UINT32 g_processMaxNum;
+#ifndef LOSCFG_PID_CONTAINER
 LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;
+#define OS_ROOT_PGRP(processCB) (g_processGroup)
+#endif
 
 STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
 {
+#ifdef LOSCFG_PID_CONTAINER
+    OsPidContainersDestroy(processCB);
+#endif
     UINT32 pid = processCB->processID;
     (VOID)memset_s(processCB, sizeof(LosProcessCB), 0, sizeof(LosProcessCB));
     processCB->processID = pid;
@@ -80,27 +82,33 @@ STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
 
 VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB)
 {
-    LosProcessCB *processCB = OS_PCB_FROM_PID(taskCB->processID);
+    LosProcessCB *processCB = OS_PCB_FROM_TCB(taskCB);
 
     LOS_ListDelete(&taskCB->threadList);
     processCB->threadNumber--;
     OsTaskInsertToRecycleList(taskCB);
 }
 
-UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB, SchedParam *param)
+UINT32 OsProcessAddNewTask(UINTPTR processID, LosTaskCB *taskCB, SchedParam *param, UINT32 *numCount)
 {
     UINT32 intSave;
-    UINT16 numCount;
-    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
+    LosProcessCB *processCB = (LosProcessCB *)processID;
 
     SCHEDULER_LOCK(intSave);
-    taskCB->processID = pid;
-    LOS_ListTailInsert(&(processCB->threadSiblingList), &(taskCB->threadList));
+#ifdef LOSCFG_PID_CONTAINER
+    if (OsAllocVtid(taskCB, processCB) == OS_INVALID_VALUE) {
+        SCHEDULER_UNLOCK(intSave);
+        PRINT_ERR("OsAllocVtid failed!\n");
+        return LOS_NOK;
+    }
+#endif
 
+    taskCB->processCB = (UINTPTR)processCB;
+    LOS_ListTailInsert(&(processCB->threadSiblingList), &(taskCB->threadList));
     if (OsProcessIsUserMode(processCB)) {
         taskCB->taskStatus |= OS_TASK_FLAG_USER_MODE;
         if (processCB->threadNumber > 0) {
-            LosTaskCB *task = OS_TCB_FROM_TID(processCB->threadGroupID);
+            LosTaskCB *task = processCB->threadGroup;
             task->ops->schedParamGet(task, param);
         } else {
             OsSchedProcessDefaultSchedParamGet(param->policy, param);
@@ -114,82 +122,86 @@ UINT32 OsProcessAddNewTask(UINT32 pid, LosTaskCB *taskCB, SchedParam *param)
     taskCB->archMmu = (UINTPTR)&processCB->vmSpace->archMmu;
 #endif
     if (!processCB->threadNumber) {
-        processCB->threadGroupID = taskCB->taskID;
+        processCB->threadGroup = taskCB;
     }
     processCB->threadNumber++;
 
-    numCount = processCB->threadCount;
+    *numCount = processCB->threadCount;
     processCB->threadCount++;
     SCHEDULER_UNLOCK(intSave);
-    return numCount;
+    return LOS_OK;
 }
 
-STATIC ProcessGroup *OsCreateProcessGroup(UINT32 pid)
+STATIC ProcessGroup *CreateProcessGroup(LosProcessCB *processCB)
 {
-    LosProcessCB *processCB = NULL;
-    ProcessGroup *group = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcessGroup));
-    if (group == NULL) {
+    ProcessGroup *pgroup = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcessGroup));
+    if (pgroup == NULL) {
         return NULL;
     }
 
-    group->groupID = pid;
-    LOS_ListInit(&group->processList);
-    LOS_ListInit(&group->exitProcessList);
+    pgroup->pgroupLeader = (UINTPTR)processCB;
+    LOS_ListInit(&pgroup->processList);
+    LOS_ListInit(&pgroup->exitProcessList);
 
-    processCB = OS_PCB_FROM_PID(pid);
-    LOS_ListTailInsert(&group->processList, &processCB->subordinateGroupList);
-    processCB->group = group;
+    LOS_ListTailInsert(&pgroup->processList, &processCB->subordinateGroupList);
+    processCB->pgroup = pgroup;
     processCB->processStatus |= OS_PROCESS_FLAG_GROUP_LEADER;
-    if (g_processGroup != NULL) {
-        LOS_ListTailInsert(&g_processGroup->groupList, &group->groupList);
-    }
 
-    return group;
+    ProcessGroup *rootPGroup = OS_ROOT_PGRP(processCB);
+    if (rootPGroup == NULL) {
+        OS_ROOT_PGRP(processCB) = pgroup;
+        LOS_ListInit(&pgroup->groupList);
+    } else {
+        LOS_ListTailInsert(&rootPGroup->groupList, &pgroup->groupList);
+    }
+    return pgroup;
 }
 
-STATIC VOID OsExitProcessGroup(LosProcessCB *processCB, ProcessGroup **group)
+STATIC VOID ExitProcessGroup(LosProcessCB *processCB, ProcessGroup **pgroup)
 {
-    LosProcessCB *groupProcessCB = OS_PCB_FROM_PID(processCB->group->groupID);
-
+    LosProcessCB *pgroupCB = OS_GET_PGROUP_LEADER(processCB->pgroup);
     LOS_ListDelete(&processCB->subordinateGroupList);
-    if (LOS_ListEmpty(&processCB->group->processList) && LOS_ListEmpty(&processCB->group->exitProcessList)) {
-        LOS_ListDelete(&processCB->group->groupList);
-        groupProcessCB->processStatus &= ~OS_PROCESS_FLAG_GROUP_LEADER;
-        *group = processCB->group;
-        if (OsProcessIsUnused(groupProcessCB) && !(groupProcessCB->processStatus & OS_PROCESS_FLAG_EXIT)) {
-            LOS_ListDelete(&groupProcessCB->pendList);
-            OsInsertPCBToFreeList(groupProcessCB);
+    if (LOS_ListEmpty(&processCB->pgroup->processList) && LOS_ListEmpty(&processCB->pgroup->exitProcessList)) {
+        LOS_ListDelete(&processCB->pgroup->groupList);
+        pgroupCB->processStatus &= ~OS_PROCESS_FLAG_GROUP_LEADER;
+        *pgroup = processCB->pgroup;
+        if (OsProcessIsUnused(pgroupCB) && !(pgroupCB->processStatus & OS_PROCESS_FLAG_EXIT)) {
+            LOS_ListDelete(&pgroupCB->pendList);
+            OsInsertPCBToFreeList(pgroupCB);
         }
     }
 
-    processCB->group = NULL;
+    processCB->pgroup = NULL;
 }
 
 STATIC ProcessGroup *OsFindProcessGroup(UINT32 gid)
 {
-    ProcessGroup *group = NULL;
-    if (g_processGroup->groupID == gid) {
-        return g_processGroup;
+    ProcessGroup *pgroup = NULL;
+    ProcessGroup *rootPGroup = OS_ROOT_PGRP(OsCurrProcessGet());
+    LosProcessCB *processCB = OS_GET_PGROUP_LEADER(rootPGroup);
+    if (processCB->processID == gid) {
+        return rootPGroup;
     }
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(group, &g_processGroup->groupList, ProcessGroup, groupList) {
-        if (group->groupID == gid) {
-            return group;
+    LOS_DL_LIST_FOR_EACH_ENTRY(pgroup, &rootPGroup->groupList, ProcessGroup, groupList) {
+        processCB = OS_GET_PGROUP_LEADER(pgroup);
+        if (processCB->processID == gid) {
+            return pgroup;
         }
     }
 
-    PRINT_INFO("%s failed! group id = %u\n", __FUNCTION__, gid);
+    PRINT_INFO("%s failed! pgroup id = %u\n", __FUNCTION__, gid);
     return NULL;
 }
 
-STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *group, siginfo_t *info, INT32 permission)
+STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *pgroup, siginfo_t *info, INT32 permission)
 {
     INT32 ret, success, err;
     LosProcessCB *childCB = NULL;
 
     success = 0;
     ret = -LOS_ESRCH;
-    LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(group->processList), LosProcessCB, subordinateGroupList) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(pgroup->processList), LosProcessCB, subordinateGroupList) {
         if (childCB->processID == 0) {
             continue;
         }
@@ -205,16 +217,17 @@ STATIC INT32 OsSendSignalToSpecifyProcessGroup(ProcessGroup *group, siginfo_t *i
 LITE_OS_SEC_TEXT INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permission)
 {
     INT32 ret, success, err;
-    ProcessGroup *group = NULL;
+    ProcessGroup *pgroup = NULL;
+    ProcessGroup *rootPGroup = OS_ROOT_PGRP(OsCurrProcessGet());
 
     success = 0;
-    err = OsSendSignalToSpecifyProcessGroup(g_processGroup, info, permission);
+    err = OsSendSignalToSpecifyProcessGroup(rootPGroup, info, permission);
     success |= !err;
     ret = err;
     /* all processes group */
-    LOS_DL_LIST_FOR_EACH_ENTRY(group, &g_processGroup->groupList, ProcessGroup, groupList) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(pgroup, &rootPGroup->groupList, ProcessGroup, groupList) {
         /* all processes in the process group. */
-        err = OsSendSignalToSpecifyProcessGroup(group, info, permission);
+        err = OsSendSignalToSpecifyProcessGroup(pgroup, info, permission);
         success |= !err;
         ret = err;
     }
@@ -223,66 +236,58 @@ LITE_OS_SEC_TEXT INT32 OsSendSignalToAllProcess(siginfo_t *info, INT32 permissio
 
 LITE_OS_SEC_TEXT INT32 OsSendSignalToProcessGroup(INT32 pid, siginfo_t *info, INT32 permission)
 {
-    ProcessGroup *group = NULL;
+    ProcessGroup *pgroup = NULL;
     /* Send SIG to all processes in process group PGRP.
        If PGRP is zero, send SIG to all processes in
        the current process's process group. */
-    group = OsFindProcessGroup(pid ? -pid : LOS_GetCurrProcessGroupID());
-    if (group == NULL) {
+    pgroup = OsFindProcessGroup(pid ? -pid : LOS_GetCurrProcessGroupID());
+    if (pgroup == NULL) {
         return -LOS_ESRCH;
     }
     /* all processes in the process group. */
-    return OsSendSignalToSpecifyProcessGroup(group, info, permission);
+    return OsSendSignalToSpecifyProcessGroup(pgroup, info, permission);
 }
 
-STATIC LosProcessCB *OsFindGroupExitProcess(ProcessGroup *group, INT32 pid)
+STATIC LosProcessCB *OsFindGroupExitProcess(ProcessGroup *pgroup, INT32 pid)
 {
     LosProcessCB *childCB = NULL;
 
-    LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(group->exitProcessList), LosProcessCB, subordinateGroupList) {
+    LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(pgroup->exitProcessList), LosProcessCB, subordinateGroupList) {
         if ((childCB->processID == pid) || (pid == OS_INVALID_VALUE)) {
             return childCB;
         }
     }
 
-    PRINT_INFO("%s find exit process : %d failed in group : %u\n", __FUNCTION__, pid, group->groupID);
     return NULL;
 }
 
-STATIC UINT32 OsFindChildProcess(const LosProcessCB *processCB, INT32 childPid)
+STATIC UINT32 OsFindChildProcess(const LosProcessCB *processCB, const LosProcessCB *wait)
 {
     LosProcessCB *childCB = NULL;
 
-    if (childPid < 0) {
-        goto ERR;
-    }
-
     LOS_DL_LIST_FOR_EACH_ENTRY(childCB, &(processCB->childrenList), LosProcessCB, siblingList) {
-        if (childCB->processID == childPid) {
+        if (childCB == wait) {
             return LOS_OK;
         }
     }
 
-ERR:
-    PRINT_INFO("%s is find the child : %d failed in parent : %u\n", __FUNCTION__, childPid, processCB->processID);
     return LOS_NOK;
 }
 
-STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, INT32 childPid)
+STATIC LosProcessCB *OsFindExitChildProcess(const LosProcessCB *processCB, const LosProcessCB *wait)
 {
     LosProcessCB *exitChild = NULL;
 
     LOS_DL_LIST_FOR_EACH_ENTRY(exitChild, &(processCB->exitChildList), LosProcessCB, siblingList) {
-        if ((childPid == OS_INVALID_VALUE) || (exitChild->processID == childPid)) {
+        if ((wait == NULL) || (exitChild == wait)) {
             return exitChild;
         }
     }
 
-    PRINT_INFO("%s is find the exit child : %d failed in parent : %u\n", __FUNCTION__, childPid, processCB->processID);
     return NULL;
 }
 
-VOID OsWaitWakeTask(LosTaskCB *taskCB, UINT32 wakePID)
+VOID OsWaitWakeTask(LosTaskCB *taskCB, UINTPTR wakePID)
 {
     taskCB->waitID = wakePID;
     taskCB->ops->wake(taskCB);
@@ -295,20 +300,20 @@ STATIC BOOL OsWaitWakeSpecifiedProcess(LOS_DL_LIST *head, const LosProcessCB *pr
 {
     LOS_DL_LIST *list = head;
     LosTaskCB *taskCB = NULL;
-    UINT32 pid = 0;
+    UINTPTR processID = 0;
     BOOL find = FALSE;
 
     while (list->pstNext != head) {
         taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(list));
-        if ((taskCB->waitFlag == OS_PROCESS_WAIT_PRO) && (taskCB->waitID == processCB->processID)) {
-            if (pid == 0) {
-                pid = processCB->processID;
+        if ((taskCB->waitFlag == OS_PROCESS_WAIT_PRO) && (taskCB->waitID == (UINTPTR)processCB)) {
+            if (processID == 0) {
+                processID = taskCB->waitID;
                 find = TRUE;
             } else {
-                pid = OS_INVALID_VALUE;
+                processID = OS_INVALID_VALUE;
             }
 
-            OsWaitWakeTask(taskCB, pid);
+            OsWaitWakeTask(taskCB, processID);
             continue;
         }
 
@@ -363,14 +368,14 @@ STATIC VOID OsWaitCheckAndWakeParentProcess(LosProcessCB *parentCB, const LosPro
     while (list->pstNext != head) {
         taskCB = OS_TCB_FROM_PENDLIST(LOS_DL_LIST_FIRST(list));
         if (taskCB->waitFlag == OS_PROCESS_WAIT_GID) {
-            if (taskCB->waitID != processCB->group->groupID) {
+            if (taskCB->waitID != (UINTPTR)OS_GET_PGROUP_LEADER(processCB->pgroup)) {
                 list = list->pstNext;
                 continue;
             }
         }
 
         if (findSpecified == FALSE) {
-            OsWaitWakeTask(taskCB, processCB->processID);
+            OsWaitWakeTask(taskCB, (UINTPTR)processCB);
             findSpecified = TRUE;
         } else {
             OsWaitWakeTask(taskCB, OS_INVALID_VALUE);
@@ -406,8 +411,10 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     }
 #endif
 
-    OsSwtmrRecycle(processCB->processID);
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
+    OsSwtmrRecycle((UINTPTR)processCB);
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
+#endif
 
 #ifdef LOSCFG_SECURITY_VID
     if (processCB->timerIdMap.bitMap != NULL) {
@@ -429,18 +436,22 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     (VOID)LOS_MemFree(m_aucSysMem1, processCpup);
 #endif
 
+#ifdef LOSCFG_KERNEL_CONTAINER
+    OsContainersDestroy(processCB);
+#endif
+
     if (processCB->resourceLimit != NULL) {
         (VOID)LOS_MemFree((VOID *)m_aucSysMem0, processCB->resourceLimit);
         processCB->resourceLimit = NULL;
     }
 }
 
-LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, ProcessGroup **group)
+STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, ProcessGroup **pgroup)
 {
-    OsExitProcessGroup(childCB, group);
+    ExitProcessGroup(childCB, pgroup);
     LOS_ListDelete(&childCB->siblingList);
-    if (childCB->processStatus & OS_PROCESS_STATUS_ZOMBIES) {
-        OsDeleteTaskFromProcess(OS_TCB_FROM_TID(childCB->threadGroupID));
+    if (OsProcessIsDead(childCB)) {
+        OsDeleteTaskFromProcess(childCB->threadGroup);
         childCB->processStatus &= ~OS_PROCESS_STATUS_ZOMBIES;
         childCB->processStatus |= OS_PROCESS_FLAG_UNUSED;
     }
@@ -448,7 +459,7 @@ LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, Proc
     LOS_ListDelete(&childCB->pendList);
     if (childCB->processStatus & OS_PROCESS_FLAG_EXIT) {
         LOS_ListHeadInsert(&g_processRecycleList, &childCB->pendList);
-    } else if (childCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) {
+    } else if (OsProcessIsPGroupLeader(childCB)) {
         LOS_ListTailInsert(&g_processRecycleList, &childCB->pendList);
     } else {
         OsInsertPCBToFreeList(childCB);
@@ -457,31 +468,35 @@ LITE_OS_SEC_TEXT STATIC VOID OsRecycleZombiesProcess(LosProcessCB *childCB, Proc
 
 STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
 {
-    UINT32 parentID;
     LosProcessCB *childCB = NULL;
     LosProcessCB *parentCB = NULL;
     LOS_DL_LIST *nextList = NULL;
     LOS_DL_LIST *childHead = NULL;
 
+#ifdef LOSCFG_PID_CONTAINER
+    if (processCB->processID == OS_USER_ROOT_PROCESS_ID) {
+        return;
+    }
+#endif
+
     if (!LOS_ListEmpty(&processCB->childrenList)) {
         childHead = processCB->childrenList.pstNext;
         LOS_ListDelete(&(processCB->childrenList));
         if (OsProcessIsUserMode(processCB)) {
-            parentID = g_userInitProcess;
+            parentCB = OS_PCB_FROM_PID(OS_USER_ROOT_PROCESS_ID);
         } else {
-            parentID = g_kernelInitProcess;
+            parentCB = OsGetKernelInitProcess();
         }
 
         for (nextList = childHead; ;) {
             childCB = OS_PCB_FROM_SIBLIST(nextList);
-            childCB->parentProcessID = parentID;
+            childCB->parentProcess = parentCB;
             nextList = nextList->pstNext;
             if (nextList == childHead) {
                 break;
             }
         }
 
-        parentCB = OS_PCB_FROM_PID(parentID);
         LOS_ListTailInsertList(&parentCB->childrenList, childHead);
     }
 
@@ -491,40 +506,37 @@ STATIC VOID OsDealAliveChildProcess(LosProcessCB *processCB)
 STATIC VOID OsChildProcessResourcesFree(const LosProcessCB *processCB)
 {
     LosProcessCB *childCB = NULL;
-    ProcessGroup *group = NULL;
+    ProcessGroup *pgroup = NULL;
 
     while (!LOS_ListEmpty(&((LosProcessCB *)processCB)->exitChildList)) {
         childCB = LOS_DL_LIST_ENTRY(processCB->exitChildList.pstNext, LosProcessCB, siblingList);
-        OsRecycleZombiesProcess(childCB, &group);
-        (VOID)LOS_MemFree(m_aucSysMem1, group);
+        OsRecycleZombiesProcess(childCB, &pgroup);
+        (VOID)LOS_MemFree(m_aucSysMem1, pgroup);
     }
 }
 
 VOID OsProcessNaturalExit(LosProcessCB *processCB, UINT32 status)
 {
-    LosProcessCB *parentCB = NULL;
-
     OsChildProcessResourcesFree(processCB);
 
     /* is a child process */
-    if (processCB->parentProcessID != OS_INVALID_VALUE) {
-        parentCB = OS_PCB_FROM_PID(processCB->parentProcessID);
+    if (processCB->parentProcess != NULL) {
+        LosProcessCB *parentCB = processCB->parentProcess;
         LOS_ListDelete(&processCB->siblingList);
         if (!OsProcessExitCodeSignalIsSet(processCB)) {
             OsProcessExitCodeSet(processCB, status);
         }
         LOS_ListTailInsert(&parentCB->exitChildList, &processCB->siblingList);
         LOS_ListDelete(&processCB->subordinateGroupList);
-        LOS_ListTailInsert(&processCB->group->exitProcessList, &processCB->subordinateGroupList);
+        LOS_ListTailInsert(&processCB->pgroup->exitProcessList, &processCB->subordinateGroupList);
 
         OsWaitCheckAndWakeParentProcess(parentCB, processCB);
 
         OsDealAliveChildProcess(processCB);
 
         processCB->processStatus |= OS_PROCESS_STATUS_ZOMBIES;
-
 #ifdef LOSCFG_KERNEL_VM
-        (VOID)OsKill(processCB->parentProcessID, SIGCHLD, OS_KERNEL_KILL_PERMISSION);
+        (VOID)OsSendSigToProcess(parentCB, SIGCHLD, OS_KERNEL_KILL_PERMISSION);
 #endif
         LOS_ListHeadInsert(&g_processRecycleList, &processCB->pendList);
         return;
@@ -534,13 +546,25 @@ VOID OsProcessNaturalExit(LosProcessCB *processCB, UINT32 status)
     return;
 }
 
-STATIC UINT32 OsProcessInit(VOID)
+STATIC VOID SystemProcessEarlyInit(LosProcessCB *processCB)
+{
+    LOS_ListDelete(&processCB->pendList);
+#ifdef LOSCFG_KERNEL_CONTAINER
+    OsContainerInitSystemProcess(processCB);
+#endif
+    if (processCB == OsGetKernelInitProcess()) {
+        OsSetMainTaskProcess((UINTPTR)processCB);
+    }
+}
+
+UINT32 OsProcessInit(VOID)
 {
     UINT32 index;
     UINT32 size;
+    UINT32 ret;
 
     g_processMaxNum = LOSCFG_BASE_CORE_PROCESS_LIMIT;
-    size = g_processMaxNum * sizeof(LosProcessCB);
+    size = (g_processMaxNum + 1) * sizeof(LosProcessCB);
 
     g_processCBArray = (LosProcessCB *)LOS_MemAlloc(m_aucSysMem1, size);
     if (g_processCBArray == NULL) {
@@ -557,15 +581,23 @@ STATIC UINT32 OsProcessInit(VOID)
         LOS_ListTailInsert(&g_freeProcess, &g_processCBArray[index].pendList);
     }
 
-    g_kernelIdleProcess = 0; /* 0: The idle process ID of the kernel-mode process is fixed at 0 */
-    LOS_ListDelete(&OS_PCB_FROM_PID(g_kernelIdleProcess)->pendList);
+    /* Default process to prevent thread PCB from being empty */
+    g_processCBArray[index].processID = index;
+    g_processCBArray[index].processStatus = OS_PROCESS_FLAG_UNUSED;
 
-    g_userInitProcess = 1; /* 1: The root process ID of the user-mode process is fixed at 1 */
-    LOS_ListDelete(&OS_PCB_FROM_PID(g_userInitProcess)->pendList);
+    ret = OsTaskInit((UINTPTR)&g_processCBArray[g_processMaxNum]);
+    if (ret != LOS_OK) {
+        (VOID)LOS_MemFree(m_aucSysMem1, g_processCBArray);
+        return LOS_OK;
+    }
 
-    g_kernelInitProcess = 2; /* 2: The root process ID of the kernel-mode process is fixed at 2 */
-    LOS_ListDelete(&OS_PCB_FROM_PID(g_kernelInitProcess)->pendList);
+#ifdef LOSCFG_KERNEL_CONTAINER
+    OsInitRootContainer();
+#endif
 
+    SystemProcessEarlyInit(OsGetIdleProcess());
+    SystemProcessEarlyInit(OsGetUserInitProcess());
+    SystemProcessEarlyInit(OsGetKernelInitProcess());
     return LOS_OK;
 }
 
@@ -597,8 +629,7 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecycleToFree(VOID)
          * !OS_PROCESS_FLAG_UNUSED: Parent process does not reclaim child process resources.
          */
         LOS_ListDelete(&processCB->pendList);
-        if ((processCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER) ||
-            (processCB->processStatus & OS_PROCESS_STATUS_ZOMBIES)) {
+        if (OsProcessIsPGroupLeader(processCB) || OsProcessIsDead(processCB)) {
             LOS_ListTailInsert(&g_processRecycleList, &processCB->pendList);
         } else {
             /* Clear the bottom 4 bits of process status */
@@ -617,22 +648,28 @@ LITE_OS_SEC_TEXT VOID OsProcessCBRecycleToFree(VOID)
 STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
 {
     UINT32 intSave;
-    ProcessGroup *group = NULL;
+    ProcessGroup *pgroup = NULL;
 
     if (processCB == NULL) {
         return;
     }
 
+#ifdef LOSCFG_KERNEL_CONTAINER
+    if (OS_PID_CHECK_INVALID(processCB->processID)) {
+        return;
+    }
+#endif
+
     OsProcessResourcesToFree(processCB);
 
     SCHEDULER_LOCK(intSave);
-    if (processCB->parentProcessID != OS_INVALID_VALUE) {
+    if (processCB->parentProcess != NULL) {
         LOS_ListDelete(&processCB->siblingList);
-        processCB->parentProcessID = OS_INVALID_VALUE;
+        processCB->parentProcess = NULL;
     }
 
-    if (processCB->group != NULL) {
-        OsExitProcessGroup(processCB, &group);
+    if (processCB->pgroup != NULL) {
+        ExitProcessGroup(processCB, &pgroup);
     }
 
     processCB->processStatus &= ~OS_PROCESS_STATUS_INIT;
@@ -640,7 +677,7 @@ STATIC VOID OsDeInitPCB(LosProcessCB *processCB)
     LOS_ListHeadInsert(&g_processRecycleList, &processCB->pendList);
     SCHEDULER_UNLOCK(intSave);
 
-    (VOID)LOS_MemFree(m_aucSysMem1, group);
+    (VOID)LOS_MemFree(m_aucSysMem1, pgroup);
     OsWriteResourceEvent(OS_RESOURCE_EVENT_FREE);
     return;
 }
@@ -681,8 +718,8 @@ STATIC UINT32 OsInitPCB(LosProcessCB *processCB, UINT32 mode, const CHAR *name)
 {
     processCB->processMode = mode;
     processCB->processStatus = OS_PROCESS_STATUS_INIT;
-    processCB->parentProcessID = OS_INVALID_VALUE;
-    processCB->threadGroupID = OS_INVALID_VALUE;
+    processCB->parentProcess = NULL;
+    processCB->threadGroup = NULL;
     processCB->umask = OS_PROCESS_DEFAULT_UMASK;
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
 
@@ -797,9 +834,8 @@ LITE_OS_SEC_TEXT INT32 LOS_GetGroupID(VOID)
 #endif
 }
 
-STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const CHAR *name)
+STATIC UINT32 OsSystemProcessInit(LosProcessCB *processCB, UINT32 flags, const CHAR *name)
 {
-    ProcessGroup *group = NULL;
     UINT32 ret = OsInitPCB(processCB, flags, name);
     if (ret != LOS_OK) {
         goto EXIT;
@@ -813,8 +849,8 @@ STATIC UINT32 OsProcessCreateInit(LosProcessCB *processCB, UINT32 flags, const C
     }
 #endif
 
-    group = OsCreateProcessGroup(processCB->processID);
-    if (group == NULL) {
+    ProcessGroup *pgroup = CreateProcessGroup(processCB);
+    if (pgroup == NULL) {
         ret = LOS_ENOMEM;
         goto EXIT;
     }
@@ -836,30 +872,22 @@ EXIT:
 
 LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
 {
-    UINT32 ret = OsProcessInit();
+    LosProcessCB *kerInitProcess = OsGetKernelInitProcess();
+    UINT32 ret = OsSystemProcessInit(kerInitProcess, OS_KERNEL_MODE, "KProcess");
     if (ret != LOS_OK) {
         return ret;
     }
-
-    LosProcessCB *kerInitProcess = OS_PCB_FROM_PID(g_kernelInitProcess);
-    ret = OsProcessCreateInit(kerInitProcess, OS_KERNEL_MODE, "KProcess");
-    if (ret != LOS_OK) {
-        return ret;
-    }
-
     kerInitProcess->processStatus &= ~OS_PROCESS_STATUS_INIT;
-    g_processGroup = kerInitProcess->group;
-    LOS_ListInit(&g_processGroup->groupList);
 
-    LosProcessCB *idleProcess = OS_PCB_FROM_PID(g_kernelIdleProcess);
+    LosProcessCB *idleProcess = OsGetIdleProcess();
     ret = OsInitPCB(idleProcess, OS_KERNEL_MODE, "KIdle");
     if (ret != LOS_OK) {
         return ret;
     }
-    idleProcess->parentProcessID = kerInitProcess->processID;
+    idleProcess->parentProcess = kerInitProcess;
     LOS_ListTailInsert(&kerInitProcess->childrenList, &idleProcess->siblingList);
-    idleProcess->group = kerInitProcess->group;
-    LOS_ListTailInsert(&kerInitProcess->group->processList, &idleProcess->subordinateGroupList);
+    idleProcess->pgroup = kerInitProcess->pgroup;
+    LOS_ListTailInsert(&kerInitProcess->pgroup->processList, &idleProcess->subordinateGroupList);
 #ifdef LOSCFG_SECURITY_CAPABILITY
     idleProcess->user = kerInitProcess->user;
 #endif
@@ -868,12 +896,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsSystemProcessCreate(VOID)
 #endif
     idleProcess->processStatus &= ~OS_PROCESS_STATUS_INIT;
 
-    ret = OsIdleTaskCreate();
+    ret = OsIdleTaskCreate((UINTPTR)idleProcess);
     if (ret != LOS_OK) {
         return ret;
     }
-    idleProcess->threadGroupID = OsGetIdleTaskId();
-
     return LOS_OK;
 }
 
@@ -945,7 +971,7 @@ LITE_OS_SEC_TEXT INT32 OsSetProcessScheduler(INT32 which, INT32 pid, UINT16 prio
     }
 #endif
 
-    LosTaskCB *taskCB = OS_TCB_FROM_TID(processCB->threadGroupID);
+    LosTaskCB *taskCB = processCB->threadGroup;
     taskCB->ops->schedParamGet(taskCB, &param);
     param.basePrio = prio;
 
@@ -1014,7 +1040,7 @@ LITE_OS_SEC_TEXT INT32 OsGetProcessPriority(INT32 which, INT32 pid)
         return -LOS_ESRCH;
     }
 
-    LosTaskCB *taskCB = OS_TCB_FROM_TID(processCB->threadGroupID);
+    LosTaskCB *taskCB = processCB->threadGroup;
     taskCB->ops->schedParamGet(taskCB, &param);
 
     SCHEDULER_UNLOCK(intSave);
@@ -1061,34 +1087,40 @@ STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *proces
 STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcessCB **child)
 {
     LosProcessCB *childCB = NULL;
-    ProcessGroup *group = NULL;
     LosTaskCB *runTask = OsCurrTaskGet();
-    UINT32 ret;
 
     if (pid > 0) {
+        if (OS_PID_CHECK_INVALID((UINT32)pid)) {
+            return LOS_ECHILD;
+        }
+
+        LosProcessCB *waitProcess = OS_PCB_FROM_PID(pid);
+        if (OsProcessIsUnused(waitProcess)) {
+            return LOS_ECHILD;
+        }
+
         /* Wait for the child process whose process number is pid. */
-        childCB = OsFindExitChildProcess(processCB, pid);
+        childCB = OsFindExitChildProcess(processCB, waitProcess);
         if (childCB != NULL) {
             goto WAIT_BACK;
         }
 
-        ret = OsFindChildProcess(processCB, pid);
-        if (ret != LOS_OK) {
+        if (OsFindChildProcess(processCB, waitProcess) != LOS_OK) {
             return LOS_ECHILD;
         }
         runTask->waitFlag = OS_PROCESS_WAIT_PRO;
-        runTask->waitID = pid;
+        runTask->waitID = (UINTPTR)waitProcess;
     } else if (pid == 0) {
         /* Wait for any child process in the same process group */
-        childCB = OsFindGroupExitProcess(processCB->group, OS_INVALID_VALUE);
+        childCB = OsFindGroupExitProcess(processCB->pgroup, OS_INVALID_VALUE);
         if (childCB != NULL) {
             goto WAIT_BACK;
         }
-        runTask->waitID = processCB->group->groupID;
+        runTask->waitID = (UINTPTR)OS_GET_PGROUP_LEADER(processCB->pgroup);
         runTask->waitFlag = OS_PROCESS_WAIT_GID;
     } else if (pid == -1) {
         /* Wait for any child process */
-        childCB = OsFindExitChildProcess(processCB, OS_INVALID_VALUE);
+        childCB = OsFindExitChildProcess(processCB, NULL);
         if (childCB != NULL) {
             goto WAIT_BACK;
         }
@@ -1096,17 +1128,17 @@ STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcess
         runTask->waitFlag = OS_PROCESS_WAIT_ANY;
     } else { /* pid < -1 */
         /* Wait for any child process whose group number is the pid absolute value. */
-        group = OsFindProcessGroup(-pid);
-        if (group == NULL) {
+        ProcessGroup *pgroup = OsFindProcessGroup(-pid);
+        if (pgroup == NULL) {
             return LOS_ECHILD;
         }
 
-        childCB = OsFindGroupExitProcess(group, OS_INVALID_VALUE);
+        childCB = OsFindGroupExitProcess(pgroup, OS_INVALID_VALUE);
         if (childCB != NULL) {
             goto WAIT_BACK;
         }
 
-        runTask->waitID = -pid;
+        runTask->waitID = (UINTPTR)OS_GET_PGROUP_LEADER(pgroup);
         runTask->waitFlag = OS_PROCESS_WAIT_GID;
     }
 
@@ -1117,8 +1149,8 @@ WAIT_BACK:
 
 STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intSave, INT32 *status, siginfo_t *info)
 {
-    ProcessGroup *group = NULL;
-    UINT32 pid = childCB->processID;
+    ProcessGroup *pgroup = NULL;
+    UINT32 pid  = OsGetPid(childCB);
     UINT16 mode = childCB->processMode;
     INT32 exitCode = childCB->exitCode;
     UINT32 uid = 0;
@@ -1129,7 +1161,7 @@ STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intS
     }
 #endif
 
-    OsRecycleZombiesProcess((LosProcessCB *)childCB, &group);
+    OsRecycleZombiesProcess((LosProcessCB *)childCB, &pgroup);
     SCHEDULER_UNLOCK(intSave);
 
     if (status != NULL) {
@@ -1166,7 +1198,7 @@ STATIC UINT32 OsWaitRecycleChildProcess(const LosProcessCB *childCB, UINT32 intS
             (VOID)memcpy_s((VOID *)(info), sizeof(siginfo_t), (const VOID *)(&(tempinfo)), sizeof(siginfo_t));
         }
     }
-    (VOID)LOS_MemFree(m_aucSysMem1, group);
+    (VOID)LOS_MemFree(m_aucSysMem1, pgroup);
     return pid;
 }
 
@@ -1233,8 +1265,8 @@ STATIC INT32 OsWait(INT32 pid, USER INT32 *status, USER siginfo_t *info, UINT32 
         goto ERROR;
     }
 
-    childCB = OS_PCB_FROM_PID(runTask->waitID);
-    if (!(childCB->processStatus & OS_PROCESS_STATUS_ZOMBIES)) {
+    childCB = (LosProcessCB *)runTask->waitID;
+    if (!OsProcessIsDead(childCB)) {
         pid = -LOS_ESRCH;
         goto ERROR;
     }
@@ -1297,20 +1329,45 @@ LITE_OS_SEC_TEXT INT32 LOS_Waitid(INT32 pid, USER siginfo_t *info, UINT32 option
     return OsWait(pid, NULL, info, options, NULL);
 }
 
-STATIC UINT32 OsSetProcessGroupCheck(const LosProcessCB *processCB, UINT32 gid)
+UINT32 OsGetProcessGroupCB(UINT32 pid, UINTPTR *ppgroupLeader)
+{
+    UINT32 intSave;
+
+    if (OS_PID_CHECK_INVALID(pid) || (ppgroupLeader == NULL)) {
+        return LOS_EINVAL;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
+    if (OsProcessIsUnused(processCB)) {
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_ESRCH;
+    }
+
+    *ppgroupLeader = (UINTPTR)OS_GET_PGROUP_LEADER(processCB->pgroup);
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+STATIC UINT32 OsSetProcessGroupCheck(const LosProcessCB *processCB, LosProcessCB *pgroupCB)
 {
     LosProcessCB *runProcessCB = OsCurrProcessGet();
-    LosProcessCB *groupProcessCB = OS_PCB_FROM_PID(gid);
 
     if (OsProcessIsInactive(processCB)) {
         return LOS_ESRCH;
     }
 
-    if (!OsProcessIsUserMode(processCB) || !OsProcessIsUserMode(groupProcessCB)) {
+#ifdef LOSCFG_PID_CONTAINER
+    if ((processCB->processID == OS_USER_ROOT_PROCESS_ID) || OS_PROCESS_CONTAINER_CHECK(processCB, runProcessCB)) {
+        return LOS_EPERM;
+    }
+#endif
+
+    if (!OsProcessIsUserMode(processCB) || !OsProcessIsUserMode(pgroupCB)) {
         return LOS_EPERM;
     }
 
-    if (runProcessCB->processID == processCB->parentProcessID) {
+    if (runProcessCB == processCB->parentProcess) {
         if (processCB->processStatus & OS_PROCESS_FLAG_ALREADY_EXEC) {
             return LOS_EACCES;
         }
@@ -1319,12 +1376,12 @@ STATIC UINT32 OsSetProcessGroupCheck(const LosProcessCB *processCB, UINT32 gid)
     }
 
     /* Add the process to another existing process group */
-    if (processCB->processID != gid) {
-        if (!(groupProcessCB->processStatus & OS_PROCESS_FLAG_GROUP_LEADER)) {
+    if (processCB != pgroupCB) {
+        if (!OsProcessIsPGroupLeader(pgroupCB)) {
             return LOS_EPERM;
         }
 
-        if ((groupProcessCB->parentProcessID != processCB->parentProcessID) && (gid != processCB->parentProcessID)) {
+        if ((pgroupCB->parentProcess != processCB->parentProcess) && (pgroupCB != processCB->parentProcess)) {
             return LOS_EPERM;
         }
     }
@@ -1332,39 +1389,39 @@ STATIC UINT32 OsSetProcessGroupCheck(const LosProcessCB *processCB, UINT32 gid)
     return LOS_OK;
 }
 
-STATIC UINT32 OsSetProcessGroupIDUnsafe(UINT32 pid, UINT32 gid, ProcessGroup **group)
+STATIC UINT32 OsSetProcessGroupIDUnsafe(UINT32 pid, UINT32 gid, ProcessGroup **pgroup)
 {
-    ProcessGroup *oldGroup = NULL;
-    ProcessGroup *newGroup = NULL;
     LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
-    UINT32 ret = OsSetProcessGroupCheck(processCB, gid);
+    ProcessGroup *rootPGroup = OS_ROOT_PGRP(OsCurrProcessGet());
+    LosProcessCB *pgroupCB = OS_PCB_FROM_PID(gid);
+    UINT32 ret = OsSetProcessGroupCheck(processCB, pgroupCB);
     if (ret != LOS_OK) {
         return ret;
     }
 
-    if (processCB->group->groupID == gid) {
+    if (OS_GET_PGROUP_LEADER(processCB->pgroup) == pgroupCB) {
         return LOS_OK;
     }
 
-    oldGroup = processCB->group;
-    OsExitProcessGroup(processCB, group);
+    ProcessGroup *oldPGroup = processCB->pgroup;
+    ExitProcessGroup(processCB, pgroup);
 
-    newGroup = OsFindProcessGroup(gid);
-    if (newGroup != NULL) {
-        LOS_ListTailInsert(&newGroup->processList, &processCB->subordinateGroupList);
-        processCB->group = newGroup;
+    ProcessGroup *newPGroup = OsFindProcessGroup(gid);
+    if (newPGroup != NULL) {
+        LOS_ListTailInsert(&newPGroup->processList, &processCB->subordinateGroupList);
+        processCB->pgroup = newPGroup;
         return LOS_OK;
     }
 
-    newGroup = OsCreateProcessGroup(gid);
-    if (newGroup == NULL) {
-        LOS_ListTailInsert(&oldGroup->processList, &processCB->subordinateGroupList);
-        processCB->group = oldGroup;
-        if (*group != NULL) {
-            LOS_ListTailInsert(&g_processGroup->groupList, &oldGroup->groupList);
-            processCB = OS_PCB_FROM_PID(oldGroup->groupID);
+    newPGroup = CreateProcessGroup(pgroupCB);
+    if (newPGroup == NULL) {
+        LOS_ListTailInsert(&oldPGroup->processList, &processCB->subordinateGroupList);
+        processCB->pgroup = oldPGroup;
+        if (*pgroup != NULL) {
+            LOS_ListTailInsert(&rootPGroup->groupList, &oldPGroup->groupList);
+            processCB = OS_GET_PGROUP_LEADER(oldPGroup);
             processCB->processStatus |= OS_PROCESS_FLAG_GROUP_LEADER;
-            *group = NULL;
+            *pgroup = NULL;
         }
         return LOS_EPERM;
     }
@@ -1373,7 +1430,7 @@ STATIC UINT32 OsSetProcessGroupIDUnsafe(UINT32 pid, UINT32 gid, ProcessGroup **g
 
 LITE_OS_SEC_TEXT INT32 OsSetProcessGroupID(UINT32 pid, UINT32 gid)
 {
-    ProcessGroup *group = NULL;
+    ProcessGroup *pgroup = NULL;
     UINT32 ret;
     UINT32 intSave;
 
@@ -1382,9 +1439,9 @@ LITE_OS_SEC_TEXT INT32 OsSetProcessGroupID(UINT32 pid, UINT32 gid)
     }
 
     SCHEDULER_LOCK(intSave);
-    ret = OsSetProcessGroupIDUnsafe(pid, gid, &group);
+    ret = OsSetProcessGroupIDUnsafe(pid, gid, &pgroup);
     SCHEDULER_UNLOCK(intSave);
-    (VOID)LOS_MemFree(m_aucSysMem1, group);
+    (VOID)LOS_MemFree(m_aucSysMem1, pgroup);
     return -ret;
 }
 
@@ -1397,20 +1454,20 @@ LITE_OS_SEC_TEXT INT32 LOS_GetProcessGroupID(UINT32 pid)
 {
     INT32 gid;
     UINT32 intSave;
-    LosProcessCB *processCB = NULL;
 
     if (OS_PID_CHECK_INVALID(pid)) {
         return -LOS_EINVAL;
     }
 
     SCHEDULER_LOCK(intSave);
-    processCB = OS_PCB_FROM_PID(pid);
+    LosProcessCB *processCB = OS_PCB_FROM_PID(pid);
     if (OsProcessIsUnused(processCB)) {
         gid = -LOS_ESRCH;
         goto EXIT;
     }
 
-    gid = (INT32)processCB->group->groupID;
+    processCB = OS_GET_PGROUP_LEADER(processCB->pgroup);
+    gid = (INT32)processCB->processID;
 
 EXIT:
     SCHEDULER_UNLOCK(intSave);
@@ -1523,8 +1580,10 @@ LITE_OS_SEC_TEXT UINT32 OsExecRecycleAndInit(LosProcessCB *processCB, const CHAR
     delete_files_snapshot((struct files_struct *)oldFiles);
 #endif
 
-    OsSwtmrRecycle(processCB->processID);
+#ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
+    OsSwtmrRecycle((UINTPTR)processCB);
     processCB->timerID = (timer_t)(UINTPTR)MAX_INVALID_TIMER_VID;
+#endif
 
 #ifdef LOSCFG_SECURITY_VID
     VidMapDestroy(processCB);
@@ -1576,7 +1635,7 @@ STATIC UINT32 OsUserInitProcessStart(LosProcessCB *processCB, TSK_INIT_PARAM_S *
     UINT32 intSave;
     INT32 ret;
 
-    UINT32 taskID = OsCreateUserTask(processCB->processID, param);
+    UINT32 taskID = OsCreateUserTask((UINTPTR)processCB, param);
     if (taskID == OS_INVALID_VALUE) {
         return LOS_NOK;
     }
@@ -1676,8 +1735,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsUserInitProcess(VOID)
     TSK_INIT_PARAM_S param = { 0 };
     VOID *stack = NULL;
 
-    LosProcessCB *processCB = OS_PCB_FROM_PID(g_userInitProcess);
-    ret = OsProcessCreateInit(processCB, OS_USER_MODE, "Init");
+    LosProcessCB *processCB = OsGetUserInitProcess();
+    ret = OsSystemProcessInit(processCB, OS_USER_MODE, "Init");
     if (ret != LOS_OK) {
         return ret;
     }
@@ -1753,7 +1812,7 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
     taskParam.pcName = (CHAR *)name;
     taskParam.policy = param.policy;
     taskParam.usTaskPrio = param.priority;
-    taskParam.processID = childProcessCB->processID;
+    taskParam.processID = (UINTPTR)childProcessCB;
 
     ret = LOS_TaskCreateOnly(&taskID, &taskParam);
     if (ret != LOS_OK) {
@@ -1763,7 +1822,7 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
         return LOS_ENOMEM;
     }
 
-    LosTaskCB *childTaskCB = OS_TCB_FROM_TID(taskID);
+    LosTaskCB *childTaskCB = childProcessCB->threadGroup;
     childTaskCB->taskStatus = runTask->taskStatus;
     childTaskCB->ops->schedParamModify(childTaskCB, &param);
     if (childTaskCB->taskStatus & OS_TASK_STATUS_RUNNING) {
@@ -1777,7 +1836,7 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
 
     if (OsProcessIsUserMode(childProcessCB)) {
         SCHEDULER_LOCK(intSave);
-        OsUserCloneParentStack(childTaskCB->stackPointer, runTask->topOfStack, runTask->stackSize);
+        OsUserCloneParentStack(childTaskCB->stackPointer, entry, runTask->topOfStack, runTask->stackSize);
         SCHEDULER_UNLOCK(intSave);
     }
     return LOS_OK;
@@ -1790,18 +1849,23 @@ STATIC UINT32 OsCopyParent(UINT32 flags, LosProcessCB *childProcessCB, LosProces
     LosProcessCB *parentProcessCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-
     if (flags & CLONE_PARENT) {
-        parentProcessCB = OS_PCB_FROM_PID(runProcessCB->parentProcessID);
+        parentProcessCB = runProcessCB->parentProcess;
     } else {
         parentProcessCB = runProcessCB;
     }
-    childProcessCB->parentProcessID = parentProcessCB->processID;
+    childProcessCB->parentProcess = parentProcessCB;
     LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);
-    childProcessCB->group = parentProcessCB->group;
-    LOS_ListTailInsert(&parentProcessCB->group->processList, &childProcessCB->subordinateGroupList);
+    if (!(flags & CLONE_NEWPID)) {
+        childProcessCB->pgroup = parentProcessCB->pgroup;
+        LOS_ListTailInsert(&parentProcessCB->pgroup->processList, &childProcessCB->subordinateGroupList);
+    } else {
+        if (CreateProcessGroup(childProcessCB) == NULL) {
+            SCHEDULER_UNLOCK(intSave);
+            return LOS_ENOMEM;
+        }
+    }
     ret = OsCopyUser(childProcessCB, parentProcessCB);
-
     SCHEDULER_UNLOCK(intSave);
     return ret;
 }
@@ -1870,12 +1934,11 @@ STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *
 {
     UINT32 intSave;
     UINT32 ret;
-    ProcessGroup *group = NULL;
+    ProcessGroup *pgroup = NULL;
 
-    LosTaskCB *taskCB = OS_TCB_FROM_TID(child->threadGroupID);
     SCHEDULER_LOCK(intSave);
-    if (run->group->groupID == OS_USER_PRIVILEGE_PROCESS_GROUP) {
-        ret = OsSetProcessGroupIDUnsafe(child->processID, child->processID, &group);
+    if ((UINTPTR)OS_GET_PGROUP_LEADER(run->pgroup) == OS_USER_PRIVILEGE_PROCESS_GROUP) {
+        ret = OsSetProcessGroupIDUnsafe(child->processID, child->processID, &pgroup);
         if (ret != LOS_OK) {
             SCHEDULER_UNLOCK(intSave);
             return LOS_ENOMEM;
@@ -1883,10 +1946,11 @@ STATIC UINT32 OsChildSetProcessGroupAndSched(LosProcessCB *child, LosProcessCB *
     }
 
     child->processStatus &= ~OS_PROCESS_STATUS_INIT;
+    LosTaskCB *taskCB = child->threadGroup;
     taskCB->ops->enqueue(OsSchedRunqueue(), taskCB);
     SCHEDULER_UNLOCK(intSave);
 
-    (VOID)LOS_MemFree(m_aucSysMem1, group);
+    (VOID)LOS_MemFree(m_aucSysMem1, pgroup);
     return LOS_OK;
 }
 
@@ -1931,6 +1995,13 @@ STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 si
     }
     processID = child->processID;
 
+#ifdef LOSCFG_KERNEL_CONTAINER
+    ret = OsCopyContainers(flags, child, run, &processID);
+    if (ret != LOS_OK) {
+        goto ERROR_INIT;
+    }
+#endif
+
     ret = OsForkInitPCB(flags, child, name, sp, size);
     if (ret != LOS_OK) {
         goto ERROR_INIT;
@@ -1954,7 +2025,7 @@ STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 si
     return processID;
 
 ERROR_TASK:
-    (VOID)LOS_TaskDelete(child->threadGroupID);
+    (VOID)LOS_TaskDelete(child->threadGroup->taskID);
 ERROR_INIT:
     OsDeInitPCB(child);
     return -ret;
@@ -1963,6 +2034,15 @@ ERROR_INIT:
 LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 {
     UINT32 cloneFlag = CLONE_PARENT | CLONE_THREAD | CLONE_VFORK | CLONE_VM;
+#ifdef LOSCFG_KERNEL_CONTAINER
+#ifdef LOSCFG_PID_CONTAINER
+    cloneFlag |= CLONE_NEWPID;
+
+    if (((flags & CLONE_NEWPID) != 0) && ((flags & (CLONE_PARENT | CLONE_THREAD)) != 0)) {
+        return -LOS_EINVAL;
+    }
+#endif
+#endif
 
     if (flags & (~cloneFlag)) {
         PRINT_WARN("Clone dont support some flags!\n");
@@ -2039,14 +2119,12 @@ LITE_OS_SEC_TEXT INT32 LOS_GetUsedPIDList(UINT32 *pidList, INT32 pidMaxNum)
 #ifdef LOSCFG_FS_VFS
 LITE_OS_SEC_TEXT struct fd_table_s *LOS_GetFdTable(UINT32 pid)
 {
-    LosProcessCB *pcb = NULL;
-    struct files_struct *files = NULL;
-
     if (OS_PID_CHECK_INVALID(pid)) {
         return NULL;
     }
-    pcb = OS_PCB_FROM_PID(pid);
-    files = pcb->files;
+
+    LosProcessCB *pcb = OS_PCB_FROM_PID(pid);
+    struct files_struct *files = pcb->files;
     if (files == NULL) {
         return NULL;
     }
@@ -2064,7 +2142,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_GetCurrProcessID(VOID)
 STATIC VOID ThreadGroupActiveTaskKilled(LosTaskCB *taskCB)
 {
     INT32 ret;
-
+    LosProcessCB *processCB = OS_PCB_FROM_TCB(taskCB);
     taskCB->taskStatus |= OS_TASK_FLAG_EXIT_KILL;
 #ifdef LOSCFG_KERNEL_SMP
     /** The other core that the thread is running on and is currently running in a non-system call */
@@ -2077,7 +2155,7 @@ STATIC VOID ThreadGroupActiveTaskKilled(LosTaskCB *taskCB)
         ret = OsTaskKillUnsafe(taskCB->taskID, SIGKILL);
         if (ret != LOS_OK) {
             PRINT_ERR("pid %u exit, Exit task group %u kill %u failed! ERROR: %d\n",
-                      taskCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, ret);
+                      processCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, ret);
         }
     }
 
@@ -2089,7 +2167,7 @@ STATIC VOID ThreadGroupActiveTaskKilled(LosTaskCB *taskCB)
     ret = OsTaskJoinPendUnsafe(taskCB);
     if (ret != LOS_OK) {
         PRINT_ERR("pid %u exit, Exit task group %u to wait others task %u(0x%x) exit failed! ERROR: %d\n",
-                  taskCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, taskCB->taskStatus, ret);
+                  processCB->processID, OsCurrTaskGet()->taskID, taskCB->taskID, taskCB->taskStatus, ret);
     }
 }
 #endif
@@ -2108,7 +2186,7 @@ LITE_OS_SEC_TEXT VOID OsProcessThreadGroupDestroy(VOID)
     }
 
     processCB->processStatus |= OS_PROCESS_FLAG_EXIT;
-    processCB->threadGroupID = currTask->taskID;
+    processCB->threadGroup = currTask;
 
     LOS_DL_LIST *list = &processCB->threadSiblingList;
     LOS_DL_LIST *head = list;
@@ -2138,19 +2216,19 @@ LITE_OS_SEC_TEXT UINT32 LOS_GetSystemProcessMaximum(VOID)
     return g_processMaxNum;
 }
 
-LITE_OS_SEC_TEXT UINT32 OsGetUserInitProcessID(VOID)
+LITE_OS_SEC_TEXT LosProcessCB *OsGetUserInitProcess(VOID)
 {
-    return g_userInitProcess;
+    return &g_processCBArray[OS_USER_ROOT_PROCESS_ID];
 }
 
-LITE_OS_SEC_TEXT UINT32 OsGetKernelInitProcessID(VOID)
+LITE_OS_SEC_TEXT LosProcessCB *OsGetKernelInitProcess(VOID)
 {
-    return g_kernelInitProcess;
+    return &g_processCBArray[OS_KERNEL_ROOT_PROCESS_ID];
 }
 
-LITE_OS_SEC_TEXT UINT32 OsGetIdleProcessID(VOID)
+LITE_OS_SEC_TEXT LosProcessCB *OsGetIdleProcess(VOID)
 {
-    return g_kernelIdleProcess;
+    return &g_processCBArray[OS_KERNEL_IDLE_PROCESS_ID];
 }
 
 LITE_OS_SEC_TEXT VOID OsSetSigHandler(UINTPTR addr)
@@ -2163,3 +2241,7 @@ LITE_OS_SEC_TEXT UINTPTR OsGetSigHandler(VOID)
     return OsCurrProcessGet()->sigHandler;
 }
 
+LosProcessCB *OsGetDefaultProcessCB(VOID)
+{
+    return &g_processCBArray[g_processMaxNum];
+}

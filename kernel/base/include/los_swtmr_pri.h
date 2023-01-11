@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -108,7 +108,7 @@ extern UINT32 OsSwtmrGetNextTimeout(VOID);
 extern BOOL OsIsSwtmrTask(const LosTaskCB *taskCB);
 extern VOID OsSwtmrResponseTimeReset(UINT64 startTime);
 extern UINT32 OsSwtmrInit(VOID);
-extern VOID OsSwtmrRecycle(UINT32 processID);
+extern VOID OsSwtmrRecycle(UINTPTR ownerID);
 extern BOOL OsSwtmrWorkQueueFind(SCHED_TL_FIND_FUNC checkFunc, UINTPTR arg);
 extern SPIN_LOCK_S g_swtmrSpin;
 extern UINT32 OsSwtmrTaskIDGetByCpuid(UINT16 cpuid);

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -103,7 +103,7 @@ LITE_OS_SEC_TEXT_INIT VOID *OsTaskStackInit(UINT32 taskID, UINT32 stackSize, VOI
     return (VOID *)taskContext;
 }
 
-LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTopOfStack, UINT32 parentStackSize)
+VOID OsUserCloneParentStack(VOID *childStack, UINTPTR sp, UINTPTR parentTopOfStack, UINT32 parentStackSize)
 {
     LosTaskCB *task = OsCurrTaskGet();
     sig_cb *sigcb = &task->sig;
@@ -117,6 +117,10 @@ LITE_OS_SEC_TEXT VOID OsUserCloneParentStack(VOID *childStack, UINTPTR parentTop
 
     (VOID)memcpy_s(childStack, sizeof(TaskContext), cloneStack, sizeof(TaskContext));
     ((TaskContext *)childStack)->R0 = 0;
+    if (sp != 0) {
+        ((TaskContext *)childStack)->USP = TRUNCATE(sp, LOSCFG_STACK_POINT_ALIGN_SIZE);
+        ((TaskContext *)childStack)->ULR = 0;
+    }
 }
 
 LITE_OS_SEC_TEXT_INIT VOID OsUserTaskStackInit(TaskContext *context, UINTPTR taskEntry, UINTPTR stack)
