@@ -126,6 +126,30 @@ HWTEST_F(ContainerTest, ItPidContainer023, TestSize.Level0)
     ItPidContainer023();
 }
 #endif
+#if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
+/**
+* @tc.name: Container_UTS_Test_001
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6A7C8
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItUtsContainer001, TestSize.Level0)
+{
+    ItUtsContainer001();
+}
+/**
+* @tc.name: Container_UTS_Test_002
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6A7C8
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItUtsContainer002, TestSize.Level0)
+{
+    ItUtsContainer002();
+}
+#endif
 #endif
 
 #if defined(LOSCFG_USER_TEST_FULL)
@@ -392,6 +416,19 @@ HWTEST_F(ContainerTest, ItPidContainer022, TestSize.Level0)
 HWTEST_F(ContainerTest, ItPidContainer024, TestSize.Level0)
 {
     ItPidContainer024();
+}
+#endif
+#if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
+/**
+* @tc.name: Container_UTS_Test_003
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6A7C8
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItUtsContainer003, TestSize.Level0)
+{
+    ItUtsContainer003();
 }
 #endif
 #endif
