@@ -78,6 +78,11 @@ config PID_CONTAINER
     default n
     depends on KERNEL_CONTAINER
 
+config UTS_CONTAINER
+    bool "Enable uts container Feature"
+    default n
+    depends on KERNEL_CONTAINER
+
 ######################### config options of extended #####################
 source "kernel/extended/Kconfig"
 

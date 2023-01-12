@@ -5,15 +5,15 @@
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
+ * conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
+ * to endorse or promote products derived from this software without specific prior written
+ * permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -27,35 +27,32 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "It_container_test.h"
 
-#ifndef _LOS_CONTAINER_PRI_H
-#define _LOS_CONTAINER_PRI_H
+static int ChildFunc(void *arg)
+{
+    int value = *((int*)arg);
+    if (value != CHILD_FUNC_ARG) {
+        return EXIT_CODE_ERRNO_1;
+    }
+    return EXIT_CODE_ERRNO_2;
+}
 
-#include "los_atomic.h"
-#ifdef LOSCFG_KERNEL_CONTAINER
-#ifdef LOSCFG_PID_CONTAINER
-#include "los_pid_container_pri.h"
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-#include "los_uts_container_pri.h"
-#endif
+void ItUtsContainer001(void)
+{
+    int ret;
 
-typedef struct Container {
-    Atomic   rc;
-#ifdef LOSCFG_PID_CONTAINER
-    struct PidContainer *pidContainer;
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-    struct UtsContainer *utsContainer;
-#endif
-} Container;
+    int arg = CHILD_FUNC_ARG;
+    auto pid = CloneWrapper(ChildFunc, CLONE_NEWUTS, &arg);
+    ASSERT_NE(pid, -1);
 
-VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
+    int status;
+    ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
 
-VOID OsInitRootContainer(VOID);
+    ret = WIFEXITED(status);
+    ASSERT_NE(ret, 0);
 
-UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
-
-VOID OsContainersDestroy(LosProcessCB *processCB);
-#endif
-#endif /* _LOS_CONTAINER_PRI_H */
+    int exitCode = WEXITSTATUS(status);
+    ASSERT_EQ(exitCode, EXIT_CODE_ERRNO_2);
+}

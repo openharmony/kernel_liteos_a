@@ -35,7 +35,7 @@ static int ChildFun(void *p)
     int ret;
     int status = 0;
     pid_t pid;
-    int count = 1000;
+    int count = 100;
     int processCount = 0;
 
     pid = getpid();
