@@ -177,6 +177,9 @@ extern int SysShmCtl(int shmid, int cmd, struct shmid_ds *buf);
 extern int SysShmDt(const void *shmaddr);
 
 /* misc */
+#ifdef LOSCFG_UTS_CONTAINER
+extern int SysSetHostName(const char *name, size_t len);
+#endif
 extern int SysUname(struct utsname *name);
 extern int SysInfo(struct sysinfo *info);
 

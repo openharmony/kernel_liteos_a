@@ -28,75 +28,54 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "It_container_test.h"
+#include "sys/resource.h"
+#include "sys/wait.h"
+#include "pthread.h"
+#include "sched.h"
 
-static int ChildFun(void *p)
+const int SLEEP_TIME_US = 1000;
+const int LOOP_NUM = 100;
+
+static int ChildFunc(void *arg)
 {
-    (void)p;
-    return getpid();
+    (void)arg;
+    usleep(SLEEP_TIME_US);
+    exit(EXIT_CODE_ERRNO_5);
 }
 
-static int ChildFunClone2()
+static int GroupProcess(void *arg)
 {
-    void *pstk = malloc(STACK_SIZE);
-    if (pstk == NULL) {
-        return -1;
-    }
-    int childPid = clone(ChildFun, (char *)pstk + STACK_SIZE, CLONE_NEWUTS | SIGCHLD, NULL);
-
-    free(pstk);
-    return childPid;
-}
-
-static int ChildFunClone1(void *p)
-{
-    (void)p;
-    pid_t pid = getpid();
-    const int COUNT = 100;
-    int childPid;
-    int childFunRet = (int)pid;
-    int processCount = 0;
+    (void)arg;
     int ret;
-    int status;
+    int status = 0;
 
-    for (int i = 0; i < COUNT; i++) {
-        childPid = ChildFunClone2();
-        if (childPid != -1) {
-            processCount++;
-        } else {
-            ret = wait(&status);
-            if (ret > 0) {
-                processCount--;
-            } else {
-                sleep(1);
-            }
-            continue;
+    for (int i = 0; i < LOOP_NUM; i++) {
+        int argTmp = CHILD_FUNC_ARG;
+        auto pid = CloneWrapper(ChildFunc, CLONE_NEWUTS, &argTmp);
+        if (pid == -1) {
+            return EXIT_CODE_ERRNO_1;
+        }
+
+        ret = waitpid(pid, &status, 0);
+        status = WEXITSTATUS(status);
+        if (status != EXIT_CODE_ERRNO_5) {
+            return EXIT_CODE_ERRNO_2;
         }
     }
 
-    ret = 0;
-    while (processCount > 0) {
-        ret = wait(&status);
-        if (ret > 0) {
-            processCount--;
-        }
-    }
-
-    return childFunRet;
+    exit(EXIT_CODE_ERRNO_5);
 }
 
-void ItPidContainer003(void)
+void ItUtsContainer003(void)
 {
-    int status;
     int ret;
-    void *pstk = malloc(STACK_SIZE);
-    ASSERT_TRUE(pstk != NULL);
-    int childPid = clone(ChildFunClone1, (char *)pstk + STACK_SIZE, CLONE_NEWPID | SIGCHLD, NULL);
-    ASSERT_NE(childPid, -1);
+    int status = 0;
+    int arg = CHILD_FUNC_ARG;
+    auto pid = CloneWrapper(GroupProcess, CLONE_NEWUTS, &arg);
+    ASSERT_NE(pid, -1);
 
-    ret = waitpid(childPid, &status, 0);
-    ASSERT_EQ(ret, childPid);
-    ret = WIFEXITED(status);
-    ASSERT_NE(ret, 0);
-    ret = WEXITSTATUS(status);
-    ASSERT_EQ(ret, CONTAINER_FIRST_PID);
+    ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
+    status = WEXITSTATUS(status);
+    ASSERT_EQ(status, EXIT_CODE_ERRNO_5);
 }
