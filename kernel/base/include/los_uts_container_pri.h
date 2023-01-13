@@ -28,34 +28,29 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_CONTAINER_PRI_H
-#define _LOS_CONTAINER_PRI_H
+#ifndef _LOS_UTS_CONTAINER_PRI_H
+#define _LOS_UTS_CONTAINER_PRI_H
 
+#include "sys/utsname.h"
+#include "sched.h"
 #include "los_atomic.h"
-#ifdef LOSCFG_KERNEL_CONTAINER
-#ifdef LOSCFG_PID_CONTAINER
-#include "los_pid_container_pri.h"
-#endif
+
 #ifdef LOSCFG_UTS_CONTAINER
-#include "los_uts_container_pri.h"
+
+typedef struct ProcessCB LosProcessCB;
+
+typedef struct UtsContainer {
+    Atomic rc;
+    struct utsname utsName;
+} UtsContainer;
+
+UINT32 OsInitRootUtsContainer(UtsContainer **utsContainer);
+
+UINT32 OsCopyUtsContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent);
+
+VOID OsUtsContainersDestroy(LosProcessCB *curr);
+
+struct utsname *OsGetCurrUtsName(VOID);
+
 #endif
-
-typedef struct Container {
-    Atomic   rc;
-#ifdef LOSCFG_PID_CONTAINER
-    struct PidContainer *pidContainer;
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-    struct UtsContainer *utsContainer;
-#endif
-} Container;
-
-VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
-
-VOID OsInitRootContainer(VOID);
-
-UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
-
-VOID OsContainersDestroy(LosProcessCB *processCB);
-#endif
-#endif /* _LOS_CONTAINER_PRI_H */
+#endif /* _LOS_UTS_CONTAINER_PRI_H */

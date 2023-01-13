@@ -28,75 +28,70 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "It_container_test.h"
+#include "sys/utsname.h"
 
-static int ChildFun(void *p)
+static int ChildFunc(void *arg)
 {
-    (void)p;
-    return getpid();
-}
-
-static int ChildFunClone2()
-{
-    void *pstk = malloc(STACK_SIZE);
-    if (pstk == NULL) {
-        return -1;
-    }
-    int childPid = clone(ChildFun, (char *)pstk + STACK_SIZE, CLONE_NEWUTS | SIGCHLD, NULL);
-
-    free(pstk);
-    return childPid;
-}
-
-static int ChildFunClone1(void *p)
-{
-    (void)p;
-    pid_t pid = getpid();
-    const int COUNT = 100;
-    int childPid;
-    int childFunRet = (int)pid;
-    int processCount = 0;
     int ret;
-    int status;
+    int value = *((int*)arg);
+    if (value != CHILD_FUNC_ARG) {
+        return EXIT_CODE_ERRNO_1;
+    }
+    sleep(1);
 
-    for (int i = 0; i < COUNT; i++) {
-        childPid = ChildFunClone2();
-        if (childPid != -1) {
-            processCount++;
-        } else {
-            ret = wait(&status);
-            if (ret > 0) {
-                processCount--;
-            } else {
-                sleep(1);
-            }
-            continue;
-        }
+    struct utsname newName;
+    ret = uname(&newName);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_2;
     }
 
-    ret = 0;
-    while (processCount > 0) {
-        ret = wait(&status);
-        if (ret > 0) {
-            processCount--;
-        }
+    const char *name = "TestHostName";
+    ret = sethostname(name, strlen(name));
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_3;
     }
 
-    return childFunRet;
+    struct utsname newName1;
+    ret = uname(&newName1);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_4;
+    }
+
+    ret = strcmp(newName.nodename, newName1.nodename);
+    if (ret == 0) {
+        return EXIT_CODE_ERRNO_5;
+    }
+
+    return 0;
 }
 
-void ItPidContainer003(void)
+void ItUtsContainer002(void)
 {
-    int status;
     int ret;
-    void *pstk = malloc(STACK_SIZE);
-    ASSERT_TRUE(pstk != NULL);
-    int childPid = clone(ChildFunClone1, (char *)pstk + STACK_SIZE, CLONE_NEWPID | SIGCHLD, NULL);
-    ASSERT_NE(childPid, -1);
+    char *stack = (char*)mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+    ASSERT_TRUE(stack != NULL);
+    char *stackTop = stack + STACK_SIZE;
 
-    ret = waitpid(childPid, &status, 0);
-    ASSERT_EQ(ret, childPid);
-    ret = WIFEXITED(status);
-    ASSERT_NE(ret, 0);
-    ret = WEXITSTATUS(status);
-    ASSERT_EQ(ret, CONTAINER_FIRST_PID);
+    struct utsname oldName;
+    ret = uname(&oldName);
+    ASSERT_EQ(ret, 0);
+
+    int arg = CHILD_FUNC_ARG;
+    auto pid = clone(ChildFunc, stackTop, CLONE_NEWUTS, &arg);
+    (void)munmap(stack, STACK_SIZE);
+    ASSERT_NE(pid, -1);
+
+    int status;
+    ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
+
+    int exitCode = WEXITSTATUS(status);
+    ASSERT_EQ(exitCode, 0);
+
+    struct utsname oldName1;
+    ret = uname(&oldName1);
+    ASSERT_EQ(ret, 0);
+
+    ret = strcmp(oldName.nodename, oldName1.nodename);
+    ASSERT_EQ(ret, 0);
 }

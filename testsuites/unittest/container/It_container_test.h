@@ -83,6 +83,10 @@ void ItContainer001(void);
 #if defined(LOSCFG_USER_TEST_PID_CONTAINER)
 void ItPidContainer023(void);
 #endif
+#if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
+void ItUtsContainer001(void);
+void ItUtsContainer002(void);
+#endif
 #endif
 
 #if defined(LOSCFG_USER_TEST_FULL)
@@ -109,6 +113,9 @@ void ItPidContainer020(void);
 void ItPidContainer021(void);
 void ItPidContainer022(void);
 void ItPidContainer024(void);
+#endif
+#if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
+void ItUtsContainer003(void);
 #endif
 #endif
 

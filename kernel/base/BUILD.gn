@@ -34,6 +34,7 @@ kernel_module(module_name) {
   sources = [
     "container/los_container.c",
     "container/los_pid_container.c",
+    "container/los_uts_container.c",
     "core/los_bitmap.c",
     "core/los_info.c",
     "core/los_process.c",

@@ -112,7 +112,6 @@ UINT32 OsAllocSpecifiedVpidUnsafe(UINT32 vpid, LosProcessCB *processCB, LosProce
 
 STATIC UINT32 OsAllocVpid(LosProcessCB *processCB)
 {
-    UINT32 intSave;
     ProcessVid *oldProcessVid = NULL;
     PidContainer *pidContainer = processCB->container->pidContainer;
     if ((pidContainer == NULL) || (LOS_AtomicRead(&pidContainer->lock) > 0)) {
@@ -120,7 +119,6 @@ STATIC UINT32 OsAllocVpid(LosProcessCB *processCB)
     }
 
     processCB->processID = OS_INVALID_VALUE;
-    SCHEDULER_LOCK(intSave);
     do {
         ProcessVid *vpid = OsGetFreeVpid(pidContainer);
         if (vpid == NULL) {
@@ -136,8 +134,6 @@ STATIC UINT32 OsAllocVpid(LosProcessCB *processCB)
         oldProcessVid = vpid;
         pidContainer = pidContainer->parent;
     } while (pidContainer != NULL);
-    SCHEDULER_UNLOCK(intSave);
-
     return processCB->processID;
 }
 
@@ -331,9 +327,13 @@ VOID OsPidContainersDestroy(LosProcessCB *curr)
 UINT32 OsCopyPidContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID)
 {
     UINT32 ret;
+    UINT32 intSave;
 
     if (!(flags & CLONE_NEWPID)) {
+        SCHEDULER_LOCK(intSave);
+        child->container->pidContainer = parent->container->pidContainer;
         ret = OsAllocVpid(child);
+        SCHEDULER_UNLOCK(intSave);
         if (ret == OS_INVALID_VALUE) {
             PRINT_ERR("[%s] alloc vpid failed\n", __FUNCTION__);
             return ENOSPC;

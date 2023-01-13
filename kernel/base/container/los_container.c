@@ -46,7 +46,10 @@ VOID OsContainerInitSystemProcess(LosProcessCB *processCB)
 VOID OsInitRootContainer(VOID)
 {
 #ifdef LOSCFG_PID_CONTAINER
-    OsInitRootPidContainer(&g_rootContainer.pidContainer);
+    (VOID)OsInitRootPidContainer(&g_rootContainer.pidContainer);
+#endif
+#ifdef LOSCFG_UTS_CONTAINER
+    (VOID)OsInitRootUtsContainer(&g_rootContainer.utsContainer);
 #endif
     return;
 }
@@ -92,7 +95,12 @@ UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent
         return ret;
     }
 #endif
-
+#ifdef LOSCFG_UTS_CONTAINER
+    ret = OsCopyUtsContainer(flags, child, parent);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+#endif
     return ret;
 }
 
@@ -103,6 +111,10 @@ VOID OsContainersDestroy(LosProcessCB *processCB)
     if (processCB->processID == 1) {
         OsPidContainersDestroyAllProcess(processCB);
     }
+#endif
+
+#ifdef LOSCFG_UTS_CONTAINER
+    OsUtsContainersDestroy(processCB);
 #endif
 
 #ifndef LOSCFG_PID_CONTAINER

@@ -2033,7 +2033,7 @@ ERROR_INIT:
 
 LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 {
-    UINT32 cloneFlag = CLONE_PARENT | CLONE_THREAD | CLONE_VFORK | CLONE_VM;
+    UINT32 cloneFlag = CLONE_PARENT | CLONE_THREAD | SIGCHLD;
 #ifdef LOSCFG_KERNEL_CONTAINER
 #ifdef LOSCFG_PID_CONTAINER
     cloneFlag |= CLONE_NEWPID;
@@ -2042,10 +2042,13 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
         return -LOS_EINVAL;
     }
 #endif
+#ifdef LOSCFG_UTS_CONTAINER
+    cloneFlag |= CLONE_NEWUTS;
+#endif
 #endif
 
     if (flags & (~cloneFlag)) {
-        PRINT_WARN("Clone dont support some flags!\n");
+        return -LOS_EOPNOTSUPP;
     }
 
     return OsCopyProcess(cloneFlag & flags, NULL, sp, size);
