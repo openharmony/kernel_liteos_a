@@ -242,6 +242,7 @@ STATIC PidContainer *CreateNewPidContainer(PidContainer *parent)
     }
     (VOID)memset_s(newPidContainer, sizeof(PidContainer), 0, sizeof(PidContainer));
 
+    newPidContainer->containerID = OsAllocContainerID();
     LOS_ListInit(&newPidContainer->pidFreeList);
     for (index = 0; index < LOSCFG_BASE_CORE_PROCESS_LIMIT; index++) {
         ProcessVid *vpid = &newPidContainer->pidArray[index];
@@ -392,6 +393,23 @@ UINT32 OsGetVpidFromCurrContainer(const LosProcessCB *processCB)
     return OS_INVALID_VALUE;
 }
 
+UINT32 OsGetVpidFromRootContainer(const LosProcessCB *processCB)
+{
+    UINT32 vpid = processCB->processID;
+    PidContainer *pidContainer = processCB->container->pidContainer;
+    while (pidContainer != NULL) {
+        ProcessVid *vid = &pidContainer->pidArray[vpid];
+        if (pidContainer->parent != NULL) {
+            vpid = vid->vpid;
+            pidContainer = pidContainer->parent;
+            continue;
+        }
+
+        return vid->vid;
+    }
+    return OS_INVALID_VALUE;
+}
+
 UINT32 OsGetVtidFromCurrContainer(const LosTaskCB *taskCB)
 {
     UINT32 vtid = taskCB->taskID;
@@ -423,4 +441,12 @@ LosTaskCB *OsGetTCBFromVtid(UINT32 vtid)
     return (LosTaskCB *)taskVid->cb;
 }
 
+UINT32 OsGetPidContainerID(PidContainer *pidContainer)
+{
+    if (pidContainer == NULL) {
+        return OS_INVALID_VALUE;
+    }
+
+    return pidContainer->containerID;
+}
 #endif

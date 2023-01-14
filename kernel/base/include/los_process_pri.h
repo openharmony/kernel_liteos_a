@@ -133,6 +133,9 @@ typedef struct ProcessCB {
 #ifdef LOSCFG_KERNEL_CONTAINER
     struct Container     *container;
 #endif
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    struct ProcDirEntry *procDir;
+#endif
 } LosProcessCB;
 
 extern LosProcessCB *g_processCBArray;
@@ -441,6 +444,15 @@ STATIC INLINE UINT32 OsGetPid(const LosProcessCB *processCB)
     }
 #endif
     return processCB->processID;
+}
+
+STATIC INLINE UINT32 OsGetRootPid(const LosProcessCB *processCB)
+{
+#ifdef LOSCFG_PID_CONTAINER
+    return OsGetVpidFromRootContainer(processCB);
+#else
+    return processCB->processID;
+#endif
 }
 
 /*

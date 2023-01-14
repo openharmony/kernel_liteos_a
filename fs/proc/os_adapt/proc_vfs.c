@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -278,8 +278,10 @@ int VfsProcfsOpendir(struct Vnode *node,  struct fs_dirent_s *dir)
         return -EINVAL;
     }
     pde->pdirCurrent = pde->subdir;
+    if (pde->pf == NULL) {
+        return -EINVAL;
+    }
     pde->pf->fPos = 0;
-
     return LOS_OK;
 }
 
@@ -335,6 +337,20 @@ int VfsProcfsClosedir(struct Vnode *vp, struct fs_dirent_s *dir)
     return LOS_OK;
 }
 
+ssize_t VfsProcfsReadlink(struct Vnode *vnode, char *buffer, size_t bufLen)
+{
+    int result = -EINVAL;
+    if (vnode == NULL) {
+        return result;
+    }
+
+    struct ProcDirEntry *pde = VnodeToEntry(vnode);
+    if ((pde->procFileOps != NULL) && (pde->procFileOps->readLink != NULL)) {
+        result = pde->procFileOps->readLink(pde, buffer, bufLen);
+    }
+    return result;
+}
+
 const struct MountOps procfs_operations = {
     .Mount = VfsProcfsMount,
     .Unmount = NULL,
@@ -347,7 +363,8 @@ static struct VnodeOps g_procfsVops = {
     .Readdir = VfsProcfsReaddir,
     .Opendir = VfsProcfsOpendir,
     .Closedir = VfsProcfsClosedir,
-    .Truncate = VfsProcfsTruncate
+    .Truncate = VfsProcfsTruncate,
+    .Readlink = VfsProcfsReadlink,
 };
 
 static struct file_operations_vfs g_procfsFops = {
