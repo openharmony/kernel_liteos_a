@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -82,6 +82,7 @@ typedef unsigned short fmode_t;
 #define FMODE_READ        ((fmode_t)0x1)
 
 struct ProcFile;
+struct ProcDirEntry;
 
 struct ProcFileOperations {
     char *name;
@@ -89,6 +90,7 @@ struct ProcFileOperations {
     int (*open)(struct Vnode *vnode, struct ProcFile *pf);
     int (*release)(struct Vnode *vnode, struct ProcFile *pf);
     int (*read)(struct SeqBuf *m, void *v);
+    ssize_t (*readLink)(struct ProcDirEntry *pde, char *buf, size_t bufLen);
 };
 
 struct ProcDirEntry {
@@ -244,6 +246,35 @@ extern struct ProcDirEntry *ProcMkdir(const char *name, struct ProcDirEntry *par
 extern struct ProcDirEntry *ProcCreate(const char *name, mode_t mode,
     struct ProcDirEntry *parent, const struct ProcFileOperations *procFops);
 
+/**
+ * @ingroup  procfs
+ * @brief create a proc node
+ *
+ * @par Description:
+ * This API is used to create the node by 'name' and parent vnode,
+ * And assignment operation function
+ *
+ * @attention
+ * <ul>
+ * <li>This interface should be called after system initialization.</li>
+ * <li>The parameter name should be a valid string.</li>
+ * </ul>
+ *
+ * @param  name      [IN] Type #const char * The name of the node to be created.
+ * @param  mode      [IN] Type #mode_t the mode of create's node.
+ * @param  parent    [IN] Type #struct ProcDirEntry * the parent node of the node to be created.
+ * @param  procFops  [IN] Type #const struct ProcFileOperations * operation function of the node.
+ * @param  data      [IN] Type #void * data of the node.
+ *
+ * @retval #NULL               Create failed.
+ * @retval #ProcDirEntry*    Create successfully.
+ * @par Dependency:
+ * <ul><li>proc_fs.h: the header file that contains the API declaration.</li></ul>
+ * @see
+ *
+ */
+extern struct ProcDirEntry *ProcCreateData(const char *name, mode_t mode, struct ProcDirEntry *parent,
+                                           const struct ProcFileOperations *procFileOps, void *data);
 /**
  * @ingroup  procfs
  * @brief init proc fs

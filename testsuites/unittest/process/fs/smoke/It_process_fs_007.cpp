@@ -5,15 +5,15 @@
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
+ * conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
+ * to endorse or promote products derived from this software without specific prior written
+ * permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -27,45 +27,23 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <sched.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <climits>
+#include <string>
+#include <iostream>
+#include <regex>
+#include "It_process_fs_test.h"
 
-#ifndef _LOS_CONTAINER_PRI_H
-#define _LOS_CONTAINER_PRI_H
+void ItProcessFs007(void)
+{
+    auto path = GenProcPidContainerPath(getpid(), "uts");
+    std::vector<char> buf(PATH_MAX);
+    auto nbytes = readlink(path.c_str(), buf.data(), PATH_MAX);
+    ASSERT_NE(nbytes, -1);
 
-#include "los_atomic.h"
-#ifdef LOSCFG_KERNEL_CONTAINER
-#ifdef LOSCFG_PID_CONTAINER
-#include "los_pid_container_pri.h"
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-#include "los_uts_container_pri.h"
-#endif
-
-typedef enum {
-    CONTAINER = 0,
-    PID_CONTAINER,
-    UTS_CONTAINER,
-} ContainerType;
-
-typedef struct Container {
-    Atomic   rc;
-#ifdef LOSCFG_PID_CONTAINER
-    struct PidContainer *pidContainer;
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-    struct UtsContainer *utsContainer;
-#endif
-} Container;
-
-VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
-
-VOID OsInitRootContainer(VOID);
-
-UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
-
-VOID OsContainersDestroy(LosProcessCB *processCB);
-
-UINT32 OsAllocContainerID(VOID);
-
-UINT32 OsGetContainerID(Container *container, ContainerType type);
-#endif
-#endif /* _LOS_CONTAINER_PRI_H */
+    std::regex reg("'uts:\\[[0-9]+\\]'");
+    bool ret = std::regex_match(buf.data(), reg);
+    ASSERT_EQ(ret, true);
+}

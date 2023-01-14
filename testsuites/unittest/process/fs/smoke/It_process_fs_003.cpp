@@ -5,15 +5,15 @@
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
+ * conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
+ * to endorse or promote products derived from this software without specific prior written
+ * permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -28,44 +28,27 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_CONTAINER_PRI_H
-#define _LOS_CONTAINER_PRI_H
+#include <cstdio>
+#include "It_process_fs_test.h"
 
-#include "los_atomic.h"
-#ifdef LOSCFG_KERNEL_CONTAINER
-#ifdef LOSCFG_PID_CONTAINER
-#include "los_pid_container_pri.h"
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-#include "los_uts_container_pri.h"
-#endif
+using namespace std;
 
-typedef enum {
-    CONTAINER = 0,
-    PID_CONTAINER,
-    UTS_CONTAINER,
-} ContainerType;
+void ItProcessFs003(void)
+{
+    const int LEN_STAT = 512;
+    char szStatBuf[LEN_STAT];
+    FILE *fp = fopen("/proc/filesystems", "r");
+    ASSERT_NE(fp, nullptr);
 
-typedef struct Container {
-    Atomic   rc;
-#ifdef LOSCFG_PID_CONTAINER
-    struct PidContainer *pidContainer;
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-    struct UtsContainer *utsContainer;
-#endif
-} Container;
+    (void)memset_s(szStatBuf, LEN_STAT, 0, LEN_STAT);
+    int readLen = fread(szStatBuf, 1, LEN_STAT, fp);
 
-VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
+    PrintTest("cat /proc/filesystems\n");
+    PrintTest("%s\n", szStatBuf);
+    ASSERT_EQ(readLen, strlen(szStatBuf));
 
-VOID OsInitRootContainer(VOID);
+    char *res = strstr(szStatBuf, "procfs");
+    ASSERT_NE(res, nullptr);
 
-UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
-
-VOID OsContainersDestroy(LosProcessCB *processCB);
-
-UINT32 OsAllocContainerID(VOID);
-
-UINT32 OsGetContainerID(Container *container, ContainerType type);
-#endif
-#endif /* _LOS_CONTAINER_PRI_H */
+    (void)fclose(fp);
+}

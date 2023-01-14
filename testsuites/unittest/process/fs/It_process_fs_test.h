@@ -5,15 +5,15 @@
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
+ * conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
+ * to endorse or promote products derived from this software without specific prior written
+ * permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -27,45 +27,31 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef _IT_PROCESS_FS_TEST_H
+#define _IT_PROCESS_FS_TEST_H
 
-#ifndef _LOS_CONTAINER_PRI_H
-#define _LOS_CONTAINER_PRI_H
+#include <sys/time.h>
+#include <sys/types.h>
+#include "osTest.h"
 
-#include "los_atomic.h"
-#ifdef LOSCFG_KERNEL_CONTAINER
-#ifdef LOSCFG_PID_CONTAINER
-#include "los_pid_container_pri.h"
+extern VOID PrintTest(const CHAR *fmt, ...);
+
+extern std::string GenProcPidPath(int pid);
+extern std::string GenProcPidContainerPath(int pid, char *name);
+
+extern void ItProcessFs001(void);
+extern void ItProcessFs002(void);
+extern void ItProcessFs003(void);
+extern void ItProcessFs004(void);
+extern void ItProcessFs005(void);
+extern void ItProcessFs006(void);
+extern void ItProcessFs007(void);
+extern void ItProcessFs008(void);
+extern void ItProcessFs009(void);
+extern void ItProcessFs010(void);
+extern void ItProcessFs011(void);
+extern void ItProcessFs012(void);
+extern void ItProcessFs013(void);
+extern void ItProcessFs014(void);
+extern void ItProcessFs015(void);
 #endif
-#ifdef LOSCFG_UTS_CONTAINER
-#include "los_uts_container_pri.h"
-#endif
-
-typedef enum {
-    CONTAINER = 0,
-    PID_CONTAINER,
-    UTS_CONTAINER,
-} ContainerType;
-
-typedef struct Container {
-    Atomic   rc;
-#ifdef LOSCFG_PID_CONTAINER
-    struct PidContainer *pidContainer;
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-    struct UtsContainer *utsContainer;
-#endif
-} Container;
-
-VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
-
-VOID OsInitRootContainer(VOID);
-
-UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
-
-VOID OsContainersDestroy(LosProcessCB *processCB);
-
-UINT32 OsAllocContainerID(VOID);
-
-UINT32 OsGetContainerID(Container *container, ContainerType type);
-#endif
-#endif /* _LOS_CONTAINER_PRI_H */
