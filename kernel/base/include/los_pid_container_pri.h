@@ -51,6 +51,7 @@ typedef struct PidContainer {
     Atomic              rc;
     Atomic              level;
     Atomic              lock;
+    UINT32              containerID;
     struct PidContainer *parent;
     struct ProcessGroup *rootPGroup;
     LOS_DL_LIST         tidFreeList;
@@ -82,10 +83,14 @@ LosTaskCB *OsGetTCBFromVtid(UINT32 vtid);
 
 UINT32 OsGetVpidFromCurrContainer(const LosProcessCB *processCB);
 
+UINT32 OsGetVpidFromRootContainer(const LosProcessCB *processCB);
+
 UINT32 OsGetVtidFromCurrContainer(const LosTaskCB *taskCB);
 
 VOID OsFreeVtid(LosTaskCB *taskCB);
 
 UINT32 OsAllocVtid(LosTaskCB *taskCB, const LosProcessCB *processCB);
+
+UINT32 OsGetPidContainerID(PidContainer *pidContainer);
 
 #endif /* _LOS_PID_CONTAINER_PRI_H */

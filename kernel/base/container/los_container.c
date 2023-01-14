@@ -32,6 +32,12 @@
 #ifdef LOSCFG_KERNEL_CONTAINER
 
 STATIC Container g_rootContainer;
+STATIC Atomic g_containerCount = 0xF0000000U;
+
+UINT32 OsAllocContainerID(VOID)
+{
+    return LOS_AtomicIncRet(&g_containerCount);
+}
 
 VOID OsContainerInitSystemProcess(LosProcessCB *processCB)
 {
@@ -108,7 +114,7 @@ VOID OsContainersDestroy(LosProcessCB *processCB)
 {
    /* All processes in the container must be destroyed before the container is destroyed. */
 #ifdef LOSCFG_PID_CONTAINER
-    if (processCB->processID == 1) {
+    if (processCB->processID == OS_USER_ROOT_PROCESS_ID) {
         OsPidContainersDestroyAllProcess(processCB);
     }
 #endif
@@ -124,5 +130,22 @@ VOID OsContainersDestroy(LosProcessCB *processCB)
         processCB->container = NULL;
     }
 #endif
+}
+
+UINT32 OsGetContainerID(Container *container, ContainerType type)
+{
+    if (container == NULL) {
+        return OS_INVALID_VALUE;
+    }
+
+    switch (type) {
+        case PID_CONTAINER:
+            return OsGetPidContainerID(container->pidContainer);
+        case UTS_CONTAINER:
+            return OsGetUtsContainerID(container->utsContainer);
+        default:
+            break;
+    }
+    return OS_INVALID_VALUE;
 }
 #endif

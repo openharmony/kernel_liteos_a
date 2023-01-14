@@ -46,6 +46,7 @@ STATIC UINT32 CreateUtsContainer(UtsContainer **newUtsContainer)
     }
     (VOID)memset_s(utsContainer, sizeof(UtsContainer), 0, sizeof(UtsContainer));
 
+    utsContainer->containerID = OsAllocContainerID();
     LOS_AtomicSet(&utsContainer->rc, 1);
 
     SCHEDULER_LOCK(intSave);
@@ -158,4 +159,14 @@ struct utsname *OsGetCurrUtsName(VOID)
     }
     return &utsContainer->utsName;
 }
+
+UINT32 OsGetUtsContainerID(UtsContainer *utsContainer)
+{
+    if (utsContainer == NULL) {
+        return OS_INVALID_VALUE;
+    }
+
+    return utsContainer->containerID;
+}
+
 #endif
