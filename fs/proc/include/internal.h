@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -44,6 +44,12 @@ extern "C" {
 
 extern spinlock_t procfsLock;
 extern bool procfsInit;
+
+#ifdef LOSCFG_PROC_PROCESS_DIR
+int ProcCreateProcessDir(UINT32 pid, uintptr_t process);
+
+void ProcFreeProcessDir(struct ProcDirEntry *processDir);
+#endif
 
 void ProcPmInit(void);
 

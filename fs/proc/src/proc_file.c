@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -351,7 +351,11 @@ static struct ProcDirEntry *ProcCreateFile(struct ProcDirEntry *parent, const ch
     }
 
     pn->procFileOps = procFileOps;
-    pn->type = VNODE_TYPE_REG;
+    if (S_ISLNK(mode)) {
+        pn->type = VNODE_TYPE_LNK;
+    } else {
+        pn->type = VNODE_TYPE_REG;
+    }
     ret = ProcAddNode(parent, pn);
     if (ret != 0) {
         free(pn->pf);
@@ -382,6 +386,10 @@ static void FreeProcEntry(struct ProcDirEntry *entry)
     if (entry->pf != NULL) {
         free(entry->pf);
         entry->pf = NULL;
+    }
+    if (entry->data != NULL) {
+        free(entry->data);
+        entry->data = NULL;
     }
     free(entry);
 }
@@ -529,7 +537,7 @@ static int ProcRead(struct ProcDirEntry *pde, char *buf, size_t len)
 
     if (sb->buf == NULL) {
         // only read once to build the storage buffer
-        if (pde->procFileOps->read(sb, NULL) != 0) {
+        if (pde->procFileOps->read(sb, pde->data) != 0) {
             return PROC_ERROR;
         }
     }

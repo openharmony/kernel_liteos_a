@@ -40,6 +40,7 @@
 #ifdef LOSCFG_FS_VFS
 #include "fs/fd_table.h"
 #include "fs/fs_operation.h"
+#include "internal.h"
 #endif
 #include "time.h"
 #include "user_copy.h"
@@ -434,6 +435,11 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     processCB->processCpup = NULL;
     SCHEDULER_UNLOCK(intSave);
     (VOID)LOS_MemFree(m_aucSysMem1, processCpup);
+#endif
+
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    ProcFreeProcessDir(processCB->procDir);
+    processCB->procDir = NULL;
 #endif
 
 #ifdef LOSCFG_KERNEL_CONTAINER
@@ -1905,6 +1911,13 @@ STATIC UINT32 OsCopyFile(UINT32 flags, LosProcessCB *childProcessCB, LosProcessC
     if (childProcessCB->files == NULL) {
         return LOS_ENOMEM;
     }
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    INT32 ret = ProcCreateProcessDir(OsGetRootPid(childProcessCB), (UINTPTR)childProcessCB);
+    if (ret < 0) {
+        PRINT_ERR("ProcCreateProcessDir failed, pid = %u\n", childProcessCB->processID);
+        return LOS_EBADF;
+    }
+#endif
 #endif
 
     childProcessCB->consoleID = runProcessCB->consoleID;
