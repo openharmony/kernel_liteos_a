@@ -34,6 +34,7 @@
 
 const char *USERDATA_DIR_NAME = "/userdata";
 const char *ACCESS_FILE_NAME  = "/userdata/mntcontainertest";
+const char *MNT_ACCESS_FILE_NAME  = "/mntcontainertest";
 const char *USERDATA_DEV_NAME = "/dev/mmcblk0p2";
 const char *FS_TYPE           = "vfat";
 
@@ -138,6 +139,7 @@ HWTEST_F(ContainerTest, ItUtsContainer001, TestSize.Level0)
 {
     ItUtsContainer001();
 }
+
 /**
 * @tc.name: Container_UTS_Test_002
 * @tc.desc: uts container function test case
@@ -150,7 +152,71 @@ HWTEST_F(ContainerTest, ItUtsContainer002, TestSize.Level0)
     ItUtsContainer002();
 }
 #endif
-#endif
+
+#if defined(LOSCFG_USER_TEST_MNT_CONTAINER)
+/**
+* @tc.name: Container_MNT_Test_001
+* @tc.desc: mnt container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6APW2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItMntContainer001, TestSize.Level0)
+{
+    ItMntContainer001();
+}
+
+/**
+* @tc.name: Container_MNT_Test_002
+* @tc.desc: mnt container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6APW2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItMntContainer002, TestSize.Level0)
+{
+    ItMntContainer002();
+}
+
+/**
+* @tc.name: Container_MNT_Test_003
+* @tc.desc: mnt container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6APW2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItMntContainer003, TestSize.Level0)
+{
+    ItMntContainer003();
+}
+
+/**
+* @tc.name: Container_MNT_Test_004
+* @tc.desc: mnt container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6APW2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItMntContainer004, TestSize.Level0)
+{
+    ItMntContainer004();
+}
+
+/**
+* @tc.name: chroot_Test_001
+* @tc.desc: chroot function test case
+* @tc.type: FUNC
+* @tc.require: issueI6APW2
+* @tc.author:
+*/
+
+HWTEST_F(ContainerTest, ItContainerChroot001, TestSize.Level0)
+{
+    ItContainerChroot001();
+}
+
+#endif /* LOSCFG_MNT_CONTAINER */
+#endif /* LOSCFG_USER_TEST_SMOKE */
 
 #if defined(LOSCFG_USER_TEST_FULL)
 #if defined(LOSCFG_USER_TEST_PID_CONTAINER)

@@ -2058,6 +2058,9 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 #ifdef LOSCFG_UTS_CONTAINER
     cloneFlag |= CLONE_NEWUTS;
 #endif
+#ifdef LOSCFG_MNT_CONTAINER
+    cloneFlag |= CLONE_NEWNS;
+#endif
 #endif
 
     if (flags & (~cloneFlag)) {
