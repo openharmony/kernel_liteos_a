@@ -81,6 +81,55 @@ HWTEST_F(ProcessFsTest, ItProcessFs001, TestSize.Level0)
 }
 
 /**
+* @tc.name: Process_fs_Test_002
+* @tc.desc: System memory information acquisition test
+* @tc.type: FUNC
+* @tc.require: issueI6AMVG
+* @tc.author:
+*/
+HWTEST_F(ProcessFsTest, ItProcessFs002, TestSize.Level0)
+{
+    ItProcessFs002();
+}
+
+/**
+* @tc.name: Process_fs_Test_003
+* @tc.desc: Get the file system type information supported by the system test
+* @tc.type: FUNC
+* @tc.require: issueI6AMVG
+* @tc.author:
+*/
+HWTEST_F(ProcessFsTest, ItProcessFs003, TestSize.Level0)
+{
+    ItProcessFs003();
+}
+
+/**
+* @tc.name: Process_fs_Test_004
+* @tc.desc: Process memory information acquisition test
+* @tc.type: FUNC
+* @tc.require: issueI6AMVG
+* @tc.author:
+*/
+HWTEST_F(ProcessFsTest, ItProcessFs004, TestSize.Level0)
+{
+    ItProcessFs004();
+}
+
+/**
+* @tc.name: Process_fs_Test_005
+* @tc.desc: Process cpup information acquisition test
+* @tc.type: FUNC
+* @tc.require: issueI6AMVG
+* @tc.author:
+*/
+
+HWTEST_F(ProcessFsTest, ItProcessFs005, TestSize.Level0)
+{
+    ItProcessFs005();
+}
+
+/**
 * @tc.name: Process_fs_Test_007
 * @tc.desc: Process mount directory test
 * @tc.type: FUNC

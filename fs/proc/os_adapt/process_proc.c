@@ -36,8 +36,14 @@
 #include "los_process_pri.h"
 
 #ifdef LOSCFG_PROC_PROCESS_DIR
+#include "los_vm_dump.h"
+
 typedef enum {
     PROC_PID,
+    PROC_PID_MEM,
+#ifdef LOSCFG_KERNEL_CPUP
+    PROC_PID_CPUP,
+#endif
 } ProcessDataType;
 
 struct ProcProcess {
@@ -100,10 +106,86 @@ static const struct ProcFileOperations PID_CONTAINER_FOPS = {
 };
 #endif /* LOSCFG_KERNEL_CONTAINER */
 
+static int ProcessMemInfoRead(struct SeqBuf *seqBuf, LosProcessCB *pcb)
+{
+    unsigned int intSave;
+    unsigned int size = sizeof(LosVmSpace) + sizeof(LosVmMapRegion);
+    LosVmSpace *vmSpace = (LosVmSpace *)LOS_MemAlloc(m_aucSysMem1, size);
+    if (vmSpace == NULL) {
+        return -ENOMEM;
+    }
+    (void)memset_s(vmSpace, size, 0, size);
+    LosVmMapRegion *heap = (LosVmMapRegion *)((char *)vmSpace + sizeof(LosVmSpace));
+
+    SCHEDULER_LOCK(intSave);
+    if (OsProcessIsInactive(pcb)) {
+        SCHEDULER_UNLOCK(intSave);
+        (void)LOS_MemFree(m_aucSysMem1, vmSpace);
+        return -EINVAL;
+    }
+    (void)memcpy_s(vmSpace, sizeof(LosVmSpace), pcb->vmSpace, sizeof(LosVmSpace));
+    (void)memcpy_s(heap, sizeof(LosVmMapRegion), pcb->vmSpace->heap, sizeof(LosVmMapRegion));
+    SCHEDULER_UNLOCK(intSave);
+
+    (void)LosBufPrintf(seqBuf, "\nVMSpaceSize:           %u KB\n", vmSpace->size);
+    (void)LosBufPrintf(seqBuf, "VMRegionSize:            %u KB\n", heap->range.size);
+    (void)LosBufPrintf(seqBuf, "RegionFlags:             %s\n", OsGetRegionNameOrFilePath(heap));
+    (void)LosBufPrintf(seqBuf, "ShmidAboutSharedRegion:  %u\n", heap->shmid);
+    (void)LosBufPrintf(seqBuf, "VMSpaceRorkFlags:        0x%x\n", heap->forkFlags);
+    (void)LosBufPrintf(seqBuf, "VMRegionRype:            0x%x\n", heap->regionType);
+    (void)LosBufPrintf(seqBuf, "VMSpaceMappingAreaSize:  %u KB\n", vmSpace->mapSize);
+    (void)LosBufPrintf(seqBuf, "TLB Asid:                %u\n", vmSpace->archMmu.asid);
+    (void)LOS_MemFree(m_aucSysMem1, vmSpace);
+    return 0;
+}
+
+#ifdef LOSCFG_KERNEL_CPUP
+static int ProcessCpupRead(struct SeqBuf *seqBuf, LosProcessCB *pcb)
+{
+    unsigned int intSave;
+    OsCpupBase *processCpup = (OsCpupBase *)LOS_MemAlloc(m_aucSysMem1, sizeof(OsCpupBase));
+    if (processCpup == NULL) {
+        return -ENOMEM;
+    }
+    (void)memset_s(processCpup, sizeof(OsCpupBase), 0, sizeof(OsCpupBase));
+
+    SCHEDULER_LOCK(intSave);
+    if (OsProcessIsInactive(pcb)) {
+        SCHEDULER_UNLOCK(intSave);
+        (VOID)LOS_MemFree(m_aucSysMem1, processCpup);
+        return -EINVAL;
+    }
+    (void)memcpy_s(processCpup, sizeof(OsCpupBase), pcb->processCpup, sizeof(OsCpupBase));
+    SCHEDULER_UNLOCK(intSave);
+
+    (void)LosBufPrintf(seqBuf, "\nTotalRunningTime:      %lu\n", processCpup->allTime);
+    (void)LosBufPrintf(seqBuf, "StartTime:               %lu\n", processCpup->startTime);
+    (void)LosBufPrintf(seqBuf, "HistoricalRunningTime:   ");
+    for (UINT32 i = 0; i < OS_CPUP_HISTORY_RECORD_NUM + 1; i++) {
+        (void)LosBufPrintf(seqBuf, "%lu  ", processCpup->historyTime[i]);
+    }
+    (void)LosBufPrintf(seqBuf, "\n");
+    (void)LOS_MemFree(m_aucSysMem1, processCpup);
+    return 0;
+}
+#endif
+
 static int ProcProcessRead(struct SeqBuf *m, void *v)
 {
-    (void)m;
-    (void)v;
+    if ((m == NULL) || (v == NULL)) {
+        return -EINVAL;
+    }
+    struct ProcessData *data = (struct ProcessData *)v;
+    switch (data->type) {
+        case PROC_PID_MEM:
+            return ProcessMemInfoRead(m, (LosProcessCB *)data->process);
+#ifdef LOSCFG_KERNEL_CPUP
+        case PROC_PID_CPUP:
+            return ProcessCpupRead(m, (LosProcessCB *)data->process);
+#endif
+        default:
+            break;
+    }
     return -EINVAL;
 }
 
@@ -119,6 +201,21 @@ static struct ProcProcess g_procProcess[] = {
         .fileOps = &PID_FOPS
 
     },
+    {
+        .name = "meminfo",
+        .mode = 0,
+        .type = PROC_PID_MEM,
+        .fileOps = &PID_FOPS
+    },
+#ifdef LOSCFG_KERNEL_CPUP
+    {
+        .name = "cpup",
+        .mode = 0,
+        .type = PROC_PID_CPUP,
+        .fileOps = &PID_FOPS
+
+    },
+#endif
 #ifdef LOSCFG_KERNEL_CONTAINER
     {
         .name = "container",

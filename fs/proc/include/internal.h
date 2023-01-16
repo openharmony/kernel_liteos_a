@@ -49,6 +49,10 @@ extern bool procfsInit;
 int ProcCreateProcessDir(UINT32 pid, uintptr_t process);
 
 void ProcFreeProcessDir(struct ProcDirEntry *processDir);
+
+void ProcSysMemInfoInit(void);
+
+void ProcFileSysInit(void);
 #endif
 
 void ProcPmInit(void);
@@ -63,15 +67,15 @@ struct ProcDirEntry *ProcFindEntry(const char *path);
 
 void ProcFreeEntry(struct ProcDirEntry *pde);
 
-extern int ProcStat(const char *file, struct ProcStat *buf);
+int ProcStat(const char *file, struct ProcStat *buf);
 
-extern void ProcMountsInit(void);
+void ProcMountsInit(void);
 
-extern void ProcUptimeInit(void);
+void ProcUptimeInit(void);
 
-extern void ProcFsCacheInit(void);
+void ProcFsCacheInit(void);
 
-extern void ProcFdInit(void);
+void ProcFdInit(void);
 
 #ifdef __cplusplus
 #if __cplusplus
