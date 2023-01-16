@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,51 +28,42 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "proc_fs.h"
 #include "internal.h"
-#include "stdio.h"
-#include "sys/mount.h"
-#include "sys/stat.h"
-#include "los_init.h"
+#include "proc_fs.h"
+#include "vnode.h"
+#include "los_memory.h"
+#include "los_vm_filemap.h"
+#include "los_memory_pri.h"
 
-#ifdef LOSCFG_FS_PROC
-
-#define PROCFS_MOUNT_POINT  "/proc"
-#define PROCFS_MOUNT_POINT_SIZE (sizeof(PROCFS_MOUNT_POINT) - 1)
-
-void ProcFsInit(void)
+static int SysMemInfoFill(struct SeqBuf *seqBuf, void *arg)
 {
-    int ret;
-
-    ret = mkdir(PROCFS_MOUNT_POINT, PROCFS_DEFAULT_MODE);
-    if (ret < 0) {
-        PRINT_ERR("failed to mkdir %s, errno = %d\n", PROCFS_MOUNT_POINT, get_errno());
-        return;
+    (void)arg;
+    LOS_MEM_POOL_STATUS mem = {0};
+    if (LOS_MemInfoGet(m_aucSysMem0, &mem) == LOS_NOK) {
+        return -EBADF;
     }
-
-    ret = mount(NULL, PROCFS_MOUNT_POINT, "procfs", 0, NULL);
-    if (ret) {
-        PRINT_ERR("mount procfs err %d\n", ret);
-        return;
-    }
-
-    ProcMountsInit();
-#if defined(LOSCFG_SHELL_CMD_DEBUG) && defined(LOSCFG_KERNEL_VM)
-    ProcVmmInit();
+    (void)LosBufPrintf(seqBuf, "\nUsedSize:%25u KB\n", mem.totalUsedSize);
+    (void)LosBufPrintf(seqBuf, "FreeSize:%25u KB\n", mem.totalFreeSize);
+    (void)LosBufPrintf(seqBuf, "MaxFreeNodeSize:%18u KB\n", mem.maxFreeNodeSize);
+    (void)LosBufPrintf(seqBuf, "UsedNodeNum:%22u KB\n", mem.usedNodeNum);
+    (void)LosBufPrintf(seqBuf, "FreeNodeNum:%22u KB\n", mem.freeNodeNum);
+#ifdef LOSCFG_MEM_WATERLINE
+    (void)LosBufPrintf(seqBuf, "UsageWaterLine:%19u KB\n", mem.freeNodeNum);
 #endif
-    ProcProcessInit();
-    ProcUptimeInit();
-    ProcFsCacheInit();
-    ProcFdInit();
-#ifdef LOSCFG_KERNEL_PM
-    ProcPmInit();
-#endif
-#ifdef LOSCFG_PROC_PROCESS_DIR
-    ProcSysMemInfoInit();
-    ProcFileSysInit();
-#endif
+     return 0;
 }
 
-LOS_MODULE_INIT(ProcFsInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
+static const struct ProcFileOperations SYS_MEMINFO_PROC_FOPS = {
+    .read = SysMemInfoFill,
+};
 
-#endif
+void ProcSysMemInfoInit(void)
+{
+    struct ProcDirEntry *pde = CreateProcEntry("meminfo", 0, NULL);
+    if (pde == NULL) {
+        PRINT_ERR("create mem_info error!\n");
+        return;
+    }
+
+    pde->procFileOps = &SYS_MEMINFO_PROC_FOPS;
+}
