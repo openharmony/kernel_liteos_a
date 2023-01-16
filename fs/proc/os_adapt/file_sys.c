@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,51 +28,42 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "fs/fs.h"
 #include "proc_fs.h"
-#include "internal.h"
-#include "stdio.h"
+#include "proc_file.h"
+#include "errno.h"
 #include "sys/mount.h"
-#include "sys/stat.h"
-#include "los_init.h"
 
-#ifdef LOSCFG_FS_PROC
+extern struct fsmap_t g_fsmap[];
+extern struct fsmap_t g_fsmap_end;
 
-#define PROCFS_MOUNT_POINT  "/proc"
-#define PROCFS_MOUNT_POINT_SIZE (sizeof(PROCFS_MOUNT_POINT) - 1)
-
-void ProcFsInit(void)
+static int FsFileSysProcRead(struct SeqBuf *seqBuf, void *buf)
 {
-    int ret;
+    (void)buf;
 
-    ret = mkdir(PROCFS_MOUNT_POINT, PROCFS_DEFAULT_MODE);
-    if (ret < 0) {
-        PRINT_ERR("failed to mkdir %s, errno = %d\n", PROCFS_MOUNT_POINT, get_errno());
-        return;
+    struct fsmap_t *m = NULL;
+    for (m = &g_fsmap[0]; m != &g_fsmap_end; ++m) {
+        if (m->fs_filesystemtype) {
+            if (m->is_bdfs == true) {
+                (void)LosBufPrintf(seqBuf, "\n       %s\n", m->fs_filesystemtype);
+            } else {
+                (void)LosBufPrintf(seqBuf, "%s  %s\n", "nodev", m->fs_filesystemtype);
+            }
+        }
     }
-
-    ret = mount(NULL, PROCFS_MOUNT_POINT, "procfs", 0, NULL);
-    if (ret) {
-        PRINT_ERR("mount procfs err %d\n", ret);
-        return;
-    }
-
-    ProcMountsInit();
-#if defined(LOSCFG_SHELL_CMD_DEBUG) && defined(LOSCFG_KERNEL_VM)
-    ProcVmmInit();
-#endif
-    ProcProcessInit();
-    ProcUptimeInit();
-    ProcFsCacheInit();
-    ProcFdInit();
-#ifdef LOSCFG_KERNEL_PM
-    ProcPmInit();
-#endif
-#ifdef LOSCFG_PROC_PROCESS_DIR
-    ProcSysMemInfoInit();
-    ProcFileSysInit();
-#endif
+    return 0;
 }
 
-LOS_MODULE_INIT(ProcFsInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
+static const struct ProcFileOperations FILESYS_PROC_FOPS = {
+    .read = FsFileSysProcRead,
+};
 
-#endif
+void ProcFileSysInit(void)
+{
+    struct ProcDirEntry *pde = CreateProcEntry("filesystems", 0, NULL);
+    if (pde == NULL) {
+        PRINT_ERR("creat /proc/filesystems error!\n");
+        return;
+    }
+    pde->procFileOps = &FILESYS_PROC_FOPS;
+}
