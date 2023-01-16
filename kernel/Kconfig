@@ -83,6 +83,16 @@ config UTS_CONTAINER
     default n
     depends on KERNEL_CONTAINER
 
+config MNT_CONTAINER
+    bool "Enable MNT container Feature"
+    default n
+    depends on KERNEL_CONTAINER
+
+config CHROOT
+    bool "Enable chroot"
+    default n
+    depends on MNT_CONTAINER
+
 ######################### config options of extended #####################
 source "kernel/extended/Kconfig"
 

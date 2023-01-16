@@ -39,6 +39,7 @@
 #define MS_NOSYNC 2
 
 struct MountOps;
+struct fsmap_t;
 
 struct Mount {
     LIST_ENTRY mountList;              /* mount list */
@@ -69,8 +70,11 @@ typedef int (*foreach_mountpoint_t)(const char *devpoint,
                                     struct statfs *statbuf,
                                     void *arg);
 
-struct Mount* MountAlloc(struct Vnode* vnode, struct MountOps* mop);
-LIST_HEAD* GetMountList(void);
+struct Mount *MountAlloc(struct Vnode *vnode, struct MountOps *mop);
+LIST_HEAD *GetMountList(void);
+#ifdef LOSCFG_MNT_CONTAINER
+LIST_HEAD *GetMountCache(void);
+#endif
 int foreach_mountpoint(foreach_mountpoint_t handler, void *arg);
 int ForceUmountDev(struct Vnode *dev);
 #endif

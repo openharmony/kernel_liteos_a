@@ -2717,4 +2717,28 @@ OUT:
     return (ret == -1) ? -get_errno() : ret;
 }
 
+#ifdef LOSCFG_CHROOT
+int SysChroot(const char *path)
+{
+    int ret;
+    char *pathRet = NULL;
+
+    if (path != NULL) {
+        ret = UserPathCopy(path, &pathRet);
+        if (ret != 0) {
+            goto OUT;
+        }
+    }
+
+    ret = chroot(path ? pathRet : NULL);
+    if (ret < 0) {
+        ret = -get_errno();
+    }
+OUT:
+    if (pathRet != NULL) {
+        (void)LOS_MemFree(OS_SYS_MEM_ADDR, pathRet);
+    }
+    return ret;
+}
+#endif
 #endif

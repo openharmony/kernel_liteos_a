@@ -28,51 +28,33 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_CONTAINER_PRI_H
-#define _LOS_CONTAINER_PRI_H
+#ifndef _LOS_MNT_CONTAINER_PRI_H
+#define _LOS_MNT_CONTAINER_PRI_H
 
+#include "fs/mount.h"
+#include "sched.h"
 #include "los_atomic.h"
-#ifdef LOSCFG_KERNEL_CONTAINER
-#ifdef LOSCFG_PID_CONTAINER
-#include "los_pid_container_pri.h"
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-#include "los_uts_container_pri.h"
-#endif
+#include "vnode.h"
+#include "stdlib.h"
+
 #ifdef LOSCFG_MNT_CONTAINER
-#include "los_mnt_container_pri.h"
+typedef struct ProcessCB LosProcessCB;
+
+typedef struct MntContainer {
+    Atomic rc;
+    UINT32 containerID;
+    LIST_HEAD mountList;
+} MntContainer;
+
+LIST_HEAD *GetContainerMntList(VOID);
+
+UINT32 OsInitRootMntContainer(MntContainer **mntContainer);
+
+UINT32 OsCopyMntContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent);
+
+VOID OsMntContainersDestroy(LosProcessCB *curr);
+
+UINT32 OsGetMntContainerID(MntContainer *mntContainer);
+
 #endif
-
-typedef enum {
-    CONTAINER = 0,
-    PID_CONTAINER,
-    UTS_CONTAINER,
-    MNT_CONTAINER,
-} ContainerType;
-
-typedef struct Container {
-    Atomic   rc;
-#ifdef LOSCFG_PID_CONTAINER
-    struct PidContainer *pidContainer;
 #endif
-#ifdef LOSCFG_UTS_CONTAINER
-    struct UtsContainer *utsContainer;
-#endif
-#ifdef LOSCFG_MNT_CONTAINER
-    struct MntContainer *mntContainer;
-#endif
-} Container;
-
-VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
-
-VOID OsInitRootContainer(VOID);
-
-UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
-
-VOID OsContainersDestroy(LosProcessCB *processCB);
-
-UINT32 OsAllocContainerID(VOID);
-
-UINT32 OsGetContainerID(Container *container, ContainerType type);
-#endif
-#endif /* _LOS_CONTAINER_PRI_H */

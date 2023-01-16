@@ -217,7 +217,7 @@ extern int do_mkdir(int dirfd, const char *pathname, mode_t mode);
 extern int do_rmdir(int dirfd, const char *pathname);
 extern int do_rename(int oldfd, const char *oldpath, int newfd, const char *newpath);
 extern int do_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
-    struct timeval *timeout, PollFun poll);
+                     struct timeval *timeout, PollFun poll);
 extern int do_readdir(int fd, struct dirent **de, unsigned int count);
 extern ssize_t preadv(int __fd, const struct iovec *__iov, int __count, off_t __offset);
 extern ssize_t pwritev(int __fd, const struct iovec *__iov, int __count, off_t __offset);
@@ -284,7 +284,7 @@ extern int SysFstatat64(int fd, const char *restrict path, struct kstat *restric
 extern int SysFcntl64(int fd, int cmd, void *arg);
 extern int SysPoll(struct pollfd *fds, nfds_t nfds, int timeout);
 extern int SysPpoll(struct pollfd *fds, nfds_t nfds, const struct timespec *tmo_p,
-		                    const sigset_t *sigmask, int nsig);
+                    const sigset_t *sigmask, int nsig);
 extern int SysPrctl(int option, ...);
 extern ssize_t SysPread64(int fd, void *buf, size_t nbytes, off64_t offset);
 extern ssize_t SysPwrite64(int fd, const void *buf, size_t nbytes, off64_t offset);
@@ -317,5 +317,8 @@ extern int SysGetrusage(int what, struct rusage *ru);
 extern long SysSysconf(int name);
 extern int SysUgetrlimit(int resource, unsigned long long k_rlim[2]);
 extern int SysSetrlimit(int resource, unsigned long long k_rlim[2]);
+#ifdef LOSCFG_CHROOT
+extern int SysChroot(const char *path);
+#endif
 #endif
 #endif /* _LOS_SYSCALL_H */
