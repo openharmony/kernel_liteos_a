@@ -61,6 +61,7 @@ process_fs_sources_smoke = [
   "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_013.cpp",
   "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_014.cpp",
   "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_015.cpp",
+  "$TEST_UNITTEST_DIR/process/fs/smoke/It_process_fs_021.cpp",
 ]
 
 process_fs_sources_full = []

@@ -215,7 +215,33 @@ HWTEST_F(ContainerTest, ItContainerChroot001, TestSize.Level0)
     ItContainerChroot001();
 }
 
-#endif /* LOSCFG_MNT_CONTAINER */
+#endif /* LOSCFG_USER_TEST_MNT_CONTAINER */
+
+#if defined(LOSCFG_USER_TEST_IPC_CONTAINER)
+/**
+* @tc.name: Container_IPC_Test_001
+* @tc.desc: ipc container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6AVMY
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItIpcContainer001, TestSize.Level0)
+{
+    ItIpcContainer001();
+}
+
+/**
+* @tc.name: Container_IPC_Test_004
+* @tc.desc: ipc container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6AVMY
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItIpcContainer004, TestSize.Level0)
+{
+    ItIpcContainer004();
+}
+#endif
 #endif /* LOSCFG_USER_TEST_SMOKE */
 
 #if defined(LOSCFG_USER_TEST_FULL)
