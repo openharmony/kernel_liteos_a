@@ -142,6 +142,18 @@ HWTEST_F(ProcessFsTest, ItProcessFs007, TestSize.Level0)
 }
 
 /**
+* @tc.name: Process_fs_Test_008
+* @tc.desc: Process mount directory test
+* @tc.type: FUNC
+* @tc.require: issueI6APW2
+* @tc.author:
+*/
+HWTEST_F(ProcessFsTest, ItProcessFs008, TestSize.Level0)
+{
+    ItProcessFs008();
+}
+
+/**
 * @tc.name: Process_fs_Test_010
 * @tc.desc: Process mount directory test
 * @tc.type: FUNC
@@ -199,6 +211,18 @@ HWTEST_F(ProcessFsTest, ItProcessFs014, TestSize.Level0)
 HWTEST_F(ProcessFsTest, ItProcessFs015, TestSize.Level0)
 {
     ItProcessFs015();
+}
+
+/**
+* @tc.name: Process_fs_Test_021
+* @tc.desc: Process mount directory test
+* @tc.type: FUNC
+* @tc.require: issueI6AVMY
+* @tc.author:
+*/
+HWTEST_F(ProcessFsTest, ItProcessFs021, TestSize.Level0)
+{
+    ItProcessFs021();
 }
 #endif
 }

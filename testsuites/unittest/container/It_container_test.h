@@ -35,9 +35,14 @@
 #include <iostream>
 #include <sstream>
 #include <regex>
+#include <csignal>
 #include <sys/syscall.h>
 #include <sys/capability.h>
 #include "osTest.h"
+#include "mqueue.h"
+#include "sys/time.h"
+#include "sys/shm.h"
+#include "sys/types.h"
 
 const int EXIT_CODE_ERRNO_1 = 1;
 const int EXIT_CODE_ERRNO_2 = 2;
@@ -55,11 +60,19 @@ const int EXIT_CODE_ERRNO_13 = 13;
 const int EXIT_CODE_ERRNO_14 = 14;
 const int EXIT_CODE_ERRNO_15 = 15;
 const int EXIT_CODE_ERRNO_16 = 16;
+const int EXIT_CODE_ERRNO_17 = 17;
 const int EXIT_CODE_ERRNO_255 = 255;
 const int CONTAINER_FIRST_PID = 1;
 const int CONTAINER_SECOND_PID = 2;
 const int CONTAINER_THIRD_PID = 3;
 
+const int MQUEUE_TEST_SIZE = 50;
+const int MQUEUE_TEST_MAX_MSG = 255;
+
+const int SHM_TEST_DATA_SIZE = 1024;
+const int SHM_TEST_KEY1 = 1234;
+const int SHM_TEST_OPEN_PERM = 0666;
+const int CLONE_STACK_MMAP_FLAG = MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK;
 
 extern const char *USERDATA_DIR_NAME;
 extern const char *ACCESS_FILE_NAME;
@@ -71,6 +84,8 @@ extern const int BIT_ON_RETURN_VALUE;
 extern const int STACK_SIZE;
 extern const int CHILD_FUNC_ARG;
 
+const int MQUEUE_STANDARD_NAME_LENGTH  = 255;
+
 int ChildFunction(void *args);
 
 pid_t CloneWrapper(int (*func)(void *), int flag, void *args);
@@ -78,6 +93,42 @@ pid_t CloneWrapper(int (*func)(void *), int flag, void *args);
 std::string GenContainerLinkPath(int pid, const std::string& containerType);
 
 extern std::string ReadlinkContainer(int pid, const std::string& containerType);
+
+class MQueueFinalizer {
+public:
+    explicit MQueueFinalizer(mqd_t mqueueParent, const std::string& mqname)
+    {
+        m_mqueueParent = mqueueParent;
+        m_mqname = mqname;
+    }
+    ~MQueueFinalizer()
+    {
+        if (m_mqueueParent >= 0) {
+            mq_close(m_mqueueParent);
+            mq_unlink(m_mqname.c_str());
+        }
+    }
+private:
+    mqd_t m_mqueueParent;
+    std::string m_mqname;
+};
+
+class ShmFinalizer {
+public:
+    explicit ShmFinalizer(void* shm, int shmid)
+    {
+        m_shm = shm;
+        m_shmid = shmid;
+    }
+    ~ShmFinalizer()
+    {
+        shmdt(m_shm);
+        shmctl(m_shmid, IPC_RMID, nullptr);
+    }
+private:
+    void* m_shm;
+    int m_shmid;
+};
 
 #if defined(LOSCFG_USER_TEST_SMOKE)
 void ItContainer001(void);
@@ -98,6 +149,14 @@ void ItMntContainer005(void);
 void ItMntContainer006(void);
 void ItMntContainer007(void);
 void ItMntContainer008(void);
+#endif
+#if defined(LOSCFG_USER_TEST_IPC_CONTAINER)
+void ItIpcContainer001(void);
+void ItIpcContainer002(void);
+void ItIpcContainer003(void);
+void ItIpcContainer004(void);
+void ItIpcContainer005(void);
+void ItIpcContainer006(void);
 #endif
 #endif
 

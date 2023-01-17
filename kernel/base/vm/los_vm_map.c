@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -241,20 +241,15 @@ STATIC BOOL OsVmSpaceParamCheck(const LosVmSpace *vmSpace)
     return TRUE;
 }
 
-STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
+STATUS_T LOS_VmSpaceClone(UINT32 cloneFlags, LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
 {
-    LosVmMapRegion *oldRegion = NULL;
-    LosVmMapRegion *newRegion = NULL;
     LosRbNode *pstRbNode = NULL;
     LosRbNode *pstRbNodeNext = NULL;
     STATUS_T ret = LOS_OK;
-    UINT32 numPages;
     PADDR_T paddr;
     VADDR_T vaddr;
-    UINT32 intSave;
     LosVmPage *page = NULL;
-    UINT32 flags;
-    UINT32 i;
+    UINT32 flags, i, intSave, numPages;
 
     if ((OsVmSpaceParamCheck(oldVmSpace) == FALSE) || (OsVmSpaceParamCheck(newVmSpace) == FALSE)) {
         return LOS_ERRNO_VM_INVALID_ARGS;
@@ -270,8 +265,13 @@ STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace)
     newVmSpace->heapNow = oldVmSpace->heapNow;
     (VOID)LOS_MuxAcquire(&oldVmSpace->regionMux);
     RB_SCAN_SAFE(&oldVmSpace->regionRbTree, pstRbNode, pstRbNodeNext)
-        oldRegion = (LosVmMapRegion *)pstRbNode;
-        newRegion = OsVmRegionDup(newVmSpace, oldRegion, oldRegion->range.base, oldRegion->range.size);
+        LosVmMapRegion *oldRegion = (LosVmMapRegion *)pstRbNode;
+#if defined(LOSCFG_KERNEL_SHM) && defined(LOSCFG_IPC_CONTAINER)
+        if ((oldRegion->regionFlags & VM_MAP_REGION_FLAG_SHM) && (cloneFlags & CLONE_NEWIPC)) {
+            continue;
+        }
+#endif
+        LosVmMapRegion *newRegion = OsVmRegionDup(newVmSpace, oldRegion, oldRegion->range.base, oldRegion->range.size);
         if (newRegion == NULL) {
             VM_ERR("dup new region failed");
             ret = LOS_ERRNO_VM_NO_MEMORY;

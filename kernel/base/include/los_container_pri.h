@@ -42,12 +42,16 @@
 #ifdef LOSCFG_MNT_CONTAINER
 #include "los_mnt_container_pri.h"
 #endif
+#ifdef LOSCFG_IPC_CONTAINER
+#include "los_ipc_container_pri.h"
+#endif
 
 typedef enum {
     CONTAINER = 0,
     PID_CONTAINER,
     UTS_CONTAINER,
     MNT_CONTAINER,
+    IPC_CONTAINER,
 } ContainerType;
 
 typedef struct Container {
@@ -60,6 +64,9 @@ typedef struct Container {
 #endif
 #ifdef LOSCFG_MNT_CONTAINER
     struct MntContainer *mntContainer;
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    struct IpcContainer *ipcContainer;
 #endif
 } Container;
 

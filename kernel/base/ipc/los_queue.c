@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -37,14 +37,51 @@
 #include "los_mp.h"
 #include "los_percpu_pri.h"
 #include "los_hook.h"
+#ifdef LOSCFG_IPC_CONTAINER
+#include "los_ipc_container_pri.h"
+#endif
 
 #ifdef LOSCFG_BASE_IPC_QUEUE
 #if (LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0)
 #error "queue maxnum cannot be zero"
 #endif /* LOSCFG_BASE_IPC_QUEUE_LIMIT <= 0 */
 
+#ifndef LOSCFG_IPC_CONTAINER
 LITE_OS_SEC_BSS LosQueueCB *g_allQueue = NULL;
 LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;
+#define FREE_QUEUE_LIST g_freeQueueList
+#endif
+
+LITE_OS_SEC_TEXT_INIT LosQueueCB *OsAllQueueCBInit(LOS_DL_LIST *freeQueueList)
+{
+    UINT32 index;
+
+    if (freeQueueList == NULL) {
+        return NULL;
+    }
+
+    UINT32 size = LOSCFG_BASE_IPC_QUEUE_LIMIT * sizeof(LosQueueCB);
+    /* system resident memory, don't free */
+    LosQueueCB *allQueue = (LosQueueCB *)LOS_MemAlloc(m_aucSysMem0, size);
+    if (allQueue == NULL) {
+        return NULL;
+    }
+    (VOID)memset_s(allQueue, size, 0, size);
+    LOS_ListInit(freeQueueList);
+    for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {
+        LosQueueCB *queueNode = ((LosQueueCB *)allQueue) + index;
+        queueNode->queueID = index;
+        LOS_ListTailInsert(freeQueueList, &queueNode->readWriteList[OS_QUEUE_WRITE]);
+    }
+
+#ifndef LOSCFG_IPC_CONTAINER
+    if (OsQueueDbgInitHook() != LOS_OK) {
+        (VOID)LOS_MemFree(m_aucSysMem0, allQueue);
+        return NULL;
+    }
+#endif
+    return allQueue;
+}
 
 /*
  * Description : queue initial
@@ -52,27 +89,12 @@ LITE_OS_SEC_BSS STATIC LOS_DL_LIST g_freeQueueList;
  */
 LITE_OS_SEC_TEXT_INIT UINT32 OsQueueInit(VOID)
 {
-    LosQueueCB *queueNode = NULL;
-    UINT32 index;
-    UINT32 size;
-
-    size = LOSCFG_BASE_IPC_QUEUE_LIMIT * sizeof(LosQueueCB);
-    /* system resident memory, don't free */
-    g_allQueue = (LosQueueCB *)LOS_MemAlloc(m_aucSysMem0, size);
+#ifndef LOSCFG_IPC_CONTAINER
+    g_allQueue = OsAllQueueCBInit(&g_freeQueueList);
     if (g_allQueue == NULL) {
         return LOS_ERRNO_QUEUE_NO_MEMORY;
     }
-    (VOID)memset_s(g_allQueue, size, 0, size);
-    LOS_ListInit(&g_freeQueueList);
-    for (index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {
-        queueNode = ((LosQueueCB *)g_allQueue) + index;
-        queueNode->queueID = index;
-        LOS_ListTailInsert(&g_freeQueueList, &queueNode->readWriteList[OS_QUEUE_WRITE]);
-    }
-
-    if (OsQueueDbgInitHook() != LOS_OK) {
-        return LOS_ERRNO_QUEUE_NO_MEMORY;
-    }
+#endif
     return LOS_OK;
 }
 
@@ -111,14 +133,14 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *queueName, UINT16 len, UINT32
     }
 
     SCHEDULER_LOCK(intSave);
-    if (LOS_ListEmpty(&g_freeQueueList)) {
+    if (LOS_ListEmpty(&FREE_QUEUE_LIST)) {
         SCHEDULER_UNLOCK(intSave);
         OsQueueCheckHook();
         (VOID)LOS_MemFree(m_aucSysMem1, queue);
         return LOS_ERRNO_QUEUE_CB_UNAVAILABLE;
     }
 
-    unusedQueue = LOS_DL_LIST_FIRST(&g_freeQueueList);
+    unusedQueue = LOS_DL_LIST_FIRST(&FREE_QUEUE_LIST);
     LOS_ListDelete(unusedQueue);
     queueCB = GET_QUEUE_LIST(unusedQueue);
     queueCB->queueLen = len;
@@ -433,7 +455,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueDelete(UINT32 queueID)
     queueCB->queueID = SET_QUEUE_ID(GET_QUEUE_COUNT(queueCB->queueID) + 1, GET_QUEUE_INDEX(queueCB->queueID));
     OsQueueDbgUpdateHook(queueCB->queueID, NULL);
 
-    LOS_ListTailInsert(&g_freeQueueList, &queueCB->readWriteList[OS_QUEUE_WRITE]);
+    LOS_ListTailInsert(&FREE_QUEUE_LIST, &queueCB->readWriteList[OS_QUEUE_WRITE]);
     SCHEDULER_UNLOCK(intSave);
     OsHookCall(LOS_HOOK_TYPE_QUEUE_DELETE, queueCB);
     ret = LOS_MemFree(m_aucSysMem1, (VOID *)queue);
