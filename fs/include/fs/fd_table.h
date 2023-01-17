@@ -59,6 +59,9 @@ struct files_struct {
     spinlock_t workdir_lock;
     char workdir[PATH_MAX];
 #endif
+#ifdef LOSCFG_CHROOT
+    struct Vnode *rootVnode;
+#endif
 };
 
 typedef struct ProcessCB LosProcessCB;

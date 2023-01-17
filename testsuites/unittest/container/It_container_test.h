@@ -63,6 +63,7 @@ const int CONTAINER_THIRD_PID = 3;
 
 extern const char *USERDATA_DIR_NAME;
 extern const char *ACCESS_FILE_NAME;
+extern const char *MNT_ACCESS_FILE_NAME;
 extern const char *USERDATA_DEV_NAME;
 extern const char *FS_TYPE;
 
@@ -80,12 +81,23 @@ extern std::string ReadlinkContainer(int pid, const std::string& containerType);
 
 #if defined(LOSCFG_USER_TEST_SMOKE)
 void ItContainer001(void);
+void ItContainerChroot001(void);
 #if defined(LOSCFG_USER_TEST_PID_CONTAINER)
 void ItPidContainer023(void);
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 void ItUtsContainer001(void);
 void ItUtsContainer002(void);
+#endif
+#if defined(LOSCFG_USER_TEST_MNT_CONTAINER)
+void ItMntContainer001(void);
+void ItMntContainer002(void);
+void ItMntContainer003(void);
+void ItMntContainer004(void);
+void ItMntContainer005(void);
+void ItMntContainer006(void);
+void ItMntContainer007(void);
+void ItMntContainer008(void);
 #endif
 #endif
 

@@ -47,7 +47,7 @@ static void WriteContainer(const char *filepath, int value)
 {
     PrintTest("writeproc %d >> %s\n", value, filepath);
     int fd = open(filepath, O_WRONLY);
-    ASSERT_EQ(fd, -1);
+    ASSERT_NE(fd, -1);
     char buf[configLen];
     size_t twd = sprintf_s(buf, configLen, "%d", value);
     ASSERT_GT(twd, 0);
@@ -78,7 +78,7 @@ static void ReadContainer(std::string strFile, int value)
 static void ErrWriteContainer0(const char *filepath)
 {
     int fd = open(filepath, O_WRONLY);
-    ASSERT_EQ(fd, -1);
+    ASSERT_NE(fd, -1);
     char buf[configLen];
     int invalidNum = 0;
     size_t twd1 = sprintf_s(buf, configLen, "%d", invalidNum);
@@ -92,7 +92,7 @@ static void ErrWriteContainer0(const char *filepath)
 static void ErrWriteContainer65(const char *filepath)
 {
     int fd = open(filepath, O_WRONLY);
-    ASSERT_EQ(fd, -1);
+    ASSERT_NE(fd, -1);
     char buf[configLen];
     int invalidNum = 65;
     size_t twd2 = sprintf_s(buf, configLen, "%d", invalidNum);

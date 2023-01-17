@@ -127,6 +127,9 @@ struct Vnode {
     struct Mount *newMount;             /* fs info about who mount on this vnode */
     char *filePath;                     /* file path of the vnode */
     struct page_mapping mapping;        /* page mapping of the vnode */
+#ifdef LOSCFG_MNT_CONTAINER
+    int mntCount;                       /* ref count of mounts */
+#endif
 };
 
 struct VnodeOps {
@@ -185,5 +188,5 @@ LIST_HEAD* GetVnodeFreeList(void);
 LIST_HEAD* GetVnodeActiveList(void);
 LIST_HEAD* GetVnodeVirtualList(void);
 int VnodeClearCache(void);
-
+struct Vnode *GetCurrRootVnode(void);
 #endif /* !_VNODE_H_ */

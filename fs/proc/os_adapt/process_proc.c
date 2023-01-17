@@ -68,6 +68,8 @@ static ssize_t ProcessContainerLink(unsigned int containerID, ContainerType type
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'pid:[%u]'", containerID);
     } else if (type == UTS_CONTAINER) {
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'uts:[%u]'", containerID);
+    } else if (type == MNT_CONTAINER) {
+        count = snprintf_s(buffer, bufLen, bufLen - 1, "'mnt:[%u]'", containerID);
     }
 
     if (count < 0) {
@@ -237,6 +239,14 @@ static struct ProcProcess g_procProcess[] = {
         .name = "container/uts",
         .mode = S_IFLNK,
         .type = UTS_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+    {
+        .name = "container/mnt",
+        .mode = S_IFLNK,
+        .type = MNT_CONTAINER,
         .fileOps = &PID_CONTAINER_FOPS
     },
 #endif

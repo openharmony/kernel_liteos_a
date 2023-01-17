@@ -37,11 +37,16 @@
 #include "stdlib.h"
 #endif
 
+#ifdef LOSCFG_MNT_CONTAINER
+#include "los_mnt_container_pri.h"
+static LIST_HEAD *g_mountCache = NULL;
+#else
 static LIST_HEAD *g_mountList = NULL;
+#endif
 
-struct Mount* MountAlloc(struct Vnode* vnodeBeCovered, struct MountOps* fsop)
+struct Mount *MountAlloc(struct Vnode *vnodeBeCovered, struct MountOps *fsop)
 {
-    struct Mount* mnt = (struct Mount*)zalloc(sizeof(struct Mount));
+    struct Mount *mnt = (struct Mount *)zalloc(sizeof(struct Mount));
     if (mnt == NULL) {
         PRINT_ERR("MountAlloc failed no memory!\n");
         return NULL;
@@ -62,7 +67,26 @@ struct Mount* MountAlloc(struct Vnode* vnodeBeCovered, struct MountOps* fsop)
     return mnt;
 }
 
-LIST_HEAD* GetMountList()
+#ifdef LOSCFG_MNT_CONTAINER
+LIST_HEAD *GetMountList(void)
+{
+    return GetContainerMntList();
+}
+
+LIST_HEAD *GetMountCache(void)
+{
+    if (g_mountCache == NULL) {
+        g_mountCache = zalloc(sizeof(LIST_HEAD));
+        if (g_mountCache == NULL) {
+            PRINT_ERR("init cache mount list failed, no memory.");
+            return NULL;
+        }
+        LOS_ListInit(g_mountCache);
+    }
+    return g_mountCache;
+}
+#else
+LIST_HEAD* GetMountList(void)
 {
     if (g_mountList == NULL) {
         g_mountList = zalloc(sizeof(LIST_HEAD));
@@ -74,3 +98,4 @@ LIST_HEAD* GetMountList()
     }
     return g_mountList;
 }
+#endif
