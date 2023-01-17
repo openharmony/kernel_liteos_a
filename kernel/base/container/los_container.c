@@ -57,6 +57,9 @@ VOID OsInitRootContainer(VOID)
 #ifdef LOSCFG_UTS_CONTAINER
     (VOID)OsInitRootUtsContainer(&g_rootContainer.utsContainer);
 #endif
+#ifdef LOSCFG_MNT_CONTAINER
+    (VOID)OsInitRootMntContainer(&g_rootContainer.mntContainer);
+#endif
     return;
 }
 
@@ -107,6 +110,12 @@ UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent
         return ret;
     }
 #endif
+#ifdef LOSCFG_MNT_CONTAINER
+    ret = OsCopyMntContainer(flags, child, parent);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+#endif
     return ret;
 }
 
@@ -121,6 +130,10 @@ VOID OsContainersDestroy(LosProcessCB *processCB)
 
 #ifdef LOSCFG_UTS_CONTAINER
     OsUtsContainersDestroy(processCB);
+#endif
+
+#ifdef LOSCFG_MNT_CONTAINER
+    OsMntContainersDestroy(processCB);
 #endif
 
 #ifndef LOSCFG_PID_CONTAINER
@@ -143,6 +156,8 @@ UINT32 OsGetContainerID(Container *container, ContainerType type)
             return OsGetPidContainerID(container->pidContainer);
         case UTS_CONTAINER:
             return OsGetUtsContainerID(container->utsContainer);
+        case MNT_CONTAINER:
+            return OsGetMntContainerID(container->mntContainer);
         default:
             break;
     }

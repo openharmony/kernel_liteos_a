@@ -38,6 +38,9 @@ config("container_config") {
   if (defined(LOSCFG_USER_TEST_UTS_CONTAINER)) {
     cflags += [ "-DLOSCFG_USER_TEST_UTS_CONTAINER" ]
   }
+  if (defined(LOSCFG_USER_TEST_MNT_CONTAINER)) {
+    cflags += [ "-DLOSCFG_USER_TEST_MNT_CONTAINER" ]
+  }
   cflags_cc = cflags
 }
 

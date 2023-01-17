@@ -757,3 +757,46 @@ mode_t SysUmask(mode_t mask)
     SCHEDULER_UNLOCK(intSave);
     return oldUmask;
 }
+
+#ifdef LOSCFG_CHROOT
+int chroot(const char *path)
+{
+    int ret;
+    struct Vnode *vnode = NULL;
+
+    if (!path) {
+        set_errno(EFAULT);
+        return VFS_ERROR;
+    }
+
+    if (!strlen(path)) {
+        set_errno(ENOENT);
+        return VFS_ERROR;
+    }
+
+    if (strlen(path) > PATH_MAX) {
+        set_errno(ENAMETOOLONG);
+        return VFS_ERROR;
+    }
+    VnodeHold();
+    ret = VnodeLookup(path, &vnode, 0);
+    if (ret != LOS_OK) {
+        VnodeDrop();
+        return ret;
+    }
+
+    LosProcessCB *curr = OsCurrProcessGet();
+    if ((curr->files == NULL) || (curr->files->rootVnode == NULL)) {
+        VnodeDrop();
+        return VFS_ERROR;
+    }
+    if (curr->files->rootVnode->useCount > 0) {
+        curr->files->rootVnode->useCount--;
+    }
+    vnode->useCount++;
+    curr->files->rootVnode = vnode;
+
+    VnodeDrop();
+    return LOS_OK;
+}
+#endif
