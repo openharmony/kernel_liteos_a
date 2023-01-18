@@ -1893,7 +1893,7 @@ STATIC UINT32 OsCopyMM(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB 
         return LOS_OK;
     }
 
-    status = LOS_VmSpaceClone(runProcessCB->vmSpace, childProcessCB->vmSpace);
+    status = LOS_VmSpaceClone(flags, runProcessCB->vmSpace, childProcessCB->vmSpace);
     if (status != LOS_OK) {
         return LOS_ENOMEM;
     }
@@ -1906,11 +1906,20 @@ STATIC UINT32 OsCopyFile(UINT32 flags, LosProcessCB *childProcessCB, LosProcessC
     if (flags & CLONE_FILES) {
         childProcessCB->files = runProcessCB->files;
     } else {
+#ifdef LOSCFG_IPC_CONTAINER
+        if (flags & CLONE_NEWIPC) {
+            OsCurrTaskGet()->cloneIpc = TRUE;
+        }
+#endif
         childProcessCB->files = dup_fd(runProcessCB->files);
+#ifdef LOSCFG_IPC_CONTAINER
+        OsCurrTaskGet()->cloneIpc = FALSE;
+#endif
     }
     if (childProcessCB->files == NULL) {
         return LOS_ENOMEM;
     }
+
 #ifdef LOSCFG_PROC_PROCESS_DIR
     INT32 ret = ProcCreateProcessDir(OsGetRootPid(childProcessCB), (UINTPTR)childProcessCB);
     if (ret < 0) {
@@ -1993,7 +2002,6 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
 #ifdef LOSCFG_SECURITY_CAPABILITY
     OsCopyCapability(run, child);
 #endif
-
     return LOS_OK;
 }
 
@@ -2060,6 +2068,12 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 #endif
 #ifdef LOSCFG_MNT_CONTAINER
     cloneFlag |= CLONE_NEWNS;
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    cloneFlag |= CLONE_NEWIPC;
+    if (((flags & CLONE_NEWIPC) != 0) && ((flags & CLONE_FILES) != 0)) {
+        return -LOS_EINVAL;
+    }
 #endif
 #endif
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -290,7 +290,7 @@ STATUS_T LOS_VmSpaceFree(LosVmSpace *space);
 STATUS_T LOS_VaddrToPaddrMmap(LosVmSpace *space, VADDR_T vaddr, PADDR_T paddr, size_t len, UINT32 flags);
 BOOL OsUserVmSpaceInit(LosVmSpace *vmSpace, VADDR_T *virtTtb);
 LosVmSpace *OsCreateUserVmSpace(VOID);
-STATUS_T LOS_VmSpaceClone(LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace);
+STATUS_T LOS_VmSpaceClone(UINT32 cloneFlags, LosVmSpace *oldVmSpace, LosVmSpace *newVmSpace);
 LosMux *OsGVmSpaceMuxGet(VOID);
 STATUS_T OsUnMMap(LosVmSpace *space, VADDR_T addr, size_t size);
 STATUS_T OsVmSpaceRegionFree(LosVmSpace *space);

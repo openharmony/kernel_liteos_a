@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -33,7 +33,6 @@
 #include "string.h"
 #include "time.h"
 #include "sys/types.h"
-#include "sys/shm.h"
 #include "sys/stat.h"
 #include "los_config.h"
 #include "los_init.h"
@@ -46,6 +45,8 @@
 #include "los_process.h"
 #include "los_process_pri.h"
 #include "user_copy.h"
+#include "los_vm_shm_pri.h"
+#include "sys/shm.h"
 #ifdef LOSCFG_SHELL
 #include "shcmd.h"
 #include "shell.h"
@@ -53,20 +54,6 @@
 
 
 #ifdef LOSCFG_KERNEL_SHM
-
-STATIC LosMux g_sysvShmMux;
-
-/* private macro */
-#define SYSV_SHM_LOCK()     (VOID)LOS_MuxLock(&g_sysvShmMux, LOS_WAIT_FOREVER)
-#define SYSV_SHM_UNLOCK()   (VOID)LOS_MuxUnlock(&g_sysvShmMux)
-
-/* The upper limit size of total shared memory is default 16M */
-#define SHM_MAX_PAGES 4096
-#define SHM_MAX (SHM_MAX_PAGES * PAGE_SIZE)
-#define SHM_MIN 1
-#define SHM_MNI 192
-#define SHM_SEG 128
-#define SHM_ALL (SHM_MAX_PAGES)
 
 #define SHM_SEG_FREE    0x2000
 #define SHM_SEG_USED    0x4000
@@ -91,57 +78,75 @@ STATIC LosMux g_sysvShmMux;
 #define SHM_GROUPE_TO_USER  3
 #define SHM_OTHER_TO_USER   6
 
-struct shmIDSource {
-    struct shmid_ds ds;
-    UINT32 status;
-    LOS_DL_LIST node;
-#ifdef LOSCFG_SHELL
-    CHAR ownerName[OS_PCB_NAME_LEN];
-#endif
-};
+#ifndef LOSCFG_IPC_CONTAINER
+STATIC LosMux g_sysvShmMux;
 
 /* private data */
-STATIC struct shminfo g_shmInfo = {
-    .shmmax = SHM_MAX,
-    .shmmin = SHM_MIN,
-    .shmmni = SHM_MNI,
-    .shmseg = SHM_SEG,
-    .shmall = SHM_ALL,
-};
-
+STATIC struct shminfo g_shmInfo;
 STATIC struct shmIDSource *g_shmSegs = NULL;
 STATIC UINT32 g_shmUsedPageCount;
 
-UINT32 ShmInit(VOID)
+#define IPC_SHM_INFO            g_shmInfo
+#define IPC_SHM_SYS_VSHM_MUTEX  g_sysvShmMux
+#define IPC_SHM_SEGS            g_shmSegs
+#define IPC_SHM_USED_PAGE_COUNT g_shmUsedPageCount
+#endif
+
+/* private macro */
+#define SYSV_SHM_LOCK()     (VOID)LOS_MuxLock(&IPC_SHM_SYS_VSHM_MUTEX, LOS_WAIT_FOREVER)
+#define SYSV_SHM_UNLOCK()   (VOID)LOS_MuxUnlock(&IPC_SHM_SYS_VSHM_MUTEX)
+
+struct shmIDSource *OsShmCBInit(LosMux *sysvShmMux, struct shminfo *shmInfo, UINT32 *shmUsedPageCount)
 {
     UINT32 ret;
     UINT32 i;
 
-    ret = LOS_MuxInit(&g_sysvShmMux, NULL);
+    if ((sysvShmMux == NULL) || (shmInfo == NULL) || (shmUsedPageCount == NULL)) {
+        return NULL;
+    }
+
+    ret = LOS_MuxInit(sysvShmMux, NULL);
     if (ret != LOS_OK) {
         goto ERROR;
     }
 
-    g_shmSegs = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, sizeof(struct shmIDSource) * g_shmInfo.shmmni);
-    if (g_shmSegs == NULL) {
-        (VOID)LOS_MuxDestroy(&g_sysvShmMux);
+    shmInfo->shmmax = SHM_MAX;
+    shmInfo->shmmin = SHM_MIN;
+    shmInfo->shmmni = SHM_MNI;
+    shmInfo->shmseg = SHM_SEG;
+    shmInfo->shmall = SHM_ALL;
+
+    struct shmIDSource *shmSegs = LOS_MemAlloc((VOID *)OS_SYS_MEM_ADDR, sizeof(struct shmIDSource) * shmInfo->shmmni);
+    if (shmSegs == NULL) {
+        (VOID)LOS_MuxDestroy(sysvShmMux);
         goto ERROR;
     }
-    (VOID)memset_s(g_shmSegs, (sizeof(struct shmIDSource) * g_shmInfo.shmmni),
-                   0, (sizeof(struct shmIDSource) * g_shmInfo.shmmni));
+    (VOID)memset_s(shmSegs, (sizeof(struct shmIDSource) * shmInfo->shmmni),
+                   0, (sizeof(struct shmIDSource) * shmInfo->shmmni));
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
-        g_shmSegs[i].status = SHM_SEG_FREE;
-        g_shmSegs[i].ds.shm_perm.seq = i + 1;
-        LOS_ListInit(&g_shmSegs[i].node);
+    for (i = 0; i < shmInfo->shmmni; i++) {
+        shmSegs[i].status = SHM_SEG_FREE;
+        shmSegs[i].ds.shm_perm.seq = i + 1;
+        LOS_ListInit(&shmSegs[i].node);
     }
-    g_shmUsedPageCount = 0;
+    *shmUsedPageCount = 0;
 
-    return LOS_OK;
+    return shmSegs;
 
 ERROR:
     VM_ERR("ShmInit fail\n");
-    return LOS_NOK;
+    return NULL;
+}
+
+UINT32 ShmInit(VOID)
+{
+#ifndef LOSCFG_IPC_CONTAINER
+    g_shmSegs = OsShmCBInit(&IPC_SHM_SYS_VSHM_MUTEX, &IPC_SHM_INFO, &IPC_SHM_USED_PAGE_COUNT);
+    if (g_shmSegs == NULL) {
+        return LOS_NOK;
+    }
+#endif
+    return LOS_OK;
 }
 
 LOS_MODULE_INIT(ShmInit, LOS_INIT_LEVEL_VM_COMPLETE);
@@ -150,10 +155,10 @@ UINT32 ShmDeinit(VOID)
 {
     UINT32 ret;
 
-    (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, g_shmSegs);
-    g_shmSegs = NULL;
+    (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, IPC_SHM_SEGS);
+    IPC_SHM_SEGS = NULL;
 
-    ret = LOS_MuxDestroy(&g_sysvShmMux);
+    ret = LOS_MuxDestroy(&IPC_SHM_SYS_VSHM_MUTEX);
     if (ret != LOS_OK) {
         return -1;
     }
@@ -195,18 +200,18 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
     struct shmIDSource *seg = NULL;
     size_t count;
 
-    if ((size == 0) || (size < g_shmInfo.shmmin) ||
-        (size > g_shmInfo.shmmax)) {
+    if ((size == 0) || (size < IPC_SHM_INFO.shmmin) ||
+        (size > IPC_SHM_INFO.shmmax)) {
         return -EINVAL;
     }
     size = LOS_Align(size, PAGE_SIZE);
-    if ((g_shmUsedPageCount + (size >> PAGE_SHIFT)) > g_shmInfo.shmall) {
+    if ((IPC_SHM_USED_PAGE_COUNT + (size >> PAGE_SHIFT)) > IPC_SHM_INFO.shmall) {
         return -ENOMEM;
     }
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
-        if (g_shmSegs[i].status & SHM_SEG_FREE) {
-            g_shmSegs[i].status &= ~SHM_SEG_FREE;
+    for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {
+        if (IPC_SHM_SEGS[i].status & SHM_SEG_FREE) {
+            IPC_SHM_SEGS[i].status &= ~SHM_SEG_FREE;
             segNum = i;
             break;
         }
@@ -216,7 +221,7 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
         return -ENOSPC;
     }
 
-    seg = &g_shmSegs[segNum];
+    seg = &IPC_SHM_SEGS[segNum];
     count = LOS_PhysPagesAlloc(size >> PAGE_SHIFT, &seg->node);
     if (count != (size >> PAGE_SHIFT)) {
         (VOID)LOS_PhysPagesFree(&seg->node);
@@ -224,7 +229,7 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
         return -ENOMEM;
     }
     ShmSetSharedFlag(seg);
-    g_shmUsedPageCount += size >> PAGE_SHIFT;
+    IPC_SHM_USED_PAGE_COUNT += size >> PAGE_SHIFT;
 
     seg->status |= SHM_SEG_USED;
     seg->ds.shm_perm.mode = (UINT32)shmflg & ACCESSPERMS;
@@ -257,7 +262,7 @@ STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg)
         VM_ERR("free physical pages failed, count = %d, size = %d", count, seg->ds.shm_segsz >> PAGE_SHIFT);
         return;
     }
-    g_shmUsedPageCount -= seg->ds.shm_segsz >> PAGE_SHIFT;
+    IPC_SHM_USED_PAGE_COUNT -= seg->ds.shm_segsz >> PAGE_SHIFT;
     seg->status = SHM_SEG_FREE;
     LOS_ListInit(&seg->node);
 }
@@ -267,8 +272,8 @@ STATIC INT32 ShmFindSegByKey(key_t key)
     INT32 i;
     struct shmIDSource *seg = NULL;
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
-        seg = &g_shmSegs[i];
+    for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {
+        seg = &IPC_SHM_SEGS[i];
         if ((seg->status & SHM_SEG_USED) &&
             (seg->ds.shm_perm.key == key)) {
             return i;
@@ -280,7 +285,7 @@ STATIC INT32 ShmFindSegByKey(key_t key)
 
 STATIC INT32 ShmSegValidCheck(INT32 segNum, size_t size, INT32 shmFlg)
 {
-    struct shmIDSource *seg = &g_shmSegs[segNum];
+    struct shmIDSource *seg = &IPC_SHM_SEGS[segNum];
 
     if (size > seg->ds.shm_segsz) {
         return -EINVAL;
@@ -298,12 +303,12 @@ STATIC struct shmIDSource *ShmFindSeg(int shmid)
 {
     struct shmIDSource *seg = NULL;
 
-    if ((shmid < 0) || (shmid >= g_shmInfo.shmmni)) {
+    if ((shmid < 0) || (shmid >= IPC_SHM_INFO.shmmni)) {
         set_errno(EINVAL);
         return NULL;
     }
 
-    seg = &g_shmSegs[shmid];
+    seg = &IPC_SHM_SEGS[shmid];
     if ((seg->status & SHM_SEG_FREE) || ((seg->ds.shm_nattch == 0) && (seg->status & SHM_SEG_REMOVE))) {
         set_errno(EIDRM);
         return NULL;
@@ -383,8 +388,8 @@ STATIC INT32 ShmSegUsedCount(VOID)
     INT32 count = 0;
     struct shmIDSource *seg = NULL;
 
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
-        seg = &g_shmSegs[i];
+    for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {
+        seg = &IPC_SHM_SEGS[i];
         if (seg->status & SHM_SEG_USED) {
             count++;
         }
@@ -676,12 +681,12 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
             }
             break;
         case IPC_INFO:
-            ret = LOS_ArchCopyToUser(buf, &g_shmInfo, sizeof(struct shminfo));
+            ret = LOS_ArchCopyToUser(buf, &IPC_SHM_INFO, sizeof(struct shminfo));
             if (ret != 0) {
                 ret = EFAULT;
                 goto ERROR;
             }
-            ret = g_shmInfo.shmmni;
+            ret = IPC_SHM_INFO.shmmni;
             break;
         case SHM_INFO:
             shmInfo.shm_rss = 0;
@@ -695,7 +700,7 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
                 ret = EFAULT;
                 goto ERROR;
             }
-            ret = g_shmInfo.shmmni;
+            ret = IPC_SHM_INFO.shmmni;
             break;
         default:
             VM_ERR("the cmd(%d) is not supported!", cmd);
@@ -784,8 +789,8 @@ STATIC VOID OsShmInfoCmd(VOID)
     PRINTK("\r\n------- Shared Memory Segments -------\n");
     PRINTK("key      shmid    perms      bytes      nattch     status     owner\n");
     SYSV_SHM_LOCK();
-    for (i = 0; i < g_shmInfo.shmmni; i++) {
-        seg = &g_shmSegs[i];
+    for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {
+        seg = &IPC_SHM_SEGS[i];
         if (!(seg->status & SHM_SEG_USED)) {
             continue;
         }
@@ -801,7 +806,7 @@ STATIC VOID OsShmDeleteCmd(INT32 shmid)
 {
     struct shmIDSource *seg = NULL;
 
-    if ((shmid < 0) || (shmid >= g_shmInfo.shmmni)) {
+    if ((shmid < 0) || (shmid >= IPC_SHM_INFO.shmmni)) {
         PRINT_ERR("shmid is invalid: %d\n", shmid);
         return;
     }

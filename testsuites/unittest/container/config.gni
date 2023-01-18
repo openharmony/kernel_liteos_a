@@ -91,3 +91,14 @@ if (defined(LOSCFG_USER_TEST_MNT_CONTAINER)) {
     "$TEST_UNITTEST_DIR/container/smoke/It_mnt_container_008.cpp",
   ]
 }
+
+if (defined(LOSCFG_USER_TEST_IPC_CONTAINER)) {
+  sources_smoke += [
+    "$TEST_UNITTEST_DIR/container/smoke/It_ipc_container_001.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_ipc_container_002.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_ipc_container_003.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_ipc_container_004.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_ipc_container_005.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_ipc_container_006.cpp",
+  ]
+}
