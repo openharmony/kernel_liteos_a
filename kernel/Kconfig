@@ -98,6 +98,11 @@ config IPC_CONTAINER
     default n
     depends on KERNEL_CONTAINER
 
+config TIME_CONTAINER
+    bool "Enable time container"
+    default n
+    depends on KERNEL_CONTAINER
+
 ######################### config options of extended #####################
 source "kernel/extended/Kconfig"
 

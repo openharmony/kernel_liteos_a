@@ -41,21 +41,20 @@
 
 STATIC UINT32 g_currentIpcContainerNum = 0;
 
-STATIC UINT32 CreateIpcContainer(IpcContainer **newIpcContainer)
+STATIC IpcContainer *CreateNewIpcContainer(IpcContainer *parent)
 {
     pthread_mutexattr_t attr;
-    UINT32 intSave;
     UINT32 size = sizeof(IpcContainer);
     IpcContainer *ipcContainer = (IpcContainer *)LOS_MemAlloc(m_aucSysMem1, size);
     if (ipcContainer == NULL) {
-        return ENOMEM;
+        return NULL;
     }
     (VOID)memset_s(ipcContainer, size, 0, size);
 
     ipcContainer->allQueue = OsAllQueueCBInit(&ipcContainer->freeQueueList);
     if (ipcContainer->allQueue == NULL) {
         (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer);
-        return ENOMEM;
+        return NULL;
     }
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
@@ -66,22 +65,47 @@ STATIC UINT32 CreateIpcContainer(IpcContainer **newIpcContainer)
     if (ipcContainer->shmSegs == NULL) {
         (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer->allQueue);
         (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer);
+        return NULL;
+    }
+    ipcContainer->containerID = OsAllocContainerID();
+
+    if (parent != NULL) {
+        LOS_AtomicSet(&ipcContainer->rc, 1);
+    } else {
+        LOS_AtomicSet(&ipcContainer->rc, 3); /* 3: Three system processes */
+    }
+    return ipcContainer;
+}
+
+STATIC UINT32 CreateIpcContainer(LosProcessCB *child, LosProcessCB *parent)
+{
+    UINT32 intSave;
+    IpcContainer *parentContainer = parent->container->ipcContainer;
+    IpcContainer *newIpcContainer = CreateNewIpcContainer(parentContainer);
+    if (newIpcContainer == NULL) {
         return ENOMEM;
     }
 
-    LOS_AtomicSet(&ipcContainer->rc, 1);
-    ipcContainer->containerID = OsAllocContainerID();
-
     SCHEDULER_LOCK(intSave);
-    g_currentIpcContainerNum += 1;
-    *newIpcContainer = ipcContainer;
+    g_currentIpcContainerNum++;
+    child->container->ipcContainer = newIpcContainer;
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
 
 UINT32 OsInitRootIpcContainer(IpcContainer **ipcContainer)
 {
-    return CreateIpcContainer(ipcContainer);
+    UINT32 intSave;
+    IpcContainer *newIpcContainer = CreateNewIpcContainer(NULL);
+    if (newIpcContainer == NULL) {
+        return ENOMEM;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    g_currentIpcContainerNum++;
+    *ipcContainer = newIpcContainer;
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
 }
 
 UINT32 OsCopyIpcContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent)
@@ -97,7 +121,7 @@ UINT32 OsCopyIpcContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
         return LOS_OK;
     }
 
-    return CreateIpcContainer(&child->container->ipcContainer);
+    return CreateIpcContainer(child, parent);
 }
 
 VOID OsIpcContainersDestroy(LosProcessCB *curr)

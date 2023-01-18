@@ -27,49 +27,23 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include <cstdio>
+#include <sched.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <climits>
+#include <string>
+#include <iostream>
+#include <regex>
 #include "It_process_fs_test.h"
 
-static int const configLen = 16;
-static int const invalidNum = 2;
-static const int CHILD_FUNC_ARG = 0x2088;
-const int  STACK_SIZE = (1024 * 1024);
-
-static int childFunc(void *arg)
+void ItProcessFs022(void)
 {
-    (void)arg;
-    sleep(2); /* 2: delay 2s */
+    auto path = GenProcPidContainerPath(getpid(), "time");
+    std::vector<char> buf(PATH_MAX);
+    auto nbytes = readlink(path.c_str(), buf.data(), PATH_MAX);
+    ASSERT_NE(nbytes, -1);
 
-    return 0;
-}
-
-void ItProcessFs020(void)
-{
-    std::string path = "/proc/sys/user/max_net_container";
-    int fd = open(path.c_str(), O_WRONLY);
-    ASSERT_NE(fd, -1);
-
-    char buf[configLen];
-    size_t ret = sprintf_s(buf, configLen, "%d", invalidNum);
-    ASSERT_GT(ret, 0);
-    ret = write(fd, buf, (strlen(buf) + 1));
-    ASSERT_NE(ret, -1);
-
-    int arg = CHILD_FUNC_ARG;
-
-    char *stack = (char *)mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
-                               -1, 0);
-    ASSERT_NE(stack, nullptr);
-    char *stackTop = stack + STACK_SIZE;
-
-    auto pid = clone(childFunc, stackTop, CLONE_NEWNET, &arg);
-    ASSERT_NE(pid, -1);
-    pid = clone(childFunc, stackTop, CLONE_NEWNET, &arg);
-    ASSERT_NE(pid, -1);
-
-    pid = clone(childFunc, stackTop, CLONE_NEWNET, &arg);
-    ASSERT_EQ(pid, -1);
-
-    (void)close(fd);
+    std::regex reg("'time:\\[[0-9]+\\]'");
+    bool ret = std::regex_match(buf.data(), reg);
+    ASSERT_EQ(ret, true);
 }

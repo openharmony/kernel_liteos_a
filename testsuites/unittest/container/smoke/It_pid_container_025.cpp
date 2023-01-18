@@ -27,49 +27,43 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include <cstdio>
-#include "It_process_fs_test.h"
-
-static int const configLen = 16;
-static int const invalidNum = 2;
-static const int CHILD_FUNC_ARG = 0x2088;
-const int  STACK_SIZE = (1024 * 1024);
+#include "It_container_test.h"
 
 static int childFunc(void *arg)
 {
     (void)arg;
-    sleep(2); /* 2: delay 2s */
-
     return 0;
 }
 
-void ItProcessFs020(void)
+void ItPidContainer025(void)
 {
-    std::string path = "/proc/sys/user/max_net_container";
-    int fd = open(path.c_str(), O_WRONLY);
-    ASSERT_NE(fd, -1);
+    int ret;
+    int status;
+    char *containerType = "pid";
+    char *containerType1 = "pid_for_children";
 
-    char buf[configLen];
-    size_t ret = sprintf_s(buf, configLen, "%d", invalidNum);
-    ASSERT_GT(ret, 0);
-    ret = write(fd, buf, (strlen(buf) + 1));
-    ASSERT_NE(ret, -1);
-
-    int arg = CHILD_FUNC_ARG;
-
-    char *stack = (char *)mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
-                               -1, 0);
+    char *stack = (char *)mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE, CLONE_STACK_MMAP_FLAG, -1, 0);
     ASSERT_NE(stack, nullptr);
     char *stackTop = stack + STACK_SIZE;
+    std::cout << getpid() << std::endl;
+    auto linkBuffer = ReadlinkContainer(getpid(), containerType);
+    auto linkBuffer1 = ReadlinkContainer(getpid(), containerType1);
+    ret = linkBuffer.compare(linkBuffer1);
+    ASSERT_EQ(ret, 0);
 
-    auto pid = clone(childFunc, stackTop, CLONE_NEWNET, &arg);
-    ASSERT_NE(pid, -1);
-    pid = clone(childFunc, stackTop, CLONE_NEWNET, &arg);
-    ASSERT_NE(pid, -1);
+    auto pid = clone(childFunc, stackTop, CLONE_NEWPID | SIGCHLD, NULL);
+    ASSERT_TRUE(pid != -1);
 
-    pid = clone(childFunc, stackTop, CLONE_NEWNET, &arg);
-    ASSERT_EQ(pid, -1);
+    ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
 
-    (void)close(fd);
+    ret = WIFEXITED(status);
+    ASSERT_NE(ret, 0);
+
+    int exitCode = WEXITSTATUS(status);
+    ASSERT_EQ(exitCode, 0);
+
+    auto linkBuffer2 = ReadlinkContainer(getpid(), containerType);
+    ret = linkBuffer.compare(linkBuffer2);
+    ASSERT_EQ(ret, 0);
 }
