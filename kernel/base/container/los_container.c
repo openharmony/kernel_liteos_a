@@ -60,6 +60,9 @@ VOID OsInitRootContainer(VOID)
 #ifdef LOSCFG_MNT_CONTAINER
     (VOID)OsInitRootMntContainer(&g_rootContainer.mntContainer);
 #endif
+#ifdef LOSCFG_IPC_CONTAINER
+    (VOID)OsInitRootIpcContainer(&g_rootContainer.ipcContainer);
+#endif
     return;
 }
 
@@ -116,6 +119,12 @@ UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent
         return ret;
     }
 #endif
+#ifdef LOSCFG_IPC_CONTAINER
+    ret = OsCopyIpcContainer(flags, child, parent);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+#endif
     return ret;
 }
 
@@ -136,6 +145,10 @@ VOID OsContainersDestroy(LosProcessCB *processCB)
     OsMntContainersDestroy(processCB);
 #endif
 
+#ifdef LOSCFG_IPC_CONTAINER
+    OsIpcContainersDestroy(processCB);
+#endif
+
 #ifndef LOSCFG_PID_CONTAINER
     LOS_AtomicDec(&curr->container->rc);
     if (LOS_AtomicRead(&processCB->container->rc) == 1) {
@@ -152,12 +165,22 @@ UINT32 OsGetContainerID(Container *container, ContainerType type)
     }
 
     switch (type) {
+#ifdef LOSCFG_PID_CONTAINER
         case PID_CONTAINER:
             return OsGetPidContainerID(container->pidContainer);
+#endif
+#ifdef LOSCFG_UTS_CONTAINER
         case UTS_CONTAINER:
             return OsGetUtsContainerID(container->utsContainer);
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
         case MNT_CONTAINER:
             return OsGetMntContainerID(container->mntContainer);
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+        case IPC_CONTAINER:
+            return OsGetIpcContainerID(container->ipcContainer);
+#endif
         default:
             break;
     }

@@ -136,11 +136,12 @@ VOID OsMntContainersDestroy(LosProcessCB *curr)
     SCHEDULER_LOCK(intSave);
     MntContainer *mntContainer = curr->container->mntContainer;
     if (mntContainer != NULL) {
+        LOS_AtomicDec(&mntContainer->rc);
         if (LOS_AtomicRead(&mntContainer->rc) == 0) {
             g_currentMntContainerNum--;
+            SCHEDULER_UNLOCK(intSave);
             FreeMountList(&mntContainer->mountList);
             curr->container->mntContainer = NULL;
-            SCHEDULER_UNLOCK(intSave);
             (VOID)LOS_MemFree(m_aucSysMem1, mntContainer);
             return;
         }

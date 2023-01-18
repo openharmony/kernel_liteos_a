@@ -94,6 +94,7 @@ VOID OsUtsContainersDestroy(LosProcessCB *curr)
     SCHEDULER_LOCK(intSave);
     UtsContainer *utsContainer = curr->container->utsContainer;
     if (utsContainer != NULL) {
+        LOS_AtomicDec(&utsContainer->rc);
         if (LOS_AtomicRead(&utsContainer->rc) == 0) {
             g_currentUtsContainerNum--;
             curr->container->utsContainer = NULL;
