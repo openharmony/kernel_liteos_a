@@ -36,7 +36,7 @@ VOID PrintTest(const CHAR *fmt, ...)
 {
 #ifdef PRINT_TEST
     va_list ap;
-    if (g_osLkHook != NULL) {
+    if (g_osLkHook != nullptr) {
         va_start(ap, fmt);
         printf(fmt, ap);
         va_end(ap);
@@ -223,6 +223,18 @@ HWTEST_F(ProcessFsTest, ItProcessFs015, TestSize.Level0)
 HWTEST_F(ProcessFsTest, ItProcessFs021, TestSize.Level0)
 {
     ItProcessFs021();
+}
+
+/**
+* @tc.name: Process_fs_Test_022
+* @tc.desc: Process mount directory test
+* @tc.type: FUNC
+* @tc.require: issueI6B0A3
+* @tc.author:
+*/
+HWTEST_F(ProcessFsTest, ItProcessFs022, TestSize.Level0)
+{
+    ItProcessFs022();
 }
 #endif
 }

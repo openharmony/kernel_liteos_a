@@ -2075,6 +2075,9 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
         return -LOS_EINVAL;
     }
 #endif
+#ifdef LOSCFG_TIME_CONTAINER
+    cloneFlag |= CLONE_NEWTIME;
+#endif
 #endif
 
     if (flags & (~cloneFlag)) {

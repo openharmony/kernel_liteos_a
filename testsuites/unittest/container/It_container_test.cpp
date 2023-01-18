@@ -126,6 +126,30 @@ HWTEST_F(ContainerTest, ItPidContainer023, TestSize.Level0)
 {
     ItPidContainer023();
 }
+
+/**
+* @tc.name: Container_Pid_Test_025
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI68LVW
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer025, TestSize.Level0)
+{
+    ItPidContainer025();
+}
+
+/**
+* @tc.name: Container_Pid_Test_026
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI68LVW
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer026, TestSize.Level0)
+{
+    ItPidContainer026();
+}
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 /**
@@ -240,6 +264,56 @@ HWTEST_F(ContainerTest, ItIpcContainer001, TestSize.Level0)
 HWTEST_F(ContainerTest, ItIpcContainer004, TestSize.Level0)
 {
     ItIpcContainer004();
+}
+#endif
+
+#if defined(LOSCFG_USER_TEST_TIME_CONTAINER)
+/**
+* @tc.name: Container_TIME_Test_001
+* @tc.desc: time container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6B0A3
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItTimeContainer001, TestSize.Level0)
+{
+    ItTimeContainer001();
+}
+
+/*
+* @tc.name: Container_TIME_Test_007
+* @tc.desc: time container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6B0A3
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItTimeContainer007, TestSize.Level0)
+{
+    ItTimeContainer007();
+}
+
+/**
+* @tc.name: Container_TIME_Test_009
+* @tc.desc: time container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6B0A3
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItTimeContainer009, TestSize.Level0)
+{
+    ItTimeContainer009();
+}
+
+/**
+* @tc.name: Container_TIME_Test_010
+* @tc.desc: time container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6B0A3
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItTimeContainer010, TestSize.Level0)
+{
+    ItTimeContainer010();
 }
 #endif
 #endif /* LOSCFG_USER_TEST_SMOKE */

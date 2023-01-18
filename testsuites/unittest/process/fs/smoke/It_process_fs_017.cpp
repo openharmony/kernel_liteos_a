@@ -46,8 +46,6 @@ static int childFunc(void *arg)
 
 void ItProcessFs017(void)
 {
-    const int CONFIG_FILE_LEN = 1024;
-    char szFile[CONFIG_FILE_LEN] = {0};
     std::string path = "/proc/sys/user/max_user_container";
     int fd = open(path.c_str(), O_WRONLY);
     ASSERT_NE(fd, -1);
@@ -60,9 +58,9 @@ void ItProcessFs017(void)
 
     int arg = CHILD_FUNC_ARG;
 
-    char *stack = (char *)mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
+    char *stack = (char *)mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
                                -1, 0);
-    ASSERT_NE(stack, NULL);
+    ASSERT_NE(stack, nullptr);
     char *stackTop = stack + STACK_SIZE;
 
     auto pid = clone(childFunc, stackTop, CLONE_NEWUSER, &arg);
