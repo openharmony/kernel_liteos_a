@@ -289,6 +289,7 @@ STATIC UINT32 CreatePidContainer(LosProcessCB *child, LosProcessCB *parent)
 
     g_currentPidContainerNum++;
     child->container->pidContainer = newPidContainer;
+    child->container->pidForChildContainer = newPidContainer;
     ret = OsAllocSpecifiedVpidUnsafe(OS_USER_ROOT_PROCESS_ID, child, parent);
     if (ret == OS_INVALID_VALUE) {
         g_currentPidContainerNum--;
@@ -313,8 +314,9 @@ VOID OsPidContainersDestroy(LosProcessCB *curr)
         FreeVpid(curr);
         if (LOS_AtomicRead(&pidContainer->rc) == 0) {
             g_currentPidContainerNum--;
-            (VOID)LOS_MemFree(m_aucSysMem1, pidContainer);
             curr->container->pidContainer = NULL;
+            curr->container->pidForChildContainer = NULL;
+            (VOID)LOS_MemFree(m_aucSysMem1, pidContainer);
         }
     }
 
@@ -333,6 +335,7 @@ UINT32 OsCopyPidContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
     if (!(flags & CLONE_NEWPID)) {
         SCHEDULER_LOCK(intSave);
         child->container->pidContainer = parent->container->pidContainer;
+        child->container->pidForChildContainer = parent->container->pidContainer;
         ret = OsAllocVpid(child);
         SCHEDULER_UNLOCK(intSave);
         if (ret == OS_INVALID_VALUE) {

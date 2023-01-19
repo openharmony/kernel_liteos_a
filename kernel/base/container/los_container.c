@@ -53,6 +53,7 @@ VOID OsInitRootContainer(VOID)
 {
 #ifdef LOSCFG_PID_CONTAINER
     (VOID)OsInitRootPidContainer(&g_rootContainer.pidContainer);
+    g_rootContainer.pidForChildContainer = g_rootContainer.pidContainer;
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
     (VOID)OsInitRootUtsContainer(&g_rootContainer.utsContainer);
@@ -63,12 +64,16 @@ VOID OsInitRootContainer(VOID)
 #ifdef LOSCFG_IPC_CONTAINER
     (VOID)OsInitRootIpcContainer(&g_rootContainer.ipcContainer);
 #endif
+#ifdef LOSCFG_TIME_CONTAINER
+    (VOID)OsInitRootTimeContainer(&g_rootContainer.timeContainer);
+    g_rootContainer.timeForChildContainer = g_rootContainer.timeContainer;
+#endif
     return;
 }
 
 STATIC INLINE Container *CreateContainer(VOID)
 {
-    Container *container = LOS_MemAlloc(m_aucSysMem1, sizeof(Container));
+    Container *container = (Container *)LOS_MemAlloc(m_aucSysMem1, sizeof(Container));
     if (container == NULL) {
         return NULL;
     }
@@ -88,7 +93,7 @@ UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent
     UINT32 intSave;
     UINT32 ret = LOS_OK;
 
-    if (!(flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET))) {
+    if (!(flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWTIME))) {
         SCHEDULER_LOCK(intSave);
         child->container = parent->container;
         LOS_AtomicInc(&child->container->rc);
@@ -125,6 +130,12 @@ UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent
         return ret;
     }
 #endif
+#ifdef LOSCFG_TIME_CONTAINER
+    ret = OsCopyTimeContainer(flags, child, parent);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+#endif
     return ret;
 }
 
@@ -149,9 +160,13 @@ VOID OsContainersDestroy(LosProcessCB *processCB)
     OsIpcContainersDestroy(processCB);
 #endif
 
+#ifdef LOSCFG_TIME_CONTAINER
+    OsTimeContainersDestroy(processCB);
+#endif
+
 #ifndef LOSCFG_PID_CONTAINER
     LOS_AtomicDec(&curr->container->rc);
-    if (LOS_AtomicRead(&processCB->container->rc) == 1) {
+    if (LOS_AtomicRead(&processCB->container->rc) == 0) {
         (VOID)LOS_MemFree(m_aucSysMem1, processCB->container);
         processCB->container = NULL;
     }
@@ -168,6 +183,8 @@ UINT32 OsGetContainerID(Container *container, ContainerType type)
 #ifdef LOSCFG_PID_CONTAINER
         case PID_CONTAINER:
             return OsGetPidContainerID(container->pidContainer);
+        case PID_CHILD_CONTAINER:
+            return OsGetPidContainerID(container->pidForChildContainer);
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
         case UTS_CONTAINER:
@@ -180,6 +197,12 @@ UINT32 OsGetContainerID(Container *container, ContainerType type)
 #ifdef LOSCFG_IPC_CONTAINER
         case IPC_CONTAINER:
             return OsGetIpcContainerID(container->ipcContainer);
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+        case TIME_CONTAINER:
+            return OsGetTimeContainerID(container->timeContainer);
+        case TIME_CHILD_CONTAINER:
+            return OsGetTimeContainerID(container->timeForChildContainer);
 #endif
         default:
             break;

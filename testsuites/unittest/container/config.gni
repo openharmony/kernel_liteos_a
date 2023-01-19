@@ -44,8 +44,11 @@ sources_smoke = [
 sources_full = []
 
 if (defined(LOSCFG_USER_TEST_PID_CONTAINER)) {
-  sources_smoke +=
-      [ "$TEST_UNITTEST_DIR/container/smoke/It_pid_container_023.cpp" ]
+  sources_smoke += [
+    "$TEST_UNITTEST_DIR/container/smoke/It_pid_container_023.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_pid_container_025.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_pid_container_026.cpp",
+  ]
   sources_full += [
     "$TEST_UNITTEST_DIR/container/full/It_pid_container_001.cpp",
     "$TEST_UNITTEST_DIR/container/full/It_pid_container_002.cpp",
@@ -100,5 +103,20 @@ if (defined(LOSCFG_USER_TEST_IPC_CONTAINER)) {
     "$TEST_UNITTEST_DIR/container/smoke/It_ipc_container_004.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_ipc_container_005.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_ipc_container_006.cpp",
+  ]
+}
+
+if (defined(LOSCFG_USER_TEST_TIME_CONTAINER)) {
+  sources_smoke += [
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_001.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_002.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_003.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_004.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_005.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_006.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_007.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_008.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_009.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_time_container_010.cpp",
   ]
 }

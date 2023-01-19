@@ -38,6 +38,7 @@
 #include <csignal>
 #include <sys/syscall.h>
 #include <sys/capability.h>
+#include <cstring>
 #include "osTest.h"
 #include "mqueue.h"
 #include "sys/time.h"
@@ -85,6 +86,10 @@ extern const int STACK_SIZE;
 extern const int CHILD_FUNC_ARG;
 
 const int MQUEUE_STANDARD_NAME_LENGTH  = 255;
+
+extern "C" {
+#define CLONE_NEWTIME   0x00000080
+}
 
 int ChildFunction(void *args);
 
@@ -135,6 +140,8 @@ void ItContainer001(void);
 void ItContainerChroot001(void);
 #if defined(LOSCFG_USER_TEST_PID_CONTAINER)
 void ItPidContainer023(void);
+void ItPidContainer025(void);
+void ItPidContainer026(void);
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 void ItUtsContainer001(void);
@@ -157,6 +164,18 @@ void ItIpcContainer003(void);
 void ItIpcContainer004(void);
 void ItIpcContainer005(void);
 void ItIpcContainer006(void);
+#endif
+#if defined(LOSCFG_USER_TEST_TIME_CONTAINER)
+void ItTimeContainer001(void);
+void ItTimeContainer002(void);
+void ItTimeContainer003(void);
+void ItTimeContainer004(void);
+void ItTimeContainer005(void);
+void ItTimeContainer006(void);
+void ItTimeContainer007(void);
+void ItTimeContainer008(void);
+void ItTimeContainer009(void);
+void ItTimeContainer010(void);
 #endif
 #endif
 
