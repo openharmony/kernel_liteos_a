@@ -44,20 +44,50 @@ LIST_HEAD *GetContainerMntList(VOID)
     return &OsCurrProcessGet()->container->mntContainer->mountList;
 }
 
-STATIC UINT32 CreateMntContainer(MntContainer **newMntContainer)
+STATIC MntContainer *CreateNewMntContainer(MntContainer *parent)
 {
-    UINT32 intSave;
     MntContainer *mntContainer = (MntContainer *)LOS_MemAlloc(m_aucSysMem1, sizeof(MntContainer));
     if (mntContainer == NULL) {
-        return ENOMEM;
+        return NULL;
     }
     mntContainer->containerID = OsAllocContainerID();
-    LOS_AtomicSet(&mntContainer->rc, 1);
     LOS_ListInit(&mntContainer->mountList);
+
+    if (parent != NULL) {
+        LOS_AtomicSet(&mntContainer->rc, 1);
+    } else {
+        LOS_AtomicSet(&mntContainer->rc, 3); /* 3: Three system processes */
+    }
+    return mntContainer;
+}
+
+STATIC UINT32 CreateMntContainer(LosProcessCB *child, LosProcessCB *parent)
+{
+    UINT32 intSave;
+    MntContainer *parentContainer = parent->container->mntContainer;
+    MntContainer *newMntContainer = CreateNewMntContainer(parentContainer);
+    if (newMntContainer == NULL) {
+        return ENOMEM;
+    }
 
     SCHEDULER_LOCK(intSave);
     g_currentMntContainerNum++;
-    *newMntContainer = mntContainer;
+    child->container->mntContainer = newMntContainer;
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+UINT32 OsInitRootMntContainer(MntContainer **mntContainer)
+{
+    UINT32 intSave;
+    MntContainer *newMntContainer = CreateNewMntContainer(NULL);
+    if (newMntContainer == NULL) {
+        return ENOMEM;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    g_currentMntContainerNum++;
+    *mntContainer = newMntContainer;
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
@@ -94,7 +124,7 @@ UINT32 OsCopyMntContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
         return LOS_OK;
     }
 
-    ret = CreateMntContainer(&child->container->mntContainer);
+    ret = CreateMntContainer(child, parent);
     if (ret != LOS_OK) {
         return ret;
     }
@@ -157,10 +187,5 @@ UINT32 OsGetMntContainerID(MntContainer *mntContainer)
     }
 
     return mntContainer->containerID;
-}
-
-UINT32 OsInitRootMntContainer(MntContainer **mntContainer)
-{
-    return CreateMntContainer(mntContainer);
 }
 #endif

@@ -28,48 +28,48 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cstdio>
-#include "It_process_fs_test.h"
+#include <iostream>
+#include "It_container_test.h"
 
-static int const configLen = 16;
-static int const invalidNum = 2;
-static const int CHILD_FUNC_ARG = 0x2088;
-const int  STACK_SIZE = (1024 * 1024);
-
-static int childFunc(void *arg)
+static std::string GenTimeLinkPath(int pid)
 {
-    (void)arg;
-    sleep(2); /* 2: delay 2s */
-
-    return 0;
+    std::ostringstream buf;
+    buf << "/proc/" << pid << "/container/time";
+    return buf.str();
 }
 
-void ItProcessFs020(void)
+static std::string ReadlinkTime(int pid)
 {
-    std::string path = "/proc/sys/user/max_net_container";
-    int fd = open(path.c_str(), O_WRONLY);
-    ASSERT_NE(fd, -1);
+    auto path = GenTimeLinkPath(pid);
+    struct stat sb;
 
-    char buf[configLen];
-    size_t ret = sprintf_s(buf, configLen, "%d", invalidNum);
-    ASSERT_GT(ret, 0);
-    ret = write(fd, buf, (strlen(buf) + 1));
-    ASSERT_NE(ret, -1);
+    int ret = lstat(path.data(), &sb);
+    if (ret == -1) {
+        perror("lstat");
+        return std::string();
+    }
 
-    int arg = CHILD_FUNC_ARG;
+    auto bufsiz = sb.st_size + 1;
+    if (sb.st_size == 0) {
+        bufsiz = PATH_MAX;
+    }
 
-    char *stack = (char *)mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
-                               -1, 0);
-    ASSERT_NE(stack, nullptr);
-    char *stackTop = stack + STACK_SIZE;
+    std::vector<char> buf(bufsiz);
+    auto nbytes = readlink(path.c_str(), buf.data(), bufsiz);
+    if (nbytes == -1) {
+        perror("readlink");
+        return std::string();
+    }
 
-    auto pid = clone(childFunc, stackTop, CLONE_NEWNET, &arg);
-    ASSERT_NE(pid, -1);
-    pid = clone(childFunc, stackTop, CLONE_NEWNET, &arg);
-    ASSERT_NE(pid, -1);
+    return buf.data();
+}
 
-    pid = clone(childFunc, stackTop, CLONE_NEWNET, &arg);
-    ASSERT_EQ(pid, -1);
+void ItTimeContainer009(void)
+{
+    auto timelink = ReadlinkTime(getpid());
+    std::cout << "Contents of the time link is: " << timelink << std::endl;
 
-    (void)close(fd);
+    std::regex reg("'time:\\[[0-9]+\\]'");
+    bool ret = std::regex_match(timelink, reg);
+    ASSERT_TRUE(ret);
 }

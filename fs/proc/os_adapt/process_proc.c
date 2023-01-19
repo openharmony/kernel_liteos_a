@@ -34,6 +34,8 @@
 #include "proc_fs.h"
 #include "internal.h"
 #include "los_process_pri.h"
+#include "user_copy.h"
+#include "los_memory.h"
 
 #ifdef LOSCFG_PROC_PROCESS_DIR
 #include "los_vm_dump.h"
@@ -64,7 +66,7 @@ struct ProcessData {
 static ssize_t ProcessContainerLink(unsigned int containerID, ContainerType type, char *buffer, size_t bufLen)
 {
     ssize_t count = -1;
-    if (type == PID_CONTAINER) {
+    if ((type == PID_CONTAINER) || (type == PID_CHILD_CONTAINER)) {
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'pid:[%u]'", containerID);
     } else if (type == UTS_CONTAINER) {
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'uts:[%u]'", containerID);
@@ -72,6 +74,8 @@ static ssize_t ProcessContainerLink(unsigned int containerID, ContainerType type
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'mnt:[%u]'", containerID);
     } else if (type == IPC_CONTAINER) {
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'ipc:[%u]'", containerID);
+    } else if ((type == TIME_CONTAINER) || (type == TIME_CHILD_CONTAINER)) {
+        count = snprintf_s(buffer, bufLen, bufLen - 1, "'time:[%u]'", containerID);
     }
 
     if (count < 0) {
@@ -174,6 +178,110 @@ static int ProcessCpupRead(struct SeqBuf *seqBuf, LosProcessCB *pcb)
 }
 #endif
 
+#ifdef LOSCFG_TIME_CONTAINER
+static const CHAR *g_monotonic = "monotonic";
+#define DECIMAL_BASE 10
+
+static int ProcTimeContainerRead(struct SeqBuf *m, void *v)
+{
+    int ret;
+    unsigned int intSave;
+    struct timespec64 offsets = {0};
+
+    if ((m == NULL) || (v == NULL)) {
+        return -EINVAL;
+    }
+
+    struct ProcessData *data = (struct ProcessData *)v;
+    SCHEDULER_LOCK(intSave);
+    LosProcessCB *processCB = (LosProcessCB *)data->process;
+    ret = OsGetTimeContainerMonotonic(processCB, &offsets);
+    SCHEDULER_UNLOCK(intSave);
+    if (ret != LOS_OK) {
+        return -ret;
+    }
+
+    LosBufPrintf(m, "monotonic %lld %ld\n", offsets.tv_sec, offsets.tv_nsec);
+    return 0;
+}
+
+static int ProcSetTimensOffset(const char *buf, LosProcessCB *processCB)
+{
+    unsigned int intSave;
+    struct timespec64 offsets;
+    char *endptr = NULL;
+
+    offsets.tv_sec = strtoll(buf, &endptr, DECIMAL_BASE);
+    offsets.tv_sec = strtoll(endptr, NULL, DECIMAL_BASE);
+    if (offsets.tv_nsec >= OS_SYS_NS_PER_SECOND) {
+        return -EACCES;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    unsigned int ret = OsSetTimeContainerMonotonic(processCB, &offsets);
+    SCHEDULER_UNLOCK(intSave);
+    if (ret != LOS_OK) {
+        return -ret;
+    }
+    return 0;
+}
+
+static int ProcTimeContainerWrite(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos)
+{
+    (void)ppos;
+    char *kbuf = NULL;
+    int ret;
+
+    if ((pf == NULL) || (count <= 0)) {
+        return -EINVAL;
+    }
+
+    struct ProcDirEntry *entry = pf->pPDE;
+    if (entry == NULL) {
+        return -EINVAL;
+    }
+
+    struct ProcessData *data = (struct ProcessData *)entry->data;
+    if (data == NULL) {
+        return -EINVAL;
+    }
+
+    if (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)buf, count)) {
+        kbuf = LOS_MemAlloc(m_aucSysMem1, count + 1);
+        if (kbuf == NULL) {
+            return -ENOMEM;
+        }
+
+        if (LOS_ArchCopyFromUser(kbuf, buf, count) != 0) {
+            (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
+            return -EFAULT;
+        }
+        kbuf[count] = '\0';
+        buf = kbuf;
+    }
+
+    ret = strncmp(buf, g_monotonic, strlen(g_monotonic));
+    if (ret != 0) {
+        (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
+        return -EINVAL;
+    }
+
+    buf += strlen(g_monotonic);
+    ret = ProcSetTimensOffset(buf, (LosProcessCB *)data->process);
+    if (ret < 0) {
+        (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
+        return ret;
+    }
+    (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
+    return count;
+}
+
+static const struct ProcFileOperations TIME_CONTAINER_FOPS = {
+    .read = ProcTimeContainerRead,
+    .write = ProcTimeContainerWrite,
+};
+#endif
+
 static int ProcProcessRead(struct SeqBuf *m, void *v)
 {
     if ((m == NULL) || (v == NULL)) {
@@ -235,6 +343,12 @@ static struct ProcProcess g_procProcess[] = {
         .type = PID_CONTAINER,
         .fileOps = &PID_CONTAINER_FOPS
     },
+    {
+        .name = "container/pid_for_children",
+        .mode = S_IFLNK,
+        .type = PID_CHILD_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
     {
@@ -258,6 +372,26 @@ static struct ProcProcess g_procProcess[] = {
         .mode = S_IFLNK,
         .type = IPC_CONTAINER,
         .fileOps = &PID_CONTAINER_FOPS
+    },
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+    {
+        .name = "container/time",
+        .mode = S_IFLNK,
+        .type = TIME_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+    {
+        .name = "container/time_for_children",
+        .mode = S_IFLNK,
+        .type = TIME_CHILD_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
+    },
+    {
+        .name = "time_offsets",
+        .mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH,
+        .type = TIME_CONTAINER,
+        .fileOps = &TIME_CONTAINER_FOPS
     },
 #endif
 #endif

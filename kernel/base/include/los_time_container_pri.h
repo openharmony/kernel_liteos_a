@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,69 +28,36 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_CONTAINER_PRI_H
-#define _LOS_CONTAINER_PRI_H
-
+#ifndef _LOS_TIME_CONTAINER_PRI_H
+#define _LOS_TIME_CONTAINER_PRI_H
+#include "time.h"
 #include "los_atomic.h"
-#ifdef LOSCFG_KERNEL_CONTAINER
-#ifdef LOSCFG_PID_CONTAINER
-#include "los_pid_container_pri.h"
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-#include "los_uts_container_pri.h"
-#endif
-#ifdef LOSCFG_MNT_CONTAINER
-#include "los_mnt_container_pri.h"
-#endif
-#ifdef LOSCFG_IPC_CONTAINER
-#include "los_ipc_container_pri.h"
-#endif
+
 #ifdef LOSCFG_TIME_CONTAINER
-#include "los_time_container_pri.h"
+typedef struct ProcessCB LosProcessCB;
+
+typedef struct TimeContainer {
+    Atomic            rc;
+    BOOL              frozenOffsets;
+    struct timespec64 monotonic;
+    UINT32            containerID;
+} TimeContainer;
+
+UINT32 OsInitRootTimeContainer(TimeContainer **timeContainer);
+
+UINT32 OsCopyTimeContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent);
+
+VOID OsTimeContainersDestroy(LosProcessCB *curr);
+
+UINT32 OsGetTimeContainerID(TimeContainer *timeContainer);
+
+TimeContainer *OsGetCurrTimeContainer(VOID);
+
+UINT32 OsGetTimeContainerMonotonic(LosProcessCB *processCB, struct timespec64 *offsets);
+
+UINT32 OsSetTimeContainerMonotonic(LosProcessCB *processCB, struct timespec64 *offsets);
+
+#define CLOCK_MONOTONIC_TIME_BASE (OsGetCurrTimeContainer()->monotonic)
+
 #endif
-
-typedef enum {
-    CONTAINER = 0,
-    PID_CONTAINER,
-    PID_CHILD_CONTAINER,
-    UTS_CONTAINER,
-    MNT_CONTAINER,
-    IPC_CONTAINER,
-    TIME_CONTAINER,
-    TIME_CHILD_CONTAINER,
-} ContainerType;
-
-typedef struct Container {
-    Atomic   rc;
-#ifdef LOSCFG_PID_CONTAINER
-    struct PidContainer *pidContainer;
-    struct PidContainer *pidForChildContainer;
-#endif
-#ifdef LOSCFG_UTS_CONTAINER
-    struct UtsContainer *utsContainer;
-#endif
-#ifdef LOSCFG_MNT_CONTAINER
-    struct MntContainer *mntContainer;
-#endif
-#ifdef LOSCFG_IPC_CONTAINER
-    struct IpcContainer *ipcContainer;
-#endif
-#ifdef LOSCFG_IPC_CONTAINER
-    struct TimeContainer *timeContainer;
-    struct TimeContainer *timeForChildContainer;
-#endif
-} Container;
-
-VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
-
-VOID OsInitRootContainer(VOID);
-
-UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
-
-VOID OsContainersDestroy(LosProcessCB *processCB);
-
-UINT32 OsAllocContainerID(VOID);
-
-UINT32 OsGetContainerID(Container *container, ContainerType type);
-#endif
-#endif /* _LOS_CONTAINER_PRI_H */
+#endif /* _LOS_TIME_CONTAINER_PRI_H */
