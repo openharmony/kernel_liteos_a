@@ -28,50 +28,70 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "It_container_test.h"
+#include "sys/utsname.h"
 
-/*
- * mount container unshare test: unshare in current pcb with NEW_NS
- */
-static void MntContainerUnshare(void)
+static int ChildFunc(void *arg)
 {
+    (void)arg;
     int ret;
 
-    ret = access(ACCESS_FILE_NAME, F_OK);
-    ASSERT_EQ(ret, 0);
+    ret = unshare(CLONE_NEWUTS);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_1;
+    }
 
-    ret = unshare(CLONE_NEWNS);
-    ASSERT_EQ(ret, 0);
+    struct utsname newName;
+    ret = uname(&newName);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_2;
+    }
 
-    ret = access(ACCESS_FILE_NAME, F_OK);
-    ASSERT_EQ(ret, 0);
+    const char *name = "TestHostName";
+    ret = sethostname(name, strlen(name));
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_3;
+    }
 
-    ret = umount(USERDATA_DIR_NAME);
-    ASSERT_EQ(ret, 0);
+    struct utsname newName1;
+    ret = uname(&newName1);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_4;
+    }
 
-    ret = access(ACCESS_FILE_NAME, F_OK);
-    ASSERT_NE(ret, 0);
+    ret = strcmp(newName.nodename, newName1.nodename);
+    if (ret == 0) {
+        return EXIT_CODE_ERRNO_5;
+    }
 
-    ret = mount(USERDATA_DEV_NAME, USERDATA_DIR_NAME, FS_TYPE, 0, nullptr);
-    ASSERT_EQ(ret, 0);
-
-    ret = access(ACCESS_FILE_NAME, F_OK);
-    ASSERT_EQ(ret, 0);
-    exit(0);
+    return 0;
 }
 
-void ItMntContainer005(void)
+void ItUtsContainer004(void)
 {
-    int status = 0;
-    auto pid = fork();
-    ASSERT_TRUE(pid != -1);
-    if (pid == 0) {
-        MntContainerUnshare();
-        exit(EXIT_CODE_ERRNO_1);
-    }
-    auto ret = waitpid(pid, &status, 0);
+    int ret;
+    char *stack = (char *)mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE, CLONE_STACK_MMAP_FLAG, -1, 0);
+    ASSERT_TRUE(stack != NULL);
+    char *stackTop = stack + STACK_SIZE;
+    struct utsname oldName;
+
+    ret = uname(&oldName);
+    ASSERT_EQ(ret, 0);
+
+    auto pid = clone(ChildFunc, stackTop, SIGCHLD, NULL);
+    (void)munmap(stack, STACK_SIZE);
+    ASSERT_NE(pid, -1);
+
+    int status;
+    ret = waitpid(pid, &status, 0);
     ASSERT_EQ(ret, pid);
-    ret = WIFEXITED(status);
-    ASSERT_NE(ret, 0);
-    ret = WEXITSTATUS(status);
+
+    int exitCode = WEXITSTATUS(status);
+    ASSERT_EQ(exitCode, 0);
+
+    struct utsname oldName1;
+    ret = uname(&oldName1);
+    ASSERT_EQ(ret, 0);
+
+    ret = strcmp(oldName.nodename, oldName1.nodename);
     ASSERT_EQ(ret, 0);
 }

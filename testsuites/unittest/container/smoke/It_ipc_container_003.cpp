@@ -74,7 +74,7 @@ EXIT1:
     return EXIT_CODE_ERRNO_7;
 }
 
-void ItIpcContainer003(void)
+static void IpcContainerUnshare(void)
 {
     int status, exitCode, ret;
     int arg = CHILD_FUNC_ARG;
@@ -148,4 +148,16 @@ void ItIpcContainer003(void)
     ret = mq_receive(mqueue, msgrcd, MQUEUE_STANDARD_NAME_LENGTH, NULL);
     ASSERT_EQ(ret, strlen(msgptr));
     ASSERT_STREQ(msgrcd, msgptr);
+}
+
+void ItIpcContainer003(void)
+{
+    auto pid = fork();
+    ASSERT_TRUE(pid != -1);
+    if (pid == 0) {
+        IpcContainerUnshare();
+        exit(0);
+    }
+    auto ret = waitpid(pid, NULL, 0);
+    ASSERT_EQ(ret, pid);
 }

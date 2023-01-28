@@ -48,6 +48,8 @@ if (defined(LOSCFG_USER_TEST_PID_CONTAINER)) {
     "$TEST_UNITTEST_DIR/container/smoke/It_pid_container_023.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_pid_container_025.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_pid_container_026.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_pid_container_027.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_pid_container_028.cpp",
   ]
   sources_full += [
     "$TEST_UNITTEST_DIR/container/full/It_pid_container_001.cpp",
@@ -78,6 +80,7 @@ if (defined(LOSCFG_USER_TEST_UTS_CONTAINER)) {
   sources_smoke += [
     "$TEST_UNITTEST_DIR/container/smoke/It_uts_container_001.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_uts_container_002.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_uts_container_004.cpp",
   ]
   sources_full +=
       [ "$TEST_UNITTEST_DIR/container/full/It_uts_container_003.cpp" ]

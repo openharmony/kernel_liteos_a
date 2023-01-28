@@ -398,13 +398,6 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     }
 #endif
 
-#ifdef LOSCFG_FS_VFS
-    if (OsProcessIsUserMode(processCB)) {
-        delete_files(processCB->files);
-    }
-    processCB->files = NULL;
-#endif
-
 #ifdef LOSCFG_SECURITY_CAPABILITY
     if (processCB->user != NULL) {
         (VOID)LOS_MemFree(m_aucSysMem1, processCB->user);
@@ -444,6 +437,13 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 
 #ifdef LOSCFG_KERNEL_CONTAINER
     OsContainersDestroy(processCB);
+#endif
+
+#ifdef LOSCFG_FS_VFS
+    if (OsProcessIsUserMode(processCB)) {
+        delete_files(processCB->files);
+    }
+    processCB->files = NULL;
 #endif
 
     if (processCB->resourceLimit != NULL) {
