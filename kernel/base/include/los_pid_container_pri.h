@@ -37,6 +37,7 @@
 typedef struct TagTaskCB LosTaskCB;
 typedef struct ProcessCB LosProcessCB;
 struct ProcessGroup;
+struct Container;
 
 typedef struct {
     UINT32            vid;  /* Virtual ID */
@@ -74,6 +75,8 @@ VOID OsPidContainersDestroyAllProcess(LosProcessCB *processCB);
 VOID OsPidContainersDestroy(LosProcessCB *curr);
 
 UINT32 OsCopyPidContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
+
+UINT32 OsUnsharePidContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
 
 UINT32 OsInitRootPidContainer(PidContainer **pidContainer);
 

@@ -67,6 +67,7 @@ static int childFunc(void *arg)
 
     return 0;
 }
+
 static int WriteProcTime(int pid)
 {
     int ret = 0;
@@ -98,7 +99,7 @@ static int WriteProcTime(int pid)
     return 0;
 }
 
-void ItTimeContainer002(void)
+static void TimeContainerUnshare(void)
 {
     int ret;
     int status;
@@ -111,6 +112,9 @@ void ItTimeContainer002(void)
 
     ret = unshare(CLONE_NEWTIME);
     ASSERT_EQ(ret, 0);
+
+    ret = unshare(CLONE_NEWTIME);
+    ASSERT_EQ(ret, -1);
 
     ret = WriteProcTime(getpid());
     ASSERT_EQ(ret, 0);
@@ -128,6 +132,9 @@ void ItTimeContainer002(void)
     ret = linkBuffer1.compare(linkBuffer2);
     ASSERT_EQ(ret, 0);
 
+    ret = unshare(CLONE_NEWTIME);
+    ASSERT_EQ(ret, -1);
+
     ret = waitpid(pid, &status, 0);
     ASSERT_EQ(ret, pid);
 
@@ -136,4 +143,23 @@ void ItTimeContainer002(void)
 
     int exitCode = WEXITSTATUS(status);
     ASSERT_EQ(exitCode, 0);
+
+    exit(0);
+}
+
+void ItTimeContainer002(void)
+{
+    int status = 0;
+    auto pid = fork();
+    ASSERT_TRUE(pid != -1);
+    if (pid == 0) {
+        TimeContainerUnshare();
+        exit(EXIT_CODE_ERRNO_1);
+    }
+    auto ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
+    ret = WIFEXITED(status);
+    ASSERT_NE(ret, 0);
+    ret = WEXITSTATUS(status);
+    ASSERT_EQ(ret, 0);
 }

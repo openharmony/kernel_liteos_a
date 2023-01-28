@@ -74,24 +74,12 @@ std::string GenContainerLinkPath(int pid, const std::string& containerType)
 
 std::string ReadlinkContainer(int pid, const std::string& containerType)
 {
-    char buf[PATH_MAX];
+    char buf[PATH_MAX] = {0};
     auto path = GenContainerLinkPath(pid, containerType);
-
-    struct stat sb;
-    int ret = lstat(path.data(), &sb);
-    if (ret == -1) {
-        throw std::exception();
-    }
-
-    size_t bufsiz = sb.st_size + 1;
-    if (sb.st_size == 0) {
-        bufsiz = PATH_MAX;
-    }
-
-    (void)memset_s(buf, PATH_MAX, 0, PATH_MAX);
-    ssize_t nbytes = readlink(path.c_str(), buf, bufsiz);
+    ssize_t nbytes = readlink(path.c_str(), buf, PATH_MAX);
     if (nbytes == -1) {
-        throw std::exception();
+        printf("pid %d, ReadlinkContainer readlink %s failed, errno=%d\n", getpid(), path.c_str(), errno);
+        return path.c_str();
     }
     return buf;
 }
@@ -150,6 +138,30 @@ HWTEST_F(ContainerTest, ItPidContainer026, TestSize.Level0)
 {
     ItPidContainer026();
 }
+
+/**
+* @tc.name: Container_Pid_Test_027
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer027, TestSize.Level0)
+{
+    ItPidContainer027();
+}
+
+/**
+* @tc.name: Container_Pid_Test_028
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer028, TestSize.Level0)
+{
+    ItPidContainer028();
+}
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 /**
@@ -174,6 +186,18 @@ HWTEST_F(ContainerTest, ItUtsContainer001, TestSize.Level0)
 HWTEST_F(ContainerTest, ItUtsContainer002, TestSize.Level0)
 {
     ItUtsContainer002();
+}
+
+/**
+* @tc.name: Container_UTS_Test_004
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItUtsContainer004, TestSize.Level0)
+{
+    ItUtsContainer004();
 }
 #endif
 
@@ -227,6 +251,42 @@ HWTEST_F(ContainerTest, ItMntContainer004, TestSize.Level0)
 }
 
 /**
+* @tc.name: Container_MNT_Test_005
+* @tc.desc: mnt container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItMntContainer005, TestSize.Level0)
+{
+    ItMntContainer005();
+}
+
+/**
+* @tc.name: Container_MNT_Test_006
+* @tc.desc: mnt container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItMntContainer006, TestSize.Level0)
+{
+    ItMntContainer006();
+}
+
+/**
+* @tc.name: Container_MNT_Test_007
+* @tc.desc: mnt container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItMntContainer007, TestSize.Level0)
+{
+    ItMntContainer007();
+}
+
+/**
 * @tc.name: chroot_Test_001
 * @tc.desc: chroot function test case
 * @tc.type: FUNC
@@ -255,6 +315,18 @@ HWTEST_F(ContainerTest, ItIpcContainer001, TestSize.Level0)
 }
 
 /**
+* @tc.name: Container_IPC_Test_003
+* @tc.desc: ipc container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItIpcContainer003, TestSize.Level0)
+{
+    ItIpcContainer003();
+}
+
+/**
 * @tc.name: Container_IPC_Test_004
 * @tc.desc: ipc container function test case
 * @tc.type: FUNC
@@ -264,6 +336,18 @@ HWTEST_F(ContainerTest, ItIpcContainer001, TestSize.Level0)
 HWTEST_F(ContainerTest, ItIpcContainer004, TestSize.Level0)
 {
     ItIpcContainer004();
+}
+
+/**
+* @tc.name: Container_IPC_Test_005
+* @tc.desc: ipc container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItIpcContainer005, TestSize.Level0)
+{
+    ItIpcContainer005();
 }
 #endif
 
@@ -280,6 +364,42 @@ HWTEST_F(ContainerTest, ItTimeContainer001, TestSize.Level0)
     ItTimeContainer001();
 }
 
+/**
+* @tc.name: Container_TIME_Test_002
+* @tc.desc: time container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItTimeContainer002, TestSize.Level0)
+{
+    ItTimeContainer002();
+}
+
+/**
+* @tc.name: Container_TIME_Test_004
+* @tc.desc: time container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItTimeContainer004, TestSize.Level0)
+{
+    ItTimeContainer004();
+}
+
+/**
+* @tc.name: Container_TIME_Test_005
+* @tc.desc: time container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItTimeContainer005, TestSize.Level0)
+{
+    ItTimeContainer005();
+}
+
 /*
 * @tc.name: Container_TIME_Test_007
 * @tc.desc: time container function test case
@@ -290,6 +410,18 @@ HWTEST_F(ContainerTest, ItTimeContainer001, TestSize.Level0)
 HWTEST_F(ContainerTest, ItTimeContainer007, TestSize.Level0)
 {
     ItTimeContainer007();
+}
+
+/**
+* @tc.name: Container_TIME_Test_008
+* @tc.desc: time container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItTimeContainer008, TestSize.Level0)
+{
+    ItTimeContainer008();
 }
 
 /**

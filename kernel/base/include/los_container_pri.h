@@ -75,7 +75,7 @@ typedef struct Container {
 #ifdef LOSCFG_IPC_CONTAINER
     struct IpcContainer *ipcContainer;
 #endif
-#ifdef LOSCFG_IPC_CONTAINER
+#ifdef LOSCFG_TIME_CONTAINER
     struct TimeContainer *timeContainer;
     struct TimeContainer *timeForChildContainer;
 #endif
@@ -92,5 +92,8 @@ VOID OsContainersDestroy(LosProcessCB *processCB);
 UINT32 OsAllocContainerID(VOID);
 
 UINT32 OsGetContainerID(Container *container, ContainerType type);
+
+INT32 OsUnshare(UINT32 flags);
+
 #endif
 #endif /* _LOS_CONTAINER_PRI_H */

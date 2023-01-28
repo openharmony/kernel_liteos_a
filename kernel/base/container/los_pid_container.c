@@ -274,10 +274,15 @@ STATIC UINT32 CreatePidContainer(LosProcessCB *child, LosProcessCB *parent)
 {
     UINT32 intSave;
     UINT32 ret;
+    PidContainer *newPidContainer = NULL;
     PidContainer *parentContainer = parent->container->pidContainer;
-    PidContainer *newPidContainer = CreateNewPidContainer(parentContainer);
-    if (newPidContainer == NULL) {
-        return ENOMEM;
+    if (parentContainer == parent->container->pidForChildContainer) {
+        newPidContainer = CreateNewPidContainer(parentContainer);
+        if (newPidContainer == NULL) {
+            return ENOMEM;
+        }
+    } else {
+        newPidContainer = parent->container->pidForChildContainer;
     }
 
     SCHEDULER_LOCK(intSave);
@@ -312,8 +317,12 @@ VOID OsPidContainersDestroy(LosProcessCB *curr)
     PidContainer *pidContainer = curr->container->pidContainer;
     if (pidContainer != NULL) {
         FreeVpid(curr);
-        if (LOS_AtomicRead(&pidContainer->rc) == 0) {
+        if (LOS_AtomicRead(&pidContainer->rc) <= 0) {
             g_currentPidContainerNum--;
+            if ((pidContainer != curr->container->pidForChildContainer) &&
+                (LOS_AtomicRead(&curr->container->pidForChildContainer->rc) <= 0)) {
+                (VOID)LOS_MemFree(m_aucSysMem1, curr->container->pidForChildContainer);
+            }
             curr->container->pidContainer = NULL;
             curr->container->pidForChildContainer = NULL;
             (VOID)LOS_MemFree(m_aucSysMem1, pidContainer);
@@ -332,7 +341,7 @@ UINT32 OsCopyPidContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
     UINT32 ret;
     UINT32 intSave;
 
-    if (!(flags & CLONE_NEWPID)) {
+    if (!(flags & CLONE_NEWPID) && (parent->container->pidContainer == parent->container->pidForChildContainer)) {
         SCHEDULER_LOCK(intSave);
         child->container->pidContainer = parent->container->pidContainer;
         child->container->pidForChildContainer = parent->container->pidContainer;
@@ -357,6 +366,41 @@ UINT32 OsCopyPidContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
     } else {
         *processID = pidContainer->pidArray[child->processID].vpid;
     }
+    return LOS_OK;
+}
+
+UINT32 OsUnsharePidContainer(UINTPTR flags, LosProcessCB *curr, Container *newContainer)
+{
+    UINT32 intSave;
+    if (!(flags & CLONE_NEWPID)) {
+        SCHEDULER_LOCK(intSave);
+        newContainer->pidContainer = curr->container->pidContainer;
+        newContainer->pidForChildContainer = curr->container->pidContainer;
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_OK;
+    }
+
+    PidContainer *pidForChild = CreateNewPidContainer(curr->container->pidContainer);
+    if (pidForChild == NULL) {
+        return ENOMEM;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    if (curr->container->pidContainer != curr->container->pidForChildContainer) {
+        SCHEDULER_UNLOCK(intSave);
+        (VOID)LOS_MemFree(m_aucSysMem1, pidForChild);
+        return EINVAL;
+    }
+
+    if (pidForChild->level >= PID_CONTAINER_LEVEL_LIMIT) {
+        SCHEDULER_UNLOCK(intSave);
+        (VOID)LOS_MemFree(m_aucSysMem1, pidForChild);
+        return EINVAL;
+    }
+
+    newContainer->pidContainer = curr->container->pidContainer;
+    newContainer->pidForChildContainer = pidForChild;
+    SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
 

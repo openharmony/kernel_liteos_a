@@ -37,6 +37,7 @@
 
 #ifdef LOSCFG_IPC_CONTAINER
 struct shmIDSource;
+struct Container;
 typedef struct TagQueueCB LosQueueCB;
 typedef struct OsMux LosMux;
 typedef LosMux pthread_mutex_t;
@@ -61,7 +62,9 @@ UINT32 OsInitRootIpcContainer(IpcContainer **ipcContainer);
 
 UINT32 OsCopyIpcContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent);
 
-VOID OsIpcContainersDestroy(LosProcessCB *curr);
+UINT32 OsUnshareIpcContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
+
+VOID OsIpcContainersDestroy(struct Container *container);
 
 UINT32 OsGetIpcContainerID(IpcContainer *ipcContainer);
 
