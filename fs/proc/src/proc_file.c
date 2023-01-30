@@ -378,11 +378,34 @@ struct ProcDirEntry *CreateProcEntry(const char *name, mode_t mode, struct ProcD
     return pde;
 }
 
+static void ProcEntryClearVnode(struct ProcDirEntry *entry)
+{
+    struct Vnode *item = NULL;
+    struct Vnode *nextItem = NULL;
+
+    VnodeHold();
+    LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(item, nextItem, GetVnodeActiveList(), struct Vnode, actFreeEntry) {
+        if ((struct ProcDirEntry *)item->data != entry) {
+            continue;
+        }
+
+        if (VnodeFree(item) != LOS_OK) {
+            PRINT_ERR("ProcEntryClearVnode free failed, entry: %s : 0x%x \n", entry->name, item);
+        }
+    }
+    VnodeDrop();
+    return;
+}
+
 static void FreeProcEntry(struct ProcDirEntry *entry)
 {
     if (entry == NULL) {
         return;
     }
+
+    ProcEntryClearVnode(entry);
+
+    spin_lock(&entry->pdeUnloadLock);
     if (entry->pf != NULL) {
         free(entry->pf);
         entry->pf = NULL;
@@ -391,6 +414,7 @@ static void FreeProcEntry(struct ProcDirEntry *entry)
         free(entry->data);
         entry->data = NULL;
     }
+    spin_unlock(&entry->pdeUnloadLock);
     free(entry);
 }
 
@@ -562,22 +586,21 @@ static int ProcRead(struct ProcDirEntry *pde, char *buf, size_t len)
 
 struct ProcDirEntry *OpenProcFile(const char *fileName, int flags, ...)
 {
-    unsigned int intSave;
     struct ProcDirEntry *pn = ProcFindEntry(fileName);
     if (pn == NULL) {
         return NULL;
     }
 
-    SCHEDULER_LOCK(intSave);
+    spin_lock(&pn->pdeUnloadLock);
     if (S_ISREG(pn->mode) && (pn->count != 1)) {
-        SCHEDULER_UNLOCK(intSave);
+        spin_unlock(&pn->pdeUnloadLock);
         return NULL;
     }
 
     pn->flags = (unsigned int)(pn->flags) | (unsigned int)flags;
     atomic_set(&pn->count, PROC_INUSE);
-    SCHEDULER_UNLOCK(intSave);
     if (ProcOpen(pn->pf) != OK) {
+        spin_unlock(&pn->pdeUnloadLock);
         return NULL;
     }
     if (S_ISREG(pn->mode) && (pn->procFileOps != NULL) && (pn->procFileOps->open != NULL)) {
@@ -587,6 +610,7 @@ struct ProcDirEntry *OpenProcFile(const char *fileName, int flags, ...)
         pn->pdirCurrent = pn->subdir;
         pn->pf->fPos = 0;
     }
+    spin_unlock(&pn->pdeUnloadLock);
 
     return pn;
 }
