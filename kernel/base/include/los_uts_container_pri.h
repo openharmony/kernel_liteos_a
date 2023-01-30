@@ -38,6 +38,8 @@
 #ifdef LOSCFG_UTS_CONTAINER
 
 typedef struct ProcessCB LosProcessCB;
+struct Container;
+
 typedef struct UtsContainer {
     Atomic  rc;
     UINT32  containerID;
@@ -48,7 +50,9 @@ UINT32 OsInitRootUtsContainer(UtsContainer **utsContainer);
 
 UINT32 OsCopyUtsContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent);
 
-VOID OsUtsContainersDestroy(LosProcessCB *curr);
+UINT32 OsUnshareUtsContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
+
+VOID OsUtsContainersDestroy(struct Container *container);
 
 struct utsname *OsGetCurrUtsName(VOID);
 

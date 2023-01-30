@@ -39,6 +39,7 @@
 
 #ifdef LOSCFG_MNT_CONTAINER
 typedef struct ProcessCB LosProcessCB;
+struct Container;
 
 typedef struct MntContainer {
     Atomic rc;
@@ -52,7 +53,9 @@ UINT32 OsInitRootMntContainer(MntContainer **mntContainer);
 
 UINT32 OsCopyMntContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent);
 
-VOID OsMntContainersDestroy(LosProcessCB *curr);
+UINT32 OsUnshareMntContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
+
+VOID OsMntContainersDestroy(struct Container *container);
 
 UINT32 OsGetMntContainerID(MntContainer *mntContainer);
 

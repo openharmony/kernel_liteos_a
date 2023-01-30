@@ -132,6 +132,37 @@ UINT32 OsCopyMntContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
     return CopyMountList(currMntContainer, child->container->mntContainer);
 }
 
+UINT32 OsUnshareMntContainer(UINTPTR flags, LosProcessCB *curr, Container *newContainer)
+{
+    UINT32 intSave;
+    UINT32 ret;
+    MntContainer *parentContainer = curr->container->mntContainer;
+
+    if (!(flags & CLONE_NEWNS)) {
+        SCHEDULER_LOCK(intSave);
+        newContainer->mntContainer = parentContainer;
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_OK;
+    }
+
+    MntContainer *mntContainer = CreateNewMntContainer(parentContainer);
+    if (mntContainer == NULL) {
+        return ENOMEM;
+    }
+
+    ret = CopyMountList(parentContainer, mntContainer);
+    if (ret != LOS_OK) {
+        (VOID)LOS_MemFree(m_aucSysMem1, mntContainer);
+        return ret;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    newContainer->mntContainer = mntContainer;
+    g_currentMntContainerNum++;
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
 STATIC VOID FreeMountList(LIST_HEAD *mountList)
 {
     struct Mount *mnt = NULL;
@@ -156,22 +187,22 @@ STATIC VOID FreeMountList(LIST_HEAD *mountList)
     return;
 }
 
-VOID OsMntContainersDestroy(LosProcessCB *curr)
+VOID OsMntContainersDestroy(Container *container)
 {
     UINT32 intSave;
-    if (curr->container == NULL) {
+    if (container == NULL) {
         return;
     }
 
     SCHEDULER_LOCK(intSave);
-    MntContainer *mntContainer = curr->container->mntContainer;
+    MntContainer *mntContainer = container->mntContainer;
     if (mntContainer != NULL) {
         LOS_AtomicDec(&mntContainer->rc);
-        if (LOS_AtomicRead(&mntContainer->rc) == 0) {
+        if (LOS_AtomicRead(&mntContainer->rc) <= 0) {
             g_currentMntContainerNum--;
             SCHEDULER_UNLOCK(intSave);
             FreeMountList(&mntContainer->mountList);
-            curr->container->mntContainer = NULL;
+            container->mntContainer = NULL;
             (VOID)LOS_MemFree(m_aucSysMem1, mntContainer);
             return;
         }

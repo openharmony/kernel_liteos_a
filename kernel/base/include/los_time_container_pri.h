@@ -35,6 +35,7 @@
 
 #ifdef LOSCFG_TIME_CONTAINER
 typedef struct ProcessCB LosProcessCB;
+struct Container;
 
 typedef struct TimeContainer {
     Atomic            rc;
@@ -46,6 +47,8 @@ typedef struct TimeContainer {
 UINT32 OsInitRootTimeContainer(TimeContainer **timeContainer);
 
 UINT32 OsCopyTimeContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent);
+
+UINT32 OsUnshareTimeContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
 
 VOID OsTimeContainersDestroy(LosProcessCB *curr);
 

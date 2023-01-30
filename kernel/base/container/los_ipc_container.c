@@ -124,22 +124,46 @@ UINT32 OsCopyIpcContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
     return CreateIpcContainer(child, parent);
 }
 
-VOID OsIpcContainersDestroy(LosProcessCB *curr)
+UINT32 OsUnshareIpcContainer(UINTPTR flags, LosProcessCB *curr, Container *newContainer)
 {
     UINT32 intSave;
-    if (curr->container == NULL) {
+    IpcContainer *parentContainer = curr->container->ipcContainer;
+
+    if (!(flags & CLONE_NEWIPC)) {
+        SCHEDULER_LOCK(intSave);
+        newContainer->ipcContainer = parentContainer;
+        SCHEDULER_UNLOCK(intSave);
+        return LOS_OK;
+    }
+
+    IpcContainer *ipcContainer = CreateNewIpcContainer(parentContainer);
+    if (ipcContainer == NULL) {
+        return ENOMEM;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    newContainer->ipcContainer = ipcContainer;
+    g_currentIpcContainerNum++;
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+VOID OsIpcContainersDestroy(Container *container)
+{
+    UINT32 intSave;
+    if (container == NULL) {
         return;
     }
 
     SCHEDULER_LOCK(intSave);
-    IpcContainer *ipcContainer = curr->container->ipcContainer;
+    IpcContainer *ipcContainer = container->ipcContainer;
     if (ipcContainer != NULL) {
         LOS_AtomicDec(&ipcContainer->rc);
-        if (LOS_AtomicRead(&ipcContainer->rc) == 0) {
+        if (LOS_AtomicRead(&ipcContainer->rc) <= 0) {
             g_currentIpcContainerNum--;
             SCHEDULER_UNLOCK(intSave);
             ShmDeinit();
-            curr->container->ipcContainer = NULL;
+            container->ipcContainer = NULL;
             (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer->allQueue);
             (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer);
             return;

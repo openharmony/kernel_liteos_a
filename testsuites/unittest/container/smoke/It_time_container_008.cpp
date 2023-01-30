@@ -63,11 +63,30 @@ static int WriteProcTime(int pid)
     return 0;
 }
 
-void ItTimeContainer008(void)
+static void TimeContainerUnshare(void)
 {
     int ret = unshare(CLONE_NEWTIME);
     ASSERT_EQ(ret, 0);
 
     ret = WriteProcTime(getpid());
+    ASSERT_EQ(ret, 0);
+
+    exit(0);
+}
+
+void ItTimeContainer008(void)
+{
+    int status = 0;
+    auto pid = fork();
+    ASSERT_TRUE(pid != -1);
+    if (pid == 0) {
+        TimeContainerUnshare();
+        exit(EXIT_CODE_ERRNO_1);
+    }
+    auto ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
+    ret = WIFEXITED(status);
+    ASSERT_NE(ret, 0);
+    ret = WEXITSTATUS(status);
     ASSERT_EQ(ret, 0);
 }

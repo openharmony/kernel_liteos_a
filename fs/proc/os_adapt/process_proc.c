@@ -212,7 +212,7 @@ static int ProcSetTimensOffset(const char *buf, LosProcessCB *processCB)
     char *endptr = NULL;
 
     offsets.tv_sec = strtoll(buf, &endptr, DECIMAL_BASE);
-    offsets.tv_sec = strtoll(endptr, NULL, DECIMAL_BASE);
+    offsets.tv_nsec = strtoll(endptr, NULL, DECIMAL_BASE);
     if (offsets.tv_nsec >= OS_SYS_NS_PER_SECOND) {
         return -EACCES;
     }
@@ -308,7 +308,7 @@ static const struct ProcFileOperations PID_FOPS = {
 static struct ProcProcess g_procProcess[] = {
     {
         .name = NULL,
-        .mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH,
+        .mode = S_IFDIR | S_IRWXU | S_IRWXG | S_IROTH,
         .type = PROC_PID,
         .fileOps = &PID_FOPS
 
