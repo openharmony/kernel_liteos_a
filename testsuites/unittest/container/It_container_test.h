@@ -142,10 +142,13 @@ void ItContainerChroot001(void);
 void ItPidContainer023(void);
 void ItPidContainer025(void);
 void ItPidContainer026(void);
+void ItPidContainer027(void);
+void ItPidContainer028(void);
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 void ItUtsContainer001(void);
 void ItUtsContainer002(void);
+void ItUtsContainer004(void);
 #endif
 #if defined(LOSCFG_USER_TEST_MNT_CONTAINER)
 void ItMntContainer001(void);

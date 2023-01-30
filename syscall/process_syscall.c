@@ -369,6 +369,15 @@ int SysClone(int flags, void *stack, int *parentTid, unsigned long tls, int *chi
     return OsClone((UINT32)flags, (UINTPTR)stack, 0);
 }
 
+int SysUnshare(int flags)
+{
+#ifdef LOSCFG_KERNEL_CONTAINER
+    return OsUnshare(flags);
+#else
+    return -ENOSYS;
+#endif
+}
+
 unsigned int SysGetPPID(void)
 {
 #ifdef LOSCFG_PID_CONTAINER

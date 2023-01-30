@@ -69,7 +69,7 @@ static int childFunc(void *arg)
     return 0;
 }
 
-void ItTimeContainer003(void)
+static void TimeContainerUnshare(void)
 {
     int ret;
     int status;
@@ -97,4 +97,23 @@ void ItTimeContainer003(void)
 
     int exitCode = WEXITSTATUS(status);
     ASSERT_EQ(exitCode, 0);
+    exit(0);
 }
+
+void ItTimeContainer003(void)
+{
+    int status = 0;
+    auto pid = fork();
+    ASSERT_TRUE(pid != -1);
+    if (pid == 0) {
+        TimeContainerUnshare();
+        exit(EXIT_CODE_ERRNO_1);
+    }
+    auto ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
+    ret = WIFEXITED(status);
+    ASSERT_NE(ret, 0);
+    ret = WEXITSTATUS(status);
+    ASSERT_EQ(ret, 0);
+}
+

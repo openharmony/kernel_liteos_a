@@ -131,7 +131,7 @@ typedef struct ProcessCB {
 #endif
     struct rlimit        *resourceLimit;
 #ifdef LOSCFG_KERNEL_CONTAINER
-    struct Container     *container;
+    Container            *container;
 #endif
 #ifdef LOSCFG_PROC_PROCESS_DIR
     struct ProcDirEntry *procDir;

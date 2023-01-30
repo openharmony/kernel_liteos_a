@@ -85,6 +85,7 @@ extern int SysWaitid(idtype_t type, int pid, USER siginfo_t *info, int options, 
 extern int SysFork(void);
 extern int SysVfork(void);
 extern int SysClone(int flags, void *stack, int *parentTid, unsigned long tls, int *childTid);
+extern int SysUnshare(int flags);
 extern unsigned int SysGetPID(void);
 extern unsigned int SysGetPPID(void);
 extern int SysSetGroupID(unsigned int gid);
