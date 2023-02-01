@@ -38,7 +38,7 @@ STATIC UINT32 g_currentUtsContainerNum;
 
 STATIC UINT32 InitUtsContainer(struct utsname *name)
 {
-    UINT32 ret = sprintf_s(name->sysname, sizeof(name->sysname), "%s", KERNEL_NAME);
+    INT32 ret = sprintf_s(name->sysname, sizeof(name->sysname), "%s", KERNEL_NAME);
     if (ret < 0) {
         return LOS_NOK;
     }
