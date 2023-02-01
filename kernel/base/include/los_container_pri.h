@@ -89,6 +89,8 @@ UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent
 
 VOID OsContainersDestroy(LosProcessCB *processCB);
 
+VOID OsContainerFree(LosProcessCB *processCB);
+
 UINT32 OsAllocContainerID(VOID);
 
 UINT32 OsGetContainerID(Container *container, ContainerType type);

@@ -129,6 +129,10 @@ UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent
 {
     UINT32 intSave;
 
+#ifdef LOSCFG_TIME_CONTAINER
+    flags &= ~CLONE_NEWTIME;
+#endif
+
     if (!(flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWTIME))) {
 #ifdef LOSCFG_PID_CONTAINER
         if (parent->container->pidContainer != parent->container->pidForChildContainer) {
@@ -159,47 +163,45 @@ COPY_CONTAINERS:
     return CopyContainers(flags, child, parent, processID);
 }
 
-#ifndef LOSCFG_PID_CONTAINER
-STATIC VOID ContainersFree(LosProcessCB *processCB)
+VOID OsContainerFree(LosProcessCB *processCB)
 {
-    UINT32 intSave;
-    SCHEDULER_LOCK(intSave);
     LOS_AtomicDec(&processCB->container->rc);
     if (LOS_AtomicRead(&processCB->container->rc) == 0) {
         (VOID)LOS_MemFree(m_aucSysMem1, processCB->container);
         processCB->container = NULL;
     }
-    SCHEDULER_UNLOCK(intSave);
 }
-#endif
 
 VOID OsContainersDestroy(LosProcessCB *processCB)
 {
    /* All processes in the container must be destroyed before the container is destroyed. */
 #ifdef LOSCFG_PID_CONTAINER
     if (processCB->processID == OS_USER_ROOT_PROCESS_ID) {
-        OsPidContainersDestroyAllProcess(processCB);
+        OsPidContainerDestroyAllProcess(processCB);
     }
 #endif
 
 #ifdef LOSCFG_UTS_CONTAINER
-    OsUtsContainersDestroy(processCB->container);
+    OsUtsContainerDestroy(processCB->container);
 #endif
 
 #ifdef LOSCFG_MNT_CONTAINER
-    OsMntContainersDestroy(processCB->container);
+    OsMntContainerDestroy(processCB->container);
 #endif
 
 #ifdef LOSCFG_IPC_CONTAINER
-    OsIpcContainersDestroy(processCB->container);
+    OsIpcContainerDestroy(processCB->container);
 #endif
 
 #ifdef LOSCFG_TIME_CONTAINER
-    OsTimeContainersDestroy(processCB);
+    OsTimeContainerDestroy(processCB);
 #endif
 
 #ifndef LOSCFG_PID_CONTAINER
-    ContainersFree(processCB);
+    UINT32 intSave;
+    SCHEDULER_LOCK(intSave);
+    OsContainerFree(processCB);
+    SCHEDULER_UNLOCK(intSave);
 #endif
 }
 
@@ -240,50 +242,43 @@ UINT32 OsGetContainerID(Container *container, ContainerType type)
     return OS_INVALID_VALUE;
 }
 
-STATIC VOID UnshareDeinitContainerCommon(UINT32 flags, Container *container)
+STATIC VOID UnshareDeInitContainer(UINT32 flags, Container *container)
 {
-#ifdef LOSCFG_UTS_CONTAINER
-    if ((flags & CLONE_NEWUTS) != 0) {
-        OsUtsContainersDestroy(container);
-    }
-#endif
-#ifdef LOSCFG_MNT_CONTAINER
-    if ((flags & CLONE_NEWNS) != 0) {
-        OsMntContainersDestroy(container);
-    }
-#endif
-#ifdef LOSCFG_IPC_CONTAINER
-    if ((flags & CLONE_NEWIPC) != 0) {
-        OsIpcContainersDestroy(container);
-    }
-#endif
-}
-
-STATIC VOID UnshareDeinitContainer(UINT32 flags, Container *container)
-{
+    UINT32 intSave;
     if (container == NULL) {
         return;
     }
 
 #ifdef LOSCFG_PID_CONTAINER
-    if ((container->pidForChildContainer != NULL) && (container->pidForChildContainer != container->pidContainer)) {
-        (VOID)LOS_MemFree(m_aucSysMem1, container->pidForChildContainer);
-        container->pidForChildContainer = NULL;
-        container->pidContainer = NULL;
-    }
+    UnshareDeInitPidContainer(container);
 #endif
 
-    UnshareDeinitContainerCommon(flags, container);
+#ifdef LOSCFG_UTS_CONTAINER
+    if ((flags & CLONE_NEWUTS) != 0) {
+        OsUtsContainerDestroy(container);
+    }
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+    if ((flags & CLONE_NEWNS) != 0) {
+        OsMntContainerDestroy(container);
+    }
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    if ((flags & CLONE_NEWIPC) != 0) {
+        OsIpcContainerDestroy(container);
+    }
+#endif
 
 #ifdef LOSCFG_TIME_CONTAINER
-    if ((container->timeForChildContainer != NULL) && (container->timeForChildContainer != container->timeContainer)) {
-        (VOID)LOS_MemFree(m_aucSysMem1, container->timeForChildContainer);
-        container->timeForChildContainer = NULL;
-        container->timeContainer = NULL;
-    }
+    UnshareDeInitTimeContainer(container);
 #endif
 
-    (VOID)LOS_MemFree(m_aucSysMem1, container);
+    SCHEDULER_LOCK(intSave);
+    LOS_AtomicDec(&container->rc);
+    if (LOS_AtomicRead(&container->rc) == 0) {
+        (VOID)LOS_MemFree(m_aucSysMem1, container);
+    }
+    SCHEDULER_UNLOCK(intSave);
 }
 
 STATIC UINT32 CreateNewContainers(UINT32 flags, LosProcessCB *curr, Container *newContainer)
@@ -328,7 +323,9 @@ INT32 OsUnshare(UINT32 flags)
     UINT32 intSave;
     LosProcessCB *curr = OsCurrProcessGet();
     Container *oldContainer = curr->container;
-    if (!(flags & (CLONE_NEWPID | CLONE_NEWTIME | CLONE_NEWUTS | CLONE_NEWNS | CLONE_NEWIPC))) {
+    UINT32 unshareFlags = CLONE_NEWPID | CLONE_NEWTIME | CLONE_NEWUTS | CLONE_NEWNS | CLONE_NEWIPC;
+
+    if (!(flags & unshareFlags) || ((flags & (~unshareFlags)) != 0)) {
         return -EINVAL;
     }
 
@@ -347,18 +344,11 @@ INT32 OsUnshare(UINT32 flags)
     curr->container = newContainer;
     SCHEDULER_UNLOCK(intSave);
 
-    UnshareDeinitContainerCommon(flags, oldContainer);
-
-    SCHEDULER_LOCK(intSave);
-    LOS_AtomicDec(&oldContainer->rc);
-    if (LOS_AtomicRead(&oldContainer->rc) == 0) {
-        (VOID)LOS_MemFree(m_aucSysMem1, oldContainer);
-    }
-    SCHEDULER_UNLOCK(intSave);
+    UnshareDeInitContainer(flags, oldContainer);
     return LOS_OK;
 
 EXIT:
-    UnshareDeinitContainer(flags, newContainer);
+    UnshareDeInitContainer(flags, newContainer);
     return -ret;
 }
 #endif

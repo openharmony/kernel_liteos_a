@@ -52,7 +52,7 @@ UINT32 OsCopyUtsContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
 
 UINT32 OsUnshareUtsContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
 
-VOID OsUtsContainersDestroy(struct Container *container);
+VOID OsUtsContainerDestroy(struct Container *container);
 
 struct utsname *OsGetCurrUtsName(VOID);
 

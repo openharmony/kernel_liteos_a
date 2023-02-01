@@ -162,6 +162,30 @@ HWTEST_F(ContainerTest, ItPidContainer028, TestSize.Level0)
 {
     ItPidContainer028();
 }
+
+/**
+* @tc.name: Container_Pid_Test_029
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer029, TestSize.Level0)
+{
+    ItPidContainer029();
+}
+
+/**
+* @tc.name: Container_Pid_Test_030
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6BE5A
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer030, TestSize.Level0)
+{
+    ItPidContainer030();
+}
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 /**
@@ -293,12 +317,22 @@ HWTEST_F(ContainerTest, ItMntContainer007, TestSize.Level0)
 * @tc.require: issueI6APW2
 * @tc.author:
 */
-
 HWTEST_F(ContainerTest, ItContainerChroot001, TestSize.Level0)
 {
     ItContainerChroot001();
 }
 
+/**
+* @tc.name: chroot_Test_002
+* @tc.desc: chroot function test case
+* @tc.type: FUNC
+* @tc.require: issueI6APW2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItContainerChroot002, TestSize.Level0)
+{
+    ItContainerChroot002();
+}
 #endif /* LOSCFG_USER_TEST_MNT_CONTAINER */
 
 #if defined(LOSCFG_USER_TEST_IPC_CONTAINER)
@@ -499,6 +533,20 @@ HWTEST_F(ContainerTest, ItPidContainer004, TestSize.Level0)
 {
     ItPidContainer004();
 }
+
+#if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
+/**
+* @tc.name: Container_Pid_Test_005
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI68LVW
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer005, TestSize.Level0)
+{
+    ItPidContainer005();
+}
+#endif
 
 /**
 * @tc.name: Container_Pid_Test_006

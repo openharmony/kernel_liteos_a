@@ -130,7 +130,6 @@ void ItPidContainer028(void)
 {
     void *pstk = malloc(STACK_SIZE);
     ASSERT_TRUE(pstk != NULL);
-    pid_t parentPid = getpid();
 
     int childPid = clone(ChildFunClone1, (char *)pstk + STACK_SIZE, SIGCHLD, NULL);
     free(pstk);

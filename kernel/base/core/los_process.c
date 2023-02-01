@@ -71,7 +71,7 @@ LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;
 STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
 {
 #ifdef LOSCFG_PID_CONTAINER
-    OsPidContainersDestroy(processCB);
+    OsPidContainerDestroy(processCB);
 #endif
     UINT32 pid = processCB->processID;
     (VOID)memset_s(processCB, sizeof(LosProcessCB), 0, sizeof(LosProcessCB));

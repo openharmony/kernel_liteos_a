@@ -187,7 +187,7 @@ STATIC VOID FreeMountList(LIST_HEAD *mountList)
     return;
 }
 
-VOID OsMntContainersDestroy(Container *container)
+VOID OsMntContainerDestroy(Container *container)
 {
     UINT32 intSave;
     if (container == NULL) {
@@ -196,18 +196,22 @@ VOID OsMntContainersDestroy(Container *container)
 
     SCHEDULER_LOCK(intSave);
     MntContainer *mntContainer = container->mntContainer;
-    if (mntContainer != NULL) {
-        LOS_AtomicDec(&mntContainer->rc);
-        if (LOS_AtomicRead(&mntContainer->rc) <= 0) {
-            g_currentMntContainerNum--;
-            SCHEDULER_UNLOCK(intSave);
-            FreeMountList(&mntContainer->mountList);
-            container->mntContainer = NULL;
-            (VOID)LOS_MemFree(m_aucSysMem1, mntContainer);
-            return;
-        }
+    if (mntContainer == NULL) {
+        SCHEDULER_UNLOCK(intSave);
+        return;
     }
+
+    LOS_AtomicDec(&mntContainer->rc);
+    if (LOS_AtomicRead(&mntContainer->rc) > 0) {
+        SCHEDULER_UNLOCK(intSave);
+        return;
+    }
+
+    g_currentMntContainerNum--;
     SCHEDULER_UNLOCK(intSave);
+    FreeMountList(&mntContainer->mountList);
+    container->mntContainer = NULL;
+    (VOID)LOS_MemFree(m_aucSysMem1, mntContainer);
     return;
 }
 

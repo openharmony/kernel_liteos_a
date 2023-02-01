@@ -52,6 +52,7 @@ typedef struct PidContainer {
     Atomic              rc;
     Atomic              level;
     Atomic              lock;
+    BOOL                referenced;
     UINT32              containerID;
     struct PidContainer *parent;
     struct ProcessGroup *rootPGroup;
@@ -70,13 +71,15 @@ typedef struct PidContainer {
 
 UINT32 OsAllocSpecifiedVpidUnsafe(UINT32 vpid, LosProcessCB *processCB, LosProcessCB *parent);
 
-VOID OsPidContainersDestroyAllProcess(LosProcessCB *processCB);
+VOID OsPidContainerDestroyAllProcess(LosProcessCB *processCB);
 
-VOID OsPidContainersDestroy(LosProcessCB *curr);
+VOID OsPidContainerDestroy(LosProcessCB *curr);
 
 UINT32 OsCopyPidContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
 
 UINT32 OsUnsharePidContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
+
+VOID UnshareDeInitPidContainer(struct Container *container);
 
 UINT32 OsInitRootPidContainer(PidContainer **pidContainer);
 

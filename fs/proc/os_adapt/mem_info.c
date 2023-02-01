@@ -42,13 +42,13 @@ static int SysMemInfoFill(struct SeqBuf *seqBuf, void *arg)
     if (LOS_MemInfoGet(m_aucSysMem0, &mem) == LOS_NOK) {
         return -EBADF;
     }
-    (void)LosBufPrintf(seqBuf, "\nUsedSize:%25u KB\n", mem.totalUsedSize);
-    (void)LosBufPrintf(seqBuf, "FreeSize:%25u KB\n", mem.totalFreeSize);
-    (void)LosBufPrintf(seqBuf, "MaxFreeNodeSize:%18u KB\n", mem.maxFreeNodeSize);
-    (void)LosBufPrintf(seqBuf, "UsedNodeNum:%22u KB\n", mem.usedNodeNum);
-    (void)LosBufPrintf(seqBuf, "FreeNodeNum:%22u KB\n", mem.freeNodeNum);
+    (void)LosBufPrintf(seqBuf, "\nUsedSize:        %u byte\n", mem.totalUsedSize);
+    (void)LosBufPrintf(seqBuf, "FreeSize:        %u byte\n", mem.totalFreeSize);
+    (void)LosBufPrintf(seqBuf, "MaxFreeNodeSize: %u byte\n", mem.maxFreeNodeSize);
+    (void)LosBufPrintf(seqBuf, "UsedNodeNum:     %u\n", mem.usedNodeNum);
+    (void)LosBufPrintf(seqBuf, "FreeNodeNum:     %u\n", mem.freeNodeNum);
 #ifdef LOSCFG_MEM_WATERLINE
-    (void)LosBufPrintf(seqBuf, "UsageWaterLine:%19u KB\n", mem.freeNodeNum);
+    (void)LosBufPrintf(seqBuf, "UsageWaterLine:  %u byte\n", mem.usageWaterLine);
 #endif
      return 0;
 }
