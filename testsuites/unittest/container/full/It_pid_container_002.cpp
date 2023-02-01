@@ -54,20 +54,23 @@ static int ChildFunClone3(void *p)
     }
 
     childPid = clone(ChildFun, (char *)pstk + STACK_SIZE, SIGCHLD, NULL);
+    free(pstk);
     if (childPid == -1) {
-        free(pstk);
         return EXIT_CODE_ERRNO_4;
     }
 
     ret = waitpid(childPid, &status, 0);
-    ret = WIFEXITED(status);
-    ret = WEXITSTATUS(status);
-    if (ret != CONTAINER_THIRD_PID) {
-        free(pstk);
+    if (ret != childPid) {
         return EXIT_CODE_ERRNO_5;
     }
-
-    free(pstk);
+    ret = WIFEXITED(status);
+    if (ret == 0) {
+        return EXIT_CODE_ERRNO_6;
+    }
+    ret = WEXITSTATUS(status);
+    if (ret != CONTAINER_THIRD_PID) {
+        return EXIT_CODE_ERRNO_7;
+    }
     return childFunRet;
 }
 

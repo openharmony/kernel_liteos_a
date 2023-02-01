@@ -55,7 +55,7 @@ UINT32 OsCopyMntContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
 
 UINT32 OsUnshareMntContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
 
-VOID OsMntContainersDestroy(struct Container *container);
+VOID OsMntContainerDestroy(struct Container *container);
 
 UINT32 OsGetMntContainerID(MntContainer *mntContainer);
 

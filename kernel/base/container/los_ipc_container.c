@@ -148,7 +148,7 @@ UINT32 OsUnshareIpcContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
     return LOS_OK;
 }
 
-VOID OsIpcContainersDestroy(Container *container)
+VOID OsIpcContainerDestroy(Container *container)
 {
     UINT32 intSave;
     if (container == NULL) {
@@ -157,19 +157,23 @@ VOID OsIpcContainersDestroy(Container *container)
 
     SCHEDULER_LOCK(intSave);
     IpcContainer *ipcContainer = container->ipcContainer;
-    if (ipcContainer != NULL) {
-        LOS_AtomicDec(&ipcContainer->rc);
-        if (LOS_AtomicRead(&ipcContainer->rc) <= 0) {
-            g_currentIpcContainerNum--;
-            SCHEDULER_UNLOCK(intSave);
-            ShmDeinit();
-            container->ipcContainer = NULL;
-            (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer->allQueue);
-            (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer);
-            return;
-        }
+    if (ipcContainer == NULL) {
+        SCHEDULER_UNLOCK(intSave);
+        return;
     }
+
+    LOS_AtomicDec(&ipcContainer->rc);
+    if (LOS_AtomicRead(&ipcContainer->rc) > 0) {
+        SCHEDULER_UNLOCK(intSave);
+        return;
+    }
+
+    g_currentIpcContainerNum--;
     SCHEDULER_UNLOCK(intSave);
+    ShmDeinit();
+    container->ipcContainer = NULL;
+    (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer->allQueue);
+    (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer);
     return;
 }
 

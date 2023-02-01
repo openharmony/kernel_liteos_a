@@ -64,7 +64,7 @@ UINT32 OsCopyIpcContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *pare
 
 UINT32 OsUnshareIpcContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
 
-VOID OsIpcContainersDestroy(struct Container *container);
+VOID OsIpcContainerDestroy(struct Container *container);
 
 UINT32 OsGetIpcContainerID(IpcContainer *ipcContainer);
 
