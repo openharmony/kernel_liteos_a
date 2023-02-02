@@ -837,6 +837,9 @@ STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
     struct OsMemPoolHead *poolHead = (struct OsMemPoolHead *)pool;
     struct OsMemNodeHead *newNode = NULL;
     struct OsMemNodeHead *endNode = NULL;
+
+    (VOID)memset_s(poolHead, sizeof(struct OsMemPoolHead), 0, sizeof(struct OsMemPoolHead));
+
 #ifdef LOSCFG_KERNEL_LMS
     UINT32 resize = 0;
     if (g_lms != NULL) {
@@ -848,7 +851,6 @@ STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
         size = (resize == 0) ? size : resize;
     }
 #endif
-    (VOID)memset(poolHead, 0, sizeof(struct OsMemPoolHead));
 
     LOS_SpinInit(&poolHead->spinlock);
     poolHead->info.pool = pool;
@@ -885,9 +887,14 @@ STATIC UINT32 OsMemPoolInit(VOID *pool, UINT32 size)
 }
 
 #ifdef LOSCFG_MEM_MUL_POOL
-STATIC VOID OsMemPoolDeinit(VOID *pool)
+STATIC VOID OsMemPoolDeinit(const VOID *pool, UINT32 size)
 {
-    (VOID)memset(pool, 0, sizeof(struct OsMemPoolHead));
+#ifdef LOSCFG_KERNEL_LMS
+    if (g_lms != NULL) {
+        g_lms->deInit(pool);
+    }
+#endif
+    (VOID)memset_s(pool, size, 0, sizeof(struct OsMemPoolHead));
 }
 
 STATIC UINT32 OsMemPoolAdd(VOID *pool, UINT32 size)
@@ -961,7 +968,7 @@ UINT32 LOS_MemInit(VOID *pool, UINT32 size)
 
 #ifdef LOSCFG_MEM_MUL_POOL
     if (OsMemPoolAdd(pool, size)) {
-        (VOID)OsMemPoolDeinit(pool);
+        (VOID)OsMemPoolDeInit(pool, size);
         return OS_ERROR;
     }
 #endif
@@ -973,17 +980,21 @@ UINT32 LOS_MemInit(VOID *pool, UINT32 size)
 #ifdef LOSCFG_MEM_MUL_POOL
 UINT32 LOS_MemDeInit(VOID *pool)
 {
-    if (pool == NULL) {
+    struct OsMemPoolHead *tmpPool = (struct OsMemPoolHead *)pool;
+
+    if ((tmpPool == NULL) ||
+        (tmpPool->info.pool != pool) ||
+        (tmpPool->info.totalSize <= OS_MEM_MIN_POOL_SIZE)) {
         return OS_ERROR;
     }
 
-    if (OsMemPoolDelete(pool)) {
+    if (OsMemPoolDelete(tmpPool)) {
         return OS_ERROR;
     }
 
-    OsMemPoolDeinit(pool);
+    OsMemPoolDeInit(tmpPool, tmpPool->info.totalSize);
 
-    OsHookCall(LOS_HOOK_TYPE_MEM_DEINIT, pool);
+    OsHookCall(LOS_HOOK_TYPE_MEM_DEINIT, tmpPool);
     return LOS_OK;
 }
 
@@ -1896,7 +1907,7 @@ UINT32 LOS_MemInfoGet(VOID *pool, LOS_MEM_POOL_STATUS *poolStatus)
         return LOS_NOK;
     }
 
-    (VOID)memset(poolStatus, 0, sizeof(LOS_MEM_POOL_STATUS));
+    (VOID)memset_s(poolStatus, sizeof(LOS_MEM_POOL_STATUS), 0, sizeof(LOS_MEM_POOL_STATUS));
 
     struct OsMemNodeHead *tmpNode = NULL;
     struct OsMemNodeHead *endNode = NULL;
@@ -2070,5 +2081,3 @@ BOOL OsMemIsHeapNode(const VOID *ptr)
 #endif
     return FALSE;
 }
-
-
