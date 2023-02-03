@@ -138,12 +138,15 @@ private:
 #if defined(LOSCFG_USER_TEST_SMOKE)
 void ItContainer001(void);
 void ItContainerChroot001(void);
+void ItContainerChroot002(void);
 #if defined(LOSCFG_USER_TEST_PID_CONTAINER)
 void ItPidContainer023(void);
 void ItPidContainer025(void);
 void ItPidContainer026(void);
 void ItPidContainer027(void);
 void ItPidContainer028(void);
+void ItPidContainer029(void);
+void ItPidContainer030(void);
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 void ItUtsContainer001(void);
@@ -188,6 +191,7 @@ void ItPidContainer001(void);
 void ItPidContainer002(void);
 void ItPidContainer003(void);
 void ItPidContainer004(void);
+void ItPidContainer005(void);
 void ItPidContainer006(void);
 void ItPidContainer007(void);
 void ItPidContainer008(void);

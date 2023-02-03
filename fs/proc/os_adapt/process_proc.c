@@ -135,19 +135,18 @@ static int ProcessMemInfoRead(struct SeqBuf *seqBuf, LosProcessCB *pcb)
     (void)memcpy_s(heap, sizeof(LosVmMapRegion), pcb->vmSpace->heap, sizeof(LosVmMapRegion));
     SCHEDULER_UNLOCK(intSave);
 
-    (void)LosBufPrintf(seqBuf, "\nVMSpaceSize:           %u KB\n", vmSpace->size);
-    (void)LosBufPrintf(seqBuf, "VMRegionSize:            %u KB\n", heap->range.size);
-    (void)LosBufPrintf(seqBuf, "RegionFlags:             %s\n", OsGetRegionNameOrFilePath(heap));
-    (void)LosBufPrintf(seqBuf, "ShmidAboutSharedRegion:  %u\n", heap->shmid);
-    (void)LosBufPrintf(seqBuf, "VMSpaceRorkFlags:        0x%x\n", heap->forkFlags);
-    (void)LosBufPrintf(seqBuf, "VMRegionRype:            0x%x\n", heap->regionType);
-    (void)LosBufPrintf(seqBuf, "VMSpaceMappingAreaSize:  %u KB\n", vmSpace->mapSize);
-    (void)LosBufPrintf(seqBuf, "TLB Asid:                %u\n", vmSpace->archMmu.asid);
+    (void)LosBufPrintf(seqBuf, "\nVMSpaceSize:      %u byte\n", vmSpace->size);
+    (void)LosBufPrintf(seqBuf, "VMSpaceMapSize:   %u byte\n", vmSpace->mapSize);
+    (void)LosBufPrintf(seqBuf, "VM TLB Asid:      %u\n", vmSpace->archMmu.asid);
+    (void)LosBufPrintf(seqBuf, "VMHeapSize:       %u byte\n", heap->range.size);
+    (void)LosBufPrintf(seqBuf, "VMHeapRegionNmae: %s\n", OsGetRegionNameOrFilePath(heap));
+    (void)LosBufPrintf(seqBuf, "VMHeapRegionType: 0x%x\n", heap->regionType);
     (void)LOS_MemFree(m_aucSysMem1, vmSpace);
     return 0;
 }
 
 #ifdef LOSCFG_KERNEL_CPUP
+#define TIME_CYCLE_TO_US(time) ((((UINT64)time) * OS_NS_PER_CYCLE) / OS_SYS_NS_PER_US)
 static int ProcessCpupRead(struct SeqBuf *seqBuf, LosProcessCB *pcb)
 {
     unsigned int intSave;
@@ -166,11 +165,10 @@ static int ProcessCpupRead(struct SeqBuf *seqBuf, LosProcessCB *pcb)
     (void)memcpy_s(processCpup, sizeof(OsCpupBase), pcb->processCpup, sizeof(OsCpupBase));
     SCHEDULER_UNLOCK(intSave);
 
-    (void)LosBufPrintf(seqBuf, "\nTotalRunningTime:      %lu\n", processCpup->allTime);
-    (void)LosBufPrintf(seqBuf, "StartTime:               %lu\n", processCpup->startTime);
-    (void)LosBufPrintf(seqBuf, "HistoricalRunningTime:   ");
+    (void)LosBufPrintf(seqBuf, "\nTotalRunningTime: %lu us\n", TIME_CYCLE_TO_US(processCpup->allTime));
+    (void)LosBufPrintf(seqBuf, "HistoricalRunningTime:(us) ");
     for (UINT32 i = 0; i < OS_CPUP_HISTORY_RECORD_NUM + 1; i++) {
-        (void)LosBufPrintf(seqBuf, "%lu  ", processCpup->historyTime[i]);
+        (void)LosBufPrintf(seqBuf, "%lu  ", TIME_CYCLE_TO_US(processCpup->historyTime[i]));
     }
     (void)LosBufPrintf(seqBuf, "\n");
     (void)LOS_MemFree(m_aucSysMem1, processCpup);
