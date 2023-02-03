@@ -28,47 +28,91 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "It_container_test.h"
+using namespace std;
 
-static int childFunc(void *arg)
+static int OpendirCheck(void)
 {
-    int value = *((int*)arg);
-    if (value != CHILD_FUNC_ARG) {
+    DIR *dir = opendir("/proc");
+    if (dir == nullptr) {
         return EXIT_CODE_ERRNO_1;
     }
-    sleep(1);
+    closedir(dir);
     return 0;
 }
 
-void ItTimeContainer001(void)
+static int ChildFunc(void *arg)
 {
-    int ret;
-    int status;
-    char *containerType = "time";
-    char *containerType1 = "time_for_children";
+    int ret = 0;
+    ret = OpendirCheck();
+    if (ret == 0) {
+        return EXIT_CODE_ERRNO_1;
+    }
 
-    char *stack = (char *)mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE, CLONE_STACK_MMAP_FLAG, -1, 0);
-    ASSERT_NE(stack, nullptr);
+    return 0;
+}
+
+static int TestFunc(void *arg)
+{
+    int ret = 0;
+    int fd;
+    char *stack = (char *)mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE,
+                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+    if (stack == nullptr) {
+        return EXIT_CODE_ERRNO_1;
+    }
     char *stackTop = stack + STACK_SIZE;
-    std::cout << getpid() << std::endl;
-    auto linkBuffer = ReadlinkContainer(getpid(), containerType);
-    auto linkBuffer1 = ReadlinkContainer(getpid(), containerType1);
-    ret = linkBuffer.compare(linkBuffer1);
-    ASSERT_EQ(ret, 0);
+
+    ret = OpendirCheck();
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_2;
+    }
+
+    ret = chroot("/system/etc");
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_3;
+    }
+
+    ret = OpendirCheck();
+    if (ret == 0) {
+        return EXIT_CODE_ERRNO_4;
+    }
+    fd = open("/PCID.sc", O_RDONLY);
+    if (fd == -1) {
+        return EXIT_CODE_ERRNO_5;
+    }
+    close(fd);
+    sleep(1);
+
+    auto pid = clone(ChildFunc, stackTop, SIGCHLD, arg);
+    if (pid == -1) {
+        return EXIT_CODE_ERRNO_6;
+    }
+    int status;
+    ret = waitpid(pid, &status, 0);
+    ret = WIFEXITED(status);
+    int exitCode = WEXITSTATUS(status);
+    if (exitCode != 0) {
+        return EXIT_CODE_ERRNO_7;
+    }
+
+    return 0;
+}
+
+void ItContainerChroot002(void)
+{
+    int ret = 0;
+    char *stack = (char *)mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE,
+                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+    ASSERT_TRUE(stack != nullptr);
+    char *stackTop = stack + STACK_SIZE;
 
     int arg = CHILD_FUNC_ARG;
-    auto pid = clone(childFunc, stackTop, CLONE_NEWTIME | SIGCHLD, &arg);
-    ASSERT_TRUE(pid != -1);
+    auto pid = clone(TestFunc, stackTop, SIGCHLD, &arg);
+    ASSERT_NE(pid, -1);
 
-    auto linkBuffer2 = ReadlinkContainer(pid, containerType);
-    ret = linkBuffer.compare(linkBuffer2);
-    ASSERT_EQ(ret, 0);
-
+    int status;
     ret = waitpid(pid, &status, 0);
-    ASSERT_EQ(ret, pid);
-
     ret = WIFEXITED(status);
-    ASSERT_NE(ret, 0);
-
     int exitCode = WEXITSTATUS(status);
     ASSERT_EQ(exitCode, 0);
 }

@@ -164,7 +164,7 @@ UINT32 OsUnshareUtsContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
     return LOS_OK;
 }
 
-VOID OsUtsContainersDestroy(Container *container)
+VOID OsUtsContainerDestroy(Container *container)
 {
     UINT32 intSave;
     if (container == NULL) {
@@ -173,17 +173,20 @@ VOID OsUtsContainersDestroy(Container *container)
 
     SCHEDULER_LOCK(intSave);
     UtsContainer *utsContainer = container->utsContainer;
-    if (utsContainer != NULL) {
-        LOS_AtomicDec(&utsContainer->rc);
-        if (LOS_AtomicRead(&utsContainer->rc) <= 0) {
-            g_currentUtsContainerNum--;
-            container->utsContainer = NULL;
-            SCHEDULER_UNLOCK(intSave);
-            (VOID)LOS_MemFree(m_aucSysMem1, utsContainer);
-            return;
-        }
+    if (utsContainer == NULL) {
+        SCHEDULER_UNLOCK(intSave);
+        return;
     }
+
+    LOS_AtomicDec(&utsContainer->rc);
+    if (LOS_AtomicRead(&utsContainer->rc) > 0) {
+        SCHEDULER_UNLOCK(intSave);
+        return;
+    }
+    g_currentUtsContainerNum--;
+    container->utsContainer = NULL;
     SCHEDULER_UNLOCK(intSave);
+    (VOID)LOS_MemFree(m_aucSysMem1, utsContainer);
     return;
 }
 
