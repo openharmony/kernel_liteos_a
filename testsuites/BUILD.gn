@@ -37,6 +37,5 @@ group("testsuites") {
   deps = []
   if (liteos_kernel_unittest) {
     deps += [ "unittest" ]
-    #deps += [ "//kernel/liteos_a/testsuites/fuzz:fuzztest" ]
   }
 }

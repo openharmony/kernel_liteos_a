@@ -60,6 +60,14 @@ struct ProcessData {
     unsigned int type;
 };
 
+static LosProcessCB *ProcGetProcessCB(struct ProcessData *data)
+{
+    if (data->process != 0) {
+        return (LosProcessCB *)data->process;
+    }
+    return OsCurrProcessGet();
+}
+
 #define PROC_PID_PRIVILEGE 7
 #define PROC_PID_DIR_LEN 100
 #ifdef LOSCFG_KERNEL_CONTAINER
@@ -95,7 +103,7 @@ static ssize_t ProcessContainerReadLink(struct ProcDirEntry *entry, char *buffer
     if (data == NULL) {
         return -EINVAL;
     }
-    LosProcessCB *processCB = (LosProcessCB *)data->process;
+    LosProcessCB *processCB = ProcGetProcessCB(data);
     SCHEDULER_LOCK(intSave);
     UINT32 containerID = OsGetContainerID(processCB->container, (ContainerType)data->type);
     SCHEDULER_UNLOCK(intSave);
@@ -139,7 +147,7 @@ static int ProcessMemInfoRead(struct SeqBuf *seqBuf, LosProcessCB *pcb)
     (void)LosBufPrintf(seqBuf, "VMSpaceMapSize:   %u byte\n", vmSpace->mapSize);
     (void)LosBufPrintf(seqBuf, "VM TLB Asid:      %u\n", vmSpace->archMmu.asid);
     (void)LosBufPrintf(seqBuf, "VMHeapSize:       %u byte\n", heap->range.size);
-    (void)LosBufPrintf(seqBuf, "VMHeapRegionNmae: %s\n", OsGetRegionNameOrFilePath(heap));
+    (void)LosBufPrintf(seqBuf, "VMHeapRegionName: %s\n", OsGetRegionNameOrFilePath(heap));
     (void)LosBufPrintf(seqBuf, "VMHeapRegionType: 0x%x\n", heap->regionType);
     (void)LOS_MemFree(m_aucSysMem1, vmSpace);
     return 0;
@@ -192,7 +200,7 @@ static int ProcTimeContainerRead(struct SeqBuf *m, void *v)
 
     struct ProcessData *data = (struct ProcessData *)v;
     SCHEDULER_LOCK(intSave);
-    LosProcessCB *processCB = (LosProcessCB *)data->process;
+    LosProcessCB *processCB = ProcGetProcessCB(data);
     ret = OsGetTimeContainerMonotonic(processCB, &offsets);
     SCHEDULER_UNLOCK(intSave);
     if (ret != LOS_OK) {
@@ -265,7 +273,7 @@ static int ProcTimeContainerWrite(struct ProcFile *pf, const char *buf, size_t c
     }
 
     buf += strlen(g_monotonic);
-    ret = ProcSetTimensOffset(buf, (LosProcessCB *)data->process);
+    ret = ProcSetTimensOffset(buf, ProcGetProcessCB(data));
     if (ret < 0) {
         (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
         return ret;
@@ -288,10 +296,10 @@ static int ProcProcessRead(struct SeqBuf *m, void *v)
     struct ProcessData *data = (struct ProcessData *)v;
     switch (data->type) {
         case PROC_PID_MEM:
-            return ProcessMemInfoRead(m, (LosProcessCB *)data->process);
+            return ProcessMemInfoRead(m, ProcGetProcessCB(data));
 #ifdef LOSCFG_KERNEL_CPUP
         case PROC_PID_CPUP:
-            return ProcessCpupRead(m, (LosProcessCB *)data->process);
+            return ProcessCpupRead(m, ProcGetProcessCB(data));
 #endif
         default:
             break;
@@ -411,10 +419,18 @@ static struct ProcDirEntry *ProcCreatePorcess(UINT32 pid, struct ProcProcess *po
     if (data == NULL) {
         return NULL;
     }
-    if (porcess->name != NULL) {
-        ret = snprintf_s(pidName, PROC_PID_DIR_LEN, PROC_PID_DIR_LEN - 1, "%u/%s", pid, porcess->name);
+    if (pid != OS_INVALID_VALUE) {
+        if (porcess->name != NULL) {
+            ret = snprintf_s(pidName, PROC_PID_DIR_LEN, PROC_PID_DIR_LEN - 1, "%u/%s", pid, porcess->name);
+        } else {
+            ret = snprintf_s(pidName, PROC_PID_DIR_LEN, PROC_PID_DIR_LEN - 1, "%u", pid);
+        }
     } else {
-        ret = snprintf_s(pidName, PROC_PID_DIR_LEN, PROC_PID_DIR_LEN - 1, "%u", pid);
+        if (porcess->name != NULL) {
+            ret = snprintf_s(pidName, PROC_PID_DIR_LEN, PROC_PID_DIR_LEN - 1, "%s/%s", "self", porcess->name);
+        } else {
+            ret = snprintf_s(pidName, PROC_PID_DIR_LEN, PROC_PID_DIR_LEN - 1, "%s", "self");
+        }
     }
     if (ret < 0) {
         free(data);
@@ -448,9 +464,12 @@ int ProcCreateProcessDir(UINT32 pid, uintptr_t process)
         }
     }
 
-    SCHEDULER_LOCK(intSave);
-    ((LosProcessCB *)process)->procDir = pidDir;
-    SCHEDULER_UNLOCK(intSave);
+    if (process != 0) {
+        SCHEDULER_LOCK(intSave);
+        ((LosProcessCB *)process)->procDir = pidDir;
+        SCHEDULER_UNLOCK(intSave);
+    }
+
     return 0;
 
 CREATE_ERROR:
@@ -482,7 +501,12 @@ void ProcProcessInit(void)
     pde->procFileOps = &PROCESS_PROC_FOPS;
 
 #ifdef LOSCFG_PROC_PROCESS_DIR
-    int ret = ProcCreateProcessDir(OS_USER_ROOT_PROCESS_ID, (uintptr_t)OsGetUserInitProcess());
+    int ret = ProcCreateProcessDir(OS_INVALID_VALUE, 0);
+    if (ret < 0) {
+        PRINT_ERR("Create proc process self dir failed!\n");
+    }
+
+    ret = ProcCreateProcessDir(OS_USER_ROOT_PROCESS_ID, (uintptr_t)OsGetUserInitProcess());
     if (ret < 0) {
         PRINT_ERR("Create proc process %d dir failed!\n", OS_USER_ROOT_PROCESS_ID);
     }
