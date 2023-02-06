@@ -167,5 +167,10 @@ group("unittest") {
         deps += [ "container:liteos_a_container_unittest" ]
       }
     }
+
+    # fuzz test
+    if (LOSCFG_USER_FUZZ_TEST == true) {
+      deps += [ "fuzz:liteos_a_fuzztest" ]
+    }
   }
 }
