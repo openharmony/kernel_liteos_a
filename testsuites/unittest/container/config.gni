@@ -36,11 +36,7 @@ common_include_dirs = [
 
 sources_entry = [ "$TEST_UNITTEST_DIR/container/It_container_test.cpp" ]
 
-sources_smoke = [
-  "$TEST_UNITTEST_DIR/container/smoke/It_container_001.cpp",
-  "$TEST_UNITTEST_DIR/container/smoke/It_container_chroot_001.cpp",
-  "$TEST_UNITTEST_DIR/container/smoke/It_container_chroot_002.cpp",
-]
+sources_smoke = [ "$TEST_UNITTEST_DIR/container/smoke/It_container_001.cpp" ]
 
 sources_full = []
 
@@ -91,6 +87,8 @@ if (defined(LOSCFG_USER_TEST_UTS_CONTAINER)) {
 }
 if (defined(LOSCFG_USER_TEST_MNT_CONTAINER)) {
   sources_smoke += [
+    "$TEST_UNITTEST_DIR/container/smoke/It_container_chroot_001.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_container_chroot_002.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_mnt_container_001.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_mnt_container_002.cpp",
     "$TEST_UNITTEST_DIR/container/smoke/It_mnt_container_003.cpp",

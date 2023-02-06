@@ -28,7 +28,7 @@
 
 import("//build/lite/config/test.gni")
 
-fuzztest("FuzzDemoTest") {
+fuzztest("liteos_a_user_fuzz_test") {
   output_extension = "bin"
   sources = [
     "adjtime_fuzzer.cpp",
@@ -83,6 +83,6 @@ fuzztest("FuzzDemoTest") {
   include_dirs = []
   deps = []
 }
-group("fuzztest") {
-  deps = [ ":FuzzDemoTest" ]
+group("liteos_a_fuzztest") {
+  deps = [ ":liteos_a_user_fuzz_test" ]
 }
