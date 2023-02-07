@@ -50,9 +50,9 @@ UINT32 OsCopyTimeContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *par
 
 UINT32 OsUnshareTimeContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
 
-VOID UnshareDeInitTimeContainer(struct Container *container);
+UINT32 OsSetNsTimeContainer(UINT32 flags, struct Container *container, struct Container *newContainer);
 
-VOID OsTimeContainerDestroy(LosProcessCB *curr);
+VOID OsTimeContainerDestroy(struct Container *container);
 
 UINT32 OsGetTimeContainerID(TimeContainer *timeContainer);
 

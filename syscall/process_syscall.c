@@ -378,6 +378,15 @@ int SysUnshare(int flags)
 #endif
 }
 
+int SysSetns(int fd, int type)
+{
+#ifdef LOSCFG_KERNEL_CONTAINER
+    return OsSetNs(fd, type);
+#else
+    return -ENOSYS;
+#endif
+}
+
 unsigned int SysGetPPID(void)
 {
 #ifdef LOSCFG_PID_CONTAINER

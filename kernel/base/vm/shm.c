@@ -204,6 +204,7 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
         (size > IPC_SHM_INFO.shmmax)) {
         return -EINVAL;
     }
+
     size = LOS_Align(size, PAGE_SIZE);
     if ((IPC_SHM_USED_PAGE_COUNT + (size >> PAGE_SHIFT)) > IPC_SHM_INFO.shmall) {
         return -ENOMEM;
@@ -228,6 +229,7 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
         seg->status = SHM_SEG_FREE;
         return -ENOMEM;
     }
+
     ShmSetSharedFlag(seg);
     IPC_SHM_USED_PAGE_COUNT += size >> PAGE_SHIFT;
 
@@ -252,7 +254,7 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
     return segNum;
 }
 
-STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg)
+STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg, UINT32 *shmUsedPageCount)
 {
     UINT32 count;
 
@@ -262,7 +264,9 @@ STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg)
         VM_ERR("free physical pages failed, count = %d, size = %d", count, seg->ds.shm_segsz >> PAGE_SHIFT);
         return;
     }
-    IPC_SHM_USED_PAGE_COUNT -= seg->ds.shm_segsz >> PAGE_SHIFT;
+    if (shmUsedPageCount != NULL) {
+        (*shmUsedPageCount) -= seg->ds.shm_segsz >> PAGE_SHIFT;
+    }
     seg->status = SHM_SEG_FREE;
     LOS_ListInit(&seg->node);
 }
@@ -369,7 +373,7 @@ VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region)
     ShmPagesRefDec(seg);
     seg->ds.shm_nattch--;
     if (seg->ds.shm_nattch <= 0 && (seg->status & SHM_SEG_REMOVE)) {
-        ShmFreeSeg(seg);
+        ShmFreeSeg(seg, &IPC_SHM_USED_PAGE_COUNT);
     } else {
         seg->ds.shm_dtime = time(NULL);
         seg->ds.shm_lpid = LOS_GetCurrProcessID(); /* may not be the space's PID. */
@@ -677,7 +681,7 @@ INT32 ShmCtl(INT32 shmid, INT32 cmd, struct shmid_ds *buf)
 
             seg->status |= SHM_SEG_REMOVE;
             if (seg->ds.shm_nattch <= 0) {
-                ShmFreeSeg(seg);
+                ShmFreeSeg(seg, &IPC_SHM_USED_PAGE_COUNT);
             }
             break;
         case IPC_INFO:
@@ -763,7 +767,7 @@ INT32 ShmDt(const VOID *shmaddr)
     seg->ds.shm_nattch--;
     if ((seg->ds.shm_nattch <= 0) &&
         (seg->status & SHM_SEG_REMOVE)) {
-        ShmFreeSeg(seg);
+        ShmFreeSeg(seg, &IPC_SHM_USED_PAGE_COUNT);
     } else {
         seg->ds.shm_dtime = time(NULL);
         seg->ds.shm_lpid = LOS_GetCurrProcessID();
@@ -778,6 +782,27 @@ ERROR:
     set_errno(ret);
     PRINT_DEBUG("%s %d, ret = %d\n", __FUNCTION__, __LINE__, ret);
     return -1;
+}
+
+VOID OsShmCBDestroy(struct shmIDSource *shmSegs, struct shminfo *shmInfo, LosMux *sysvShmMux)
+{
+    if ((shmSegs == NULL) || (shmInfo == NULL) || (sysvShmMux == NULL)) {
+        return;
+    }
+
+    for (UINT32 index = 0; index < shmInfo->shmmni; index++) {
+        struct shmIDSource *seg = &shmSegs[index];
+        if (seg->status == SHM_SEG_FREE) {
+            continue;
+        }
+
+        (VOID)LOS_MuxLock(sysvShmMux, LOS_WAIT_FOREVER);
+        ShmFreeSeg(seg, NULL);
+        (VOID)LOS_MuxUnlock(sysvShmMux);
+    }
+
+    (VOID)LOS_MemFree((VOID *)OS_SYS_MEM_ADDR, shmSegs);
+    (VOID)LOS_MuxDestroy(sysvShmMux);
 }
 
 #ifdef LOSCFG_SHELL
@@ -819,7 +844,7 @@ STATIC VOID OsShmDeleteCmd(INT32 shmid)
     }
 
     if (seg->ds.shm_nattch <= 0) {
-        ShmFreeSeg(seg);
+        ShmFreeSeg(seg, &IPC_SHM_USED_PAGE_COUNT);
     }
     SYSV_SHM_UNLOCK();
 }

@@ -351,11 +351,12 @@ static struct ProcDirEntry *ProcCreateFile(struct ProcDirEntry *parent, const ch
     }
 
     pn->procFileOps = procFileOps;
+    pn->type = VNODE_TYPE_REG;
+#ifdef LOSCFG_PROC_PROCESS_DIR
     if (S_ISLNK(mode)) {
-        pn->type = VNODE_TYPE_LNK;
-    } else {
-        pn->type = VNODE_TYPE_REG;
+        pn->type = VNODE_TYPE_VIR_LNK;
     }
+#endif
     ret = ProcAddNode(parent, pn);
     if (ret != 0) {
         free(pn->pf);
@@ -390,7 +391,7 @@ static void ProcEntryClearVnode(struct ProcDirEntry *entry)
         }
 
         if (VnodeFree(item) != LOS_OK) {
-            PRINT_ERR("ProcEntryClearVnode free failed, entry: %s : 0x%x \n", entry->name, item);
+            PRINT_ERR("ProcEntryClearVnode free failed, entry: %s\n", entry->name);
         }
     }
     VnodeDrop();

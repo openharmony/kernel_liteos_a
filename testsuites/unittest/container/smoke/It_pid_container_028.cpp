@@ -100,7 +100,7 @@ static int ChildFunClone1(void *p)
     if (pstk == NULL) {
         return EXIT_CODE_ERRNO_4;
     }
-    int childPid = clone(ChildFunClone2, (char *)pstk + STACK_SIZE, CLONE_NEWPID | SIGCHLD, NULL);
+    int childPid = clone(ChildFunClone2, (char *)pstk + STACK_SIZE, SIGCHLD, NULL);
     free(pstk);
     if (childPid == -1) {
         return EXIT_CODE_ERRNO_5;

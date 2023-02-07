@@ -716,7 +716,8 @@ void VnodeMemoryDump(void)
     PRINTK("Vnode memory size = %d(B)\n", vnodeCount * sizeof(struct Vnode));
 }
 
-struct Vnode *GetVnode(INT32 fd)
+#ifdef LOSCFG_PROC_PROCESS_DIR
+struct Vnode *VnodeFind(int fd)
 {
     INT32 sysFd;
 
@@ -734,6 +735,7 @@ struct Vnode *GetVnode(INT32 fd)
 
     return files_get_openfile((int)sysFd);
 }
+#endif
 
 LIST_HEAD* GetVnodeFreeList()
 {

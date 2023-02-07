@@ -65,6 +65,29 @@ pid_t CloneWrapper(int (*func)(void *), int flag, void *args)
     return pid;
 }
 
+int WaitChild(pid_t pid, int *status, int errNo1, int errNo2)
+{
+    int ret = waitpid(pid, status, 0);
+    if (ret != pid) {
+        printf("[ERR] WaitChild pid=%d return pid=%d\n", pid, ret);
+        return errNo1;
+    }
+    if (status == nullptr) {
+        return 0;
+    }
+    ret = WIFEXITED(*status);
+    if (ret == 0) {
+        printf("[ERR] WaitChild pid=%d WIFEXITED(status)=%d\n", pid, WIFEXITED(*status));
+        return errNo2;
+    }
+    ret = WEXITSTATUS(*status);
+    if (ret != 0) {
+        printf("[ERR] WaitChild pid=%d WEXITSTATUS(status)=%d\n", pid, WEXITSTATUS(*status));
+        return errNo2;
+    }
+    return 0;
+}
+
 std::string GenContainerLinkPath(int pid, const std::string& containerType)
 {
     std::ostringstream buf;
@@ -186,6 +209,18 @@ HWTEST_F(ContainerTest, ItPidContainer030, TestSize.Level0)
 {
     ItPidContainer030();
 }
+
+/**
+* @tc.name: Container_Pid_Test_031
+* @tc.desc: pid container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6D9Y0
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItPidContainer031, TestSize.Level0)
+{
+    ItPidContainer031();
+}
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 /**
@@ -222,6 +257,30 @@ HWTEST_F(ContainerTest, ItUtsContainer002, TestSize.Level0)
 HWTEST_F(ContainerTest, ItUtsContainer004, TestSize.Level0)
 {
     ItUtsContainer004();
+}
+
+/**
+* @tc.name: Container_UTS_Test_005
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6D9Y0
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItUtsContainer005, TestSize.Level0)
+{
+    ItUtsContainer005();
+}
+
+/**
+* @tc.name: Container_UTS_Test_006
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6D9Y0
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItUtsContainer006, TestSize.Level0)
+{
+    ItUtsContainer006();
 }
 #endif
 
@@ -311,6 +370,18 @@ HWTEST_F(ContainerTest, ItMntContainer007, TestSize.Level0)
 }
 
 /**
+* @tc.name: Container_MNT_Test_008
+* @tc.desc: mnt container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6D9Y0
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItMntContainer008, TestSize.Level0)
+{
+    ItMntContainer008();
+}
+
+/**
 * @tc.name: chroot_Test_001
 * @tc.desc: chroot function test case
 * @tc.type: FUNC
@@ -349,6 +420,18 @@ HWTEST_F(ContainerTest, ItIpcContainer001, TestSize.Level0)
 }
 
 /**
+* @tc.name: Container_IPC_Test_002
+* @tc.desc: ipc container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6D9Y0
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItIpcContainer002, TestSize.Level0)
+{
+    ItIpcContainer002();
+}
+
+/**
 * @tc.name: Container_IPC_Test_003
 * @tc.desc: ipc container function test case
 * @tc.type: FUNC
@@ -383,6 +466,18 @@ HWTEST_F(ContainerTest, ItIpcContainer005, TestSize.Level0)
 {
     ItIpcContainer005();
 }
+
+/**
+* @tc.name: Container_IPC_Test_006
+* @tc.desc: ipc container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6D9Y0
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItIpcContainer006, TestSize.Level0)
+{
+    ItIpcContainer006();
+}
 #endif
 
 #if defined(LOSCFG_USER_TEST_TIME_CONTAINER)
@@ -408,6 +503,18 @@ HWTEST_F(ContainerTest, ItTimeContainer001, TestSize.Level0)
 HWTEST_F(ContainerTest, ItTimeContainer002, TestSize.Level0)
 {
     ItTimeContainer002();
+}
+
+/**
+* @tc.name: Container_TIME_Test_003
+* @tc.desc: time container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6D9Y0
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItTimeContainer003, TestSize.Level0)
+{
+    ItTimeContainer003();
 }
 
 /**

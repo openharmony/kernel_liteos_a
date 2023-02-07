@@ -77,6 +77,10 @@ void ProcFsCacheInit(void);
 
 void ProcFdInit(void);
 
+#ifdef LOSCFG_KERNEL_CONTAINER
+void *ProcfsContainerGet(int fd, unsigned int *containerType);
+#endif
+
 #ifdef __cplusplus
 #if __cplusplus
 }
