@@ -63,6 +63,7 @@ VOID OsShmFork(LosVmSpace *space, LosVmMapRegion *oldRegion, LosVmMapRegion *new
 VOID OsShmRegionFree(LosVmSpace *space, LosVmMapRegion *region);
 BOOL OsIsShmRegion(LosVmMapRegion *region);
 struct shmIDSource *OsShmCBInit(LosMux *sysvShmMux, struct shminfo *shmInfo, UINT32 *shmUsedPageCount);
+VOID OsShmCBDestroy(struct shmIDSource *shmSegs, struct shminfo *shmInfo, LosMux *sysvShmMux);
 #ifdef __cplusplus
 #if __cplusplus
 }

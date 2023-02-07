@@ -297,6 +297,7 @@ extern struct ProcDirEntry *ProcCreateData(const char *name, mode_t mode, struct
  */
 extern void ProcFsInit(void);
 
+extern struct ProcDirEntry *VnodeToEntry(struct Vnode *node);
 #ifdef __cplusplus
 #if __cplusplus
 }

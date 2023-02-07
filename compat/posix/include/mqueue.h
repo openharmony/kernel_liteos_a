@@ -428,6 +428,7 @@ extern ssize_t mq_timedreceive(mqd_t personal, char *msg, size_t msgLen,
 
 extern void MqueueRefer(int sysFd);
 extern int OsMqNotify(mqd_t personal, const struct sigevent *sigev);
+extern VOID OsMqueueCBDestroy(struct mqarray *queueTable);
 
 #ifdef __cplusplus
 #if __cplusplus

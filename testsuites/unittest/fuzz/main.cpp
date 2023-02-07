@@ -87,5 +87,6 @@ int main()
     TestClone();
     TestUnshare();
     TestChroot();
+    TestSetns();
     return 0;
 }

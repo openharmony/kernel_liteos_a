@@ -45,7 +45,7 @@
 static struct VnodeOps g_procfsVops;
 static struct file_operations_vfs g_procfsFops;
 
-static struct ProcDirEntry *VnodeToEntry(struct Vnode *node)
+struct ProcDirEntry *VnodeToEntry(struct Vnode *node)
 {
     return (struct ProcDirEntry *)(node->data);
 }

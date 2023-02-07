@@ -71,7 +71,7 @@ LITE_OS_SEC_BSS ProcessGroup *g_processGroup = NULL;
 STATIC INLINE VOID OsInsertPCBToFreeList(LosProcessCB *processCB)
 {
 #ifdef LOSCFG_PID_CONTAINER
-    OsPidContainerDestroy(processCB);
+    OsPidContainerDestroy(processCB->container, processCB);
 #endif
     UINT32 pid = processCB->processID;
     (VOID)memset_s(processCB, sizeof(LosProcessCB), 0, sizeof(LosProcessCB));
@@ -133,7 +133,7 @@ UINT32 OsProcessAddNewTask(UINTPTR processID, LosTaskCB *taskCB, SchedParam *par
     return LOS_OK;
 }
 
-STATIC ProcessGroup *CreateProcessGroup(LosProcessCB *processCB)
+ProcessGroup *OsCreateProcessGroup(LosProcessCB *processCB)
 {
     ProcessGroup *pgroup = LOS_MemAlloc(m_aucSysMem1, sizeof(ProcessGroup));
     if (pgroup == NULL) {
@@ -163,9 +163,15 @@ STATIC VOID ExitProcessGroup(LosProcessCB *processCB, ProcessGroup **pgroup)
     LosProcessCB *pgroupCB = OS_GET_PGROUP_LEADER(processCB->pgroup);
     LOS_ListDelete(&processCB->subordinateGroupList);
     if (LOS_ListEmpty(&processCB->pgroup->processList) && LOS_ListEmpty(&processCB->pgroup->exitProcessList)) {
-        LOS_ListDelete(&processCB->pgroup->groupList);
+#ifdef LOSCFG_PID_CONTAINER
+        if (processCB->pgroup != OS_ROOT_PGRP(processCB)) {
+#endif
+            LOS_ListDelete(&processCB->pgroup->groupList);
+            *pgroup = processCB->pgroup;
+#ifdef LOSCFG_PID_CONTAINER
+        }
+#endif
         pgroupCB->processStatus &= ~OS_PROCESS_FLAG_GROUP_LEADER;
-        *pgroup = processCB->pgroup;
         if (OsProcessIsUnused(pgroupCB) && !(pgroupCB->processStatus & OS_PROCESS_FLAG_EXIT)) {
             LOS_ListDelete(&pgroupCB->pendList);
             OsInsertPCBToFreeList(pgroupCB);
@@ -855,7 +861,7 @@ STATIC UINT32 OsSystemProcessInit(LosProcessCB *processCB, UINT32 flags, const C
     }
 #endif
 
-    ProcessGroup *pgroup = CreateProcessGroup(processCB);
+    ProcessGroup *pgroup = OsCreateProcessGroup(processCB);
     if (pgroup == NULL) {
         ret = LOS_ENOMEM;
         goto EXIT;
@@ -1090,32 +1096,53 @@ STATIC VOID OsWaitInsertWaitListInOrder(LosTaskCB *runTask, LosProcessCB *proces
     return;
 }
 
+STATIC UINT32 WaitFindSpecifiedProcess(UINT32 pid, LosTaskCB *runTask,
+                                       const LosProcessCB *processCB, LosProcessCB **childCB)
+{
+    if (OS_PID_CHECK_INVALID((UINT32)pid)) {
+        return LOS_ECHILD;
+    }
+
+    LosProcessCB *waitProcess = OS_PCB_FROM_PID(pid);
+    if (OsProcessIsUnused(waitProcess)) {
+        return LOS_ECHILD;
+    }
+
+#ifdef LOSCFG_PID_CONTAINER
+    if (OsPidContainerProcessParentIsRealParent(waitProcess, processCB)) {
+        *childCB = (LosProcessCB *)processCB;
+        return LOS_OK;
+    }
+#endif
+    /* Wait for the child process whose process number is pid. */
+    *childCB = OsFindExitChildProcess(processCB, waitProcess);
+    if (*childCB != NULL) {
+        return LOS_OK;
+    }
+
+    if (OsFindChildProcess(processCB, waitProcess) != LOS_OK) {
+        return LOS_ECHILD;
+    }
+
+    runTask->waitFlag = OS_PROCESS_WAIT_PRO;
+    runTask->waitID = (UINTPTR)waitProcess;
+    return LOS_OK;
+}
+
 STATIC UINT32 OsWaitSetFlag(const LosProcessCB *processCB, INT32 pid, LosProcessCB **child)
 {
+    UINT32 ret;
     LosProcessCB *childCB = NULL;
     LosTaskCB *runTask = OsCurrTaskGet();
 
     if (pid > 0) {
-        if (OS_PID_CHECK_INVALID((UINT32)pid)) {
-            return LOS_ECHILD;
+        ret = WaitFindSpecifiedProcess((UINT32)pid, runTask, processCB, &childCB);
+        if (ret != LOS_OK) {
+            return ret;
         }
-
-        LosProcessCB *waitProcess = OS_PCB_FROM_PID(pid);
-        if (OsProcessIsUnused(waitProcess)) {
-            return LOS_ECHILD;
-        }
-
-        /* Wait for the child process whose process number is pid. */
-        childCB = OsFindExitChildProcess(processCB, waitProcess);
         if (childCB != NULL) {
             goto WAIT_BACK;
         }
-
-        if (OsFindChildProcess(processCB, waitProcess) != LOS_OK) {
-            return LOS_ECHILD;
-        }
-        runTask->waitFlag = OS_PROCESS_WAIT_PRO;
-        runTask->waitID = (UINTPTR)waitProcess;
     } else if (pid == 0) {
         /* Wait for any child process in the same process group */
         childCB = OsFindGroupExitProcess(processCB->pgroup, OS_INVALID_VALUE);
@@ -1254,6 +1281,15 @@ STATIC INT32 OsWait(INT32 pid, USER INT32 *status, USER siginfo_t *info, UINT32 
     }
 
     if (childCB != NULL) {
+#ifdef LOSCFG_PID_CONTAINER
+        if (childCB == processCB) {
+            SCHEDULER_UNLOCK(intSave);
+            if (status != NULL) {
+                (VOID)LOS_ArchCopyToUser((VOID *)status, (const VOID *)(&ret), sizeof(INT32));
+            }
+            return pid;
+        }
+#endif
         return (INT32)OsWaitRecycleChildProcess(childCB, intSave, status, info);
     }
 
@@ -1419,7 +1455,7 @@ STATIC UINT32 OsSetProcessGroupIDUnsafe(UINT32 pid, UINT32 gid, ProcessGroup **p
         return LOS_OK;
     }
 
-    newPGroup = CreateProcessGroup(pgroupCB);
+    newPGroup = OsCreateProcessGroup(pgroupCB);
     if (newPGroup == NULL) {
         LOS_ListTailInsert(&oldPGroup->processList, &processCB->subordinateGroupList);
         processCB->pgroup = oldPGroup;
@@ -1850,30 +1886,26 @@ STATIC UINT32 OsCopyTask(UINT32 flags, LosProcessCB *childProcessCB, const CHAR 
 
 STATIC UINT32 OsCopyParent(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB *runProcessCB)
 {
-    UINT32 ret;
     UINT32 intSave;
     LosProcessCB *parentProcessCB = NULL;
 
     SCHEDULER_LOCK(intSave);
-    if (flags & CLONE_PARENT) {
-        parentProcessCB = runProcessCB->parentProcess;
-    } else {
-        parentProcessCB = runProcessCB;
+    if (childProcessCB->parentProcess == NULL) {
+        if (flags & CLONE_PARENT) {
+            parentProcessCB = runProcessCB->parentProcess;
+        } else {
+            parentProcessCB = runProcessCB;
+        }
+        childProcessCB->parentProcess = parentProcessCB;
+        LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);
     }
-    childProcessCB->parentProcess = parentProcessCB;
-    LOS_ListTailInsert(&parentProcessCB->childrenList, &childProcessCB->siblingList);
-    if (!(flags & CLONE_NEWPID)) {
+
+    if (childProcessCB->pgroup == NULL) {
         childProcessCB->pgroup = parentProcessCB->pgroup;
         LOS_ListTailInsert(&parentProcessCB->pgroup->processList, &childProcessCB->subordinateGroupList);
-    } else {
-        if (CreateProcessGroup(childProcessCB) == NULL) {
-            SCHEDULER_UNLOCK(intSave);
-            return LOS_ENOMEM;
-        }
     }
-    ret = OsCopyUser(childProcessCB, parentProcessCB);
     SCHEDULER_UNLOCK(intSave);
-    return ret;
+    return LOS_OK;
 }
 
 STATIC UINT32 OsCopyMM(UINT32 flags, LosProcessCB *childProcessCB, LosProcessCB *runProcessCB)
@@ -1939,11 +1971,6 @@ STATIC UINT32 OsForkInitPCB(UINT32 flags, LosProcessCB *child, const CHAR *name,
     UINT32 ret;
     LosProcessCB *run = OsCurrProcessGet();
 
-    ret = OsInitPCB(child, run->processMode, name);
-    if (ret != LOS_OK) {
-        return ret;
-    }
-
     ret = OsCopyParent(flags, child, run);
     if (ret != LOS_OK) {
         return ret;
@@ -1980,6 +2007,11 @@ STATIC UINT32 OsCopyProcessResources(UINT32 flags, LosProcessCB *child, LosProce
 {
     UINT32 ret;
 
+    ret = OsCopyUser(child, run);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+
     ret = OsCopyMM(flags, child, run);
     if (ret != LOS_OK) {
         return ret;
@@ -2015,6 +2047,11 @@ STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 si
         return -LOS_EAGAIN;
     }
     processID = child->processID;
+
+    ret = OsInitPCB(child, run->processMode, name);
+    if (ret != LOS_OK) {
+        goto ERROR_INIT;
+    }
 
 #ifdef LOSCFG_KERNEL_CONTAINER
     ret = OsCopyContainers(flags, child, run, &processID);
@@ -2058,8 +2095,16 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 #ifdef LOSCFG_KERNEL_CONTAINER
 #ifdef LOSCFG_PID_CONTAINER
     cloneFlag |= CLONE_NEWPID;
-
+    LosProcessCB *curr = OsCurrProcessGet();
     if (((flags & CLONE_NEWPID) != 0) && ((flags & (CLONE_PARENT | CLONE_THREAD)) != 0)) {
+        return -LOS_EINVAL;
+    }
+
+    if (OS_PROCESS_PID_FOR_CONTAINER_CHECK(curr) && ((flags & CLONE_NEWPID) != 0)) {
+        return -LOS_EINVAL;
+    }
+
+    if (OS_PROCESS_PID_FOR_CONTAINER_CHECK(curr) && ((flags & (CLONE_PARENT | CLONE_THREAD)) != 0)) {
         return -LOS_EINVAL;
     }
 #endif

@@ -946,4 +946,19 @@ OUT_UNLOCK:
 ERROUT:
     return -1;
 }
+
+VOID OsMqueueCBDestroy(struct mqarray *queueTable)
+{
+    if (queueTable == NULL) {
+        return;
+    }
+
+    for (UINT32 index = 0; index < LOSCFG_BASE_IPC_QUEUE_LIMIT; index++) {
+        struct mqarray *mqueueCB = &(queueTable[index]);
+        if (mqueueCB->mq_name == NULL) {
+            continue;
+        }
+        (VOID)DoMqueueClose(mqueueCB->mq_personal);
+    }
+}
 #endif
