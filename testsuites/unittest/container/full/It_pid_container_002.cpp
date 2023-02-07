@@ -110,25 +110,26 @@ static int ChildFunClone1(void *p)
     int ret;
     pid_t pid = getpid();
     int childFunRet = (int)pid;
-    void *pstk = malloc(STACK_SIZE);
-    if (pstk == NULL) {
-        return EXIT_CODE_ERRNO_2;
-    }
-    int childPid = clone(ChildFunClone2, (char *)pstk + STACK_SIZE, CLONE_NEWPID | SIGCHLD, NULL);
+    char *containerType = "pid";
+    int childPid = clone(ChildFunClone2, NULL, CLONE_NEWPID | SIGCHLD, NULL);
     if (childPid == -1) {
-        free(pstk);
         return EXIT_CODE_ERRNO_3;
+    }
+
+    auto linkBuffer = ReadlinkContainer(childPid, containerType);
+    auto linkBuffer1 = ReadlinkContainer(getpid(), containerType);
+    ret = linkBuffer.compare(linkBuffer1);
+    if (ret == 0) {
+        (void)waitpid(childPid, &status, 0);
+        return EXIT_CODE_ERRNO_5;
     }
 
     ret = waitpid(childPid, &status, 0);
     ret = WIFEXITED(status);
     ret = WEXITSTATUS(status);
     if (ret != CONTAINER_FIRST_PID) {
-        free(pstk);
         return EXIT_CODE_ERRNO_4;
     }
-
-    free(pstk);
     return childFunRet;
 }
 
