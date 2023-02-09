@@ -106,6 +106,7 @@ UINT32 OsUnshareTimeContainer(UINTPTR flags, LosProcessCB *curr, Container *newC
         SCHEDULER_LOCK(intSave);
         newContainer->timeContainer = curr->container->timeContainer;
         newContainer->timeForChildContainer = curr->container->timeForChildContainer;
+        LOS_AtomicInc(&newContainer->timeContainer->rc);
         if (newContainer->timeContainer != newContainer->timeForChildContainer) {
             LOS_AtomicInc(&newContainer->timeForChildContainer->rc);
         }
@@ -128,65 +129,64 @@ UINT32 OsUnshareTimeContainer(UINTPTR flags, LosProcessCB *curr, Container *newC
     (VOID)memcpy_s(&timeForChild->monotonic, sizeof(struct timespec64),
                    &curr->container->timeContainer->monotonic, sizeof(struct timespec64));
     newContainer->timeContainer = curr->container->timeContainer;
+    LOS_AtomicInc(&newContainer->timeContainer->rc);
     newContainer->timeForChildContainer = timeForChild;
     g_currentTimeContainerNum++;
     SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
 
-VOID UnshareDeInitTimeContainer(Container *container)
+UINT32 OsSetNsTimeContainer(UINT32 flags, Container *container, Container *newContainer)
 {
-    UINT32 intSave;
-    TimeContainer *timeForChildContainer = NULL;
-    if (container == NULL) {
-        return;
+    LosProcessCB *curr = OsCurrProcessGet();
+    if (flags & CLONE_NEWTIME) {
+        container->timeContainer->frozenOffsets = TRUE;
+        newContainer->timeContainer = container->timeContainer;
+        newContainer->timeForChildContainer = container->timeContainer;
+        LOS_AtomicInc(&container->timeContainer->rc);
+        return LOS_OK;
     }
 
-    SCHEDULER_LOCK(intSave);
-    if ((container->timeForChildContainer != NULL) && (container->timeForChildContainer != container->timeContainer)) {
-        LOS_AtomicDec(&container->timeForChildContainer->rc);
-        if (LOS_AtomicRead(&container->timeForChildContainer->rc) <= 0) {
-            g_currentTimeContainerNum--;
-            timeForChildContainer = container->timeForChildContainer;
-            container->timeForChildContainer = NULL;
-            container->timeContainer = NULL;
-        }
+    newContainer->timeContainer = curr->container->timeContainer;
+    LOS_AtomicInc(&curr->container->timeContainer->rc);
+    newContainer->timeForChildContainer = curr->container->timeForChildContainer;
+    if (curr->container->timeContainer != curr->container->timeForChildContainer) {
+        LOS_AtomicInc(&curr->container->timeForChildContainer->rc);
     }
-    SCHEDULER_UNLOCK(intSave);
-    (VOID)LOS_MemFree(m_aucSysMem1, timeForChildContainer);
+    return LOS_OK;
 }
 
-VOID OsTimeContainerDestroy(LosProcessCB *curr)
+VOID OsTimeContainerDestroy(Container *container)
 {
     UINT32 intSave;
     TimeContainer *timeContainer = NULL;
     TimeContainer *timeForChild = NULL;
 
-    if (curr->container == NULL) {
+    if (container == NULL) {
         return;
     }
 
     SCHEDULER_LOCK(intSave);
-    if (curr->container->timeContainer == NULL) {
+    if (container->timeContainer == NULL) {
         SCHEDULER_UNLOCK(intSave);
         return;
     }
 
-    if (curr->container->timeContainer != curr->container->timeForChildContainer) {
-        LOS_AtomicDec(&curr->container->timeForChildContainer->rc);
-        if (LOS_AtomicRead(&curr->container->timeForChildContainer->rc) <= 0) {
+    if ((container->timeForChildContainer != NULL) && (container->timeContainer != container->timeForChildContainer)) {
+        LOS_AtomicDec(&container->timeForChildContainer->rc);
+        if (LOS_AtomicRead(&container->timeForChildContainer->rc) <= 0) {
             g_currentTimeContainerNum--;
-            timeForChild = curr->container->timeForChildContainer;
-            curr->container->timeForChildContainer = NULL;
+            timeForChild = container->timeForChildContainer;
+            container->timeForChildContainer = NULL;
         }
     }
 
-    LOS_AtomicDec(&curr->container->timeContainer->rc);
-    if (LOS_AtomicRead(&curr->container->timeContainer->rc) <= 0) {
+    LOS_AtomicDec(&container->timeContainer->rc);
+    if (LOS_AtomicRead(&container->timeContainer->rc) <= 0) {
         g_currentTimeContainerNum--;
-        timeContainer = curr->container->timeContainer;
-        curr->container->timeContainer = NULL;
-        curr->container->timeForChildContainer = NULL;
+        timeContainer = container->timeContainer;
+        container->timeContainer = NULL;
+        container->timeForChildContainer = NULL;
     }
     SCHEDULER_UNLOCK(intSave);
     (VOID)LOS_MemFree(m_aucSysMem1, timeForChild);

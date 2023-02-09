@@ -541,6 +541,7 @@ extern VOID OsDeleteTaskFromProcess(LosTaskCB *taskCB);
 extern VOID OsProcessThreadGroupDestroy(VOID);
 extern UINT32 OsGetProcessGroupCB(UINT32 pid, UINTPTR *ppgroupLeader);
 extern LosProcessCB *OsGetDefaultProcessCB(VOID);
+extern ProcessGroup *OsCreateProcessGroup(LosProcessCB *processCB);
 #ifdef __cplusplus
 #if __cplusplus
 }

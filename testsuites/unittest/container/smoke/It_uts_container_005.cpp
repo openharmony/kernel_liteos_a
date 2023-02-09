@@ -29,37 +29,63 @@
  */
 #include "It_container_test.h"
 
+const int TIMER_INTERVAL_3S = 2;
+
 static int ChildFun(void *p)
 {
     (void)p;
-    int ret;
-    int currGid = getpgrp();
-    if (currGid != CONTAINER_FIRST_PID) {
-        printf("ChildFun pid %d currGid %d\n", getpid(), currGid);
-        return EXIT_CODE_ERRNO_1;
-    }
-
-    ret = setpgid(getpid(), 0);
-    if (ret == 0) {
-        return EXIT_CODE_ERRNO_2;
-    }
-    return 0;
+    sleep(TIMER_INTERVAL_3S);
+    return EXIT_CODE_ERRNO_3;
 }
 
-void ItPidContainer010(void)
+void ItUtsContainer005(void)
 {
-    int status;
+    pid_t callerPid;
+    int childPid;
+    int fd = -1;
     int ret;
-    void *pstk = malloc(STACK_SIZE);
-    ASSERT_TRUE(pstk != NULL);
-    int childPid = clone(ChildFun, (char *)pstk + STACK_SIZE, CLONE_NEWPID | SIGCHLD, NULL);
-    free(pstk);
+    int status;
+    int setFlag;
+    char targetpath[100];
+    char old_uts_link[100];
+    char new_uts_link[100];
+    const char *containerType = "uts";
+
+    callerPid = getpid();
+    childPid = clone(ChildFun, NULL, CLONE_NEWUTS | SIGCHLD, NULL);
     ASSERT_NE(childPid, -1);
+
+    auto linkBuffer = ReadlinkContainer(callerPid, containerType);
+    ASSERT_TRUE(linkBuffer.c_str() != NULL);
+    ret = sprintf_s(old_uts_link, sizeof(old_uts_link), "%s", linkBuffer.c_str());
+    ASSERT_NE(ret, -1);
+
+    ret = sprintf_s(targetpath, sizeof(targetpath), "/proc/%d/container/uts", childPid);
+    ASSERT_NE(ret, -1);
+    fd = open(targetpath, O_RDONLY | O_CLOEXEC);
+    ASSERT_NE(fd, -1);
+
+    setFlag = CLONE_NEWUTS;
+    ret = setns(fd, setFlag);
+    ASSERT_NE(ret, -1);
+
+    /* NOTE: close fd, otherwise test fail */
+    ret = close(fd);
+    fd = -1;
+    ASSERT_NE(ret, -1);
+
+    linkBuffer = ReadlinkContainer(callerPid, containerType);
+
+    ret = sprintf_s(new_uts_link, sizeof(new_uts_link), "%s", linkBuffer.c_str());
+    ASSERT_NE(ret, -1);
+    ASSERT_STRNE(old_uts_link, new_uts_link);
 
     ret = waitpid(childPid, &status, 0);
     ASSERT_EQ(ret, childPid);
-    ret = WIFEXITED(status);
-    ASSERT_NE(ret, 0);
-    ret = WEXITSTATUS(status);
-    ASSERT_EQ(ret, 0);
+
+    int exitCode = WEXITSTATUS(status);
+    ASSERT_EQ(exitCode, EXIT_CODE_ERRNO_3);
+
+    ret = setns(fd, setFlag);
+    ASSERT_EQ(ret, -1);
 }

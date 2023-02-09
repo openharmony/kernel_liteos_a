@@ -132,6 +132,7 @@ UINT32 OsUnshareIpcContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
     if (!(flags & CLONE_NEWIPC)) {
         SCHEDULER_LOCK(intSave);
         newContainer->ipcContainer = parentContainer;
+        LOS_AtomicInc(&parentContainer->rc);
         SCHEDULER_UNLOCK(intSave);
         return LOS_OK;
     }
@@ -145,6 +146,19 @@ UINT32 OsUnshareIpcContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
     newContainer->ipcContainer = ipcContainer;
     g_currentIpcContainerNum++;
     SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+UINT32 OsSetNsIpcContainer(UINT32 flags, Container *container, Container *newContainer)
+{
+    if (flags & CLONE_NEWIPC) {
+        newContainer->ipcContainer = container->ipcContainer;
+        LOS_AtomicInc(&container->ipcContainer->rc);
+        return LOS_OK;
+    }
+
+    newContainer->ipcContainer = OsCurrProcessGet()->container->ipcContainer;
+    LOS_AtomicInc(&newContainer->ipcContainer->rc);
     return LOS_OK;
 }
 
@@ -169,9 +183,11 @@ VOID OsIpcContainerDestroy(Container *container)
     }
 
     g_currentIpcContainerNum--;
-    SCHEDULER_UNLOCK(intSave);
-    ShmDeinit();
     container->ipcContainer = NULL;
+    SCHEDULER_UNLOCK(intSave);
+    OsShmCBDestroy(ipcContainer->shmSegs, &ipcContainer->shmInfo, &ipcContainer->sysvShmMux);
+    ipcContainer->shmSegs = NULL;
+    OsMqueueCBDestroy(ipcContainer->queueTable);
     (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer->allQueue);
     (VOID)LOS_MemFree(m_aucSysMem1, ipcContainer);
     return;

@@ -141,6 +141,7 @@ UINT32 OsUnshareMntContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
     if (!(flags & CLONE_NEWNS)) {
         SCHEDULER_LOCK(intSave);
         newContainer->mntContainer = parentContainer;
+        LOS_AtomicInc(&parentContainer->rc);
         SCHEDULER_UNLOCK(intSave);
         return LOS_OK;
     }
@@ -160,6 +161,19 @@ UINT32 OsUnshareMntContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
     newContainer->mntContainer = mntContainer;
     g_currentMntContainerNum++;
     SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+UINT32 OsSetNsMntContainer(UINT32 flags, Container *container, Container *newContainer)
+{
+    if (flags & CLONE_NEWNS) {
+        newContainer->mntContainer = container->mntContainer;
+        LOS_AtomicInc(&container->mntContainer->rc);
+        return LOS_OK;
+    }
+
+    newContainer->mntContainer = OsCurrProcessGet()->container->mntContainer;
+    LOS_AtomicInc(&newContainer->mntContainer->rc);
     return LOS_OK;
 }
 

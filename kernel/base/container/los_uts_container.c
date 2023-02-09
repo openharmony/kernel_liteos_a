@@ -146,6 +146,7 @@ UINT32 OsUnshareUtsContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
     if (!(flags & CLONE_NEWUTS)) {
         SCHEDULER_LOCK(intSave);
         newContainer->utsContainer = parentContainer;
+        LOS_AtomicInc(&parentContainer->rc);
         SCHEDULER_UNLOCK(intSave);
         return LOS_OK;
     }
@@ -161,6 +162,19 @@ UINT32 OsUnshareUtsContainer(UINTPTR flags, LosProcessCB *curr, Container *newCo
     (VOID)memcpy_s(&utsContainer->utsName, sizeof(utsContainer->utsName),
                    &parentContainer->utsName, sizeof(parentContainer->utsName));
     SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+UINT32 OsSetNsUtsContainer(UINT32 flags, Container *container, Container *newContainer)
+{
+    if (flags & CLONE_NEWUTS) {
+        newContainer->utsContainer = container->utsContainer;
+        LOS_AtomicInc(&container->utsContainer->rc);
+        return LOS_OK;
+    }
+
+    newContainer->utsContainer = OsCurrProcessGet()->container->utsContainer;
+    LOS_AtomicInc(&newContainer->utsContainer->rc);
     return LOS_OK;
 }
 

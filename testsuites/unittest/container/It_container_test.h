@@ -95,6 +95,8 @@ int ChildFunction(void *args);
 
 pid_t CloneWrapper(int (*func)(void *), int flag, void *args);
 
+int WaitChild(pid_t pid, int *status, int errNo1, int errNo2);
+
 std::string GenContainerLinkPath(int pid, const std::string& containerType);
 
 extern std::string ReadlinkContainer(int pid, const std::string& containerType);
@@ -147,11 +149,14 @@ void ItPidContainer027(void);
 void ItPidContainer028(void);
 void ItPidContainer029(void);
 void ItPidContainer030(void);
+void ItPidContainer031(void);
 #endif
 #if defined(LOSCFG_USER_TEST_UTS_CONTAINER)
 void ItUtsContainer001(void);
 void ItUtsContainer002(void);
 void ItUtsContainer004(void);
+void ItUtsContainer005(void);
+void ItUtsContainer006(void);
 #endif
 #if defined(LOSCFG_USER_TEST_MNT_CONTAINER)
 void ItMntContainer001(void);

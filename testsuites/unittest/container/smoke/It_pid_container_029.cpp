@@ -79,12 +79,12 @@ static int ChildFunClone1(void *p)
         return EXIT_CODE_ERRNO_4;
     }
     int childPid = clone(ChildFunClone2, (char *)pstk + STACK_SIZE, CLONE_NEWPID | SIGCHLD, NULL);
-    if (childPid == -1) {
+    if (childPid != -1) {
         free(pstk);
         return EXIT_CODE_ERRNO_5;
     }
 
-    int childPid1 = clone(ChildFunClone3, (char *)pstk + STACK_SIZE, CLONE_NEWPID | SIGCHLD, NULL);
+    int childPid1 = clone(ChildFunClone3, (char *)pstk + STACK_SIZE, SIGCHLD, NULL);
     free(pstk);
     if (childPid1 == -1) {
         return EXIT_CODE_ERRNO_6;
@@ -95,18 +95,6 @@ static int ChildFunClone1(void *p)
         return EXIT_CODE_ERRNO_7;
     }
 
-    ret = waitpid(childPid, &status, 0);
-    if (ret != childPid) {
-        return EXIT_CODE_ERRNO_8;
-    }
-    ret = WIFEXITED(status);
-    if (ret == 0) {
-        return EXIT_CODE_ERRNO_9;
-    }
-    ret = WEXITSTATUS(status);
-    if (ret != 0) {
-        return EXIT_CODE_ERRNO_10;
-    }
     ret = waitpid(childPid1, &status, 0);
     if (ret != childPid1) {
         return EXIT_CODE_ERRNO_11;

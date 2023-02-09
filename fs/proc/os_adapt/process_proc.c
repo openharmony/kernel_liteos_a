@@ -120,6 +120,38 @@ static ssize_t ProcessContainerReadLink(struct ProcDirEntry *entry, char *buffer
 static const struct ProcFileOperations PID_CONTAINER_FOPS = {
     .readLink = ProcessContainerReadLink,
 };
+
+void *ProcfsContainerGet(int fd, unsigned int *containerType)
+{
+    if ((fd <= 0) || (containerType == NULL)) {
+        return NULL;
+    }
+
+    VnodeHold();
+    struct Vnode *vnode = VnodeFind(fd);
+    if (vnode == NULL) {
+        VnodeDrop();
+        return NULL;
+    }
+
+    struct ProcDirEntry *entry = VnodeToEntry(vnode);
+    if (entry == NULL) {
+        VnodeDrop();
+        return NULL;
+    }
+
+    struct ProcessData *data = (struct ProcessData *)entry->data;
+    if (data == NULL) {
+        VnodeDrop();
+        return NULL;
+    }
+
+    void *processCB = (void *)ProcGetProcessCB(data);
+    *containerType = data->type;
+    VnodeDrop();
+    return processCB;
+}
+
 #endif /* LOSCFG_KERNEL_CONTAINER */
 
 static int ProcessMemInfoRead(struct SeqBuf *seqBuf, LosProcessCB *pcb)
