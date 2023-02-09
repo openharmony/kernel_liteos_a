@@ -118,6 +118,12 @@ void ItIpcContainer002(void)
     ret = mq_send(mqueue, msgptr, strlen(msgptr), 0);
     ASSERT_EQ(ret, 0);
 
+    ret = mq_close(mqueue);
+    ASSERT_EQ(ret, 0);
+
+    ret = mq_unlink(mqname);
+    ASSERT_EQ(ret, 0);
+
     childPid = clone(childFunc, stackTop, CLONE_NEWIPC | SIGCHLD, &arg);
     ASSERT_NE(childPid, -1);
 

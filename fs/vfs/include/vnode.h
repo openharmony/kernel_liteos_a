@@ -101,6 +101,9 @@ enum VnodeType {
     VNODE_TYPE_BCHR,          /* block char mix device */
     VNODE_TYPE_FIFO,          /* pipe */
     VNODE_TYPE_LNK,           /* link */
+#ifdef LOSCFG_PROC_PROCESS_DIR
+    VNODE_TYPE_VIR_LNK,       /* virtual link */
+#endif
 };
 
 struct fs_dirent_s;
@@ -189,4 +192,7 @@ LIST_HEAD* GetVnodeActiveList(void);
 LIST_HEAD* GetVnodeVirtualList(void);
 int VnodeClearCache(void);
 struct Vnode *GetCurrRootVnode(void);
+#ifdef LOSCFG_PROC_PROCESS_DIR
+struct Vnode *VnodeFind(int fd);
+#endif
 #endif /* !_VNODE_H_ */

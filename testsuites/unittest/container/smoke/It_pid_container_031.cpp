@@ -29,103 +29,114 @@
  */
 #include "It_container_test.h"
 
-static int ChildFunClone3(void *p)
+static const int BUF_SIZE = 100;
+
+static int ChildFun2(void *p)
 {
     (void)p;
-    auto pid = getpid();
-    if (pid != CONTAINER_SECOND_PID) {
-        return EXIT_CODE_ERRNO_1;
-    }
-    sleep(2); /* dealy 2s */
+    sleep(3); /* 3: delay 3s */
     return 0;
 }
 
-static int ChildFunClone2(void *p)
+static int ChildFun1(void *p)
 {
     (void)p;
-    auto pid = getpid();
-    if (pid != CONTAINER_FIRST_PID) {
-        return EXIT_CODE_ERRNO_1;
-    }
-    sleep(2); /* dealy 2s */
+    sleep(6); /* 6: delay 6s */
     return 0;
 }
 
-static int ChildFunClone1(void *p)
+static int ChildFun(void *p)
 {
     (void)p;
-    int ret, status;
+    int status, ret;
     const char *containerType = "pid";
     const char *containerType1 = "pid_for_children";
+    char targetpath[BUF_SIZE] = {0};
+    auto linkBuffer1 = ReadlinkContainer(getpid(), containerType);
 
-    auto pid = getpid();
-    ret = unshare(CLONE_NEWPID);
-    if (ret == -1) {
+    int childPid = clone(ChildFun1, NULL, CLONE_NEWPID | SIGCHLD, NULL);
+    if (childPid == -1) {
         return EXIT_CODE_ERRNO_1;
     }
-    auto pid1 = getpid();
-    if (pid != pid1) {
+    auto linkBuffer2 = ReadlinkContainer(childPid, containerType);
+    ret = linkBuffer2.compare(linkBuffer1);
+    if (ret == 0) {
         return EXIT_CODE_ERRNO_2;
     }
 
-    auto linkBuffer = ReadlinkContainer(pid, containerType);
-    auto linkBuffer1 = ReadlinkContainer(pid, containerType1);
-    ret = linkBuffer.compare(linkBuffer1);
-    if (ret == 0) {
+    ret = sprintf_s(targetpath, BUF_SIZE, "/proc/%d/container/pid", childPid);
+    if (ret < 0) {
+        return EXIT_CODE_ERRNO_16;
+    }
+    int fd = open(targetpath, O_RDONLY | O_CLOEXEC);
+    if (fd == -1) {
         return EXIT_CODE_ERRNO_3;
     }
 
-    void *pstk = malloc(STACK_SIZE);
-    if (pstk == NULL) {
+    ret = setns(fd, CLONE_NEWPID);
+    if (ret != 0) {
+        close(fd);
         return EXIT_CODE_ERRNO_4;
     }
-    int childPid = clone(ChildFunClone2, (char *)pstk + STACK_SIZE, SIGCHLD, NULL);
-    if (childPid == -1) {
-        free(pstk);
+
+    close(fd);
+
+    auto linkBuffer6 = ReadlinkContainer(getpid(), containerType);
+    ret = linkBuffer6.compare(linkBuffer1);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_17;
+    }
+
+    auto linkBuffer3 = ReadlinkContainer(getpid(), containerType1);
+    ret = linkBuffer3.compare(linkBuffer2);
+    if (ret != 0) {
         return EXIT_CODE_ERRNO_5;
     }
 
-    auto linkBuffer2 = ReadlinkContainer(childPid, containerType);
-
-    int childPid1 = clone(ChildFunClone3, (char *)pstk + STACK_SIZE, SIGCHLD, NULL);
-    free(pstk);
+    int childPid1 = clone(ChildFun2, NULL, SIGCHLD, NULL);
     if (childPid1 == -1) {
         return EXIT_CODE_ERRNO_6;
     }
 
-    auto linkBuffer3 = ReadlinkContainer(childPid1, containerType);
-    ret = linkBuffer3.compare(linkBuffer2);
+    auto linkBuffer4 = ReadlinkContainer(childPid1, containerType);
+    ret = linkBuffer4.compare(linkBuffer3);
     if (ret != 0) {
         return EXIT_CODE_ERRNO_7;
     }
 
-    ret = unshare(CLONE_NEWPID);
-    if (ret != -1) {
+    int childPid2 = clone(ChildFun2, NULL, CLONE_NEWUTS | SIGCHLD, NULL);
+    if (childPid2 == -1) {
         return EXIT_CODE_ERRNO_8;
     }
 
-    ret = WaitChild(childPid1, &status, EXIT_CODE_ERRNO_9, EXIT_CODE_ERRNO_10);
+    auto linkBuffer5 = ReadlinkContainer(childPid2, containerType);
+    ret = linkBuffer5.compare(linkBuffer4);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_9;
+    }
+
+    ret = WaitChild(childPid2, &status, EXIT_CODE_ERRNO_10, EXIT_CODE_ERRNO_11);
     if (ret != 0) {
         return ret;
     }
 
-    ret = WaitChild(childPid, &status, EXIT_CODE_ERRNO_11, EXIT_CODE_ERRNO_12);
+    ret = WaitChild(childPid1, &status, EXIT_CODE_ERRNO_12, EXIT_CODE_ERRNO_13);
+    if (ret != 0) {
+        return ret;
+    }
+    ret = WaitChild(childPid, &status, EXIT_CODE_ERRNO_14, EXIT_CODE_ERRNO_15);
     if (ret != 0) {
         return ret;
     }
     return 0;
 }
 
-void ItPidContainer030(void)
+void ItPidContainer031(void)
 {
-    void *pstk = malloc(STACK_SIZE);
-    ASSERT_TRUE(pstk != NULL);
-
-    int childPid = clone(ChildFunClone1, (char *)pstk + STACK_SIZE, SIGCHLD, NULL);
-    free(pstk);
+    int status;
+    int childPid = clone(ChildFun, NULL, CLONE_NEWPID | SIGCHLD, NULL);
     ASSERT_NE(childPid, -1);
 
-    int status;
     int ret = waitpid(childPid, &status, 0);
     ASSERT_EQ(ret, childPid);
     ret = WIFEXITED(status);

@@ -43,6 +43,7 @@ typedef struct {
     UINT32            vid;  /* Virtual ID */
     UINT32            vpid; /* Virtual parent ID */
     UINTPTR           cb;   /* Control block */
+    LosProcessCB      *realParent; /* process real parent */
     LOS_DL_LIST       node;
 } ProcessVid;
 
@@ -69,17 +70,22 @@ typedef struct PidContainer {
 #define OS_PROCESS_CONTAINER_CHECK(processCB, currProcessCB) \
     ((processCB)->container->pidContainer != (currProcessCB)->container->pidContainer)
 
-UINT32 OsAllocSpecifiedVpidUnsafe(UINT32 vpid, LosProcessCB *processCB, LosProcessCB *parent);
+#define OS_PROCESS_PID_FOR_CONTAINER_CHECK(processCB) \
+    (((processCB)->container->pidContainer != (processCB)->container->pidForChildContainer) && \
+     ((processCB)->container->pidForChildContainer->referenced == FALSE))
+
+UINT32 OsAllocSpecifiedVpidUnsafe(UINT32 vpid, PidContainer *pidContainer,
+                                  LosProcessCB *processCB, LosProcessCB *parent);
 
 VOID OsPidContainerDestroyAllProcess(LosProcessCB *processCB);
 
-VOID OsPidContainerDestroy(LosProcessCB *curr);
+VOID OsPidContainerDestroy(struct Container *container, LosProcessCB *processCB);
 
 UINT32 OsCopyPidContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
 
 UINT32 OsUnsharePidContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
 
-VOID UnshareDeInitPidContainer(struct Container *container);
+UINT32 OsSetNsPidContainer(UINT32 flags, struct Container *container, struct Container *newContainer);
 
 UINT32 OsInitRootPidContainer(PidContainer **pidContainer);
 
@@ -99,4 +105,5 @@ UINT32 OsAllocVtid(LosTaskCB *taskCB, const LosProcessCB *processCB);
 
 UINT32 OsGetPidContainerID(PidContainer *pidContainer);
 
+BOOL OsPidContainerProcessParentIsRealParent(const LosProcessCB *processCB, const LosProcessCB *curr);
 #endif /* _LOS_PID_CONTAINER_PRI_H */

@@ -58,6 +58,7 @@ typedef enum {
     IPC_CONTAINER,
     TIME_CONTAINER,
     TIME_CHILD_CONTAINER,
+    CONTAINER_MAX,
 } ContainerType;
 
 typedef struct Container {
@@ -96,6 +97,8 @@ UINT32 OsAllocContainerID(VOID);
 UINT32 OsGetContainerID(Container *container, ContainerType type);
 
 INT32 OsUnshare(UINT32 flags);
+
+INT32 OsSetNs(INT32 fd, INT32 type);
 
 #endif
 #endif /* _LOS_CONTAINER_PRI_H */

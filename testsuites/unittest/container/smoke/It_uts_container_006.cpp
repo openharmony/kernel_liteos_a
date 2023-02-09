@@ -5,15 +5,15 @@
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
+ * conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
+ * to endorse or promote products derived from this software without specific prior written
+ * permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -27,39 +27,38 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "It_container_test.h"
 
-#ifndef _LOS_MNT_CONTAINER_PRI_H
-#define _LOS_MNT_CONTAINER_PRI_H
+void ItUtsContainer006(void)
+{
+    std::string containerType = "uts";
 
-#include "fs/mount.h"
-#include "sched.h"
-#include "los_atomic.h"
-#include "vnode.h"
-#include "stdlib.h"
+    int parentPid = getpid();
+    auto parentlink = ReadlinkContainer(parentPid, containerType);
 
-#ifdef LOSCFG_MNT_CONTAINER
-typedef struct ProcessCB LosProcessCB;
-struct Container;
+    int childsPid = CloneWrapper(ChildFunction, CLONE_NEWUTS, NULL);
+    ASSERT_NE(childsPid, -1);
+    auto childlink = ReadlinkContainer(childsPid, containerType);
 
-typedef struct MntContainer {
-    Atomic rc;
-    UINT32 containerID;
-    LIST_HEAD mountList;
-} MntContainer;
+    std::string filePath = GenContainerLinkPath(childsPid, containerType);
+    int fd = open(filePath.c_str(), O_RDONLY);
+    ASSERT_NE(fd, -1);
 
-LIST_HEAD *GetContainerMntList(VOID);
+    int ret = setns(fd, CLONE_NEWUTS);
+    ASSERT_NE(ret, -1);
+    (void)close(fd);
 
-UINT32 OsInitRootMntContainer(MntContainer **mntContainer);
+    auto parentlink1 = ReadlinkContainer(parentPid, containerType);
 
-UINT32 OsCopyMntContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent);
+    ret = parentlink.compare(parentlink1);
+    ASSERT_NE(ret, 0);
+    ret = parentlink1.compare(childlink);
+    ASSERT_EQ(ret, 0);
 
-UINT32 OsUnshareMntContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
+    int status;
+    ret = waitpid(childsPid, &status, 0);
+    ASSERT_EQ(ret, childsPid);
 
-UINT32 OsSetNsMntContainer(UINT32 flags, struct Container *container, struct Container *newContainer);
-
-VOID OsMntContainerDestroy(struct Container *container);
-
-UINT32 OsGetMntContainerID(MntContainer *mntContainer);
-
-#endif
-#endif
+    int exitCode = WEXITSTATUS(status);
+    ASSERT_EQ(exitCode, 0);
+}
