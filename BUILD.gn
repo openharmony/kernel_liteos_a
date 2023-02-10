@@ -250,6 +250,7 @@ config("container_config") {
       "-DLOSCFG_CHROOT",
       "-DLOSCFG_IPC_CONTAINER",
       "-DLOSCFG_TIME_CONTAINER",
+      "-DLOSCFG_USER_CONTAINER",
       "-DLOSCFG_PROC_PROCESS_DIR",
     ]
   }

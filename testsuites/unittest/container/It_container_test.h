@@ -137,6 +137,11 @@ private:
     int m_shmid;
 };
 
+void ItUserContainer001(void);
+void ItUserContainer002(void);
+void ItUserContainer003(void);
+void ItUserContainer004(void);
+void ItUserContainer005(void);
 #if defined(LOSCFG_USER_TEST_SMOKE)
 void ItContainer001(void);
 void ItContainerChroot001(void);

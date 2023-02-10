@@ -103,6 +103,11 @@ config TIME_CONTAINER
     default n
     depends on KERNEL_CONTAINER
 
+config USER_CONTAINER
+    bool "Enable user container"
+    default n
+    depends on KERNEL_CONTAINER
+
 ######################### config options of extended #####################
 source "kernel/extended/Kconfig"
 
