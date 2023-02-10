@@ -448,7 +448,11 @@ int SysGetEffUserID(void)
     int euid;
 
     SCHEDULER_LOCK(intSave);
+#ifdef LOSCFG_USER_CONTAINER
+    euid = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->euid);
+#else
     euid = (int)OsCurrUserGet()->effUserID;
+#endif
     SCHEDULER_UNLOCK(intSave);
     return euid;
 #else
@@ -463,7 +467,11 @@ int SysGetEffGID(void)
     int egid;
 
     SCHEDULER_LOCK(intSave);
+#ifdef LOSCFG_USER_CONTAINER
+    egid = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->egid);
+#else
     egid = (int)OsCurrUserGet()->effGid;
+#endif
     SCHEDULER_UNLOCK(intSave);
     return egid;
 #else
@@ -479,9 +487,15 @@ int SysGetRealEffSaveUserID(int *ruid, int *euid, int *suid)
     unsigned int intSave;
 
     SCHEDULER_LOCK(intSave);
+#ifdef LOSCFG_USER_CONTAINER
+    realUserID = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->uid);
+    effUserID = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->euid);
+    saveUserID = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->euid);
+#else
     realUserID = OsCurrUserGet()->userID;
     effUserID = OsCurrUserGet()->effUserID;
     saveUserID = OsCurrUserGet()->effUserID;
+#endif
     SCHEDULER_UNLOCK(intSave);
 #else
     realUserID = 0;
@@ -506,6 +520,58 @@ int SysGetRealEffSaveUserID(int *ruid, int *euid, int *suid)
 
     return 0;
 }
+
+#ifdef LOSCFG_USER_CONTAINER
+long SysSetUserID(int uid)
+{
+#ifdef LOSCFG_SECURITY_CAPABILITY
+    UserContainer *userContainer = CurrentCredentials()->userContainer;
+    int retval = -EPERM;
+    unsigned int intSave;
+
+    UINT32 kuid = OsMakeKuid(userContainer, uid);
+    if (kuid == (UINT32)-1) {
+        return -EINVAL;
+    }
+
+    Credentials *newCredentials = PrepareCredential(OsCurrProcessGet());
+    if (newCredentials == NULL) {
+        return -ENOMEM;
+    }
+
+    Credentials *oldCredentials = CurrentCredentials();
+
+    SCHEDULER_LOCK(intSave);
+    User *user = OsCurrUserGet();
+    if (IsCapPermit(CAP_SETUID)) {
+        newCredentials->uid = kuid;
+        if (kuid != oldCredentials->uid) {
+            user->userID = kuid;
+            user->effUserID = kuid;
+        }
+        retval = LOS_OK;
+    } else if (kuid != oldCredentials->uid) {
+        goto ERROR;
+    }
+    newCredentials->euid = kuid;
+
+    retval = CommitCredentials(newCredentials);
+    SCHEDULER_UNLOCK(intSave);
+    return retval;
+
+ERROR:
+    FreeCredential(newCredentials);
+    SCHEDULER_UNLOCK(intSave);
+    return retval;
+#else
+    if (uid != 0) {
+        return -EPERM;
+    }
+    return 0;
+#endif
+}
+
+#else
 
 int SysSetUserID(int uid)
 {
@@ -540,6 +606,7 @@ EXIT:
     return 0;
 #endif
 }
+#endif
 
 #ifdef LOSCFG_SECURITY_CAPABILITY
 static int SetRealEffSaveUserIDCheck(int ruid, int euid, int suid)
@@ -607,6 +674,62 @@ int SysSetRealEffUserID(int ruid, int euid)
 #endif
 }
 
+#ifdef LOSCFG_USER_CONTAINER
+int SysSetGroupID(int gid)
+{
+#ifdef LOSCFG_SECURITY_CAPABILITY
+    UserContainer *userContainer = CurrentCredentials()->userContainer;
+    int retval = -EPERM;
+    unsigned int oldGid;
+    unsigned int intSave;
+    int count;
+
+    unsigned int kgid = OsMakeKgid(userContainer, gid);
+    if (kgid == (UINT32)-1) {
+        return -EINVAL;
+    }
+
+    Credentials *newCredentials = PrepareCredential(OsCurrProcessGet());
+    if (newCredentials == NULL) {
+        return -ENOMEM;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    User *user = OsCurrUserGet();
+    if (IsCapPermit(CAP_SETGID)) {
+        newCredentials->gid = kgid;
+        newCredentials->egid = kgid;
+        oldGid = user->gid;
+        user->gid = kgid;
+        user->effGid = kgid;
+        for (count = 0; count < user->groupNumber; count++) {
+            if (user->groups[count] == oldGid) {
+                user->groups[count] = kgid;
+                retval = LOS_OK;
+                break;
+            }
+        }
+    } else if (user->gid != kgid) {
+        goto ERROR;
+    }
+
+    retval = CommitCredentials(newCredentials);
+    SCHEDULER_UNLOCK(intSave);
+    return retval;
+
+ERROR:
+    FreeCredential(newCredentials);
+    SCHEDULER_UNLOCK(intSave);
+    return retval;
+
+#else
+    if (gid != 0) {
+        return -EPERM;
+    }
+    return 0;
+#endif
+}
+#else
 int SysSetGroupID(int gid)
 {
 #ifdef LOSCFG_SECURITY_CAPABILITY
@@ -651,6 +774,7 @@ EXIT:
     return 0;
 #endif
 }
+#endif
 
 int SysGetRealEffSaveGroupID(int *rgid, int *egid, int *sgid)
 {
@@ -660,9 +784,15 @@ int SysGetRealEffSaveGroupID(int *rgid, int *egid, int *sgid)
     unsigned int intSave;
 
     SCHEDULER_LOCK(intSave);
+#ifdef LOSCFG_USER_CONTAINER
+    realGroupID = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->gid);
+    effGroupID = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->egid);
+    saveGroupID = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->egid);
+#else
     realGroupID = OsCurrUserGet()->gid;
     effGroupID = OsCurrUserGet()->effGid;
     saveGroupID = OsCurrUserGet()->effGid;
+#endif
     SCHEDULER_UNLOCK(intSave);
 #else
     realGroupID = 0;

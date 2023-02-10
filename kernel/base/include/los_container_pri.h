@@ -45,6 +45,9 @@
 #ifdef LOSCFG_IPC_CONTAINER
 #include "los_ipc_container_pri.h"
 #endif
+#ifdef LOSCFG_USER_CONTAINER
+#include "los_user_container_pri.h"
+#endif
 #ifdef LOSCFG_TIME_CONTAINER
 #include "los_time_container_pri.h"
 #endif
@@ -56,6 +59,7 @@ typedef enum {
     UTS_CONTAINER,
     MNT_CONTAINER,
     IPC_CONTAINER,
+    USER_CONTAINER,
     TIME_CONTAINER,
     TIME_CHILD_CONTAINER,
     CONTAINER_MAX,
@@ -94,7 +98,7 @@ VOID OsContainerFree(LosProcessCB *processCB);
 
 UINT32 OsAllocContainerID(VOID);
 
-UINT32 OsGetContainerID(Container *container, ContainerType type);
+UINT32 OsGetContainerID(LosProcessCB *processCB, ContainerType type);
 
 INT32 OsUnshare(UINT32 flags);
 

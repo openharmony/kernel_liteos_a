@@ -34,6 +34,9 @@
 
 STATIC Container g_rootContainer;
 STATIC Atomic g_containerCount = 0xF0000000U;
+#ifdef LOSCFG_USER_CONTAINER
+STATIC Credentials *g_rootCredentials = NULL;
+#endif
 
 UINT32 OsAllocContainerID(VOID)
 {
@@ -43,6 +46,9 @@ UINT32 OsAllocContainerID(VOID)
 VOID OsContainerInitSystemProcess(LosProcessCB *processCB)
 {
     processCB->container = &g_rootContainer;
+#ifdef LOSCFG_USER_CONTAINER
+    processCB->credentials = g_rootCredentials;
+#endif
     LOS_AtomicInc(&processCB->container->rc);
 #ifdef LOSCFG_PID_CONTAINER
     (VOID)OsAllocSpecifiedVpidUnsafe(processCB->processID, processCB->container->pidContainer, processCB, NULL);
@@ -52,6 +58,9 @@ VOID OsContainerInitSystemProcess(LosProcessCB *processCB)
 
 VOID OsInitRootContainer(VOID)
 {
+#ifdef LOSCFG_USER_CONTAINER
+    OsInitRootUserCredentials(&g_rootCredentials);
+#endif
 #ifdef LOSCFG_PID_CONTAINER
     (VOID)OsInitRootPidContainer(&g_rootContainer.pidContainer);
     g_rootContainer.pidForChildContainer = g_rootContainer.pidContainer;
@@ -91,6 +100,12 @@ STATIC UINT32 CopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *p
     /* Pid container initialization must precede other container initialization. */
 #ifdef LOSCFG_PID_CONTAINER
     ret = OsCopyPidContainer(flags, child, parent, processID);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+#endif
+#ifdef LOSCFG_USER_CONTAINER
+    ret = OsCopyCredentials(flags,  child, parent);
     if (ret != LOS_OK) {
         return ret;
     }
@@ -182,6 +197,10 @@ VOID OsContainersDestroy(LosProcessCB *processCB)
     }
 #endif
 
+#ifdef LOSCFG_USER_CONTAINER
+    OsUserContainerDestroy(processCB);
+#endif
+
 #ifdef LOSCFG_UTS_CONTAINER
     OsUtsContainerDestroy(processCB->container);
 #endif
@@ -245,8 +264,9 @@ STATIC VOID DeInitContainers(UINT32 flags, Container *container, LosProcessCB *p
     SCHEDULER_UNLOCK(intSave);
 }
 
-UINT32 OsGetContainerID(Container *container, ContainerType type)
+UINT32 OsGetContainerID(LosProcessCB *processCB, ContainerType type)
 {
+    Container *container = processCB->container;
     if (container == NULL) {
         return OS_INVALID_VALUE;
     }
@@ -257,6 +277,10 @@ UINT32 OsGetContainerID(Container *container, ContainerType type)
             return OsGetPidContainerID(container->pidContainer);
         case PID_CHILD_CONTAINER:
             return OsGetPidContainerID(container->pidForChildContainer);
+#endif
+#ifdef LOSCFG_USER_CONTAINER
+        case USER_CONTAINER:
+            return OsGetUserContainerID(processCB->credentials);
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
         case UTS_CONTAINER:
@@ -324,11 +348,21 @@ INT32 OsUnshare(UINT32 flags)
     UINT32 intSave;
     LosProcessCB *curr = OsCurrProcessGet();
     Container *oldContainer = curr->container;
-    UINT32 unshareFlags = CLONE_NEWPID | CLONE_NEWTIME | CLONE_NEWUTS | CLONE_NEWNS | CLONE_NEWIPC;
+    UINT32 unshareFlags = CLONE_NEWPID | CLONE_NEWTIME | CLONE_NEWUTS | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUSER;
 
     if (!(flags & unshareFlags) || ((flags & (~unshareFlags)) != 0)) {
         return -EINVAL;
     }
+
+#ifdef LOSCFG_USER_CONTAINER
+    ret = OsUnshareUserCredentials(flags, curr);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+    if (flags == CLONE_NEWUSER) {
+        return LOS_OK;
+    }
+#endif
 
     Container *newContainer = CreateContainer();
     if (newContainer == NULL) {
@@ -363,6 +397,8 @@ STATIC UINT32 SetNsGetFlagByContainerType(UINT32 containerType)
         case PID_CONTAINER:
         case PID_CHILD_CONTAINER:
             return CLONE_NEWPID;
+        case USER_CONTAINER:
+            return CLONE_NEWUSER;
         case UTS_CONTAINER:
             return CLONE_NEWUTS;
         case MNT_CONTAINER:
@@ -414,27 +450,65 @@ STATIC UINT32 SetNsCreateNewContainers(UINT32 flags, Container *newContainer, Co
     return LOS_OK;
 }
 
-INT32 OsSetNs(INT32 fd, INT32 type)
+STATIC UINT32 SetNsParamCheck(INT32 fd, INT32 type, UINT32 *flag, LosProcessCB **target)
 {
-    UINT32 intSave;
-    UINT32 typeMask = CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWPID | CLONE_NEWIPC | CLONE_NEWTIME;
+    UINT32 typeMask = CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWPID | CLONE_NEWIPC | CLONE_NEWTIME | CLONE_NEWUSER;
+    *flag = (UINT32)(type & typeMask);
     UINT32 containerType = 0;
-    UINT32 flag = (UINT32)(type & typeMask);
-    LosProcessCB *curr = OsCurrProcessGet();
 
     if (((type & (~typeMask)) != 0)) {
-        return -EINVAL;
-    }
-
-    Container *newContainer = CreateContainer();
-    if (newContainer == NULL) {
-        return -ENOMEM;
+        return EINVAL;
     }
 
     LosProcessCB *processCB = (LosProcessCB *)ProcfsContainerGet(fd, &containerType);
     if (processCB == NULL) {
-        (VOID)LOS_MemFree(m_aucSysMem1, newContainer);
-        return -EBADF;
+        return EBADF;
+    }
+
+    if (*flag == 0) {
+        *flag = SetNsGetFlagByContainerType(containerType);
+    }
+
+    if ((*flag == 0) || (*flag != SetNsGetFlagByContainerType(containerType))) {
+        return EINVAL;
+    }
+
+    if (processCB == OsCurrProcessGet()) {
+        return EINVAL;
+    }
+    *target = processCB;
+    return LOS_OK;
+}
+
+INT32 OsSetNs(INT32 fd, INT32 type)
+{
+    UINT32 intSave, ret;
+    UINT32 flag = 0;
+    LosProcessCB *curr = OsCurrProcessGet();
+    LosProcessCB *processCB = NULL;
+
+    ret = SetNsParamCheck(fd, type, &flag, &processCB);
+    if (ret != LOS_OK) {
+        return -ret;
+    }
+
+#ifdef LOSCFG_USER_CONTAINER
+    if (flag == CLONE_NEWUSER) {
+        SCHEDULER_LOCK(intSave);
+        if ((processCB->credentials == NULL) || (processCB->credentials->userContainer == NULL)) {
+            SCHEDULER_UNLOCK(intSave);
+            return -EBADF;
+        }
+        UserContainer *userContainer = processCB->credentials->userContainer;
+        ret = OsSetNsUserContainer(userContainer, curr);
+        SCHEDULER_UNLOCK(intSave);
+        return ret;
+    }
+#endif
+
+    Container *newContainer = CreateContainer();
+    if (newContainer == NULL) {
+        return -ENOMEM;
     }
 
     SCHEDULER_LOCK(intSave);
@@ -444,16 +518,7 @@ INT32 OsSetNs(INT32 fd, INT32 type)
         return -EBADF;
     }
 
-    if (flag == 0) {
-        flag = SetNsGetFlagByContainerType(containerType);
-    }
-
-    if ((flag == 0) || (flag != SetNsGetFlagByContainerType(containerType)) || (targetContainer == curr->container)) {
-        SCHEDULER_UNLOCK(intSave);
-        return -EBADF;
-    }
-
-    UINT32 ret = SetNsCreateNewContainers(flag, newContainer, targetContainer);
+    ret = SetNsCreateNewContainers(flag, newContainer, targetContainer);
     if (ret != LOS_OK) {
         SCHEDULER_UNLOCK(intSave);
         goto EXIT;
