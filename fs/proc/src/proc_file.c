@@ -406,7 +406,6 @@ static void FreeProcEntry(struct ProcDirEntry *entry)
 
     ProcEntryClearVnode(entry);
 
-    spin_lock(&entry->pdeUnloadLock);
     if (entry->pf != NULL) {
         free(entry->pf);
         entry->pf = NULL;
@@ -415,7 +414,6 @@ static void FreeProcEntry(struct ProcDirEntry *entry)
         free(entry->data);
         entry->data = NULL;
     }
-    spin_unlock(&entry->pdeUnloadLock);
     free(entry);
 }
 
@@ -592,16 +590,13 @@ struct ProcDirEntry *OpenProcFile(const char *fileName, int flags, ...)
         return NULL;
     }
 
-    spin_lock(&pn->pdeUnloadLock);
     if (S_ISREG(pn->mode) && (pn->count != 1)) {
-        spin_unlock(&pn->pdeUnloadLock);
         return NULL;
     }
 
     pn->flags = (unsigned int)(pn->flags) | (unsigned int)flags;
     atomic_set(&pn->count, PROC_INUSE);
     if (ProcOpen(pn->pf) != OK) {
-        spin_unlock(&pn->pdeUnloadLock);
         return NULL;
     }
     if (S_ISREG(pn->mode) && (pn->procFileOps != NULL) && (pn->procFileOps->open != NULL)) {
@@ -611,7 +606,6 @@ struct ProcDirEntry *OpenProcFile(const char *fileName, int flags, ...)
         pn->pdirCurrent = pn->subdir;
         pn->pf->fPos = 0;
     }
-    spin_unlock(&pn->pdeUnloadLock);
 
     return pn;
 }
