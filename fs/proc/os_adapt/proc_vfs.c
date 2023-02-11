@@ -132,10 +132,8 @@ int VfsProcfsRead(struct file *filep, char *buffer, size_t buflen)
         return -EPERM;
     }
 
-    spin_lock(&entry->pdeUnloadLock);
     size = (ssize_t)ReadProcFile(entry, (void *)buffer, buflen);
     filep->f_pos = entry->pf->fPos;
-    spin_unlock(&entry->pdeUnloadLock);
     VnodeDrop();
     return size;
 }
@@ -155,10 +153,8 @@ int VfsProcfsWrite(struct file *filep, const char *buffer, size_t buflen)
         return -EPERM;
     }
 
-    spin_lock(&entry->pdeUnloadLock);
     size = (ssize_t)WriteProcFile(entry, (void *)buffer, buflen);
     filep->f_pos = entry->pf->fPos;
-    spin_unlock(&entry->pdeUnloadLock);
     VnodeDrop();
     return size;
 }
@@ -173,11 +169,9 @@ int VfsProcfsLookup(struct Vnode *parent, const char *name, int len, struct Vnod
         return -ENODATA;
     }
 
-    spin_lock(&procfsLock);
     entry = entry->subdir;
     while (1) {
         if (entry == NULL) {
-            spin_unlock(&procfsLock);
             return -ENOENT;
         }
         if (EntryMatch(name, len, entry)) {
@@ -185,7 +179,6 @@ int VfsProcfsLookup(struct Vnode *parent, const char *name, int len, struct Vnod
         }
         entry = entry->next;
     }
-    spin_unlock(&procfsLock);
 
     *vpp = EntryToVnode(entry);
     if ((*vpp) == NULL) {
@@ -241,9 +234,7 @@ int VfsProcfsStat(struct Vnode *node, struct stat *buf)
         return -EPERM;
     }
     (void)memset_s(buf, sizeof(struct stat), 0, sizeof(struct stat));
-    spin_lock(&entry->pdeUnloadLock);
     buf->st_mode = entry->mode;
-    spin_unlock(&entry->pdeUnloadLock);
     VnodeDrop();
     return LOS_OK;
 }
@@ -269,11 +260,9 @@ int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
         return -EPERM;
     }
 
-    spin_lock(&pde->pdeUnloadLock);
     while (i < dir->read_cnt) {
         buffer = (char *)zalloc(sizeof(char) * NAME_MAX);
         if (buffer == NULL) {
-            spin_unlock(&pde->pdeUnloadLock);
             VnodeDrop();
             PRINT_ERR("malloc failed\n");
             return -ENOMEM;
@@ -288,7 +277,6 @@ int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
         minSize = (dstNameSize < NAME_MAX) ? dstNameSize : NAME_MAX;
         result = strncpy_s(dir->fd_dir[i].d_name, dstNameSize, buffer, minSize);
         if (result != EOK) {
-            spin_unlock(&pde->pdeUnloadLock);
             VnodeDrop();
             free(buffer);
             return -ENAMETOOLONG;
@@ -301,7 +289,6 @@ int VfsProcfsReaddir(struct Vnode *node, struct fs_dirent_s *dir)
         i++;
         free(buffer);
     }
-    spin_unlock(&pde->pdeUnloadLock);
     VnodeDrop();
     return i;
 }
@@ -315,15 +302,12 @@ int VfsProcfsOpendir(struct Vnode *node,  struct fs_dirent_s *dir)
         return -EINVAL;
     }
 
-    spin_lock(&pde->pdeUnloadLock);
     pde->pdirCurrent = pde->subdir;
     if (pde->pf == NULL) {
-        spin_unlock(&pde->pdeUnloadLock);
         VnodeDrop();
         return -EINVAL;
     }
     pde->pf->fPos = 0;
-    spin_unlock(&pde->pdeUnloadLock);
     VnodeDrop();
     return LOS_OK;
 }
@@ -341,9 +325,7 @@ int VfsProcfsOpen(struct file *filep)
         return -EPERM;
     }
 
-    spin_lock(&pde->pdeUnloadLock);
     if (ProcOpen(pde->pf) != OK) {
-        spin_unlock(&pde->pdeUnloadLock);
         return -ENOMEM;
     }
     if (S_ISREG(pde->mode) && (pde->procFileOps != NULL) && (pde->procFileOps->open != NULL)) {
@@ -354,7 +336,6 @@ int VfsProcfsOpen(struct file *filep)
         pde->pf->fPos = 0;
     }
     filep->f_priv = (void *)pde;
-    spin_unlock(&pde->pdeUnloadLock);
     VnodeDrop();
     return LOS_OK;
 }
@@ -374,14 +355,12 @@ int VfsProcfsClose(struct file *filep)
         return -EPERM;
     }
 
-    spin_lock(&pde->pdeUnloadLock);
     pde->pf->fPos = 0;
     if ((pde->procFileOps != NULL) && (pde->procFileOps->release != NULL)) {
         result = pde->procFileOps->release((struct Vnode *)pde, pde->pf);
     }
     LosBufRelease(pde->pf->sbuf);
     pde->pf->sbuf = NULL;
-    spin_unlock(&pde->pdeUnloadLock);
     VnodeDrop();
     return result;
 }
@@ -411,11 +390,9 @@ ssize_t VfsProcfsReadlink(struct Vnode *vnode, char *buffer, size_t bufLen)
         return -EPERM;
     }
 
-    spin_lock(&pde->pdeUnloadLock);
     if ((pde->procFileOps != NULL) && (pde->procFileOps->readLink != NULL)) {
         result = pde->procFileOps->readLink(pde, buffer, bufLen);
     }
-    spin_unlock(&pde->pdeUnloadLock);
     return result;
 }
 
