@@ -822,7 +822,11 @@ LITE_OS_SEC_TEXT INT32 LOS_GetUserID(VOID)
     INT32 uid;
 
     SCHEDULER_LOCK(intSave);
+#ifdef LOSCFG_USER_CONTAINER
+    uid = OsFromKuidMunged(OsCurrentUserContainer(), CurrentCredentials()->uid);
+#else
     uid = (INT32)OsCurrUserGet()->userID;
+#endif
     SCHEDULER_UNLOCK(intSave);
     return uid;
 #else
@@ -837,7 +841,11 @@ LITE_OS_SEC_TEXT INT32 LOS_GetGroupID(VOID)
     INT32 gid;
 
     SCHEDULER_LOCK(intSave);
+#ifdef LOSCFG_USER_CONTAINER
+    gid = OsFromKgidMunged(OsCurrentUserContainer(), CurrentCredentials()->gid);
+#else
     gid = (INT32)OsCurrUserGet()->gid;
+#endif
     SCHEDULER_UNLOCK(intSave);
 
     return gid;
@@ -2122,6 +2130,9 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 #endif
 #ifdef LOSCFG_TIME_CONTAINER
     cloneFlag |= CLONE_NEWTIME;
+#endif
+#ifdef LOSCFG_USER_CONTAINER
+    cloneFlag |= CLONE_NEWUSER;
 #endif
 #endif
 
