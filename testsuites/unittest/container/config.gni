@@ -128,3 +128,14 @@ if (defined(LOSCFG_USER_TEST_TIME_CONTAINER)) {
     "$TEST_UNITTEST_DIR/container/smoke/It_time_container_010.cpp",
   ]
 }
+
+if (defined(LOSCFG_USER_TEST_USER_CONTAINER)) {
+  sources_smoke += [
+    "$TEST_UNITTEST_DIR/container/smoke/It_user_container_001.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_user_container_002.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_user_container_003.cpp",
+    "$TEST_UNITTEST_DIR/container/smoke/It_user_container_004.cpp",
+  ]
+  sources_full +=
+      [ "$TEST_UNITTEST_DIR/container/full/It_user_container_005.cpp" ]
+}
