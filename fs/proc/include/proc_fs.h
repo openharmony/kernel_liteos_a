@@ -93,6 +93,15 @@ struct ProcFileOperations {
     ssize_t (*readLink)(struct ProcDirEntry *pde, char *buf, size_t bufLen);
 };
 
+#ifdef LOSCFG_KERNEL_PLIMITS
+struct ProcDirOperations {
+    int (*rmdir)(struct ProcDirEntry *parent, struct ProcDirEntry *pde, const char *name);
+    int (*mkdir)(struct ProcDirEntry *parent, const char *dirName, mode_t mode, struct ProcDirEntry **pde);
+};
+#endif
+
+#define PROC_DATA_STATIC 0
+#define PROC_DATA_FREE   1
 struct ProcDirEntry {
     uint uid;
     uint gid;
@@ -101,6 +110,10 @@ struct ProcDirEntry {
     const struct ProcFileOperations *procFileOps;
     struct ProcFile *pf;
     struct ProcDirEntry *next, *parent, *subdir;
+#ifdef LOSCFG_KERNEL_PLIMITS
+    const struct ProcDirOperations *procDirOps;
+#endif
+    int dataType;
     void *data;
     atomic_t count; /* open file count */
     spinlock_t pdeUnloadLock;
@@ -109,6 +122,11 @@ struct ProcDirEntry {
     struct ProcDirEntry *pdirCurrent;
     char name[NAME_MAX];
     enum VnodeType type;
+};
+
+struct ProcDataParm {
+    void *data;
+    int dataType;
 };
 
 struct ProcFile {
@@ -274,7 +292,7 @@ extern struct ProcDirEntry *ProcCreate(const char *name, mode_t mode,
  *
  */
 extern struct ProcDirEntry *ProcCreateData(const char *name, mode_t mode, struct ProcDirEntry *parent,
-                                           const struct ProcFileOperations *procFileOps, void *data);
+                                           const struct ProcFileOperations *procFileOps, struct ProcDataParm *param);
 /**
  * @ingroup  procfs
  * @brief init proc fs

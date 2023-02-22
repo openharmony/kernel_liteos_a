@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,10 +28,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _PROC_INTERNAL_H
-#define _PROC_INTERNAL_H
+#ifndef _LOS_PROCESSLIMIT_H
+#define _LOS_PROCESSLIMIT_H
 
-#include "proc_fs.h"
+#include "los_list.h"
+#include "los_typedef.h"
+#include "los_atomic.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -40,60 +41,30 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define MAX_NON_LFS ((1UL << 31) - 1)
+typedef struct PidLimit {
+    Atomic rc;
+    UINT32 pidLimit;
+    UINT32 priorityLimit;
+    UINT32 pidCount;
+} PidLimit;
 
-extern spinlock_t procfsLock;
-extern bool procfsInit;
-
-#ifdef LOSCFG_PROC_PROCESS_DIR
-int ProcCreateProcessDir(UINT32 pid, uintptr_t process);
-
-void ProcFreeProcessDir(struct ProcDirEntry *processDir);
-
-void ProcSysMemInfoInit(void);
-
-void ProcFileSysInit(void);
-#endif
-
-#ifdef LOSCFG_KERNEL_PLIMITS
-void ProcLimitsInit(void);
-#endif
-
-void ProcEntryClearVnode(struct ProcDirEntry *entry);
-
-void ProcDetachNode(struct ProcDirEntry *pn);
-
-void RemoveProcEntryTravalsal(struct ProcDirEntry *pn);
-
-void ProcPmInit(void);
-
-void ProcVmmInit(void);
-
-void ProcProcessInit(void);
-
-int ProcMatch(unsigned int len, const char *name, struct ProcDirEntry *pde);
-
-struct ProcDirEntry *ProcFindEntry(const char *path);
-
-void ProcFreeEntry(struct ProcDirEntry *pde);
-
-int ProcStat(const char *file, struct ProcStat *buf);
-
-void ProcMountsInit(void);
-
-void ProcUptimeInit(void);
-
-void ProcFsCacheInit(void);
-
-void ProcFdInit(void);
-
-#ifdef LOSCFG_KERNEL_CONTAINER
-void *ProcfsContainerGet(int fd, unsigned int *containerType);
-#endif
+VOID PidLimiterInit(UINTPTR limit);
+VOID *PidLimiterAlloc(VOID);
+VOID PidLimterFree(UINTPTR limit);
+VOID PidLimiterCopy(UINTPTR curr, UINTPTR parent);
+BOOL PidLimitMigrateCheck(UINTPTR curr, UINTPTR parent);
+VOID OsPidLimiterMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process);
+BOOL OsPidLimitAddProcessCheck(UINTPTR limit, UINTPTR process);
+VOID OsPidLimitAddProcess(UINTPTR limit, UINTPTR process);
+VOID OsPidLimitDelProcess(UINTPTR limit, UINTPTR process);
+UINT32 PidLimitSetPidLimit(PidLimit *pidLimit, UINT32 pidMax);
+UINT32 PidLimitSetPriorityLimit(PidLimit *pidLimit, UINT32 priority);
+UINT16 OsPidLimitGetPriorityLimit(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus
 }
 #endif /* __cplusplus */
 #endif /* __cplusplus */
+
 #endif

@@ -214,7 +214,7 @@ VOID OsPidContainerDestroyAllProcess(LosProcessCB *curr)
     for (UINT32 index = 2; index < LOSCFG_BASE_CORE_PROCESS_LIMIT; index++) { /* 2: ordinary process */
         SCHEDULER_LOCK(intSave);
         LosProcessCB *processCB = OS_PCB_FROM_PID(index);
-        if (OsProcessIsUnused(processCB)) {
+        if (OsProcessIsUnused(processCB) || (processCB->parentProcess == NULL)) {
             SCHEDULER_UNLOCK(intSave);
             continue;
         }

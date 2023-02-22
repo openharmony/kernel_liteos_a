@@ -456,6 +456,9 @@ VOID LOS_PhysPagesFreeContiguous(VOID *ptr, size_t nPages)
     OsVmPhysPagesFreeContiguous(page, nPages);
 
     LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
+#ifdef LOSCFG_KERNEL_PLIMITS
+    OsMemLimitMemFree(nPages * PAGE_SIZE);
+#endif
 }
 
 PADDR_T OsKVaddrToPaddr(VADDR_T kvaddr)
@@ -503,6 +506,9 @@ VOID LOS_PhysPageFree(LosVmPage *page)
 
         LOS_SpinUnlockRestore(&seg->freeListLock, intSave);
     }
+#ifdef LOSCFG_KERNEL_PLIMITS
+    OsMemLimitMemFree(PAGE_SIZE);
+#endif
 }
 
 LosVmPage *LOS_PhysPageAlloc(VOID)

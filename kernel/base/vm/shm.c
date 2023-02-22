@@ -193,33 +193,48 @@ STATIC VOID ShmPagesRefDec(struct shmIDSource *seg)
     }
 }
 
-STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
+STATIC INT32 ShmAllocSegCheck(key_t key, size_t *size, INT32 *segNum)
 {
     INT32 i;
-    INT32 segNum = -1;
-    struct shmIDSource *seg = NULL;
-    size_t count;
-
-    if ((size == 0) || (size < IPC_SHM_INFO.shmmin) ||
-        (size > IPC_SHM_INFO.shmmax)) {
+    if ((*size == 0) || (*size < IPC_SHM_INFO.shmmin) ||
+        (*size > IPC_SHM_INFO.shmmax)) {
         return -EINVAL;
     }
 
-    size = LOS_Align(size, PAGE_SIZE);
-    if ((IPC_SHM_USED_PAGE_COUNT + (size >> PAGE_SHIFT)) > IPC_SHM_INFO.shmall) {
+    *size = LOS_Align(*size, PAGE_SIZE);
+    if ((IPC_SHM_USED_PAGE_COUNT + (*size >> PAGE_SHIFT)) > IPC_SHM_INFO.shmall) {
         return -ENOMEM;
     }
 
     for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {
         if (IPC_SHM_SEGS[i].status & SHM_SEG_FREE) {
             IPC_SHM_SEGS[i].status &= ~SHM_SEG_FREE;
-            segNum = i;
+            *segNum = i;
             break;
         }
     }
 
-    if (segNum < 0) {
+    if (*segNum < 0) {
         return -ENOSPC;
+    }
+
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+    if (OsIPCLimitShmAlloc(*size) != LOS_OK) {
+        return -ENOMEM;
+    }
+#endif
+    return 0;
+}
+
+STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
+{
+    INT32 segNum = -1;
+    struct shmIDSource *seg = NULL;
+    size_t count;
+
+    INT32 ret = ShmAllocSegCheck(key, &size, &segNum);
+    if (ret < 0) {
+        return ret;
     }
 
     seg = &IPC_SHM_SEGS[segNum];
@@ -227,6 +242,9 @@ STATIC INT32 ShmAllocSeg(key_t key, size_t size, INT32 shmflg)
     if (count != (size >> PAGE_SHIFT)) {
         (VOID)LOS_PhysPagesFree(&seg->node);
         seg->status = SHM_SEG_FREE;
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+        OsIPCLimitShmFree(size);
+#endif
         return -ENOMEM;
     }
 
@@ -264,6 +282,9 @@ STATIC INLINE VOID ShmFreeSeg(struct shmIDSource *seg, UINT32 *shmUsedPageCount)
         VM_ERR("free physical pages failed, count = %d, size = %d", count, seg->ds.shm_segsz >> PAGE_SHIFT);
         return;
     }
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+    OsIPCLimitShmFree(seg->ds.shm_segsz);
+#endif
     if (shmUsedPageCount != NULL) {
         (*shmUsedPageCount) -= seg->ds.shm_segsz >> PAGE_SHIFT;
     }
