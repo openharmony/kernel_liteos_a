@@ -429,7 +429,7 @@ typedef struct TagTaskCB {
     PidContainer    *pidContainer;
 #endif
 #ifdef LOSCFG_IPC_CONTAINER
-   BOOL             cloneIpc;
+    BOOL            cloneIpc;
 #endif
 } LosTaskCB;
 
@@ -619,6 +619,10 @@ STATIC INLINE VOID SchedTaskUnfreeze(LosTaskCB *taskCB)
     g_taskScheduled &= ~(1U << (cpuid)); \
 } while (0);
 
+#ifdef LOSCFG_KERNEL_SCHED_PLIMIT
+BOOL OsSchedLimitCheckTime(LosTaskCB *task);
+#endif
+
 STATIC INLINE LosTaskCB *HPFRunqueueTopTaskGet(HPFRunqueue *rq)
 {
     LosTaskCB *newTask = NULL;
@@ -634,6 +638,12 @@ STATIC INLINE LosTaskCB *HPFRunqueueTopTaskGet(HPFRunqueue *rq)
         while (bitmap) {
             UINT32 priority = CLZ(bitmap);
             LOS_DL_LIST_FOR_EACH_ENTRY(newTask, &queueList->priQueList[priority], LosTaskCB, pendList) {
+#ifdef LOSCFG_KERNEL_SCHED_PLIMIT
+                if (!OsSchedLimitCheckTime(newTask)) {
+                    bitmap &= ~(1U << (OS_PRIORITY_QUEUE_NUM - priority - 1));
+                    continue;
+                }
+#endif
 #ifdef LOSCFG_KERNEL_SMP
                 if (newTask->cpuAffiMask & (1U << cpuid)) {
 #endif

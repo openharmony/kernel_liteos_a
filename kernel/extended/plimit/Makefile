@@ -1,5 +1,4 @@
-# Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
-# Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
+# Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
@@ -27,42 +26,10 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import("//kernel/liteos_a/liteos.gni")
+include $(LITEOSTOPDIR)/config.mk
 
-group("extended") {
-  deps = [
-    "blackbox",
-    "cppsupport",
-    "cpup",
-    "dynload",
-    "hidumper",
-    "hilog",
-    "hook",
-    "liteipc",
-    "lms",
-    "perf",
-    "pipes",
-    "plimit",
-    "power",
-    "trace",
-    "vdso",
-  ]
-}
+MODULE_NAME := $(notdir $(shell pwd))
 
-config("public") {
-  configs = [
-    "blackbox:public",
-    "cpup:public",
-    "dynload:public",
-    "hidumper:public",
-    "hilog:public",
-    "hook:public",
-    "liteipc:public",
-    "pipes:public",
-    "vdso:public",
-    "perf:public",
-    "lms:public",
-    "power:public",
-    "plimit:public",
-  ]
-}
+LOCAL_SRCS := $(wildcard *.c)
+
+include $(MODULE)

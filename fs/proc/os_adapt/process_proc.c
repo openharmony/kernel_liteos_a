@@ -588,6 +588,7 @@ void ProcFreeProcessDir(struct ProcDirEntry *processDir)
 static struct ProcDirEntry *ProcCreatePorcess(UINT32 pid, struct ProcProcess *porcess, uintptr_t processCB)
 {
     int ret;
+    struct ProcDataParm dataParm;
     char pidName[PROC_PID_DIR_LEN] = {0};
     struct ProcessData *data = (struct ProcessData *)malloc(sizeof(struct ProcessData));
     if (data == NULL) {
@@ -613,7 +614,9 @@ static struct ProcDirEntry *ProcCreatePorcess(UINT32 pid, struct ProcProcess *po
 
     data->process = processCB;
     data->type = porcess->type;
-    struct ProcDirEntry *container = ProcCreateData(pidName, porcess->mode, NULL, porcess->fileOps, (void *)data);
+    dataParm.data = data;
+    dataParm.dataType = PROC_DATA_FREE;
+    struct ProcDirEntry *container = ProcCreateData(pidName, porcess->mode, NULL, porcess->fileOps, &dataParm);
     if (container == NULL) {
         free(data);
         PRINT_ERR("create /proc/%s error!\n", pidName);

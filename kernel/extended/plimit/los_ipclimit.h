@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,10 +28,11 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _PROC_INTERNAL_H
-#define _PROC_INTERNAL_H
+#ifndef _LOS_IPCLIMIT_H
+#define _LOS_IPCLIMIT_H
 
-#include "proc_fs.h"
+#include "los_typedef.h"
+#include "los_atomic.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -40,60 +40,56 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define MAX_NON_LFS ((1UL << 31) - 1)
+typedef struct ProcIPCLimit {
+    Atomic rc;
+    UINT32 mqCount;
+    UINT32 mqFailedCount;
+    UINT32 mqCountLimit;
+    UINT32 shmSize;
+    UINT32 shmFailedCount;
+    UINT32 shmSizeLimit;
+    UINT64 migrateTime;
+} ProcIPCLimit;
 
-extern spinlock_t procfsLock;
-extern bool procfsInit;
+enum IPCStatType {
+    IPC_STAT_TYPE_MQ  = 0,
+    IPC_STAT_TYPE_SHM = 3,
+    IPC_STAT_TYPE_BUT   // buttock
+};
 
-#ifdef LOSCFG_PROC_PROCESS_DIR
-int ProcCreateProcessDir(UINT32 pid, uintptr_t process);
+enum IPCStatOffset {
+    IPC_STAT_OFFSET_MQ  = 0,
+    IPC_STAT_OFFSET_SHM = 3,
+    IPC_STAT_OFFSET_BUT   // buttock
+};
 
-void ProcFreeProcessDir(struct ProcDirEntry *processDir);
+enum StatItem {
+    STAT_ITEM_TOTAL,
+    STAT_ITEM_FAILED,
+    STAT_ITEM_LIMIT,
+    STAT_ITEM_BUT   // buttock
+};
 
-void ProcSysMemInfoInit(void);
-
-void ProcFileSysInit(void);
-#endif
-
-#ifdef LOSCFG_KERNEL_PLIMITS
-void ProcLimitsInit(void);
-#endif
-
-void ProcEntryClearVnode(struct ProcDirEntry *entry);
-
-void ProcDetachNode(struct ProcDirEntry *pn);
-
-void RemoveProcEntryTravalsal(struct ProcDirEntry *pn);
-
-void ProcPmInit(void);
-
-void ProcVmmInit(void);
-
-void ProcProcessInit(void);
-
-int ProcMatch(unsigned int len, const char *name, struct ProcDirEntry *pde);
-
-struct ProcDirEntry *ProcFindEntry(const char *path);
-
-void ProcFreeEntry(struct ProcDirEntry *pde);
-
-int ProcStat(const char *file, struct ProcStat *buf);
-
-void ProcMountsInit(void);
-
-void ProcUptimeInit(void);
-
-void ProcFsCacheInit(void);
-
-void ProcFdInit(void);
-
-#ifdef LOSCFG_KERNEL_CONTAINER
-void *ProcfsContainerGet(int fd, unsigned int *containerType);
-#endif
+VOID OsIPCLimitInit(UINTPTR limite);
+VOID *OsIPCLimitAlloc(VOID);
+VOID OsIPCLimitFree(UINTPTR limite);
+VOID OsIPCLimitCopy(UINTPTR dest, UINTPTR src);
+BOOL OsIPCLimiteMigrateCheck(UINTPTR curr, UINTPTR parent);
+VOID OsIPCLimitMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process);
+BOOL OsIPCLimitAddProcessCheck(UINTPTR limit, UINTPTR process);
+VOID OsIPCLimitAddProcess(UINTPTR limit, UINTPTR process);
+VOID OsIPCLimitDelProcess(UINTPTR limit, UINTPTR process);
+UINT32 OsIPCLimitSetMqLimit(ProcIPCLimit *ipcLimit, UINT32 value);
+UINT32 OsIPCLimitSetShmLimit(ProcIPCLimit *ipcLimit, UINT32 value);
+UINT32 OsIPCLimitMqAlloc(VOID);
+VOID OsIPCLimitMqFree(VOID);
+UINT32 OsIPCLimitShmAlloc(UINT32 size);
+VOID OsIPCLimitShmFree(UINT32 size);
 
 #ifdef __cplusplus
 #if __cplusplus
 }
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-#endif
+
+#endif /* _LOS_IPCIMIT_H */

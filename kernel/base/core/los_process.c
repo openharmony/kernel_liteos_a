@@ -451,7 +451,9 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     }
     processCB->files = NULL;
 #endif
-
+#ifdef LOSCFG_KERNEL_PLIMITS
+    OsPLimitsDeleteProcess(processCB);
+#endif
     if (processCB->resourceLimit != NULL) {
         (VOID)LOS_MemFree((VOID *)m_aucSysMem0, processCB->resourceLimit);
         processCB->resourceLimit = NULL;
@@ -606,7 +608,9 @@ UINT32 OsProcessInit(VOID)
 #ifdef LOSCFG_KERNEL_CONTAINER
     OsInitRootContainer();
 #endif
-
+#ifdef LOSCFG_KERNEL_PLIMITS
+    OsProcLimiterSetInit();
+#endif
     SystemProcessEarlyInit(OsGetIdleProcess());
     SystemProcessEarlyInit(OsGetUserInitProcess());
     SystemProcessEarlyInit(OsGetKernelInitProcess());
@@ -883,6 +887,13 @@ STATIC UINT32 OsSystemProcessInit(LosProcessCB *processCB, UINT32 flags, const C
     }
 #endif
 
+#ifdef LOSCFG_KERNEL_PLIMITS
+    ret = OsPLimitsAddProcess(NULL, processCB);
+    if (ret != LOS_OK) {
+        ret = LOS_ENOMEM;
+        goto EXIT;
+    }
+#endif
     return LOS_OK;
 
 EXIT:
@@ -2066,6 +2077,13 @@ STATIC INT32 OsCopyProcess(UINT32 flags, const CHAR *name, UINTPTR sp, UINT32 si
     if (ret != LOS_OK) {
         goto ERROR_INIT;
     }
+
+#ifdef LOSCFG_KERNEL_PLIMITS
+    ret = OsPLimitsAddProcess(run->plimits, child);
+    if (ret != LOS_OK) {
+        goto ERROR_INIT;
+    }
+#endif
 #endif
 
     ret = OsForkInitPCB(flags, child, name, sp, size);

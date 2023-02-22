@@ -296,7 +296,7 @@ static int ProcAddNode(struct ProcDirEntry *parent, struct ProcDirEntry *pn)
     return 0;
 }
 
-static void ProcDetachNode(struct ProcDirEntry *pn)
+void ProcDetachNode(struct ProcDirEntry *pn)
 {
     struct ProcDirEntry *parent = pn->parent;
     struct ProcDirEntry **iter = NULL;
@@ -379,7 +379,7 @@ struct ProcDirEntry *CreateProcEntry(const char *name, mode_t mode, struct ProcD
     return pde;
 }
 
-static void ProcEntryClearVnode(struct ProcDirEntry *entry)
+void ProcEntryClearVnode(struct ProcDirEntry *entry)
 {
     struct Vnode *item = NULL;
     struct Vnode *nextItem = NULL;
@@ -404,16 +404,14 @@ static void FreeProcEntry(struct ProcDirEntry *entry)
         return;
     }
 
-    ProcEntryClearVnode(entry);
-
     if (entry->pf != NULL) {
         free(entry->pf);
         entry->pf = NULL;
     }
-    if (entry->data != NULL) {
+    if ((entry->dataType == PROC_DATA_FREE) && (entry->data != NULL)) {
         free(entry->data);
-        entry->data = NULL;
     }
+    entry->data = NULL;
     free(entry);
 }
 
@@ -424,13 +422,15 @@ void ProcFreeEntry(struct ProcDirEntry *pn)
     }
 }
 
-static void RemoveProcEntryTravalsal(struct ProcDirEntry *pn)
+void RemoveProcEntryTravalsal(struct ProcDirEntry *pn)
 {
     if (pn == NULL) {
         return;
     }
     RemoveProcEntryTravalsal(pn->next);
     RemoveProcEntryTravalsal(pn->subdir);
+
+    ProcEntryClearVnode(pn);
 
     ProcFreeEntry(pn);
 }
@@ -461,6 +461,9 @@ void RemoveProcEntry(const char *name, struct ProcDirEntry *parent)
     spin_unlock(&procfsLock);
 
     RemoveProcEntryTravalsal(pn->subdir);
+
+    ProcEntryClearVnode(pn);
+
     ProcFreeEntry(pn);
 }
 
@@ -475,14 +478,17 @@ struct ProcDirEntry *ProcMkdir(const char *name, struct ProcDirEntry *parent)
 }
 
 struct ProcDirEntry *ProcCreateData(const char *name, mode_t mode, struct ProcDirEntry *parent,
-                                    const struct ProcFileOperations *procFileOps, void *data)
+                                    const struct ProcFileOperations *procFileOps, struct ProcDataParm *param)
 {
     struct ProcDirEntry *pde = CreateProcEntry(name, mode, parent);
     if (pde != NULL) {
         if (procFileOps != NULL) {
             pde->procFileOps = procFileOps;
         }
-        pde->data = data;
+        if (param != NULL) {
+            pde->data = param->data;
+            pde->dataType = param->dataType;
+        }
     }
     return pde;
 }
@@ -639,12 +645,15 @@ int WriteProcFile(struct ProcDirEntry *pde, const void *buf, size_t len)
         return -EISDIR;
     }
 
+#ifndef LOSCFG_KERNEL_PLIMITS
     spin_lock(&procfsLock);
+#endif
     if ((pde->procFileOps != NULL) && (pde->procFileOps->write != NULL)) {
         result = pde->procFileOps->write(pde->pf, (const char *)buf, len, &(pde->pf->fPos));
     }
+#ifndef LOSCFG_KERNEL_PLIMITS
     spin_unlock(&procfsLock);
-
+#endif
     return result;
 }
 
