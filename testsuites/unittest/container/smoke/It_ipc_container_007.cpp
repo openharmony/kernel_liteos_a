@@ -40,26 +40,16 @@ static const int g_readLen = 254;
 static int childFunc(void *arg)
 {
     (void)arg;
-
-    int ret = unshare(CLONE_NEWTIME);
-    if (ret != 0) {
-        return EXIT_CODE_ERRNO_1;
-    }
-
-    ret = unshare(CLONE_NEWTIME);
-    if (ret != 0) {
-        return EXIT_CODE_ERRNO_2;
-    }
+    sleep(2); /* 2: delay 2s */
 
     return 0;
 }
 
-void ItTimeContainer006(void)
+void ItIpcContainer007(void)
 {
-    std::string path = "/proc/sys/user/max_time_container";
+    std::string path = "/proc/sys/user/max_ipc_container";
     char *array[g_arryLen] = { nullptr };
     char buf[g_buffSize] = { 0 };
-    int status = 0;
 
     int ret = ReadFile(path.c_str(), buf);
     ASSERT_NE(ret, -1);
@@ -83,15 +73,14 @@ void ItTimeContainer006(void)
     ASSERT_NE(stack, nullptr);
     char *stackTop = stack + STACK_SIZE;
 
-    auto pid1 = clone(childFunc, stackTop, CLONE_NEWTIME, NULL);
+    auto pid1 = clone(childFunc, stackTop, CLONE_NEWIPC, NULL);
     ASSERT_NE(pid1, -1);
 
-    ret = waitpid(pid1, &status, 0);
+    auto pid2 = clone(childFunc, stackTop, CLONE_NEWIPC, NULL);
+    ASSERT_EQ(pid2, -1);
+
+    ret = waitpid(pid1, NULL, 0);
     ASSERT_EQ(ret, pid1);
-    ret = WIFEXITED(status);
-    ASSERT_NE(ret, 0);
-    ret = WEXITSTATUS(status);
-    ASSERT_EQ(ret, EXIT_CODE_ERRNO_2);
 
     (void)memset_s(buf, configLen, 0, configLen);
     ret = sprintf_s(buf, configLen, "%d", value);

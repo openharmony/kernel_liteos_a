@@ -389,6 +389,14 @@ extern UINT32 __heap_end;
 #define VERSION_NUM(a, b, c, d) (((a) << 24) | ((b) << 16) | (c) << 8 | (d))
 #define KERNEL_OPEN_VERSION_NUM VERSION_NUM(KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH, KERNEL_ITRE)
 
+/**
+ * @ingroup los_config
+ * The container limit
+ */
+#ifndef LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT
+#define LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT  10
+#endif
+
 /****************************** Exception information configuration ******************************/
 #ifdef LOSCFG_SAVE_EXCINFO
 /**

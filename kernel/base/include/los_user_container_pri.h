@@ -76,5 +76,7 @@ UINT32 OsMakeKgid(UserContainer *userContainer, UINT32 gid);
 
 INT32 OsUserContainerMapWrite(struct ProcFile *fp, CHAR *buf, size_t count,
                               INT32 capSetid, UidGidMap *map, UidGidMap *parentMap);
+
+UINT32 OsGetUserContainerCount(VOID);
 #endif
 #endif
