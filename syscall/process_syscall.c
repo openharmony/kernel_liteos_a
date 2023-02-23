@@ -156,6 +156,12 @@ int SysSchedSetScheduler(int id, int policy, int prio, int flag)
         id = (int)LOS_GetCurrProcessID();
     }
 
+#ifdef LOSCFG_KERNEL_PLIMITS
+    if (prio < OsPidLimitGetPriorityLimit()) {
+        return -EINVAL;
+    }
+#endif
+
     ret = OsPermissionToCheck(id, LOS_GetCurrProcessID());
     if (ret < 0) {
         return ret;
@@ -210,6 +216,12 @@ int SysSetProcessPriority(int which, int who, unsigned int prio)
         who = (int)LOS_GetCurrProcessID();
     }
 
+#ifdef LOSCFG_KERNEL_PLIMITS
+    if (prio < OsPidLimitGetPriorityLimit()) {
+        return -EINVAL;
+    }
+#endif
+
     ret = OsPermissionToCheck(who, LOS_GetCurrProcessID());
     if (ret < 0) {
         return ret;
@@ -223,6 +235,12 @@ int SysSchedSetParam(int id, unsigned int prio, int flag)
     if (flag < 0) {
         return -OsUserTaskSchedulerSet(id, LOS_SCHED_RR, prio, false);
     }
+
+#ifdef LOSCFG_KERNEL_PLIMITS
+    if (prio < OsPidLimitGetPriorityLimit()) {
+        return -EINVAL;
+    }
+#endif
 
     return SysSetProcessPriority(LOS_PRIO_PROCESS, id, prio);
 }
