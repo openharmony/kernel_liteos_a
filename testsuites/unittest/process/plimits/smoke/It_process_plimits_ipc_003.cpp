@@ -5,15 +5,15 @@
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this list of
- *    conditions and the following disclaimer.
+ * conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this list
- *    of conditions and the following disclaimer in the documentation and/or other materials
- *    provided with the distribution.
+ * of conditions and the following disclaimer in the documentation and/or other materials
+ * provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without specific prior written
- *    permission.
+ * to endorse or promote products derived from this software without specific prior written
+ * permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -27,41 +27,41 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <fcntl.h>
+#include <cstdio>
+#include <cstdlib>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <cstring>
+#include <gtest/gtest.h>
+#include "It_process_plimits.h"
 
-#ifndef _LOS_PROCESSLIMIT_H
-#define _LOS_PROCESSLIMIT_H
+void ItProcessPlimitsIpc003(void)
+{
+    mode_t mode;
+    int ret;
+    std::string plimitsPath = "/proc/plimits/test";
+    std::string configFileMqCount = "/proc/plimits/test/ipc.mq_limit";
+    std::string configFileShmSize = "/proc/plimits/test/ipc.shm_limit";
+    std::string configFileStat = "/proc/plimits/test/ipc.stat";
 
-#include "los_list.h"
-#include "los_typedef.h"
+    ret = mkdir(plimitsPath.c_str(), S_IFDIR | mode);
+    ASSERT_EQ(ret, 0);
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+    int fd = access(configFileMqCount.c_str(), F_OK | W_OK | R_OK);
+    ASSERT_EQ(fd, 0);
 
-typedef struct PidLimit {
-    UINT32 pidLimit;
-    UINT32 priorityLimit;
-    UINT32 pidCount;
-} PidLimit;
+    fd = access(configFileShmSize.c_str(), F_OK | W_OK | R_OK);
+    ASSERT_EQ(fd, 0);
 
-VOID PidLimiterInit(UINTPTR limit);
-VOID *PidLimiterAlloc(VOID);
-VOID PidLimterFree(UINTPTR limit);
-VOID PidLimiterCopy(UINTPTR curr, UINTPTR parent);
-BOOL PidLimitMigrateCheck(UINTPTR curr, UINTPTR parent);
-BOOL OsPidLimitAddProcessCheck(UINTPTR limit, UINTPTR process);
-VOID OsPidLimitAddProcess(UINTPTR limit, UINTPTR process);
-VOID OsPidLimitDelProcess(UINTPTR limit, UINTPTR process);
-UINT32 PidLimitSetPidLimit(PidLimit *pidLimit, UINT32 pidMax);
-UINT32 PidLimitSetPriorityLimit(PidLimit *pidLimit, UINT32 priority);
-UINT16 OsPidLimitGetPriorityLimit(VOID);
+    fd = access(configFileStat.c_str(), F_OK | R_OK);
+    ASSERT_EQ(fd, 0);
 
-#ifdef __cplusplus
-#if __cplusplus
+    fd = access(configFileStat.c_str(), W_OK | X_OK);
+    ASSERT_EQ(fd, -1);
+
+    ret = rmdir(plimitsPath.c_str());
+    ASSERT_EQ(ret, 0);
+    return;
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-
-#endif

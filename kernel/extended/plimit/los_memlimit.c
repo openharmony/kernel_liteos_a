@@ -57,7 +57,6 @@ VOID *OsMemLimiterAlloc(VOID)
         return NULL;
     }
     (VOID)memset_s(plimite, sizeof(ProcMemLimiter), 0, sizeof(ProcMemLimiter));
-    LOS_AtomicSet(&plimite->rc, 1);
     return (VOID *)plimite;
 }
 
@@ -68,10 +67,7 @@ VOID OsMemLimiterFree(UINTPTR limite)
         return;
     }
 
-    LOS_AtomicDec(&plimite->rc);
-    if (LOS_AtomicRead(&plimite->rc) <= 0) {
-        LOS_KernelFree((VOID *)limite);
-    }
+    LOS_KernelFree((VOID *)limite);
 }
 
 VOID OsMemLimiterCopy(UINTPTR dest, UINTPTR src)
@@ -104,7 +100,6 @@ VOID OsMemLimiterMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process
         if (parentMemLimit->peak < parentMemLimit->usage) {
             parentMemLimit->peak = parentMemLimit->usage;
         }
-        LOS_AtomicInc(&parentMemLimit->rc);
         return;
     }
 

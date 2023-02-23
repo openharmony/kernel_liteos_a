@@ -58,7 +58,6 @@ VOID *OsDevLimitAlloc(VOID)
     (VOID)memset_s(plimit, sizeof(ProcDevLimit), 0, sizeof(ProcDevLimit));
     LOS_ListInit(&(plimit->accessList));
     plimit->behavior = DEVLIMIT_DEFAULT_NONE;
-    LOS_AtomicSet(&plimit->rc, 1);
     return (VOID *)plimit;
 }
 
@@ -79,11 +78,8 @@ VOID OsDevLimitFree(UINTPTR limit)
         return;
     }
 
-    LOS_AtomicDec(&devLimit->rc);
-    if (LOS_AtomicRead(&devLimit->rc) <= 0) {
-        DevAccessListDelete(devLimit);
-        LOS_KernelFree(devLimit);
-    }
+    DevAccessListDelete(devLimit);
+    LOS_KernelFree(devLimit);
 }
 
 STATIC UINT32 DevLimitCopyAccess(ProcDevLimit *devLimitDest, ProcDevLimit *devLimitSrc)
@@ -108,16 +104,6 @@ VOID OsDevLimitCopy(UINTPTR dest, UINTPTR src)
     ProcDevLimit *devLimitSrc = (ProcDevLimit *)src;
     (VOID)DevLimitCopyAccess(devLimitDest, devLimitSrc);
     devLimitDest->parent = (ProcDevLimit *)src;
-}
-
-VOID OsDevLimitMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process)
-{
-    (VOID)currLimit;
-    ProcDevLimit *parentDevLimit = (ProcDevLimit *)parentLimit;
-    LosProcessCB *pcb = (LosProcessCB *)process;
-    if (pcb == NULL) {
-        LOS_AtomicInc(&parentDevLimit->rc);
-    }
 }
 
 STATIC INLINE INT32 IsSpace(INT32 c)

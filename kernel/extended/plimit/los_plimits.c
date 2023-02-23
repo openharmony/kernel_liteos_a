@@ -56,7 +56,7 @@ static PlimiteOperations g_limiteOps[PROCESS_LIMITER_COUNT] = {
         .LimiterAddProcess = OsPidLimitAddProcess,
         .LimiterDelProcess = OsPidLimitDelProcess,
         .LimiterMigrateCheck = PidLimitMigrateCheck,
-        .LimiterMigrate = OsPidLimiterMigrate,
+        .LimiterMigrate = NULL,
     },
 #ifdef LOSCFG_KERNEL_MEM_PLIMIT
     [PROCESS_LIMITER_ID_MEM] = {
@@ -81,7 +81,7 @@ static PlimiteOperations g_limiteOps[PROCESS_LIMITER_COUNT] = {
         .LimiterAddProcess = NULL,
         .LimiterDelProcess = NULL,
         .LimiterMigrateCheck = NULL,
-        .LimiterMigrate = OsSchedLimitMigrate,
+        .LimiterMigrate = NULL,
     },
 #endif
 #ifdef LOSCFG_KERNEL_DEV_PLIMIT
@@ -94,7 +94,7 @@ static PlimiteOperations g_limiteOps[PROCESS_LIMITER_COUNT] = {
         .LimiterAddProcess = NULL,
         .LimiterDelProcess = NULL,
         .LimiterMigrateCheck = NULL,
-        .LimiterMigrate = OsDevLimitMigrate,
+        .LimiterMigrate = NULL,
     },
 #endif
 #ifdef LOSCFG_KERNEL_IPC_PLIMIT
@@ -358,79 +358,6 @@ ProcLimiterSet *OsPLimitsCreate(ProcLimiterSet *parentPLimits)
     (VOID)PLimitsAddProcess(newPLimits, OsCurrProcessGet());
     SCHEDULER_UNLOCK(intSave);
     return newPLimits;
-}
-
-UINT32 OsPLimitsAddLimiters(ProcLimiterSet *procLimiterSet, enum ProcLimiterID plimiteID)
-{
-    UINT32 intSave;
-    UINT32 mask = BIT(plimiteID);
-    if ((procLimiterSet == NULL) || (plimiteID > PROCESS_LIMITER_COUNT)) {
-        return EINVAL;
-    }
-
-    SCHEDULER_LOCK(intSave);
-    if (procLimiterSet->level == 0) {
-        SCHEDULER_UNLOCK(intSave);
-        return EPERM;
-    }
-
-    if (procLimiterSet->mask & mask) {
-        SCHEDULER_UNLOCK(intSave);
-        return EINVAL;
-    }
-
-    UINTPTR currLimit = procLimiterSet->limitsList[plimiteID];
-    UINTPTR parentPLimit = procLimiterSet->parent->limitsList[plimiteID];
-    procLimiterSet->limitsList[plimiteID] = (UINTPTR)g_limiteOps[plimiteID].LimiterAlloc();
-    if (procLimiterSet->limitsList[plimiteID] == (UINTPTR)NULL) {
-        procLimiterSet->limitsList[plimiteID] = parentPLimit;
-        SCHEDULER_UNLOCK(intSave);
-        return ENOMEM;
-    }
-
-    g_limiteOps[plimiteID].LimiterCopy(procLimiterSet->limitsList[plimiteID], parentPLimit);
-    g_limiteOps[plimiteID].LimiterMigrate(procLimiterSet->limitsList[plimiteID],
-                                          parentPLimit, (UINTPTR)OsCurrProcessGet());
-    g_limiteOps[plimiteID].LimiterFree(currLimit);
-    SCHEDULER_UNLOCK(intSave);
-    return LOS_OK;
-}
-
-UINT32 OsPLimitsDeleteLimiters(ProcLimiterSet *procLimiterSet, enum ProcLimiterID plimiteID, UINT32 *mask)
-{
-    UINT32 intSave;
-
-    if ((procLimiterSet == NULL) || (plimiteID > PROCESS_LIMITER_COUNT) || (mask == NULL)) {
-        return EINVAL;
-    }
-
-    SCHEDULER_LOCK(intSave);
-    if (!(procLimiterSet->mask & BIT(plimiteID))) {
-        SCHEDULER_UNLOCK(intSave);
-        return EINVAL;
-    }
-
-    if (procLimiterSet->level == 0) {
-        SCHEDULER_UNLOCK(intSave);
-        return EPERM;
-    }
-
-    UINTPTR currLimit = procLimiterSet->limitsList[plimiteID];
-    UINTPTR parentPLimit = procLimiterSet->parent->limitsList[plimiteID];
-    if ((g_limiteOps[plimiteID].LimiterMigrateCheck != NULL) &&
-        !g_limiteOps[plimiteID].LimiterMigrateCheck(currLimit, parentPLimit)) {
-        SCHEDULER_UNLOCK(intSave);
-        return EINVAL;
-    }
-
-    g_limiteOps[plimiteID].LimiterMigrate(currLimit, parentPLimit, 0);
-    procLimiterSet->limitsList[plimiteID] = parentPLimit;
-    g_limiteOps[plimiteID].LimiterFree(currLimit);
-
-    procLimiterSet->mask &= (~BIT(plimiteID));
-    *mask = procLimiterSet->mask;
-    SCHEDULER_UNLOCK(intSave);
-    return LOS_OK;
 }
 
 #ifdef LOSCFG_KERNEL_MEM_PLIMIT

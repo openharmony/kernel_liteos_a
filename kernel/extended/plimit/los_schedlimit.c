@@ -49,7 +49,6 @@ VOID *OsSchedLimitAlloc(VOID)
         return NULL;
     }
     (VOID)memset_s(plimit, sizeof(ProcSchedLimiter), 0, sizeof(ProcSchedLimiter));
-    LOS_AtomicSet(&plimit->rc, 1);
     return (VOID *)plimit;
 }
 
@@ -60,10 +59,7 @@ VOID OsSchedLimitFree(UINTPTR limit)
         return;
     }
 
-    LOS_AtomicDec(&schedLimit->rc);
-    if (LOS_AtomicRead(&schedLimit->rc) <= 0) {
-        LOS_KernelFree((VOID *)limit);
-    }
+    LOS_KernelFree((VOID *)limit);
 }
 
 VOID OsSchedLimitCopy(UINTPTR dest, UINTPTR src)
@@ -73,16 +69,6 @@ VOID OsSchedLimitCopy(UINTPTR dest, UINTPTR src)
     plimitDest->period = plimitSrc->period;
     plimitDest->quota = plimitSrc->quota;
     return;
-}
-
-VOID OsSchedLimitMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process)
-{
-    (VOID)currLimit;
-    ProcSchedLimiter *parentSchedLimit = (ProcSchedLimiter *)parentLimit;
-    LosProcessCB *pcb = (LosProcessCB *)process;
-    if (pcb == NULL) {
-        LOS_AtomicInc(&parentSchedLimit->rc);
-    }
 }
 
 VOID OsSchedLimitUpdateRuntime(LosTaskCB *runTask, UINT64 currTime, INT32 incTime)
