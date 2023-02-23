@@ -43,6 +43,7 @@ kernel_module(module_name) {
     "os_adapt/proc_init.c",
     "os_adapt/proc_vfs.c",
     "os_adapt/process_proc.c",
+    "os_adapt/sys_user.c",
     "os_adapt/uptime_proc.c",
     "os_adapt/vmm_proc.c",
     "src/proc_file.c",

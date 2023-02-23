@@ -86,6 +86,27 @@ typedef struct Container {
 #endif
 } Container;
 
+typedef struct TagContainerLimit {
+#ifdef LOSCFG_PID_CONTAINER
+    UINT32 pidLimit;
+#endif
+#ifdef LOSCFG_UTS_CONTAINER
+    UINT32 utsLimit;
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+    UINT32 mntLimit;
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    UINT32 ipcLimit;
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+    UINT32 timeLimit;
+#endif
+#ifdef LOSCFG_USER_CONTAINER
+    UINT32 userLimit;
+#endif
+} ContainerLimit;
+
 VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
 
 VOID OsInitRootContainer(VOID);
@@ -104,5 +125,12 @@ INT32 OsUnshare(UINT32 flags);
 
 INT32 OsSetNs(INT32 fd, INT32 type);
 
+UINT32 OsGetContainerLimit(ContainerType type);
+
+UINT32 OsContainerLimitCheck(ContainerType type, UINT32 *containerCount);
+
+UINT32 OsSetContainerLimit(ContainerType type, UINT32 value);
+
+UINT32 OsGetContainerCount(ContainerType type);
 #endif
 #endif /* _LOS_CONTAINER_PRI_H */

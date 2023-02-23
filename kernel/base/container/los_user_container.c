@@ -48,10 +48,14 @@
 #define DEC 10
 
 #ifdef LOSCFG_USER_CONTAINER
-UINT32 g_currentUserContainerNum = 1;
+UINT32 g_currentUserContainerNum = 0;
 
 UINT32 OsCreateUserContainer(Credentials *newCredentials, UserContainer *parentUserContainer)
 {
+    if (g_currentUserContainerNum >= OsGetContainerLimit(USER_CONTAINER)) {
+        return EPERM;
+    }
+
     if ((parentUserContainer != NULL) && (parentUserContainer->level >= LEVEL_MAX)) {
         return EINVAL;
     }
@@ -95,7 +99,11 @@ VOID FreeUserContainer(UserContainer *userContainer)
         userContainer->parent = NULL;
         userContainer = parent;
         g_currentUserContainerNum--;
-    } while ((userContainer != NULL) && (LOS_AtomicRead(&userContainer->rc) <= 0));
+        if (userContainer == NULL) {
+            break;
+        }
+        LOS_AtomicDec(&userContainer->rc);
+    } while (LOS_AtomicRead(&userContainer->rc) <= 0);
 }
 
 STATIC UidGidExtent *MapIdUpBase(UINT32 extents, UidGidMap *map, UINT32 id)
@@ -422,5 +430,10 @@ INT32 OsUserContainerMapWrite(struct ProcFile *fp, CHAR *kbuf, size_t count,
 
     map->extentCount = newMap.extentCount;
     return count;
+}
+
+UINT32 OsGetUserContainerCount(VOID)
+{
+    return g_currentUserContainerNum;
 }
 #endif
