@@ -645,15 +645,11 @@ int WriteProcFile(struct ProcDirEntry *pde, const void *buf, size_t len)
         return -EISDIR;
     }
 
-#ifndef LOSCFG_KERNEL_PLIMITS
     spin_lock(&procfsLock);
-#endif
     if ((pde->procFileOps != NULL) && (pde->procFileOps->write != NULL)) {
         result = pde->procFileOps->write(pde->pf, (const char *)buf, len, &(pde->pf->fPos));
     }
-#ifndef LOSCFG_KERNEL_PLIMITS
     spin_unlock(&procfsLock);
-#endif
     return result;
 }
 

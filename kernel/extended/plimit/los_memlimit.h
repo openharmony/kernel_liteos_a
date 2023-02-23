@@ -32,7 +32,6 @@
 #define _LOS_MEMLIMIT_H
 
 #include "los_typedef.h"
-#include "los_atomic.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -41,7 +40,6 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct ProcMemLimiter {
-    Atomic   rc;
     UINT64 usage;
     UINT64 limit;
     UINT64 peak;

@@ -101,9 +101,6 @@ UINT32 OsPLimitsFree(ProcLimiterSet *currPLimits);
 ProcLimiterSet *OsPLimitsCreate(ProcLimiterSet *parentProcLimiterSet);
 UINT32 OsProcLimiterSetInit(VOID);
 
-UINT32 OsPLimitsAddLimiters(ProcLimiterSet *procLimiterSet, enum ProcLimiterID plimiteID);
-UINT32 OsPLimitsDeleteLimiters(ProcLimiterSet *procLimiterSet, enum ProcLimiterID plimiteID, UINT32 *mask);
-
 UINT32 OsPLimitsMemUsageGet(ProcLimiterSet *plimits, UINT64 *usage, UINT32 size);
 UINT32 OsPLimitsIPCStatGet(ProcLimiterSet *plimits, ProcIPCLimit *ipc, UINT32 size);
 UINT32 OsPLimitsSchedUsageGet(ProcLimiterSet *plimits, UINT64 *usage, UINT32 size);
