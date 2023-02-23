@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,10 +28,11 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _PROC_INTERNAL_H
-#define _PROC_INTERNAL_H
+#ifndef _LOS_SCHEDLIMIT_H
+#define _LOS_SCHEDLIMIT_H
 
-#include "proc_fs.h"
+#include "los_typedef.h"
+#include "los_atomic.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -40,60 +40,34 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define MAX_NON_LFS ((1UL << 31) - 1)
+#define CORE_US_PER_SECOND (1000 * 1000)  /* 1000 * 1000 us per second */
+typedef struct TagTaskCB LosTaskCB;
 
-extern spinlock_t procfsLock;
-extern bool procfsInit;
+typedef struct ProcSchedLimiter {
+    Atomic rc;
+    UINT64 startTime;
+    UINT64 endTime;
+    UINT64 period;
+    UINT64 quota;
+    UINT64 allRuntime;
+    UINT64 overrunTime;
+    UINT64 stat;
+} ProcSchedLimiter;
 
-#ifdef LOSCFG_PROC_PROCESS_DIR
-int ProcCreateProcessDir(UINT32 pid, uintptr_t process);
-
-void ProcFreeProcessDir(struct ProcDirEntry *processDir);
-
-void ProcSysMemInfoInit(void);
-
-void ProcFileSysInit(void);
-#endif
-
-#ifdef LOSCFG_KERNEL_PLIMITS
-void ProcLimitsInit(void);
-#endif
-
-void ProcEntryClearVnode(struct ProcDirEntry *entry);
-
-void ProcDetachNode(struct ProcDirEntry *pn);
-
-void RemoveProcEntryTravalsal(struct ProcDirEntry *pn);
-
-void ProcPmInit(void);
-
-void ProcVmmInit(void);
-
-void ProcProcessInit(void);
-
-int ProcMatch(unsigned int len, const char *name, struct ProcDirEntry *pde);
-
-struct ProcDirEntry *ProcFindEntry(const char *path);
-
-void ProcFreeEntry(struct ProcDirEntry *pde);
-
-int ProcStat(const char *file, struct ProcStat *buf);
-
-void ProcMountsInit(void);
-
-void ProcUptimeInit(void);
-
-void ProcFsCacheInit(void);
-
-void ProcFdInit(void);
-
-#ifdef LOSCFG_KERNEL_CONTAINER
-void *ProcfsContainerGet(int fd, unsigned int *containerType);
-#endif
+VOID OsSchedLimitInit(UINTPTR limit);
+VOID *OsSchedLimitAlloc(VOID);
+VOID OsSchedLimitFree(UINTPTR limit);
+VOID OsSchedLimitCopy(UINTPTR dest, UINTPTR src);
+VOID OsSchedLimitMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process);
+VOID OsSchedLimitUpdateRuntime(LosTaskCB *runTask, UINT64 currTime, INT32 incTime);
+UINT32 OsSchedLimitSetPeriod(ProcSchedLimiter *schedLimit, UINT64 value);
+UINT32 OsSchedLimitSetQuota(ProcSchedLimiter *schedLimit, UINT64 value);
+BOOL OsSchedLimitCheckTime(LosTaskCB *task);
 
 #ifdef __cplusplus
 #if __cplusplus
 }
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-#endif
+
+#endif /* _LOS_SCHEDLIMIT_H */

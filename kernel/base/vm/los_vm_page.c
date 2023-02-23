@@ -34,7 +34,9 @@
 #include "los_vm_phys.h"
 #include "los_vm_boot.h"
 #include "los_vm_filemap.h"
-
+#ifdef LOSCFG_KERNEL_MEM_PLIMIT
+#include "los_plimits.h"
+#endif
 
 #ifdef LOSCFG_KERNEL_VM
 
@@ -81,7 +83,8 @@ VOID OsVmPageStartup(VOID)
      * struct LosVmPage occupied, which satisfies the equation:
      * nPage * sizeof(LosVmPage) + nPage * PAGE_SIZE = OsVmPhysPageNumGet() * PAGE_SIZE.
      */
-    nPage = OsVmPhysPageNumGet() * PAGE_SIZE / (sizeof(LosVmPage) + PAGE_SIZE);
+    UINT32 pageNum = OsVmPhysPageNumGet();
+    nPage = pageNum * PAGE_SIZE / (sizeof(LosVmPage) + PAGE_SIZE);
     g_vmPageArraySize = nPage * sizeof(LosVmPage);
     g_vmPageArray = (LosVmPage *)OsVmBootMemAlloc(g_vmPageArraySize);
 
@@ -89,6 +92,9 @@ VOID OsVmPageStartup(VOID)
 
     OsVmPhysSegAdd();
     OsVmPhysInit();
+#ifdef LOSCFG_KERNEL_PLIMITS
+    OsMemLimitSetLimit(pageNum * PAGE_SIZE);
+#endif
 
     for (segID = 0; segID < g_vmPhysSegNum; segID++) {
         seg = &g_vmPhysSeg[segID];

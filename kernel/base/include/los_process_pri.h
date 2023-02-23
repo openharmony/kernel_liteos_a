@@ -50,6 +50,9 @@
 #ifdef LOSCFG_KERNEL_CONTAINER
 #include "los_container_pri.h"
 #endif
+#ifdef LOSCFG_KERNEL_PLIMITS
+#include "los_plimits.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -138,6 +141,11 @@ typedef struct ProcessCB {
 #endif
 #ifdef LOSCFG_PROC_PROCESS_DIR
     struct ProcDirEntry *procDir;
+#endif
+#ifdef LOSCFG_KERNEL_PLIMITS
+    ProcLimiterSet *plimits;
+    LOS_DL_LIST    plimitsList;  /* plimit process list */
+    PLimitsData    limitStat;
 #endif
 } LosProcessCB;
 

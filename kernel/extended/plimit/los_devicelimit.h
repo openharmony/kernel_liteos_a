@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
- * Copyright (c) 2020-2023 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -29,10 +28,13 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _PROC_INTERNAL_H
-#define _PROC_INTERNAL_H
+#ifndef _LOS_DEVICELIMIT_H
+#define _LOS_DEVICELIMIT_H
 
-#include "proc_fs.h"
+#include "los_typedef.h"
+#include "los_atomic.h"
+#include "los_list.h"
+#include "vfs_config.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -40,60 +42,58 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-#define MAX_NON_LFS ((1UL << 31) - 1)
+#define DEVLIMIT_ACC_MKNOD 1
+#define DEVLIMIT_ACC_READ  2
+#define DEVLIMIT_ACC_WRITE 4
+#define DEVLIMIT_ACC_MASK (DEVLIMIT_ACC_MKNOD | DEVLIMIT_ACC_READ | DEVLIMIT_ACC_WRITE)
 
-extern spinlock_t procfsLock;
-extern bool procfsInit;
+#define DEVLIMIT_DEV_BLOCK 1
+#define DEVLIMIT_DEV_CHAR  2
+#define DEVLIMIT_DEV_ALL   4 /* all devices */
 
-#ifdef LOSCFG_PROC_PROCESS_DIR
-int ProcCreateProcessDir(UINT32 pid, uintptr_t process);
+#define DEVLIMIT_ALLOW 1
+#define DEVLIMIT_DENY 2
 
-void ProcFreeProcessDir(struct ProcDirEntry *processDir);
+#define ACCLEN 4
 
-void ProcSysMemInfoInit(void);
+struct SeqBuf;
+typedef struct TagPLimiterSet ProcLimitSet;
 
-void ProcFileSysInit(void);
-#endif
+enum DevLimitBehavior {
+    DEVLIMIT_DEFAULT_NONE,
+    DEVLIMIT_DEFAULT_ALLOW,
+    DEVLIMIT_DEFAULT_DENY,
+};
 
-#ifdef LOSCFG_KERNEL_PLIMITS
-void ProcLimitsInit(void);
-#endif
+typedef struct DevAccessItem {
+    INT16 type;
+    INT16 access;
+    LOS_DL_LIST list;
+    CHAR name[PATH_MAX];
+} DevAccessItem;
 
-void ProcEntryClearVnode(struct ProcDirEntry *entry);
+typedef struct ProcDevLimit {
+    struct ProcDevLimit *parent;
+    Atomic rc;
+    UINT8 allowFile;
+    UINT8 denyFile;
+    LOS_DL_LIST accessList; // device belong to devicelimite
+    enum DevLimitBehavior behavior;
+} ProcDevLimit;
 
-void ProcDetachNode(struct ProcDirEntry *pn);
-
-void RemoveProcEntryTravalsal(struct ProcDirEntry *pn);
-
-void ProcPmInit(void);
-
-void ProcVmmInit(void);
-
-void ProcProcessInit(void);
-
-int ProcMatch(unsigned int len, const char *name, struct ProcDirEntry *pde);
-
-struct ProcDirEntry *ProcFindEntry(const char *path);
-
-void ProcFreeEntry(struct ProcDirEntry *pde);
-
-int ProcStat(const char *file, struct ProcStat *buf);
-
-void ProcMountsInit(void);
-
-void ProcUptimeInit(void);
-
-void ProcFsCacheInit(void);
-
-void ProcFdInit(void);
-
-#ifdef LOSCFG_KERNEL_CONTAINER
-void *ProcfsContainerGet(int fd, unsigned int *containerType);
-#endif
+VOID OsDevLimitInit(UINTPTR limit);
+VOID *OsDevLimitAlloc(VOID);
+VOID OsDevLimitFree(UINTPTR limit);
+VOID OsDevLimitCopy(UINTPTR dest, UINTPTR src);
+VOID OsDevLimitMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process);
+UINT32 OsDevLimitWriteAllow(ProcLimitSet *plimit, const CHAR *buf, UINT32 size);
+UINT32 OsDevLimitWriteDeny(ProcLimitSet *plimit, const CHAR *buf, UINT32 size);
+UINT32 OsDevLimitShow(ProcDevLimit *devLimit, struct SeqBuf *seqBuf);
+UINT32 OsDevLimitCheckPermission(INT32 vnodeType, const CHAR *pathName, INT32 flags);
 
 #ifdef __cplusplus
 #if __cplusplus
 }
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-#endif
+#endif /* _LOS_DEVICELIMIT_H */
