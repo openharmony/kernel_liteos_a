@@ -57,7 +57,6 @@ VOID *PidLimiterAlloc(VOID)
         return NULL;
     }
     (VOID)memset_s(plimite, sizeof(PidLimit), 0, sizeof(PidLimit));
-    LOS_AtomicSet(&plimite->rc, 1);
     return (VOID *)plimite;
 }
 
@@ -68,10 +67,7 @@ VOID PidLimterFree(UINTPTR limit)
         return;
     }
 
-    LOS_AtomicDec(&pidLimit->rc);
-    if (LOS_AtomicRead(&pidLimit->rc) <= 0) {
-        LOS_KernelFree((VOID *)limit);
-    }
+    LOS_KernelFree((VOID *)limit);
 }
 
 BOOL PidLimitMigrateCheck(UINTPTR curr, UINTPTR parent)
@@ -86,18 +82,6 @@ BOOL PidLimitMigrateCheck(UINTPTR curr, UINTPTR parent)
         return FALSE;
     }
     return TRUE;
-}
-
-VOID OsPidLimiterMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process)
-{
-    (VOID)currLimit;
-
-    PidLimit *parentPidLimit = (PidLimit *)parentLimit;
-    LosProcessCB *pcb = (LosProcessCB *)process;
-
-    if (pcb == NULL) {
-        LOS_AtomicInc(&parentPidLimit->rc);
-    }
 }
 
 BOOL OsPidLimitAddProcessCheck(UINTPTR limit, UINTPTR process)

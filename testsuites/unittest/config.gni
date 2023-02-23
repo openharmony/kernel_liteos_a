@@ -165,6 +165,11 @@ if (defined(LOSCFG_KERNEL_CONTAINER) || liteos_container_test_enable == true) {
   }
 }
 
+LOSCFG_USER_TEST_PROCESS_PLIMITS = false
+if (defined(LOSCFG_KERNEL_PLIMITS) || liteos_container_test_enable == true) {
+  LOSCFG_USER_TEST_PROCESS_PLIMITS = true
+}
+
 ########## fuzz test ##########
 LOSCFG_USER_FUZZ_TEST = false
 if (liteos_fuzz_test_enable == true) {

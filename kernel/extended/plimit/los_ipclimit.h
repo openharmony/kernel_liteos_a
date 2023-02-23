@@ -32,7 +32,6 @@
 #define _LOS_IPCLIMIT_H
 
 #include "los_typedef.h"
-#include "los_atomic.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -41,7 +40,6 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct ProcIPCLimit {
-    Atomic rc;
     UINT32 mqCount;
     UINT32 mqFailedCount;
     UINT32 mqCountLimit;
