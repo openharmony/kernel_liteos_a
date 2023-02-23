@@ -50,7 +50,6 @@ VOID *OsIPCLimitAlloc(VOID)
         return NULL;
     }
     (VOID)memset_s(plimite, sizeof(ProcIPCLimit), 0, sizeof(ProcIPCLimit));
-    LOS_AtomicSet(&plimite->rc, 1);
     return (VOID *)plimite;
 }
 
@@ -61,10 +60,7 @@ VOID OsIPCLimitFree(UINTPTR limite)
         return;
     }
 
-    LOS_AtomicDec(&plimite->rc);
-    if (LOS_AtomicRead(&plimite->rc) <= 0) {
-        LOS_KernelFree((VOID *)plimite);
-    }
+    LOS_KernelFree((VOID *)plimite);
 }
 
 VOID OsIPCLimitCopy(UINTPTR dest, UINTPTR src)
@@ -101,7 +97,6 @@ VOID OsIPCLimitMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process)
         parentIpcLimit->mqFailedCount += currIpcLimit->mqFailedCount;
         parentIpcLimit->shmSize += currIpcLimit->shmSize;
         parentIpcLimit->shmFailedCount += currIpcLimit->shmFailedCount;
-        LOS_AtomicInc(&parentIpcLimit->rc);
         return;
     }
 

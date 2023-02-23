@@ -32,7 +32,6 @@
 #define _LOS_SCHEDLIMIT_H
 
 #include "los_typedef.h"
-#include "los_atomic.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -44,7 +43,6 @@ extern "C" {
 typedef struct TagTaskCB LosTaskCB;
 
 typedef struct ProcSchedLimiter {
-    Atomic rc;
     UINT64 startTime;
     UINT64 endTime;
     UINT64 period;
@@ -58,7 +56,6 @@ VOID OsSchedLimitInit(UINTPTR limit);
 VOID *OsSchedLimitAlloc(VOID);
 VOID OsSchedLimitFree(UINTPTR limit);
 VOID OsSchedLimitCopy(UINTPTR dest, UINTPTR src);
-VOID OsSchedLimitMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process);
 VOID OsSchedLimitUpdateRuntime(LosTaskCB *runTask, UINT64 currTime, INT32 incTime);
 UINT32 OsSchedLimitSetPeriod(ProcSchedLimiter *schedLimit, UINT64 value);
 UINT32 OsSchedLimitSetQuota(ProcSchedLimiter *schedLimit, UINT64 value);

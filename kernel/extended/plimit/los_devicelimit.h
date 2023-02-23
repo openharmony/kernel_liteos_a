@@ -32,7 +32,6 @@
 #define _LOS_DEVICELIMIT_H
 
 #include "los_typedef.h"
-#include "los_atomic.h"
 #include "los_list.h"
 #include "vfs_config.h"
 
@@ -74,7 +73,6 @@ typedef struct DevAccessItem {
 
 typedef struct ProcDevLimit {
     struct ProcDevLimit *parent;
-    Atomic rc;
     UINT8 allowFile;
     UINT8 denyFile;
     LOS_DL_LIST accessList; // device belong to devicelimite
@@ -85,7 +83,6 @@ VOID OsDevLimitInit(UINTPTR limit);
 VOID *OsDevLimitAlloc(VOID);
 VOID OsDevLimitFree(UINTPTR limit);
 VOID OsDevLimitCopy(UINTPTR dest, UINTPTR src);
-VOID OsDevLimitMigrate(UINTPTR currLimit, UINTPTR parentLimit, UINTPTR process);
 UINT32 OsDevLimitWriteAllow(ProcLimitSet *plimit, const CHAR *buf, UINT32 size);
 UINT32 OsDevLimitWriteDeny(ProcLimitSet *plimit, const CHAR *buf, UINT32 size);
 UINT32 OsDevLimitShow(ProcDevLimit *devLimit, struct SeqBuf *seqBuf);

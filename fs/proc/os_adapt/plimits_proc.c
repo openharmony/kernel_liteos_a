@@ -68,8 +68,6 @@ static ssize_t PidLimitReadPriorityLimit(struct SeqBuf *seqBuf, VOID *data);
 static ssize_t PriorityLimitVariableWrite(struct ProcFile *pf, const CHAR *buf, size_t count, loff_t *ppos);
 static ssize_t PidsMaxVariableWrite(struct ProcFile *pf, const CHAR *buf, size_t count, loff_t *ppos);
 static ssize_t ProcLimitsShowLimiters(struct SeqBuf *seqBuf, VOID *data);
-static ssize_t ProcLimitsDeleteLimiters(struct ProcFile *pf, const CHAR *buf, size_t count, loff_t *ppos);
-static ssize_t ProcLimitsAddLimiters(struct ProcFile *pf, const CHAR *buf, size_t count, loff_t *ppos);
 static int ProcfsPlimitsMkdir(struct ProcDirEntry *parent, const char *dirName, mode_t mode, struct ProcDirEntry **pde);
 static int ProcfsPlimitsRmdir(struct ProcDirEntry *parent, struct ProcDirEntry *pde, const char *name);
 #ifdef LOSCFG_KERNEL_MEM_PLIMIT
@@ -119,24 +117,6 @@ static struct PLimitsEntryOpt g_plimitsEntryOpts[] = {
         .ops = {
             .read = ProcLimitsShowLimiters,
         }
-    },
-    {
-        .id = PROCESS_LIMITER_COUNT,
-        .name = "plimits.limiter_add",
-        .mode = PLIMIT_FILE_MODE_READ_WRITE,
-        .offset = UNITPTR_NULL,
-        .ops = {
-            .write = ProcLimitsAddLimiters,
-        },
-    },
-    {
-        .id = PROCESS_LIMITER_COUNT,
-        .name = "plimits.limiter_delete",
-        .mode = PLIMIT_FILE_MODE_READ_WRITE,
-        .offset = UNITPTR_NULL,
-        .ops = {
-            .write = ProcLimitsDeleteLimiters,
-        },
     },
     {
         .id = PROCESS_LIMITER_COUNT,
@@ -456,152 +436,6 @@ static ssize_t ProcLimitsShowLimiters(struct SeqBuf *seqBuf, VOID *data)
     }
 #endif
     return LOS_OK;
-}
-
-static ssize_t ProcLimitsAddLimiters(struct ProcFile *pf, const CHAR *buf, size_t count, loff_t *ppos)
-{
-    (VOID)ppos;
-    unsigned int ret;
-    struct ProcDirEntry *dirEntry = pf->pPDE;
-    ProcLimiterSet *plimits = GetProcLimiterSetFromDirEntry(dirEntry);
-    char *kbuf = NULL;
-
-    ret = MemUserCopy(buf, count, &kbuf);
-    if (ret != 0) {
-        return -ret;
-    } else if ((ret == 0) && (kbuf != NULL)) {
-        buf = (const char *)kbuf;
-    }
-
-    enum ProcLimiterID procLimiterID = 0;
-    if (strcmp(buf, "pids") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_PIDS;
-#ifdef LOSCFG_KERNEL_MEM_PLIMIT
-    } else if (strcmp(buf, "memory") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_MEM;
-#endif
-#ifdef LOSCFG_KERNEL_IPC_PLIMIT
-   } else if (strcmp(buf, "ipc") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_IPC;
-#endif
-#ifdef LOSCFG_KERNEL_DEV_PLIMIT
-    } else if (strcmp(buf, "devices") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_DEV;
-#endif
-#ifdef LOSCFG_KERNEL_SCHED_PLIMIT
-    } else if (strcmp(buf, "sched") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_SCHED;
-#endif
-    } else {
-        (void)LOS_MemFree(m_aucSysMem1, kbuf);
-        PRINTK("enter error, please check the params.\n");
-        return -EINVAL;
-    }
-    (void)LOS_MemFree(m_aucSysMem1, kbuf);
-
-    ret = OsPLimitsAddLimiters(plimits, procLimiterID);
-    if (ret != LOS_OK) {
-        return -ret;
-    }
-
-    ProcLimiterDirEntryInit(dirEntry, BIT(procLimiterID), PLIMIT_FILE_MODE_MASK_NONE);
-    return count;
-}
-
-static struct ProcDirEntry *PLimitsProcFindEntry(const char *name, struct ProcDirEntry *parent)
-{
-    int len = strlen(name);
-    struct ProcDirEntry *pn = NULL;
-    for (pn = parent->subdir; pn != NULL; pn = pn->next) {
-        if (ProcMatch(len, name, pn)) {
-            break;
-        }
-    }
-    return pn;
-}
-
-static int DeleteProcEntry(const char *buf, struct ProcDirEntry *currDirectory)
-{
-    struct ProcDirEntry *entry = PLimitsProcFindEntry(buf, currDirectory);
-    if (entry == NULL) {
-        return EINVAL;
-    }
-    ProcDetachNode(entry);
-    ProcEntryClearVnode(entry);
-    ProcFreeEntry(entry);
-    return 0;
-}
-
-static int PLimitsDeleteProcEntry(enum ProcLimiterID procLimiterID, struct ProcDirEntry *currDirectory)
-{
-    for (int index = 0; index < (sizeof(g_plimitsEntryOpts) / sizeof(struct PLimitsEntryOpt)); index++) {
-        struct PLimitsEntryOpt *entryOpt = &g_plimitsEntryOpts[index];
-        if (entryOpt->id != procLimiterID) {
-            continue;
-        }
-        (void)DeleteProcEntry(entryOpt->name, currDirectory);
-    }
-    return 0;
-}
-
-static ssize_t ProcLimitsDeleteLimiters(struct ProcFile *pf, const CHAR *buf, size_t count, loff_t *ppos)
-{
-    (VOID)ppos;
-    unsigned ret;
-    unsigned mask = 0;
-    enum ProcLimiterID procLimiterID = 0;
-    char *kbuf = NULL;
-
-    if ((pf == NULL) || (pf->pPDE == NULL)) {
-        return -EINVAL;
-    }
-
-    struct ProcDirEntry *pde = pf->pPDE;
-    struct ProcDirEntry *currDirectory = GetCurrDirectory(pde);
-    if ((currDirectory == NULL) || (currDirectory->data == NULL)) {
-        return -EINVAL;
-    }
-    ProcLimiterSet *plimits = (ProcLimiterSet *)currDirectory->data;
-
-    ret = MemUserCopy(buf, count, &kbuf);
-    if (ret != 0) {
-        return -ret;
-    } else if ((ret == 0) && (kbuf != NULL)) {
-        buf = (const char *)kbuf;
-    }
-
-    if (strcmp(buf, "pids") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_PIDS;
-#ifdef LOSCFG_KERNEL_MEM_PLIMIT
-    } else if (strcmp(buf, "memory") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_MEM;
-#endif
-#ifdef LOSCFG_KERNEL_IPC_PLIMIT
-    } else if (strcmp(buf, "ipc") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_IPC;
-#endif
-#ifdef LOSCFG_KERNEL_DEV_PLIMIT
-    } else if (strcmp(buf, "devices") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_DEV;
-#endif
-#ifdef LOSCFG_KERNEL_SCHED_PLIMIT
-    } else if (strcmp(buf, "sched") == 0) {
-        procLimiterID = PROCESS_LIMITER_ID_SCHED;
-#endif
-    } else {
-        PRINTK("the input information or format is incorrect.\n");
-        (void)LOS_MemFree(m_aucSysMem1, kbuf);
-        return -EINVAL;
-    }
-    (void)LOS_MemFree(m_aucSysMem1, kbuf);
-
-    ret = OsPLimitsDeleteLimiters(plimits, procLimiterID, &mask);
-    if (ret != LOS_OK) {
-        return -ret;
-    }
-
-    PLimitsDeleteProcEntry(procLimiterID, currDirectory);
-    return count;
 }
 
 #define PLIMITS_PID_STR_LENGTH 4
