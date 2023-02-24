@@ -89,6 +89,7 @@ void ProcFdInit(void);
 
 #ifdef LOSCFG_KERNEL_CONTAINER
 void *ProcfsContainerGet(int fd, unsigned int *containerType);
+void ProcSysUserInit(void);
 #endif
 
 #ifdef __cplusplus

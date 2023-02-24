@@ -33,6 +33,7 @@
 #ifdef LOSCFG_KERNEL_CONTAINER
 
 STATIC Container g_rootContainer;
+STATIC ContainerLimit g_containerLimit;
 STATIC Atomic g_containerCount = 0xF0000000U;
 #ifdef LOSCFG_USER_CONTAINER
 STATIC Credentials *g_rootCredentials = NULL;
@@ -56,25 +57,163 @@ VOID OsContainerInitSystemProcess(LosProcessCB *processCB)
     return;
 }
 
+UINT32 OsGetContainerLimit(ContainerType type)
+{
+    switch (type) {
+#ifdef LOSCFG_PID_CONTAINER
+        case PID_CONTAINER:
+        case PID_CHILD_CONTAINER:
+            return g_containerLimit.pidLimit;
+#endif
+#ifdef LOSCFG_USER_CONTAINER
+        case USER_CONTAINER:
+            return g_containerLimit.userLimit;
+#endif
+#ifdef LOSCFG_UTS_CONTAINER
+        case UTS_CONTAINER:
+            return g_containerLimit.utsLimit;
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+        case MNT_CONTAINER:
+            return g_containerLimit.mntLimit;
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+        case IPC_CONTAINER:
+            return g_containerLimit.ipcLimit;
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+        case TIME_CONTAINER:
+        case TIME_CHILD_CONTAINER:
+            return g_containerLimit.timeLimit;
+#endif
+        default:
+            break;
+    }
+    return OS_INVALID_VALUE;
+}
+
+UINT32 OsContainerLimitCheck(ContainerType type, UINT32 *containerCount)
+{
+    UINT32 intSave;
+    SCHEDULER_LOCK(intSave);
+    if ((*containerCount) >= OsGetContainerLimit(type)) {
+        SCHEDULER_UNLOCK(intSave);
+        return EINVAL;
+    }
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+UINT32 OsSetContainerLimit(ContainerType type, UINT32 value)
+{
+    UINT32 intSave;
+
+    if (value > LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT) {
+        return EINVAL;
+    }
+
+    SCHEDULER_LOCK(intSave);
+    switch (type) {
+#ifdef LOSCFG_PID_CONTAINER
+        case PID_CONTAINER:
+        case PID_CHILD_CONTAINER:
+            g_containerLimit.pidLimit = value;
+            break;
+#endif
+#ifdef LOSCFG_USER_CONTAINER
+        case USER_CONTAINER:
+            g_containerLimit.userLimit = value;
+            break;
+#endif
+#ifdef LOSCFG_UTS_CONTAINER
+        case UTS_CONTAINER:
+            g_containerLimit.utsLimit = value;
+            break;
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+        case MNT_CONTAINER:
+            g_containerLimit.mntLimit = value;
+            break;
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+        case IPC_CONTAINER:
+            g_containerLimit.ipcLimit = value;
+            break;
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+        case TIME_CONTAINER:
+        case TIME_CHILD_CONTAINER:
+            g_containerLimit.timeLimit = value;
+            break;
+#endif
+        default:
+            SCHEDULER_UNLOCK(intSave);
+            return EINVAL;
+    }
+    SCHEDULER_UNLOCK(intSave);
+    return LOS_OK;
+}
+
+UINT32 OsGetContainerCount(ContainerType type)
+{
+    switch (type) {
+#ifdef LOSCFG_PID_CONTAINER
+        case PID_CONTAINER:
+        case PID_CHILD_CONTAINER:
+            return OsGetPidContainerCount();
+#endif
+#ifdef LOSCFG_USER_CONTAINER
+        case USER_CONTAINER:
+            return OsGetUserContainerCount();
+#endif
+#ifdef LOSCFG_UTS_CONTAINER
+        case UTS_CONTAINER:
+            return OsGetUtsContainerCount();
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+        case MNT_CONTAINER:
+            return OsGetMntContainerCount();
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+        case IPC_CONTAINER:
+            return OsGetIpcContainerCount();
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+        case TIME_CONTAINER:
+        case TIME_CHILD_CONTAINER:
+            return OsGetTimeContainerCount();
+#endif
+        default:
+            break;
+    }
+    return OS_INVALID_VALUE;
+}
+
 VOID OsInitRootContainer(VOID)
 {
 #ifdef LOSCFG_USER_CONTAINER
+    g_containerLimit.userLimit = LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT;
     OsInitRootUserCredentials(&g_rootCredentials);
 #endif
 #ifdef LOSCFG_PID_CONTAINER
+    g_containerLimit.pidLimit = LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT;
     (VOID)OsInitRootPidContainer(&g_rootContainer.pidContainer);
     g_rootContainer.pidForChildContainer = g_rootContainer.pidContainer;
 #endif
 #ifdef LOSCFG_UTS_CONTAINER
+    g_containerLimit.utsLimit = LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT;
     (VOID)OsInitRootUtsContainer(&g_rootContainer.utsContainer);
 #endif
 #ifdef LOSCFG_MNT_CONTAINER
+    g_containerLimit.mntLimit = LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT;
     (VOID)OsInitRootMntContainer(&g_rootContainer.mntContainer);
 #endif
 #ifdef LOSCFG_IPC_CONTAINER
+    g_containerLimit.ipcLimit = LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT;
     (VOID)OsInitRootIpcContainer(&g_rootContainer.ipcContainer);
 #endif
 #ifdef LOSCFG_TIME_CONTAINER
+    g_containerLimit.timeLimit = LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT;
     (VOID)OsInitRootTimeContainer(&g_rootContainer.timeContainer);
     g_rootContainer.timeForChildContainer = g_rootContainer.timeContainer;
 #endif

@@ -29,12 +29,13 @@
  */
 
 #include <cstdio>
-#include "It_process_fs_test.h"
+#include "It_container_test.h"
 
 static int const configLen = 16;
-static int const invalidNum = 2;
-static const int CHILD_FUNC_ARG = 0x2088;
-const int  STACK_SIZE = (1024 * 1024);
+static const int MAX_CONTAINER = 10;
+static const int g_buffSize = 512;
+static const int g_arryLen = 4;
+static const int g_readLen = 254;
 
 static int childFunc(void *arg)
 {
@@ -44,31 +45,56 @@ static int childFunc(void *arg)
     return 0;
 }
 
-void ItProcessFs016(void)
+void ItUtsContainer007(void)
 {
     std::string path = "/proc/sys/user/max_uts_container";
-    int fd = open(path.c_str(), O_WRONLY);
-    ASSERT_NE(fd, -1);
+    char *array[g_arryLen] = { nullptr };
+    char buf[g_buffSize] = { 0 };
 
-    char buf[configLen];
-    (void)sprintf(buf, "%d", invalidNum);
-    size_t ret = write(fd, buf, (strlen(buf) + 1));
+    int ret = ReadFile(path.c_str(), buf);
     ASSERT_NE(ret, -1);
 
-    int arg = CHILD_FUNC_ARG;
+    GetLine(buf, g_arryLen, g_readLen, array);
+
+    int value = atoi(array[1] + strlen("limit: "));
+    ASSERT_EQ(value, MAX_CONTAINER);
+
+    int usedCount = atoi(array[2] + strlen("count: "));
+
+    (void)memset_s(buf, configLen, 0, configLen);
+    ret = sprintf_s(buf, configLen, "%d", usedCount + 1);
+    ASSERT_GT(ret, 0);
+
+    ret = WriteFile(path.c_str(), buf);
+    ASSERT_NE(ret, -1);
 
     char *stack = (char *)mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
                                -1, 0);
     ASSERT_NE(stack, nullptr);
     char *stackTop = stack + STACK_SIZE;
 
-    auto pid = clone(childFunc, stackTop, CLONE_NEWUTS, &arg);
-    ASSERT_NE(pid, -1);
-    pid = clone(childFunc, stackTop, CLONE_NEWUTS, &arg);
-    ASSERT_NE(pid, -1);
+    auto pid1 = clone(childFunc, stackTop, CLONE_NEWUTS, NULL);
+    ASSERT_NE(pid1, -1);
 
-    pid = clone(childFunc, stackTop, CLONE_NEWUTS, &arg);
-    ASSERT_EQ(pid, -1);
+    auto pid2 = clone(childFunc, stackTop, CLONE_NEWUTS, NULL);
+    ASSERT_EQ(pid2, -1);
 
-    (void)close(fd);
+    ret = waitpid(pid1, NULL, 0);
+    ASSERT_EQ(ret, pid1);
+
+    (void)memset_s(buf, configLen, 0, configLen);
+    ret = sprintf_s(buf, configLen, "%d", value);
+    ASSERT_GT(ret, 0);
+
+    ret = WriteFile(path.c_str(), buf);
+    ASSERT_NE(ret, -1);
+
+    (void)memset_s(buf, configLen, 0, configLen);
+    ret = ReadFile(path.c_str(), buf);
+    ASSERT_NE(ret, -1);
+
+    GetLine(buf, g_arryLen, g_readLen, array);
+
+    value = atoi(array[1] + strlen("limit: "));
+    ASSERT_EQ(value, MAX_CONTAINER);
 }
