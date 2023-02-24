@@ -51,6 +51,9 @@
 #ifdef LOSCFG_TIME_CONTAINER
 #include "los_time_container_pri.h"
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+#include "los_net_container_pri.h"
+#endif
 
 typedef enum {
     CONTAINER = 0,
@@ -62,6 +65,7 @@ typedef enum {
     USER_CONTAINER,
     TIME_CONTAINER,
     TIME_CHILD_CONTAINER,
+    NET_CONTAINER,
     CONTAINER_MAX,
 } ContainerType;
 
@@ -84,6 +88,9 @@ typedef struct Container {
     struct TimeContainer *timeContainer;
     struct TimeContainer *timeForChildContainer;
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+    struct NetContainer *netContainer;
+#endif
 } Container;
 
 typedef struct TagContainerLimit {
@@ -105,6 +112,9 @@ typedef struct TagContainerLimit {
 #ifdef LOSCFG_USER_CONTAINER
     UINT32 userLimit;
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+    UINT32 netLimit;
+#endif
 } ContainerLimit;
 
 VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
@@ -112,6 +122,8 @@ VOID OsContainerInitSystemProcess(LosProcessCB *processCB);
 VOID OsInitRootContainer(VOID);
 
 UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent, UINT32 *processID);
+
+VOID OsOsContainersDestroyEarly(LosProcessCB *processCB);
 
 VOID OsContainersDestroy(LosProcessCB *processCB);
 

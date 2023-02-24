@@ -273,7 +273,9 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
 #if LWIP_IPV6
     char *addr = NULL;
 #endif
-
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_net_group_from_netif(netif);
+#endif
     if (buf_len < 1) {
         goto out;
     }
@@ -348,7 +350,11 @@ int print_netif(struct netif *netif, char *print_buf, unsigned int buf_len)
     tmp += ret;
     buf_len -= (unsigned int)ret;
 
+#ifdef LOSCFG_NET_CONTAINER
+    if ((group->netif_default == netif) && (netif_is_up(netif))) {
+#else
     if (netif_default == netif && netif_is_up(netif)) {
+#endif
         ret = snprintf_s(tmp, buf_len, (buf_len - 1), " %s", "Default");
         if ((ret <= 0) || ((unsigned int)ret >= buf_len))
             goto out;
@@ -432,8 +438,12 @@ void lwip_ifconfig_show_internal(void *arg)
     struct netif *netif = NULL;
     struct ifconfig_option *ifconfig_cmd = (struct ifconfig_option *)arg;
     int ret;
-
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_curr_process_net_group();
+    if (group->netif_list == NULL) {
+#else
     if (netif_list == NULL) {
+#endif
         ret = snprintf_s(ifconfig_cmd->cb_print_buf, PRINT_BUF_LEN - ifconfig_cmd->print_len,
                          ((PRINT_BUF_LEN - ifconfig_cmd->print_len) - 1), "Device not init\n");
         if ((ret > 0) && ((unsigned int)ret < (PRINT_BUF_LEN - ifconfig_cmd->print_len))) {
@@ -445,7 +455,11 @@ void lwip_ifconfig_show_internal(void *arg)
 
     if (ifconfig_cmd->iface[0] == '\0') {
         /* display all netif */
+#ifdef LOSCFG_NET_CONTAINER
+        for (netif = group->netif_list; netif != NULL; netif = netif->next) {
+#else
         for (netif = netif_list; netif != NULL; netif = netif->next) {
+#endif
             ret = print_netif(netif, ifconfig_cmd->cb_print_buf + ifconfig_cmd->print_len,
                               PRINT_BUF_LEN - ifconfig_cmd->print_len);
             ifconfig_cmd->print_len += (unsigned int)ret;
@@ -486,7 +500,9 @@ void lwip_ifconfig_internal(void *arg)
     int ret;
     s8_t idx;
     err_t err;
-
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_curr_process_net_group();
+#endif
     ifconfig_cmd = (struct ifconfig_option *)arg;
     netif = netif_find(ifconfig_cmd->iface);
     if (netif == NULL) {
@@ -521,13 +537,22 @@ void lwip_ifconfig_internal(void *arg)
             /* reset gateway if new and previous ipaddr not in same net */
             if (!ip_addr_netcmp_val(&ip_addr, &netif->ip_addr, ip_2_ip4(&netif->netmask))) {
                 ip_addr_set_zero(&netif->gw);
+#ifdef LOSCFG_NET_CONTAINER
+                if (netif == group->netif_default) {
+                    (void)netif_set_default(NULL, group);
+#else
                 if (netif == netif_default) {
                     (void)netif_set_default(NULL);
+#endif
                 }
             }
 
             /* lwip disallow two netif sit in same net at the same time */
+#ifdef LOSCFG_NET_CONTAINER
+            loc_netif = group->netif_list;
+#else
             loc_netif = netif_list;
+#endif
             while (loc_netif != NULL) {
                 if (loc_netif == netif) {
                     loc_netif = loc_netif->next;
@@ -577,7 +602,11 @@ void lwip_ifconfig_internal(void *arg)
 #endif
         if (netif_ip4_netmask(netif)->addr != ip_2_ip4(&netmask)->addr) {
             /* lwip disallow two netif sit in same net at the same time */
+#ifdef LOSCFG_NET_CONTAINER
+            loc_netif = group->netif_list;
+#else
             loc_netif = netif_list;
+#endif
             while (loc_netif != NULL) {
                 if (loc_netif == netif) {
                     loc_netif = loc_netif->next;
@@ -594,8 +623,13 @@ void lwip_ifconfig_internal(void *arg)
             /* check if gateway still reachable */
             if (!ip_addr_netcmp(&netif->gw, &netif->ip_addr, ip_2_ip4(&netmask))) {
                 ip_addr_set_zero(&(netif->gw));
+#ifdef LOSCFG_NET_CONTAINER
+                if (netif == group->netif_default) {
+                    (void)netif_set_default(NULL, group);
+#else
                 if (netif == netif_default) {
                     (void)netif_set_default(NULL);
+#endif
                 }
             }
         }
@@ -630,9 +664,15 @@ void lwip_ifconfig_internal(void *arg)
             goto out;
         }
 
+#ifdef LOSCFG_NET_CONTAINER
+        if (group->netif_default != netif) {
+            ip_addr_set_zero(&netif->gw);
+            (void)netif_set_default(netif, group);
+#else
         if (netif_default != netif) {
             ip_addr_set_zero(&netif->gw);
             (void)netif_set_default(netif);
+#endif
         }
 
 #if LWIP_DHCP
@@ -1255,7 +1295,9 @@ void lwip_arp_internal(void *arg)
     ip4_addr_t ipaddr;
     err_t ret = 0;
     int type = 0;
-
+#ifdef LOSCFG_NET_CONTAINER
+    struct net_group *group = get_curr_process_net_group();
+#endif
     if (arp_cmd->iface[0] == 'd' && arp_cmd->iface[1] == 'e') {
         netif = NULL;
     } else {
@@ -1302,7 +1344,11 @@ void lwip_arp_internal(void *arg)
             if (netif != NULL) {
                 ret = etharp_delete_arp_entry(netif, &ipaddr);
             } else {
+#ifdef LOSCFG_NET_CONTAINER
+                for (netif = group->netif_list; netif != NULL; netif = netif->next) {
+#else
                 for (netif = netif_list; netif != NULL; netif = netif->next) {
+#endif
                     ret = etharp_delete_arp_entry(netif, &ipaddr);
                     if (ret == ERR_OK) {
                         /* only can del success one time */

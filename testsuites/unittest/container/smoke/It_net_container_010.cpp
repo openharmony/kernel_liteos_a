@@ -27,47 +27,54 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <fcntl.h>
-#include <cstdio>
-#include <cstdlib>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <cstring>
-#include <sys/shm.h>
-#include <gtest/gtest.h>
-#include "It_process_plimits.h"
+#include "sys/resource.h"
+#include "sys/wait.h"
+#include "pthread.h"
+#include "sched.h"
+#include "It_container_test.h"
 
-static const int g_buffSize = 512;
-static const int g_arryLen = 4;
-static const int g_readLen = 254;
+const int MAX_PID_RANGE = 100000;
+const int SLEEP_TIME_US = 1000;
+const int LOOP_NUM = 100;
 
-void ItProcessPlimitsIpc009(void)
+static int ChildFunc(void *arg)
 {
-    mode_t mode;
-    char buf[g_buffSize] = { 0 };
+    usleep(SLEEP_TIME_US);
+    exit(EXIT_CODE_ERRNO_5);
+}
+
+static int GroupProcess(void *arg)
+{
+    (void)arg;
     int ret;
-    int shmid;
-    void *shared = nullptr;
-    mode_t acessMode = 0666;
-    std::string subPlimitsPath = "/proc/plimits/test";
+    int status = 0;
 
-    ret = mkdir(subPlimitsPath.c_str(), S_IFDIR | mode);
-    ASSERT_EQ(ret, 0);
+    for (int i = 0; i < LOOP_NUM; i++) {
+        int argTmp = CHILD_FUNC_ARG;
+        auto pid = CloneWrapper(ChildFunc, CLONE_NEWNET, &argTmp);
+        if (pid == -1) {
+            return EXIT_CODE_ERRNO_1;
+        }
+        ret = waitpid(pid, &status, 0);
+        status = WEXITSTATUS(status);
+        if (status != EXIT_CODE_ERRNO_5) {
+            return EXIT_CODE_ERRNO_2;
+        }
+    }
 
-    ret = ReadFile("/proc/plimits/test/ipc.shm_limit", buf);
-    ASSERT_STREQ(buf, "4294967295\n");
+    exit(EXIT_CODE_ERRNO_5);
+}
 
-    shmid = shmget(IPC_PRIVATE, PAGE_SIZE, acessMode | IPC_CREAT);
-    ASSERT_NE(shmid, -1);
-    shared = shmat(shmid, nullptr, 0);
-    ASSERT_NE(shared, (void *)-1);
-    ret = shmdt(shared);
-    ASSERT_NE(ret, -1);
-    ret = shmctl(shmid, IPC_RMID, nullptr);
-    ASSERT_NE(ret, -1);
+void ItNetContainer010(void)
+{
+    int ret;
+    int status = 0;
+    int arg = CHILD_FUNC_ARG;
+    auto pid = CloneWrapper(GroupProcess, CLONE_NEWNET, &arg);
+    ASSERT_NE(pid, -1);
 
-    ret = rmdir(subPlimitsPath.c_str());
-    ASSERT_EQ(ret, 0);
-    return;
+    ret = waitpid(pid, &status, 0);
+    ASSERT_EQ(ret, pid);
+    status = WEXITSTATUS(status);
+    ASSERT_EQ(status, EXIT_CODE_ERRNO_5);
 }

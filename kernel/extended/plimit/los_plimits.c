@@ -121,7 +121,7 @@ ProcLimiterSet *OsRootPLimitsGet(VOID)
 
 UINT32 OsProcLimiterSetInit(VOID)
 {
-    g_rootPLimite = (ProcLimiterSet *)LOS_KernelMalloc(sizeof(ProcLimiterSet));
+    g_rootPLimite = (ProcLimiterSet *)LOS_MemAlloc(m_aucSysMem1, sizeof(ProcLimiterSet));
     if (g_rootPLimite == NULL) {
         return ENOMEM;
     }
@@ -143,6 +143,25 @@ UINT32 OsProcLimiterSetInit(VOID)
         }
     }
     return LOS_OK;
+}
+
+STATIC VOID PLimitsDeleteProcess(LosProcessCB *processCB)
+{
+    if ((processCB == NULL) || (processCB->plimits == NULL)) {
+        return;
+    }
+
+    ProcLimiterSet *plimits = processCB->plimits;
+    for (UINT32 limitsID = 0; limitsID < PROCESS_LIMITER_COUNT; limitsID++) {
+        if (g_limiteOps[limitsID].LimiterDelProcess == NULL) {
+            continue;
+        }
+        g_limiteOps[limitsID].LimiterDelProcess(plimits->limitsList[limitsID], (UINTPTR)processCB);
+    }
+    plimits->pidCount--;
+    LOS_ListDelete(&processCB->plimitsList);
+    processCB->plimits = NULL;
+    return;
 }
 
 STATIC UINT32 PLimitsAddProcess(ProcLimiterSet *plimits, LosProcessCB *processCB)
@@ -169,6 +188,8 @@ STATIC UINT32 PLimitsAddProcess(ProcLimiterSet *plimits, LosProcessCB *processCB
             return EACCES;
         }
     }
+
+    PLimitsDeleteProcess(processCB);
 
     for (limitsID = 0; limitsID < PROCESS_LIMITER_COUNT; limitsID++) {
         if (g_limiteOps[limitsID].LimiterAddProcess == NULL) {
@@ -213,25 +234,6 @@ UINT32 OsPLimitsAddPid(ProcLimiterSet *plimits, UINT32 pid)
     ret = PLimitsAddProcess(plimits, processCB);
     SCHEDULER_UNLOCK(intSave);
     return ret;
-}
-
-STATIC VOID PLimitsDeleteProcess(LosProcessCB *processCB)
-{
-    if ((processCB == NULL) || (processCB->plimits == NULL)) {
-        return;
-    }
-
-    ProcLimiterSet *plimits = processCB->plimits;
-    for (UINT32 limitsID = 0; limitsID < PROCESS_LIMITER_COUNT; limitsID++) {
-        if (g_limiteOps[limitsID].LimiterDelProcess == NULL) {
-            continue;
-        }
-        g_limiteOps[limitsID].LimiterDelProcess(plimits->limitsList[limitsID], (UINTPTR)processCB);
-    }
-    plimits->pidCount--;
-    LOS_ListDelete(&processCB->plimitsList);
-    processCB->plimits = NULL;
-    return;
 }
 
 VOID OsPLimitsDeleteProcess(LosProcessCB *processCB)
@@ -318,7 +320,7 @@ UINT32 OsPLimitsFree(ProcLimiterSet *currPLimits)
             g_limiteOps[limiteID].LimiterFree(procLimiter);
         }
     }
-    LOS_KernelFree(currPLimits);
+    (VOID)LOS_MemFree(m_aucSysMem1, currPLimits);
     return LOS_OK;
 }
 

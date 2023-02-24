@@ -52,7 +52,7 @@ VOID OsMemLimitSetLimit(UINT32 limit)
 
 VOID *OsMemLimiterAlloc(VOID)
 {
-    ProcMemLimiter *plimite = (ProcMemLimiter *)LOS_KernelMalloc(sizeof(ProcMemLimiter));
+    ProcMemLimiter *plimite = (ProcMemLimiter *)LOS_MemAlloc(m_aucSysMem1, sizeof(ProcMemLimiter));
     if (plimite == NULL) {
         return NULL;
     }
@@ -67,7 +67,7 @@ VOID OsMemLimiterFree(UINTPTR limite)
         return;
     }
 
-    LOS_KernelFree((VOID *)limite);
+    (VOID)LOS_MemFree(m_aucSysMem1, (VOID *)limite);
 }
 
 VOID OsMemLimiterCopy(UINTPTR dest, UINTPTR src)

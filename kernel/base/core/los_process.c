@@ -442,7 +442,7 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
 #endif
 
 #ifdef LOSCFG_KERNEL_CONTAINER
-    OsContainersDestroy(processCB);
+    OsOsContainersDestroyEarly(processCB);
 #endif
 
 #ifdef LOSCFG_FS_VFS
@@ -451,6 +451,11 @@ LITE_OS_SEC_TEXT VOID OsProcessResourcesToFree(LosProcessCB *processCB)
     }
     processCB->files = NULL;
 #endif
+
+#ifdef LOSCFG_KERNEL_CONTAINER
+    OsContainersDestroy(processCB);
+#endif
+
 #ifdef LOSCFG_KERNEL_PLIMITS
     OsPLimitsDeleteProcess(processCB);
 #endif
@@ -2151,6 +2156,9 @@ LITE_OS_SEC_TEXT INT32 OsClone(UINT32 flags, UINTPTR sp, UINT32 size)
 #endif
 #ifdef LOSCFG_USER_CONTAINER
     cloneFlag |= CLONE_NEWUSER;
+#endif
+#ifdef LOSCFG_NET_CONTAINER
+    cloneFlag |= CLONE_NEWNET;
 #endif
 #endif
 

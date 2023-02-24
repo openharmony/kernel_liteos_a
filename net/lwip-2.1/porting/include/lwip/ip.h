@@ -28,41 +28,18 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_SCHEDLIMIT_H
-#define _LOS_SCHEDLIMIT_H
+#ifndef _LWIP_PORTING_IP_H_
+#define _LWIP_PORTING_IP_H_
 
-#include "los_typedef.h"
+#define IP_PCB_NETGROUP ;struct net_group *group
+
+#include_next <lwip/ip.h>
 
 #ifdef __cplusplus
-#if __cplusplus
 extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
-
-#define CORE_US_PER_SECOND (1000 * 1000)  /* 1000 * 1000 us per second */
-typedef struct TagTaskCB LosTaskCB;
-
-typedef struct ProcSchedLimiter {
-    UINT64 startTime;
-    UINT64 endTime;
-    UINT64 period;
-    UINT64 quota;
-    UINT64 allRuntime;
-} ProcSchedLimiter;
-
-VOID OsSchedLimitInit(UINTPTR limit);
-VOID *OsSchedLimitAlloc(VOID);
-VOID OsSchedLimitFree(UINTPTR limit);
-VOID OsSchedLimitCopy(UINTPTR dest, UINTPTR src);
-VOID OsSchedLimitUpdateRuntime(LosTaskCB *runTask, UINT64 currTime, INT32 incTime);
-UINT32 OsSchedLimitSetPeriod(ProcSchedLimiter *schedLimit, UINT64 value);
-UINT32 OsSchedLimitSetQuota(ProcSchedLimiter *schedLimit, UINT64 value);
-BOOL OsSchedLimitCheckTime(LosTaskCB *task);
-
+#endif
 #ifdef __cplusplus
-#if __cplusplus
 }
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+#endif
 
-#endif /* _LOS_SCHEDLIMIT_H */
+#endif /* _LWIP_PORTING_IP_H_ */

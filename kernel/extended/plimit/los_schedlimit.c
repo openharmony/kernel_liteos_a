@@ -44,7 +44,7 @@ VOID OsSchedLimitInit(UINTPTR limit)
 
 VOID *OsSchedLimitAlloc(VOID)
 {
-    ProcSchedLimiter *plimit = (ProcSchedLimiter *)LOS_KernelMalloc(sizeof(ProcSchedLimiter));
+    ProcSchedLimiter *plimit = (ProcSchedLimiter *)LOS_MemAlloc(m_aucSysMem1, sizeof(ProcSchedLimiter));
     if (plimit == NULL) {
         return NULL;
     }
@@ -59,7 +59,7 @@ VOID OsSchedLimitFree(UINTPTR limit)
         return;
     }
 
-    LOS_KernelFree((VOID *)limit);
+    (VOID)LOS_MemFree(m_aucSysMem1, (VOID *)limit);
 }
 
 VOID OsSchedLimitCopy(UINTPTR dest, UINTPTR src)
