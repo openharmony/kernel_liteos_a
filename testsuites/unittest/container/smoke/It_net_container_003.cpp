@@ -27,47 +27,52 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <fcntl.h>
-#include <cstdio>
-#include <cstdlib>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <cstring>
-#include <sys/shm.h>
-#include <gtest/gtest.h>
-#include "It_process_plimits.h"
+#include <string>
+#include <iostream>
+#include <regex>
+#include "It_container_test.h"
 
-static const int g_buffSize = 512;
-static const int g_arryLen = 4;
-static const int g_readLen = 254;
-
-void ItProcessPlimitsIpc009(void)
+static std::string GenNetLinkPath(int pid)
 {
-    mode_t mode;
-    char buf[g_buffSize] = { 0 };
-    int ret;
-    int shmid;
-    void *shared = nullptr;
-    mode_t acessMode = 0666;
-    std::string subPlimitsPath = "/proc/plimits/test";
+    std::ostringstream buf;
+    buf << "/proc/" << pid << "/container/net";
+    return buf.str();
+}
 
-    ret = mkdir(subPlimitsPath.c_str(), S_IFDIR | mode);
-    ASSERT_EQ(ret, 0);
+static std::string ReadlinkNet(int pid)
+{
+    auto path = GenNetLinkPath(pid);
+    struct stat sb;
 
-    ret = ReadFile("/proc/plimits/test/ipc.shm_limit", buf);
-    ASSERT_STREQ(buf, "4294967295\n");
+    int ret = lstat(path.data(), &sb);
+    if (ret == -1) {
+        perror("lstat");
+        return std::string();
+    }
 
-    shmid = shmget(IPC_PRIVATE, PAGE_SIZE, acessMode | IPC_CREAT);
-    ASSERT_NE(shmid, -1);
-    shared = shmat(shmid, nullptr, 0);
-    ASSERT_NE(shared, (void *)-1);
-    ret = shmdt(shared);
-    ASSERT_NE(ret, -1);
-    ret = shmctl(shmid, IPC_RMID, nullptr);
-    ASSERT_NE(ret, -1);
+    auto bufsiz = sb.st_size + 1;
+    if (sb.st_size == 0) {
+        bufsiz = PATH_MAX;
+    }
 
-    ret = rmdir(subPlimitsPath.c_str());
-    ASSERT_EQ(ret, 0);
-    return;
+    std::vector<char> buf(bufsiz);
+    auto nbytes = readlink(path.c_str(), buf.data(), bufsiz);
+    if (nbytes == -1) {
+        perror("readlink");
+        return std::string();
+    }
+
+    return buf.data();
+}
+
+void ItNetContainer003(void)
+{
+    std::string zerolink("'net:[0]'");
+    auto netlink = ReadlinkNet(getpid());
+    int ret = zerolink.compare(netlink);
+    ASSERT_NE(ret, 0);
+
+    std::regex reg("'net:\\[[0-9]+\\]'");
+    ret = std::regex_match(netlink, reg);
+    ASSERT_EQ(ret, 1);
 }

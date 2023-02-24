@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd. All rights reserved.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -28,41 +28,35 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LOS_SCHEDLIMIT_H
-#define _LOS_SCHEDLIMIT_H
+#ifndef _LOS_NET_CONTAINER_PRI_H
+#define _LOS_NET_CONTAINER_PRI_H
+#include <lwip/net_group.h>
+#include <lwip/netif.h>
+#include <lwip/ip.h>
+#include "los_atomic.h"
 
-#include "los_typedef.h"
+#ifdef LOSCFG_NET_CONTAINER
+typedef struct ProcessCB LosProcessCB;
+struct Container;
 
-#ifdef __cplusplus
-#if __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+typedef struct NetContainer {
+    Atomic rc;
+    struct net_group *group;
+    UINT32 containerID;
+} NetContainer;
 
-#define CORE_US_PER_SECOND (1000 * 1000)  /* 1000 * 1000 us per second */
-typedef struct TagTaskCB LosTaskCB;
+UINT32 OsInitRootNetContainer(NetContainer **ipcContainer);
 
-typedef struct ProcSchedLimiter {
-    UINT64 startTime;
-    UINT64 endTime;
-    UINT64 period;
-    UINT64 quota;
-    UINT64 allRuntime;
-} ProcSchedLimiter;
+UINT32 OsCopyNetContainer(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent);
 
-VOID OsSchedLimitInit(UINTPTR limit);
-VOID *OsSchedLimitAlloc(VOID);
-VOID OsSchedLimitFree(UINTPTR limit);
-VOID OsSchedLimitCopy(UINTPTR dest, UINTPTR src);
-VOID OsSchedLimitUpdateRuntime(LosTaskCB *runTask, UINT64 currTime, INT32 incTime);
-UINT32 OsSchedLimitSetPeriod(ProcSchedLimiter *schedLimit, UINT64 value);
-UINT32 OsSchedLimitSetQuota(ProcSchedLimiter *schedLimit, UINT64 value);
-BOOL OsSchedLimitCheckTime(LosTaskCB *task);
+UINT32 OsUnshareNetContainer(UINTPTR flags, LosProcessCB *curr, struct Container *newContainer);
 
-#ifdef __cplusplus
-#if __cplusplus
-}
-#endif /* __cplusplus */
-#endif /* __cplusplus */
+UINT32 OsSetNsNetContainer(UINT32 flags, struct Container *container, struct Container *newContainer);
 
-#endif /* _LOS_SCHEDLIMIT_H */
+VOID OsNetContainerDestroy(struct Container *container);
+
+UINT32 OsGetNetContainerID(NetContainer *ipcContainer);
+
+UINT32 OsGetNetContainerCount(VOID);
+#endif
+#endif /* _LOS_NET_CONTAINER_PRI_H */
