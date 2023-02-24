@@ -75,6 +75,9 @@ void ProcFsInit(void)
 #ifdef LOSCFG_KERNEL_PLIMITS
     ProcLimitsInit();
 #endif
+#ifdef LOSCFG_KERNEL_CONTAINER
+    ProcSysUserInit();
+#endif
 }
 
 LOS_MODULE_INIT(ProcFsInit, LOS_INIT_LEVEL_KMOD_EXTENDED);
