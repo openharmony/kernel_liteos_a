@@ -28,12 +28,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_KERNEL_DEV_PLIMIT
 #include "los_seq_buf.h"
 #include "los_bitmap.h"
 #include "los_process_pri.h"
 #include "los_devicelimit.h"
 
-#ifdef LOSCFG_KERNEL_DEV_PLIMIT
 #define TYPE_CHAR_LEN            (1)
 #define DEVICE_NAME_PREFIX_SPACE (1)
 #define DEVICE_ACCESS_MAXLEN     (3)

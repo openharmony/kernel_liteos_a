@@ -28,10 +28,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_KERNEL_SCHED_PLIMIT
 #include "los_schedlimit.h"
 #include "los_process_pri.h"
 
-#ifdef LOSCFG_KERNEL_SCHED_PLIMIT
 STATIC ProcSchedLimiter *g_procSchedLimit = NULL;
 
 VOID OsSchedLimitInit(UINTPTR limit)

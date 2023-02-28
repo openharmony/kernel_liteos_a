@@ -28,6 +28,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_KERNEL_PLIMITS
 #include "los_config.h"
 #include "los_process_pri.h"
 #include "los_process.h"
@@ -35,7 +36,6 @@
 #include "los_task_pri.h"
 #include "los_processlimit.h"
 
-#ifdef LOSCFG_KERNEL_PLIMITS
 STATIC PidLimit *g_rootPidLimit = NULL;
 
 VOID PidLimiterInit(UINTPTR limit)
