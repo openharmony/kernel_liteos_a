@@ -547,6 +547,10 @@ long SysSetUserID(int uid)
     int retval = -EPERM;
     unsigned int intSave;
 
+    if (uid < 0) {
+        return -EINVAL;
+    }
+
     UINT32 kuid = OsMakeKuid(userContainer, uid);
     if (kuid == (UINT32)-1) {
         return -EINVAL;
@@ -701,6 +705,10 @@ int SysSetGroupID(int gid)
     unsigned int oldGid;
     unsigned int intSave;
     int count;
+
+    if (gid < 0) {
+        return -EINVAL;
+    }
 
     unsigned int kgid = OsMakeKgid(userContainer, gid);
     if (kgid == (UINT32)-1) {

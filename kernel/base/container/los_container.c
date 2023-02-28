@@ -86,6 +86,10 @@ UINT32 OsGetContainerLimit(ContainerType type)
         case TIME_CHILD_CONTAINER:
             return g_containerLimit.timeLimit;
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+        case NET_CONTAINER:
+            return g_containerLimit.netLimit;
+#endif
         default:
             break;
     }
@@ -146,6 +150,11 @@ UINT32 OsSetContainerLimit(ContainerType type, UINT32 value)
             g_containerLimit.timeLimit = value;
             break;
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+        case NET_CONTAINER:
+            g_containerLimit.netLimit = value;
+            break;
+#endif
         default:
             SCHEDULER_UNLOCK(intSave);
             return EINVAL;
@@ -183,6 +192,10 @@ UINT32 OsGetContainerCount(ContainerType type)
         case TIME_CHILD_CONTAINER:
             return OsGetTimeContainerCount();
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+        case NET_CONTAINER:
+            return OsGetNetContainerCount();
+#endif
         default:
             break;
     }
@@ -216,6 +229,10 @@ VOID OsInitRootContainer(VOID)
     g_containerLimit.timeLimit = LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT;
     (VOID)OsInitRootTimeContainer(&g_rootContainer.timeContainer);
     g_rootContainer.timeForChildContainer = g_rootContainer.timeContainer;
+#endif
+#ifdef LOSCFG_NET_CONTAINER
+    g_containerLimit.netLimit = LOSCFG_KERNEL_CONTAINER_DEFAULT_LIMIT;
+    (VOID)OsInitRootNetContainer(&g_rootContainer.netContainer);
 #endif
     return;
 }
@@ -273,7 +290,40 @@ STATIC UINT32 CopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *p
         return ret;
     }
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+    ret = OsCopyNetContainer(flags, child, parent);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+#endif
     return ret;
+}
+
+STATIC INLINE UINT32 GetContainerFlagsMask(VOID)
+{
+    UINT32 mask = 0;
+#ifdef LOSCFG_PID_CONTAINER
+    mask |= CLONE_NEWPID;
+#endif
+#ifdef LOSCFG_MNT_CONTAINER
+    mask |= CLONE_NEWNS;
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    mask |= CLONE_NEWIPC;
+#endif
+#ifdef LOSCFG_USER_CONTAINER
+    mask |= CLONE_NEWUSER;
+#endif
+#ifdef LOSCFG_TIME_CONTAINER
+    mask |= CLONE_NEWTIME;
+#endif
+#ifdef LOSCFG_NET_CONTAINER
+    mask |= CLONE_NEWNET;
+#endif
+#ifdef LOSCFG_UTS_CONTAINER
+    mask |= CLONE_NEWUTS;
+#endif
+    return mask;
 }
 
 /*
@@ -288,7 +338,7 @@ UINT32 OsCopyContainers(UINTPTR flags, LosProcessCB *child, LosProcessCB *parent
     flags &= ~CLONE_NEWTIME;
 #endif
 
-    if (!(flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWTIME))) {
+    if (!(flags & GetContainerFlagsMask())) {
 #ifdef LOSCFG_PID_CONTAINER
         if (parent->container->pidContainer != parent->container->pidForChildContainer) {
             goto CREATE_CONTAINER;
@@ -327,7 +377,7 @@ VOID OsContainerFree(LosProcessCB *processCB)
     }
 }
 
-VOID OsContainersDestroy(LosProcessCB *processCB)
+VOID OsOsContainersDestroyEarly(LosProcessCB *processCB)
 {
    /* All processes in the container must be destroyed before the container is destroyed. */
 #ifdef LOSCFG_PID_CONTAINER
@@ -336,6 +386,13 @@ VOID OsContainersDestroy(LosProcessCB *processCB)
     }
 #endif
 
+#ifdef LOSCFG_MNT_CONTAINER
+    OsMntContainerDestroy(processCB->container);
+#endif
+}
+
+VOID OsContainersDestroy(LosProcessCB *processCB)
+{
 #ifdef LOSCFG_USER_CONTAINER
     OsUserContainerDestroy(processCB);
 #endif
@@ -344,16 +401,16 @@ VOID OsContainersDestroy(LosProcessCB *processCB)
     OsUtsContainerDestroy(processCB->container);
 #endif
 
-#ifdef LOSCFG_MNT_CONTAINER
-    OsMntContainerDestroy(processCB->container);
-#endif
-
 #ifdef LOSCFG_IPC_CONTAINER
     OsIpcContainerDestroy(processCB->container);
 #endif
 
 #ifdef LOSCFG_TIME_CONTAINER
     OsTimeContainerDestroy(processCB->container);
+#endif
+
+#ifdef LOSCFG_NET_CONTAINER
+    OsNetContainerDestroy(processCB->container);
 #endif
 
 #ifndef LOSCFG_PID_CONTAINER
@@ -393,6 +450,10 @@ STATIC VOID DeInitContainers(UINT32 flags, Container *container, LosProcessCB *p
 
 #ifdef LOSCFG_TIME_CONTAINER
     OsTimeContainerDestroy(container);
+#endif
+
+#ifdef LOSCFG_NET_CONTAINER
+    OsNetContainerDestroy(container);
 #endif
 
     SCHEDULER_LOCK(intSave);
@@ -439,6 +500,10 @@ UINT32 OsGetContainerID(LosProcessCB *processCB, ContainerType type)
         case TIME_CHILD_CONTAINER:
             return OsGetTimeContainerID(container->timeForChildContainer);
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+        case NET_CONTAINER:
+            return OsGetNetContainerID(container->netContainer);
+#endif
         default:
             break;
     }
@@ -478,6 +543,12 @@ STATIC UINT32 UnshareCreateNewContainers(UINT32 flags, LosProcessCB *curr, Conta
         return ret;
     }
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+    ret = OsUnshareNetContainer(flags, curr, newContainer);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+#endif
     return ret;
 }
 
@@ -487,8 +558,7 @@ INT32 OsUnshare(UINT32 flags)
     UINT32 intSave;
     LosProcessCB *curr = OsCurrProcessGet();
     Container *oldContainer = curr->container;
-    UINT32 unshareFlags = CLONE_NEWPID | CLONE_NEWTIME | CLONE_NEWUTS | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUSER;
-
+    UINT32 unshareFlags = GetContainerFlagsMask();
     if (!(flags & unshareFlags) || ((flags & (~unshareFlags)) != 0)) {
         return -EINVAL;
     }
@@ -547,6 +617,8 @@ STATIC UINT32 SetNsGetFlagByContainerType(UINT32 containerType)
         case TIME_CONTAINER:
         case TIME_CHILD_CONTAINER:
             return CLONE_NEWTIME;
+        case NET_CONTAINER:
+            return CLONE_NEWNET;
         default:
             break;
     }
@@ -586,12 +658,18 @@ STATIC UINT32 SetNsCreateNewContainers(UINT32 flags, Container *newContainer, Co
         return ret;
     }
 #endif
+#ifdef LOSCFG_NET_CONTAINER
+    ret = OsSetNsNetContainer(flags, container, newContainer);
+    if (ret != LOS_OK) {
+        return ret;
+    }
+#endif
     return LOS_OK;
 }
 
 STATIC UINT32 SetNsParamCheck(INT32 fd, INT32 type, UINT32 *flag, LosProcessCB **target)
 {
-    UINT32 typeMask = CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWPID | CLONE_NEWIPC | CLONE_NEWTIME | CLONE_NEWUSER;
+    UINT32 typeMask = GetContainerFlagsMask();
     *flag = (UINT32)(type & typeMask);
     UINT32 containerType = 0;
 

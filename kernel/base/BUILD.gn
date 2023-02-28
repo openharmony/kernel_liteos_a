@@ -36,6 +36,7 @@ kernel_module(module_name) {
     "container/los_credentials.c",
     "container/los_ipc_container.c",
     "container/los_mnt_container.c",
+    "container/los_net_container.c",
     "container/los_pid_container.c",
     "container/los_time_container.c",
     "container/los_user_container.c",

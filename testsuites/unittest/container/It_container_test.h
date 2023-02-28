@@ -220,5 +220,16 @@ void ItPidContainer021(void);
 void ItPidContainer022(void);
 void ItPidContainer024(void);
 void ItUtsContainer003(void);
-
+void ItNetContainer001(void);
+void ItNetContainer002(void);
+void ItNetContainer003(void);
+void ItNetContainer004(void);
+void ItNetContainer005(void);
+void ItNetContainer006(void);
+void ItNetContainer007(void);
+void ItNetContainer008(void);
+void ItNetContainer009(void);
+void ItNetContainer010(void);
+void ItNetContainer011(void);
+void ItNetContainer012(void);
 #endif /* _IT_CONTAINER_TEST_H */

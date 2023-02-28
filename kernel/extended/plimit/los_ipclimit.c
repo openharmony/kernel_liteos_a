@@ -33,7 +33,7 @@
 
 #ifdef LOSCFG_KERNEL_IPC_PLIMIT
 STATIC ProcIPCLimit *g_rootIPCLimit = NULL;
-#define PLIMIT_IPC_SHM_LIMIT_MAX 104857600
+#define PLIMIT_IPC_SHM_LIMIT_MAX 0xFFFFFFFF
 
 VOID OsIPCLimitInit(UINTPTR limite)
 {
@@ -45,7 +45,7 @@ VOID OsIPCLimitInit(UINTPTR limite)
 
 VOID *OsIPCLimitAlloc(VOID)
 {
-    ProcIPCLimit *plimite = (ProcIPCLimit *)LOS_KernelMalloc(sizeof(ProcIPCLimit));
+    ProcIPCLimit *plimite = (ProcIPCLimit *)LOS_MemAlloc(m_aucSysMem1, sizeof(ProcIPCLimit));
     if (plimite == NULL) {
         return NULL;
     }
@@ -60,7 +60,7 @@ VOID OsIPCLimitFree(UINTPTR limite)
         return;
     }
 
-    LOS_KernelFree((VOID *)plimite);
+    (VOID)LOS_MemFree(m_aucSysMem1, (VOID *)plimite);
 }
 
 VOID OsIPCLimitCopy(UINTPTR dest, UINTPTR src)
