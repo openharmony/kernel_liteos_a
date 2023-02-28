@@ -181,7 +181,151 @@ HWTEST_F(ContainerTest, ItContainer001, TestSize.Level0)
 {
     ItContainer001();
 }
+#if defined(LOSCFG_USER_TEST_NET_CONTAINER)
+/**
+* @tc.name: Container_NET_Test_001
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer001, TestSize.Level0)
+{
+    ItNetContainer001();
+}
 
+/**
+* @tc.name: Container_NET_Test_002
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer002, TestSize.Level0)
+{
+    ItNetContainer002();
+}
+
+/**
+* @tc.name: Container_NET_Test_003
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer003, TestSize.Level0)
+{
+    ItNetContainer003();
+}
+
+/**
+* @tc.name: Container_NET_Test_004
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer004, TestSize.Level0)
+{
+    ItNetContainer004();
+}
+
+/**
+* @tc.name: Container_NET_Test_005
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer005, TestSize.Level0)
+{
+    ItNetContainer005();
+}
+
+/**
+* @tc.name: Container_NET_Test_006
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer006, TestSize.Level0)
+{
+    ItNetContainer006();
+}
+
+/**
+* @tc.name: Container_NET_Test_007
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer007, TestSize.Level0)
+{
+    ItNetContainer007();
+}
+
+/**
+* @tc.name: Container_NET_Test_008
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer008, TestSize.Level0)
+{
+    ItNetContainer008();
+}
+
+/**
+* @tc.name: Container_NET_Test_009
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer009, TestSize.Level0)
+{
+    ItNetContainer009();
+}
+
+/**
+* @tc.name: Container_NET_Test_010
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer010, TestSize.Level0)
+{
+    ItNetContainer010();
+}
+
+/**
+* @tc.name: Container_NET_Test_011
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer011, TestSize.Level0)
+{
+    ItNetContainer011();
+}
+
+/**
+* @tc.name: Container_NET_Test_012
+* @tc.desc: uts container function test case
+* @tc.type: FUNC
+* @tc.require: issueI6HPH2
+* @tc.author:
+*/
+HWTEST_F(ContainerTest, ItNetContainer012, TestSize.Level0)
+{
+    ItNetContainer012();
+}
+#endif
 #if defined(LOSCFG_USER_TEST_USER_CONTAINER)
 /**
 * @tc.name: Container_UTS_Test_001

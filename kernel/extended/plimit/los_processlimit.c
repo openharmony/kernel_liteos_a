@@ -52,7 +52,7 @@ VOID PidLimiterInit(UINTPTR limit)
 
 VOID *PidLimiterAlloc(VOID)
 {
-    PidLimit *plimite = (PidLimit *)LOS_KernelMalloc(sizeof(PidLimit));
+    PidLimit *plimite = (PidLimit *)LOS_MemAlloc(m_aucSysMem1, sizeof(PidLimit));
     if (plimite == NULL) {
         return NULL;
     }
@@ -67,7 +67,7 @@ VOID PidLimterFree(UINTPTR limit)
         return;
     }
 
-    LOS_KernelFree((VOID *)limit);
+    (VOID)LOS_MemFree(m_aucSysMem1, (VOID *)limit);
 }
 
 BOOL PidLimitMigrateCheck(UINTPTR curr, UINTPTR parent)

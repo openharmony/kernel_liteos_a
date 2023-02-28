@@ -91,6 +91,8 @@ static ssize_t ProcessContainerLink(unsigned int containerID, ContainerType type
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'time:[%u]'", containerID);
     } else if (type == USER_CONTAINER) {
         count = snprintf_s(buffer, bufLen, bufLen - 1, "'user:[%u]'", containerID);
+    }  else if (type == NET_CONTAINER) {
+        count = snprintf_s(buffer, bufLen, bufLen - 1, "'net:[%u]'", containerID);
     }
 
     if (count < 0) {
@@ -572,6 +574,14 @@ static struct ProcProcess g_procProcess[] = {
         .mode = 0,
         .type = PROC_GID_MAP,
         .fileOps = &UID_GID_MAP_FOPS
+    },
+#endif
+#ifdef LOSCFG_IPC_CONTAINER
+    {
+        .name = "container/net",
+        .mode = S_IFLNK,
+        .type = NET_CONTAINER,
+        .fileOps = &PID_CONTAINER_FOPS
     },
 #endif
 #endif

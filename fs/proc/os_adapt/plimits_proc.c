@@ -585,7 +585,7 @@ static ssize_t MemLimitWriteLimit(struct ProcFile *pf, const CHAR *buf, size_t c
 {
     (void)ppos;
     long long int value = GetPidLimitValue(pf, buf, count);
-    if (value < 0) {
+    if ((value < 0) || (value > (long long int)OS_NULL_INT)) {
         return value;
     }
 
@@ -678,7 +678,7 @@ static ssize_t IPCLimitWriteShmLimit(struct ProcFile *pf, const CHAR *buf, size_
 {
     (void)ppos;
     long long int value = GetPidLimitValue(pf, buf, count);
-    if (value < 0) {
+    if ((value < 0) || (value > (long long int)OS_NULL_INT)) {
         return value;
     }
 

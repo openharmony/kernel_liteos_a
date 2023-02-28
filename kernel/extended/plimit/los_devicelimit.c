@@ -51,7 +51,7 @@ VOID OsDevLimitInit(UINTPTR limit)
 
 VOID *OsDevLimitAlloc(VOID)
 {
-    ProcDevLimit *plimit = (ProcDevLimit *)LOS_KernelMalloc(sizeof(ProcDevLimit));
+    ProcDevLimit *plimit = (ProcDevLimit *)LOS_MemAlloc(m_aucSysMem1, sizeof(ProcDevLimit));
     if (plimit == NULL) {
         return NULL;
     }
@@ -67,7 +67,7 @@ STATIC VOID DevAccessListDelete(ProcDevLimit *devLimit)
     DevAccessItem *tmpItem = NULL;
     LOS_DL_LIST_FOR_EACH_ENTRY_SAFE(delItem, tmpItem, &devLimit->accessList, DevAccessItem, list) {
         LOS_ListDelete(&delItem->list);
-        LOS_KernelFree((VOID *)delItem);
+        (VOID)LOS_MemFree(m_aucSysMem1, (VOID *)delItem);
     }
 }
 
@@ -79,7 +79,7 @@ VOID OsDevLimitFree(UINTPTR limit)
     }
 
     DevAccessListDelete(devLimit);
-    LOS_KernelFree(devLimit);
+    (VOID)LOS_MemFree(m_aucSysMem1, devLimit);
 }
 
 STATIC UINT32 DevLimitCopyAccess(ProcDevLimit *devLimitDest, ProcDevLimit *devLimitSrc)
@@ -88,7 +88,7 @@ STATIC UINT32 DevLimitCopyAccess(ProcDevLimit *devLimitDest, ProcDevLimit *devLi
     INT32 itemSize = sizeof(DevAccessItem);
     devLimitDest->behavior = devLimitSrc->behavior;
     LOS_DL_LIST_FOR_EACH_ENTRY(tmpItem, &devLimitSrc->accessList, DevAccessItem, list) {
-        DevAccessItem *newItem = (DevAccessItem *)LOS_KernelMalloc(itemSize);
+        DevAccessItem *newItem = (DevAccessItem *)LOS_MemAlloc(m_aucSysMem1, itemSize);
         if (newItem == NULL) {
             return ENOMEM;
         }
@@ -326,7 +326,7 @@ STATIC VOID DevLimitAccessListRm(ProcDevLimit *devLimit, DevAccessItem *item)
         walk->access &= ~item->access;
         if (!walk->access) {
             LOS_ListDelete(&walk->list);
-            LOS_KernelFree((VOID *)walk);
+            (VOID)LOS_MemFree(m_aucSysMem1, (VOID *)walk);
         }
     }
 }
@@ -338,7 +338,7 @@ STATIC UINT32 DevLimitAccessListAdd(ProcDevLimit *devLimit, DevAccessItem *item)
     }
 
     DevAccessItem *walk = NULL;
-    DevAccessItem *newItem = (DevAccessItem *)LOS_KernelMalloc(sizeof(DevAccessItem));
+    DevAccessItem *newItem = (DevAccessItem *)LOS_MemAlloc(m_aucSysMem1, sizeof(DevAccessItem));
     if (newItem == NULL) {
         return ENOMEM;
     }
@@ -351,7 +351,7 @@ STATIC UINT32 DevLimitAccessListAdd(ProcDevLimit *devLimit, DevAccessItem *item)
             continue;
         }
         walk->access |= item->access;
-        LOS_KernelFree((VOID *)newItem);
+        (VOID)LOS_MemFree(m_aucSysMem1, (VOID *)newItem);
         newItem = NULL;
     }
 

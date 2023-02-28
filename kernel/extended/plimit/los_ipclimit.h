@@ -46,7 +46,6 @@ typedef struct ProcIPCLimit {
     UINT32 shmSize;
     UINT32 shmFailedCount;
     UINT32 shmSizeLimit;
-    UINT64 migrateTime;
 } ProcIPCLimit;
 
 enum IPCStatType {

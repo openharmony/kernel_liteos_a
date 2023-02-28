@@ -92,7 +92,6 @@ void ItProcessPlimitsIpc010(void)
     ret = shmctl(shmid, IPC_RMID, nullptr);
     ASSERT_NE(ret, -1);
     shmctl(shmid_1, IPC_RMID, nullptr);
-    shmctl(shmid, IPC_RMID, nullptr);
 
     ret = rmdir(subPlimitsPath.c_str());
     ASSERT_EQ(ret, 0);

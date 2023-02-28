@@ -206,6 +206,12 @@ STATIC INT32 ShmAllocSegCheck(key_t key, size_t *size, INT32 *segNum)
         return -ENOMEM;
     }
 
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
+    if (OsIPCLimitShmAlloc(*size) != LOS_OK) {
+        return -ENOMEM;
+    }
+#endif
+
     for (i = 0; i < IPC_SHM_INFO.shmmni; i++) {
         if (IPC_SHM_SEGS[i].status & SHM_SEG_FREE) {
             IPC_SHM_SEGS[i].status &= ~SHM_SEG_FREE;
@@ -217,12 +223,6 @@ STATIC INT32 ShmAllocSegCheck(key_t key, size_t *size, INT32 *segNum)
     if (*segNum < 0) {
         return -ENOSPC;
     }
-
-#ifdef LOSCFG_KERNEL_IPC_PLIMIT
-    if (OsIPCLimitShmAlloc(*size) != LOS_OK) {
-        return -ENOMEM;
-    }
-#endif
     return 0;
 }
 

@@ -27,47 +27,79 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <fcntl.h>
-#include <cstdio>
-#include <cstdlib>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <cstring>
-#include <sys/shm.h>
-#include <gtest/gtest.h>
-#include "It_process_plimits.h"
 
+#include <cstdio>
+#include "It_container_test.h"
+
+static int const configLen = 16;
+static const int MAX_CONTAINER = 10;
 static const int g_buffSize = 512;
 static const int g_arryLen = 4;
 static const int g_readLen = 254;
 
-void ItProcessPlimitsIpc009(void)
+static int childFunc(void *arg)
 {
-    mode_t mode;
+    (void)arg;
+
+    int ret = unshare(CLONE_NEWNET);
+    if (ret != 0) {
+        return EXIT_CODE_ERRNO_1;
+    }
+    return 0;
+}
+
+void ItNetContainer012(void)
+{
+    std::string path = "/proc/sys/user/max_net_container";
+    char *array[g_arryLen] = { nullptr };
     char buf[g_buffSize] = { 0 };
-    int ret;
-    int shmid;
-    void *shared = nullptr;
-    mode_t acessMode = 0666;
-    std::string subPlimitsPath = "/proc/plimits/test";
+    int status = 0;
 
-    ret = mkdir(subPlimitsPath.c_str(), S_IFDIR | mode);
-    ASSERT_EQ(ret, 0);
-
-    ret = ReadFile("/proc/plimits/test/ipc.shm_limit", buf);
-    ASSERT_STREQ(buf, "4294967295\n");
-
-    shmid = shmget(IPC_PRIVATE, PAGE_SIZE, acessMode | IPC_CREAT);
-    ASSERT_NE(shmid, -1);
-    shared = shmat(shmid, nullptr, 0);
-    ASSERT_NE(shared, (void *)-1);
-    ret = shmdt(shared);
-    ASSERT_NE(ret, -1);
-    ret = shmctl(shmid, IPC_RMID, nullptr);
+    int ret = ReadFile(path.c_str(), buf);
     ASSERT_NE(ret, -1);
 
-    ret = rmdir(subPlimitsPath.c_str());
-    ASSERT_EQ(ret, 0);
-    return;
+    GetLine(buf, g_arryLen, g_readLen, array);
+
+    int value = atoi(array[1] + strlen("limit: "));
+    ASSERT_EQ(value, MAX_CONTAINER);
+
+    int usedCount = atoi(array[2] + strlen("count: "));
+
+    (void)memset_s(buf, configLen, 0, configLen);
+    ret = sprintf_s(buf, configLen, "%d", usedCount + 1);
+    ASSERT_GT(ret, 0);
+
+    ret = WriteFile(path.c_str(), buf);
+    ASSERT_NE(ret, -1);
+
+    char *stack = (char *)mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
+                               -1, 0);
+    ASSERT_NE(stack, nullptr);
+    char *stackTop = stack + STACK_SIZE;
+
+    auto pid1 = clone(childFunc, stackTop, CLONE_NEWNET, NULL);
+    ASSERT_NE(pid1, -1);
+
+    ret = waitpid(pid1, &status, 0);
+    ASSERT_EQ(ret, pid1);
+    ret = WIFEXITED(status);
+    ASSERT_NE(ret, 0);
+    ret = WEXITSTATUS(status);
+    ASSERT_EQ(ret, EXIT_CODE_ERRNO_1);
+
+    (void)memset_s(buf, configLen, 0, configLen);
+    ret = sprintf_s(buf, configLen, "%d", value);
+    ASSERT_GT(ret, 0);
+
+    ret = WriteFile(path.c_str(), buf);
+    ASSERT_NE(ret, -1);
+
+    (void)memset_s(buf, configLen, 0, configLen);
+    ret = ReadFile(path.c_str(), buf);
+    ASSERT_NE(ret, -1);
+
+    GetLine(buf, g_arryLen, g_readLen, array);
+
+    value = atoi(array[1] + strlen("limit: "));
+    ASSERT_EQ(value, MAX_CONTAINER);
 }
