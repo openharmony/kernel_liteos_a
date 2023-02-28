@@ -28,6 +28,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_KERNEL_MEM_PLIMIT
 #include <stdlib.h>
 #include <securec.h>
 #include "los_config.h"
@@ -35,7 +36,6 @@
 #include "los_process_pri.h"
 #include "los_plimits.h"
 
-#ifdef LOSCFG_KERNEL_MEM_PLIMIT
 STATIC ProcMemLimiter *g_procMemLimiter = NULL;
 
 VOID OsMemLimiterInit(UINTPTR limite)
