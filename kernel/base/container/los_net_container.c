@@ -27,13 +27,14 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+#ifdef LOSCFG_NET_CONTAINER
 #include <sched.h>
 #include "los_net_container_pri.h"
 #include "los_config.h"
 #include "los_memory.h"
 #include "los_process_pri.h"
 
-#ifdef LOSCFG_NET_CONTAINER
 STATIC UINT32 g_currentNetContainerNum = 0;
 STATIC NetContainer *g_rootNetContainer = NULL;
 

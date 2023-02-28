@@ -28,11 +28,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_UTS_CONTAINER
 #include "internal.h"
 #include "los_uts_container_pri.h"
 #include "los_process_pri.h"
-
-#ifdef LOSCFG_UTS_CONTAINER
 
 STATIC UINT32 g_currentUtsContainerNum;
 
