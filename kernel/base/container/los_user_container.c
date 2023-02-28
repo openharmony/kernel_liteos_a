@@ -28,6 +28,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_USER_CONTAINER
 #include "los_user_container_pri.h"
 #include "errno.h"
 #include "ctype.h"
@@ -47,7 +48,6 @@
 #define OCT 8
 #define DEC 10
 
-#ifdef LOSCFG_USER_CONTAINER
 UINT32 g_currentUserContainerNum = 0;
 
 UINT32 OsCreateUserContainer(Credentials *newCredentials, UserContainer *parentUserContainer)

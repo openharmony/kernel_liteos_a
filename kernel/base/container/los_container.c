@@ -27,10 +27,11 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+#ifdef LOSCFG_KERNEL_CONTAINER
 #include "los_container_pri.h"
 #include "los_process_pri.h"
 #include "internal.h"
-#ifdef LOSCFG_KERNEL_CONTAINER
 
 STATIC Container g_rootContainer;
 STATIC ContainerLimit g_containerLimit;

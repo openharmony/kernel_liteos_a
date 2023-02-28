@@ -28,6 +28,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_MNT_CONTAINER
 #include <unistd.h>
 #include "los_mnt_container_pri.h"
 #include "los_container_pri.h"
@@ -36,7 +37,6 @@
 #include "vnode.h"
 #include "internal.h"
 
-#ifdef LOSCFG_MNT_CONTAINER
 STATIC UINT32 g_currentMntContainerNum;
 
 LIST_HEAD *GetContainerMntList(VOID)

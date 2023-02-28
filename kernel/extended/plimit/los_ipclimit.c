@@ -28,10 +28,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_KERNEL_IPC_PLIMIT
 #include "los_ipclimit.h"
 #include "los_process_pri.h"
 
-#ifdef LOSCFG_KERNEL_IPC_PLIMIT
 STATIC ProcIPCLimit *g_rootIPCLimit = NULL;
 #define PLIMIT_IPC_SHM_LIMIT_MAX 0xFFFFFFFF
 

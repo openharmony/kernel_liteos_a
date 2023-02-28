@@ -28,12 +28,12 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef LOSCFG_KERNEL_PLIMITS
 #include "los_base.h"
 #include "los_process_pri.h"
 #include "hal_timer.h"
 #include "los_plimits.h"
 
-#ifdef LOSCFG_KERNEL_PLIMITS
 typedef struct PlimiteOperations {
     VOID (*LimiterInit)(UINTPTR);
     VOID *(*LimiterAlloc)(VOID);
