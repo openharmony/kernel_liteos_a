@@ -1094,7 +1094,7 @@ ERROR_COPY:
     return ret;
 }
 
-LITE_OS_SEC_TEXT STATIC UINT32 CheckRecievedMsg(IpcListNode *node, IpcContent *content, LosTaskCB *tcb)
+LITE_OS_SEC_TEXT STATIC UINT32 CheckReceivedMsg(IpcListNode *node, IpcContent *content, LosTaskCB *tcb)
 {
     UINT32 ret = LOS_OK;
     if (node == NULL) {
@@ -1184,7 +1184,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
             LOS_ListDelete(listNode);
             node = LOS_DL_LIST_ENTRY(listNode, IpcListNode, listNode);
             SCHEDULER_UNLOCK(intSave);
-            ret = CheckRecievedMsg(node, content, tcb);
+            ret = CheckReceivedMsg(node, content, tcb);
             if (ret == LOS_OK) {
                 break;
             }
