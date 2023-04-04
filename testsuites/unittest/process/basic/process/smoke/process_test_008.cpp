@@ -34,6 +34,7 @@ static const int TEST_COUNT = 10;
 
 static void *ThreadFunc2(void *arg)
 {
+    printf("111111111111111: exit\n");
     exit(254); // 254, exit args
 }
 
@@ -75,6 +76,7 @@ static int ProcessTest001(void)
     ret = pthread_create(&newPthread, NULL, ThreadFunc2, &data);
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
+    printf("222222222222222: exit\n");
     exit(255); // 255, exit args
     return 0;
 }

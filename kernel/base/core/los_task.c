@@ -394,7 +394,7 @@ STATIC VOID OsTaskResourcesToFree(LosTaskCB *taskCB)
     return;
 }
 
-LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree()
+LITE_OS_SEC_TEXT VOID OsTaskCBRecycleToFree(void)
 {
     UINT32 intSave;
 
