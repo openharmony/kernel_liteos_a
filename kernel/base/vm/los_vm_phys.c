@@ -52,7 +52,7 @@ STATIC struct VmPhysArea g_physArea[] = {
 struct VmPhysSeg g_vmPhysSeg[VM_PHYS_SEG_MAX];
 INT32 g_vmPhysSegNum = 0;
 
-LosVmPhysSeg *OsGVmPhysSegGet()
+LosVmPhysSeg *OsGVmPhysSegGet(void)
 {
     return g_vmPhysSeg;
 }
