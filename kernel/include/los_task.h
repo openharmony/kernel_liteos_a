@@ -514,7 +514,20 @@ typedef struct tagTskInitParam {
     UINT16          consoleID;     /**< The console id of task belongs  */
     UINTPTR         processID;
     UserTaskParam   userParam;
+    /* edf parameters */
+    UINT32          runTimeUs;
+    UINT64          deadlineUs;
+    UINT64          periodUs;
 } TSK_INIT_PARAM_S;
+
+typedef struct {
+    union {
+        INT32 priority;
+        INT32 runTimeUs;
+    };
+    INT32 deadlineUs;
+    INT32 periodUs;
+} LosSchedParam;
 
 /**
  * @ingroup los_task

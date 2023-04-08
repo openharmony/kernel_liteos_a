@@ -68,6 +68,10 @@ extern "C" {
 #define OS_SCHED_TICK_TO_CYCLE(ticks) ((UINT64)ticks * OS_CYCLE_PER_TICK)
 #define AFFI_MASK_TO_CPUID(mask)      ((UINT16)((mask) - 1))
 
+#define OS_SCHED_EDF_MIN_RUNTIME    100 /* 100 us */
+#define OS_SCHED_EDF_MIN_DEADLINE   400 /* 400 us */
+#define OS_SCHED_EDF_MAX_DEADLINE   5000000 /* 5 s */
+
 extern UINT32 g_taskScheduled;
 #define OS_SCHEDULER_ACTIVE (g_taskScheduled & (1U << ArchCurrCpuid()))
 #define OS_SCHEDULER_ALL_ACTIVE (g_taskScheduled == LOSCFG_KERNEL_CPU_MASK)
@@ -99,8 +103,15 @@ typedef struct {
 } HPFRunqueue;
 
 typedef struct {
+    LOS_DL_LIST root;
+    LOS_DL_LIST waitList;
+    UINT64 period;
+} EDFRunqueue;
+
+typedef struct {
     SortLinkAttribute timeoutQueue; /* task timeout queue */
     HPFRunqueue       *hpfRunqueue;
+    EDFRunqueue       *edfRunqueue;
     UINT64            responseTime; /* Response time for current CPU tick interrupts */
     UINT32            responseID;   /* The response ID of the current CPU tick interrupt */
     LosTaskCB         *idleTask;   /* idle task id */
@@ -212,30 +223,52 @@ STATIC INLINE VOID OsSchedRunqueuePendingSet(VOID)
     OsSchedRunqueue()->schedFlag |= INT_PEND_RESCH;
 }
 
-#define LOS_SCHED_NORMAL  0U
-#define LOS_SCHED_FIFO    1U
-#define LOS_SCHED_RR      2U
-#define LOS_SCHED_IDLE    3U
+#define LOS_SCHED_NORMAL    0U
+#define LOS_SCHED_FIFO      1U
+#define LOS_SCHED_RR        2U
+#define LOS_SCHED_IDLE      3U
+#define LOS_SCHED_DEADLINE  6U
 
 typedef struct {
     UINT16 policy;
+    /* HPF scheduling parameters */
     UINT16 basePrio;
     UINT16 priority;
     UINT32 timeSlice;
+
+    /* EDF scheduling parameters */
+    INT32  runTimeUs;
+    UINT32 deadlineUs;
+    UINT32 periodUs;
 } SchedParam;
 
 typedef struct {
     UINT16  policy; /* This field must be present for all scheduling policies and must be the first in the structure */
     UINT16  basePrio;
     UINT16  priority;
-    UINT32  initTimeSlice;
-    UINT32  priBitmap; /**< Bitmap for recording the change of task priority, the priority can not be greater than 31 */
+    UINT32  initTimeSlice; /* cycle */
+    UINT32  priBitmap; /* Bitmap for recording the change of task priority, the priority can not be greater than 31 */
 } SchedHPF;
+
+#define EDF_UNUSED       0
+#define EDF_NEXT_PERIOD  1
+#define EDF_WAIT_FOREVER 2
+#define EDF_INIT         3
+typedef struct {
+    UINT16 policy;
+    UINT16 cpuid;
+    UINT32 flags;
+    INT32  runTime;    /* cycle */
+    UINT64 deadline;   /* deadline >> runTime */
+    UINT64 period;     /* period >= deadline */
+    UINT64 finishTime; /* startTime + deadline */
+} SchedEDF;
 
 typedef struct {
     union {
+        SchedEDF edf;
         SchedHPF hpf;
-    } Policy;
+    };
 } SchedPolicy;
 
 typedef struct {
@@ -243,6 +276,7 @@ typedef struct {
     VOID (*enqueue)(SchedRunqueue *rq, LosTaskCB *taskCB);
     VOID (*start)(SchedRunqueue *rq, LosTaskCB *taskCB);
     VOID (*exit)(LosTaskCB *taskCB);
+    UINT64 (*waitTimeGet)(LosTaskCB *taskCB);
     UINT32 (*wait)(LosTaskCB *runTask, LOS_DL_LIST *list, UINT32 timeout);
     VOID (*wake)(LosTaskCB *taskCB);
     BOOL (*schedParamModify)(LosTaskCB *taskCB, const SchedParam *param);
@@ -463,6 +497,12 @@ STATIC INLINE BOOL OsTaskIsBlocked(const LosTaskCB *taskCB)
     return ((taskCB->taskStatus & (OS_TASK_STATUS_SUSPENDED | OS_TASK_STATUS_PENDING | OS_TASK_STATUS_DELAY)) != 0);
 }
 
+STATIC INLINE BOOL OsSchedPolicyIsEDF(const LosTaskCB *taskCB)
+{
+    const SchedEDF *sched = (const SchedEDF *)&taskCB->sp;
+    return (sched->policy == LOS_SCHED_DEADLINE);
+}
+
 STATIC INLINE LosTaskCB *OsCurrTaskGet(VOID)
 {
     return (LosTaskCB *)ArchCurrTaskGet();
@@ -623,6 +663,16 @@ STATIC INLINE VOID SchedTaskUnfreeze(LosTaskCB *taskCB)
 BOOL OsSchedLimitCheckTime(LosTaskCB *task);
 #endif
 
+STATIC INLINE LosTaskCB *EDFRunqueueTopTaskGet(EDFRunqueue *rq)
+{
+    LOS_DL_LIST *root = &rq->root;
+    if (LOS_ListEmpty(root)) {
+        return NULL;
+    }
+
+    return LOS_DL_LIST_ENTRY(LOS_DL_LIST_FIRST(root), LosTaskCB, pendList);
+}
+
 STATIC INLINE LosTaskCB *HPFRunqueueTopTaskGet(HPFRunqueue *rq)
 {
     LosTaskCB *newTask = NULL;
@@ -660,9 +710,16 @@ STATIC INLINE LosTaskCB *HPFRunqueueTopTaskGet(HPFRunqueue *rq)
     return NULL;
 }
 
+VOID EDFProcessDefaultSchedParamGet(SchedParam *param);
+VOID EDFSchedPolicyInit(SchedRunqueue *rq);
+UINT32 EDFTaskSchedParamInit(LosTaskCB *taskCB, UINT16 policy,
+                             const SchedParam *parentParam,
+                             const LosSchedParam *param);
+
 VOID HPFSchedPolicyInit(SchedRunqueue *rq);
 VOID HPFTaskSchedParamInit(LosTaskCB *taskCB, UINT16 policy,
-                           const SchedParam *parentParam, const TSK_INIT_PARAM_S *param);
+                           const SchedParam *parentParam,
+                           const LosSchedParam *param);
 VOID HPFProcessDefaultSchedParamGet(SchedParam *param);
 
 VOID IdleTaskSchedParamInit(LosTaskCB *taskCB);
@@ -670,7 +727,8 @@ VOID IdleTaskSchedParamInit(LosTaskCB *taskCB);
 INT32 OsSchedParamCompare(const LosTaskCB *task1, const LosTaskCB *task2);
 VOID OsSchedPriorityInheritance(LosTaskCB *owner, const SchedParam *param);
 UINT32 OsSchedParamInit(LosTaskCB *taskCB, UINT16 policy,
-                        const SchedParam *parentParam, const TSK_INIT_PARAM_S *param);
+                        const SchedParam *parentParam,
+                        const LosSchedParam *param);
 VOID OsSchedProcessDefaultSchedParamGet(UINT16 policy, SchedParam *param);
 
 VOID OsSchedResponseTimeReset(UINT64 responseTime);
