@@ -543,6 +543,7 @@ STATIC UINT32 TaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam)
     UINT32 ret;
     UINT32 numCount;
     SchedParam schedParam = { 0 };
+    LosSchedParam initSchedParam = {0};
     UINT16 policy = (initParam->policy == LOS_SCHED_NORMAL) ? LOS_SCHED_RR : initParam->policy;
 
     TaskCBBaseInit(taskCB, initParam);
@@ -553,7 +554,14 @@ STATIC UINT32 TaskCBInit(LosTaskCB *taskCB, const TSK_INIT_PARAM_S *initParam)
         return ret;
     }
 
-    ret = OsSchedParamInit(taskCB, policy, &schedParam, initParam);
+    if (policy == LOS_SCHED_DEADLINE) {
+        initSchedParam.runTimeUs = initParam->runTimeUs;
+        initSchedParam.deadlineUs = initParam->deadlineUs;
+        initSchedParam.periodUs = initParam->periodUs;
+    } else {
+        initSchedParam.priority = initParam->usTaskPrio;
+    }
+    ret = OsSchedParamInit(taskCB, policy, &schedParam, &initSchedParam);
     if (ret != LOS_OK) {
         return ret;
     }
@@ -1365,6 +1373,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINTPTR processID, TSK_INIT_PARAM_
     UINT32 taskID;
     UINT32 ret;
     UINT32 intSave;
+    INT32 policy;
+    SchedParam param;
 
     ret = OsCreateUserTaskParamCheck(processID, initParam);
     if (ret != LOS_OK) {
@@ -1373,14 +1383,25 @@ LITE_OS_SEC_TEXT_INIT UINT32 OsCreateUserTask(UINTPTR processID, TSK_INIT_PARAM_
 
     initParam->uwStackSize = OS_USER_TASK_SYSCALL_STACK_SIZE;
     initParam->usTaskPrio = OS_TASK_PRIORITY_LOWEST;
-    initParam->policy = LOS_SCHED_RR;
     if (processID == OS_INVALID_VALUE) {
         SCHEDULER_LOCK(intSave);
         LosProcessCB *processCB = OsCurrProcessGet();
         initParam->processID = (UINTPTR)processCB;
         initParam->consoleID = processCB->consoleID;
         SCHEDULER_UNLOCK(intSave);
+        ret = LOS_GetProcessScheduler(processCB->processID, &policy, NULL);
+        if (ret != LOS_OK) {
+            return OS_INVALID_VALUE;
+        }
+        initParam->policy = policy;
+        if (policy == LOS_SCHED_DEADLINE) {
+            OsSchedProcessDefaultSchedParamGet((UINT16)policy, &param);
+            initParam->runTimeUs = param.runTimeUs;
+            initParam->deadlineUs = param.deadlineUs;
+            initParam->periodUs = param.periodUs;
+        }
     } else {
+        initParam->policy = LOS_SCHED_RR;
         initParam->processID = processID;
         initParam->consoleID = 0;
     }

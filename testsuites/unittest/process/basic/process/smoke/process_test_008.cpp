@@ -65,7 +65,7 @@ static int ProcessTest001(void)
     ICUNIT_ASSERT_EQUAL(ret, 0, ret);
 
     ret = pthread_attr_init(&a);
-    param.sched_priority += 1;
+    param.sched_priority = 26;  /* 26: prio */
     pthread_attr_setschedparam(&a, &param);
     pthread_attr_setinheritsched(&a, PTHREAD_EXPLICIT_SCHED);
     ret = pthread_create(&newPthread, &a, ThreadFunc3, &data);
