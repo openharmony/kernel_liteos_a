@@ -44,7 +44,7 @@
 
 ShellCB *g_shellCB = NULL;
 
-ShellCB *OsGetShellCb(void)
+ShellCB *OsGetShellCb()
 {
     return g_shellCB;
 }
