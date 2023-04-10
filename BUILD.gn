@@ -202,10 +202,6 @@ config("warn_config") {
   ]
   if (defined(LOSCFG_COMPILER_CLANG_LLVM)) {
     cflags += [ "-Wno-address-of-packed-member" ]
-    cflags += [
-      "-Wno-unused-but-set-variable",
-      "-Wno-strict-prototypes",
-    ]
   }
   asmflags = cflags
 }
