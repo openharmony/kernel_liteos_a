@@ -138,7 +138,7 @@ int VnodeAlloc(struct VnodeOps *vop, struct Vnode **newVnode)
     VnodeHold();
     vnode = GetFromFreeList();
     if ((vnode == NULL) && g_totalVnodeSize < LOSCFG_MAX_VNODE_SIZE) {
-        vnode = (struct Vnode*)zalloc(sizeof(struct Vnode));
+        vnode = (struct Vnode *)zalloc(sizeof(struct Vnode));
         g_totalVnodeSize++;
     }
 
