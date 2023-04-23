@@ -87,7 +87,7 @@ For compilation, please refer to the [compilation instructions](https://gitee.co
 
 ## Contribution<a name="section1371123476304"></a>
 
-[How to involve](https://gitee.com/openharmony/docs/blob/HEAD/en/contribute/contribution.md)
+[How to involve](https://gitee.com/openharmony/docs/blob/HEAD/en/contribute/contribution-guide.md)
 
 [Commit message spec](https://gitee.com/openharmony/kernel_liteos_a/wikis/Commit%20message%20%E8%A7%84%E8%8C%83)
 
