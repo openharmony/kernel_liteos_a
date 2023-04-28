@@ -28,15 +28,15 @@
         "name": "liteos_a",
         "subsystem": "kernel",
         "syscap": [
-            "SystemCapability.Kernel.liteos-a"
+            "SystemCapability.Kernel.Liteos-A"
         ],
         "features": [],
-        "adated_system_type": [
+        "adapted_system_type": [
             "small"
         ],
         "rom": "1.5MB",
         "ram": "2MB",
-        "deps": {
+        "external_deps": {
             "components": [
             ], 
             "third_party": [
