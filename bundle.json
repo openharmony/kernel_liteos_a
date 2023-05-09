@@ -36,7 +36,7 @@
         ],
         "rom": "1.5MB",
         "ram": "2MB",
-        "external_deps": {
+        "deps": {
             "components": [
             ], 
             "third_party": [
