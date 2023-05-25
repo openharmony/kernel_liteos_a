@@ -28,15 +28,31 @@
 
 import("//build/lite/config/test.gni")
 import("//kernel/liteos_a/testsuites/unittest/config.gni")
+import("./config.gni")
 
-libc_posix_mem_include_dirs = [ "$TEST_UNITTEST_DIR/libc/posix/mem" ]
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_LOW) {
+  unittest("liteos_a_process_basic_process_unittest_door") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    sources += sources_smoke
+    sources_full = []
+    sources += sources_full
+    configs = [ "../../..:public_config_for_door" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  }
+}
 
-libc_posix_mem_sources_entry =
-    [ "$TEST_UNITTEST_DIR/libc/posix/mem/posix_mem_test.cpp" ]
-
-libc_posix_mem_sources_smoke = [
-  "$TEST_UNITTEST_DIR/libc/posix/mem/smoke/It_posix_mem_001.cpp",
-  "$TEST_UNITTEST_DIR/libc/posix/mem/smoke/It_posix_mem_003.cpp",
-]
-
-libc_posix_mem_sources_full = []
+if (LOSCFG_USER_TEST_LEVEL >= TEST_LEVEL_MIDDLE) {
+  unittest("liteos_a_process_basic_process_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/kernel"
+    include_dirs = common_include_dirs
+    sources = sources_entry
+    sources += sources_smoke
+    sources += sources_full
+    configs = [ "../../..:public_config_for_all" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  }
+}
