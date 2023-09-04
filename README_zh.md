@@ -87,6 +87,8 @@ OpenHarmony LiteOS-A内核支持[Hi3516DV300](https://gitee.com/openharmony/docs
 
 编译可以参考：[编译指导](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/quick-start/quickstart-pkg-3516-build.md)
 
+测试参考:[单元测试](testsuites/unittest/tools/README.md)
+
 ## 贡献<a name="section1371123476304"></a>
 
 [如何贡献](https://gitee.com/openharmony/docs/blob/HEAD/zh-cn/contribute/%E5%8F%82%E4%B8%8E%E8%B4%A1%E7%8C%AE.md)
