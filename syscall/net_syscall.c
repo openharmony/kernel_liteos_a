@@ -401,7 +401,7 @@ ssize_t SysSendMsg(int s, const struct msghdr *message, int flags)
     CHECK_ASPACE(message, sizeof(struct msghdr));
     CPY_FROM_CONST_USER(struct msghdr, message);
 
-    if (message && message->msg_iovlen > IOV_MAX) {
+    if (message && (size_t)message->msg_iovlen > IOV_MAX) {
         set_errno(EMSGSIZE);
         return -get_errno();
     }
@@ -449,7 +449,7 @@ ssize_t SysRecvMsg(int s, struct msghdr *message, int flags)
     CHECK_ASPACE(message, sizeof(struct msghdr));
     CPY_FROM_NONCONST_USER(message);
 
-    if (message && message->msg_iovlen > IOV_MAX) {
+    if (message && (size_t)message->msg_iovlen > IOV_MAX) {
         set_errno(EMSGSIZE);
         return -get_errno();
     }
