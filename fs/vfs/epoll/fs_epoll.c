@@ -326,7 +326,7 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
         return -1;
     }
 
-    for (i = 0; i < epHead->nodeCount; i++) {
+    for (i = 0; i < pollSize; i++) {
         pFd[i].fd = epHead->evs[i].data.fd;
         pFd[i].events = (short)epHead->evs[i].events;
     }
