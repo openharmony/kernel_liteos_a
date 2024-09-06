@@ -261,7 +261,7 @@ STATIC UINT32 GetDirtySize(LosFilePage *fpage, struct Vnode *vnode)
 
 STATIC INT32 OsFlushDirtyPage(LosFilePage *fpage)
 {
-    UINT32 ret;
+    ssize_t ret;
     size_t len;
     char *buff = NULL;
     struct Vnode *vnode = fpage->mapping->host;
