@@ -157,7 +157,8 @@ typedef struct VmSpace {
 #define     VM_MAP_REGION_FLAG_SHM                  (1<<16)
 #define     VM_MAP_REGION_FLAG_FIXED                (1<<17)
 #define     VM_MAP_REGION_FLAG_FIXED_NOREPLACE      (1<<18)
-#define     VM_MAP_REGION_FLAG_INVALID              (1<<19) /* indicates that flags are not specified */
+#define     VM_MAP_REGION_FLAG_LITEIPC              (1<<19)
+#define     VM_MAP_REGION_FLAG_INVALID              (1<<20) /* indicates that flags are not specified */
 
 STATIC INLINE UINT32 OsCvtProtFlagsToRegionFlags(unsigned long prot, unsigned long flags)
 {
