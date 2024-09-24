@@ -239,6 +239,7 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *regi
         goto ERROR_MAP_OUT;
     }
     ipcInfo->pool.poolSize = region->range.size;
+    region->regionFlags |= VM_MAP_REGION_FLAG_LITEIPC;
     return 0;
 ERROR_MAP_OUT:
     LOS_VFree(ipcInfo->pool.kvaddr);
