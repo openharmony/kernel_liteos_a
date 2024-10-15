@@ -240,7 +240,7 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev)
     int i;
     int ret = -1;
 
-     (VOID)pthread_mutex_lock(&g_epollMutex);
+    (VOID)pthread_mutex_lock(&g_epollMutex);
     epHead = EpollGetDataBuff(epfd);
     if (epHead == NULL) {
         set_errno(EBADF);
@@ -301,7 +301,7 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev)
             break;
     }
 
- OUT_RELEASE:
+OUT_RELEASE:
     (VOID)pthread_mutex_unlock(&g_epollMutex);
     return ret;
 }
