@@ -655,7 +655,7 @@ INT32 OsDmesgWrite2File(const CHAR *fullpath, const CHAR *buf, UINT32 logSize)
 {
     INT32 ret;
 
-    const CHAR *prefix = "/temp";
+    const CHAR *prefix = "/temp/";
     INT32 prefixLen = strlen(prefix);
     if (strncmp(fullpath, prefix, prefixLen) != 0) {
         return -1;
