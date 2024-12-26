@@ -297,21 +297,22 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev)
 int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout)
 {
     struct epoll_head *epHead = NULL;
-    int ret;
+    int ret = -1;
     int counter;
     int i;
     struct pollfd *pFd = NULL;
     int pollSize;
 
+    (VOID)pthread_mutex_lock(&g_epollMutex);
     epHead = EpollGetDataBuff(epfd);
     if (epHead == NULL) {
         set_errno(EBADF);
-        return -1;
+        goto OUT_RELEASE;
     }
 
     if ((maxevents <= 0) || (evs == NULL)) {
         set_errno(EINVAL);
-        return -1;
+        goto OUT_RELEASE;
     }
 
     if (maxevents > epHead->nodeCount) {
@@ -323,7 +324,7 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
     pFd = malloc(sizeof(struct pollfd) * pollSize);
     if (pFd == NULL) {
         set_errno(EINVAL);
-        return -1;
+        goto OUT_RELEASE;
     }
 
     for (i = 0; i < epHead->nodeCount; i++) {
@@ -335,7 +336,8 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
     ret = poll(pFd, pollSize, timeout);
     if (ret <= 0) {
         free(pFd);
-        return 0;
+        ret = 0;
+        goto OUT_RELEASE;
     }
 
     for (i = 0, counter = 0; i < ret && counter < pollSize; counter++) {
@@ -347,6 +349,10 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs, int maxevents, int timeout
     }
 
     free(pFd);
-    return i;
+    ret = i;
+
+OUT_RELEASE:
+    (VOID)pthread_mutex_unlock(&g_epollMutex);
+    return ret;
 }
 
