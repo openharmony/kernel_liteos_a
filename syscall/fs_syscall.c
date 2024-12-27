@@ -59,6 +59,7 @@
 
 #define HIGH_SHIFT_BIT 32
 #define TIMESPEC_TIMES_NUM  2
+#define EPOLL_DEFAULT_SIZE  100
 
 static int CheckNewAttrTime(struct IATTR *attr, struct timespec times[TIMESPEC_TIMES_NUM])
 {
@@ -2797,8 +2798,13 @@ int SysEpollWait(int epfd, struct epoll_event *evs, int maxevents, int timeout)
 {
     int ret = 0;
 
-    CHECK_ASPACE(evs, sizeof(struct epoll_event));
-    CPY_FROM_USER(evs);
+    if ((maxevents <= 0) || (maxevents > EPOLL_DEFAULT_SIZE)) {
+        ret = -EINVAL;
+        goto OUT;
+    }
+
+    CHECK_ASPACE(evs, sizeof(struct epoll_event) * maxevents);
+    DUP_FROM_USER_NOCOPY(evs, sizeof(struct epoll_event) * maxevents);
 
     epfd = GetAssociatedSystemFd(epfd);
     if  (epfd < 0) {
@@ -2811,7 +2817,8 @@ int SysEpollWait(int epfd, struct epoll_event *evs, int maxevents, int timeout)
         ret = -get_errno();
     }
 
-    CPY_TO_USER(evs);
+    DUP_TO_USER(evs, sizeof(struct epoll_event) * ret);
+    FREE_DUP(evs);
 OUT:
     return (ret == -1) ? -get_errno() : ret;
 }
@@ -2822,6 +2829,11 @@ int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout,
     sigset_t_l setl;
     int ret = 0;
 
+    if ((maxevents <= 0) || (maxevents > EPOLL_DEFAULT_SIZE)) {
+        ret = -EINVAL;
+        goto OUT;
+    }
+
     CHECK_ASPACE(mask, sizeof(sigset_t));
 
     if (mask != NULL) {
@@ -2831,8 +2843,8 @@ int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout,
         }
     }
 
-    CHECK_ASPACE(evs, sizeof(struct epoll_event));
-    CPY_FROM_USER(evs);
+    CHECK_ASPACE(evs, sizeof(struct epoll_event) * maxevents);
+    DUP_FROM_USER_NOCOPY(evs, sizeof(struct epoll_event) * maxevents);
 
     epfd = GetAssociatedSystemFd(epfd);
     if (epfd < 0) {
@@ -2848,7 +2860,8 @@ int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout,
 
     OsSigprocMask(SIG_SETMASK, &origMask, NULL);
 
-    CPY_TO_USER(evs);
+    DUP_TO_USER(evs, sizeof(struct epoll_event) * ret);
+    FREE_DUP(evs);
 OUT:
     return (ret == -1) ? -get_errno() : ret;
 }
