@@ -213,7 +213,7 @@ LITE_OS_SEC_TEXT STATIC int LiteIpcMmap(struct file *filep, LosVmMapRegion *regi
     }
     if (ipcInfo->pool.uvaddr != NULL) {
         regionTemp = LOS_RegionFind(pcb->vmSpace, (VADDR_T)(UINTPTR)ipcInfo->pool.uvaddr);
-        if (regionTemp != NULL) {
+        if ((regionTemp != NULL) && (regionTemp != region)) {
             (VOID)LOS_RegionFree(pcb->vmSpace, regionTemp);
         }
     }
