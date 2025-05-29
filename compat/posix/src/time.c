@@ -820,6 +820,7 @@ int timer_create(clockid_t clockID, struct sigevent *restrict evp, timer_t *rest
 
 int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
 {
+    UINT32 intSave;
     UINT32 ret;
     UINT16 swtmrID;
     swtmr_proc_arg *arg = NULL;
@@ -843,8 +844,10 @@ int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
         return -1;
     }
 
+    LOS_SpinLockSave(&g_timeSpin, &intSave);
     arg = (swtmr_proc_arg *)malloc(sizeof(swtmr_proc_arg));
     if (arg == NULL) {
+        LOS_SpinUnlockRestore(&g_timeSpin, &intSave);
         errno = ENOMEM;
         return -1;
     }
@@ -857,6 +860,7 @@ int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
     if (ret != LOS_OK) {
         errno = (ret == LOS_ERRNO_SWTMR_MAXSIZE) ? EAGAIN : EINVAL;
         free(arg);
+        LOS_SpinUnlockRestore(&g_timeSpin, &intSave);
         return -1;
     }
 
@@ -865,17 +869,20 @@ int OsTimerCreate(clockid_t clockID, struct ksigevent *evp, timer_t *timerID)
     if (vid == MAX_INVALID_TIMER_VID) {
         free(arg);
         (VOID)LOS_SwtmrDelete(swtmrID);
+        LOS_SpinUnlockRestore(&g_timeSpin, &intSave);
         return -1;
     }
     swtmrID = vid;
 #endif
     *timerID = (timer_t)(UINTPTR)swtmrID;
+    LOS_SpinUnlockRestore(&g_timeSpin, &intSave);
     return 0;
 }
 
 int timer_delete(timer_t timerID)
 {
     UINT16 swtmrID = (UINT16)(UINTPTR)timerID;
+    UINT32 intSave;
     VOID *arg = NULL;
     UINTPTR swtmrProc;
 
@@ -885,15 +892,17 @@ int timer_delete(timer_t timerID)
     if (OS_INT_ACTIVE || !ValidTimerID(swtmrID)) {
         goto ERROUT;
     }
-
+    LOS_SpinLockSave(&g_timeSpin, &intSave);
     arg = (VOID *)OS_SWT_FROM_SID(swtmrID)->uwArg;
     swtmrProc = (UINTPTR)OS_SWT_FROM_SID(swtmrID)->pfnHandler;
     if (LOS_SwtmrDelete(swtmrID)) {
+        LOS_SpinUnlockRestore(&g_timeSpin, &intSave);
         goto ERROUT;
     }
     if ((swtmrProc == (UINTPTR)SwtmrProc) && (arg != NULL)) {
         free(arg);
     }
+    LOS_SpinUnlockRestore(&g_timeSpin, &intSave);
 
 #ifdef LOSCFG_SECURITY_VID
     RemoveNodeByVid((UINT16)(UINTPTR)timerID);
