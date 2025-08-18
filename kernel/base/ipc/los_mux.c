@@ -309,7 +309,9 @@ STATIC UINT32 OsMuxPendOp(LosTaskCB *runTask, LosMux *mutex, UINT32 timeout)
     }
 
     if (((LosTaskCB *)mutex->owner == runTask) && (mutex->attr.type == LOS_MUX_RECURSIVE)) {
-        mutex->muxCount++;
+        if (mutex->muxCount < 0xFFFF) {
+            mutex->muxCount++;
+        }
         return LOS_OK;
     }
 
