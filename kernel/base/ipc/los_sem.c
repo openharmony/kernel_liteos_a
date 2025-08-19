@@ -246,8 +246,7 @@ LITE_OS_SEC_TEXT UINT32 OsSemPostUnsafe(UINT32 semHandle, BOOL *needSched)
     /* Update the operate time, no matter the actual Post success or not */
     OsSemDbgTimeUpdateHook(semHandle);
 
-    if ((semPosted->maxSemCount > 1 && semPosted->semCount == OS_SEM_COUNT_MAX) ||
-        (semPosted->maxSemCount <= 1 && semPosted->semCount == OS_SEM_BINARY_COUNT_MAX)) {
+    if (semPosted->maxSemCount == semPosted->semCount) {
         return LOS_ERRNO_SEM_OVERFLOW;
     }
     if (!LOS_ListEmpty(&semPosted->semList)) {
