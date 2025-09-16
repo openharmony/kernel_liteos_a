@@ -324,7 +324,7 @@ LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINTPTR ownerID)
 {
     for (UINT16 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {
         if (g_swtmrCBArray[index].uwOwnerPid == ownerID) {
-            void *arg = g_swtmrCBArray[index].uwArg;
+            void *arg = (void *)g_swtmrCBArray[index].uwArg;
             LOS_SwtmrDelete(index);
             if (arg != NULL) {
                 free(arg);
