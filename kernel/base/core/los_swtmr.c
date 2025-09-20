@@ -30,6 +30,7 @@
  */
 
 #include "los_swtmr_pri.h"
+#include "los_swtmr.h"
 #include "los_init.h"
 #include "los_process_pri.h"
 #include "los_queue_pri.h"
@@ -323,7 +324,7 @@ BOOL OsIsSwtmrTask(const LosTaskCB *taskCB)
 
 LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINTPTR ownerID)
 {
-    VOID (*SwtmrProcPtr)(UINTPTR) = GetSwtmrProcPtr();
+    SWTMR_PROC_FUNC SwtmrProcPtr = GetSwtmrProcPtr();
     for (UINT16 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {
         if (g_swtmrCBArray[index].uwOwnerPid == ownerID) {
             void *arg = (void *)g_swtmrCBArray[index].uwArg;
