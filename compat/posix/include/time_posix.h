@@ -35,6 +35,7 @@
 #include "time.h"
 #include "errno.h"
 #include "los_sys_pri.h"
+#include "los_swtmr.h"
 
 #ifdef __cplusplus
 #if __cplusplus
