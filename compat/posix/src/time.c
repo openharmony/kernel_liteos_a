@@ -781,6 +781,11 @@ EXIT:
     return;
 }
 
+VOID (*GetSwtmrProcPtr)(UINTPTR)
+{
+    return SwtmrProc;
+}
+
 int timer_create(clockid_t clockID, struct sigevent *restrict evp, timer_t *restrict timerID)
 {
     UINT32 ret;
