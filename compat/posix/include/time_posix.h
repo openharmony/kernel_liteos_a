@@ -35,7 +35,6 @@
 #include "time.h"
 #include "errno.h"
 #include "los_sys_pri.h"
-#include "los_swtmr.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -88,7 +87,6 @@ STATIC INLINE VOID OsTick2TimeSpec(struct timespec *tp, UINT32 tick)
 
 int OsTimerCreate(clockid_t, struct ksigevent *__restrict, timer_t *__restrict);
 void OsAdjTime(void);
-SWTMR_PROC_FUNC GetSwtmrProcPtr(void);
 
 #ifdef __cplusplus
 #if __cplusplus
