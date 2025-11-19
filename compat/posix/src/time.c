@@ -48,7 +48,6 @@
 #include "user_copy.h"
 #include "los_process_pri.h"
 #include "los_swtmr_pri.h"
-#include "los_swtmr.h"
 #include "los_sys_pri.h"
 
 #define CPUCLOCK_PERTHREAD_MASK 4
