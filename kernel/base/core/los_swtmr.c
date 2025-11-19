@@ -30,7 +30,6 @@
  */
 
 #include "los_swtmr_pri.h"
-#include "los_swtmr.h"
 #include "los_init.h"
 #include "los_process_pri.h"
 #include "los_queue_pri.h"
