@@ -37,7 +37,6 @@
 #include "los_sortlink_pri.h"
 #include "los_task_pri.h"
 #include "los_hook.h"
-#include "time_posix.h"
 
 #ifdef LOSCFG_BASE_CORE_SWTMR_ENABLE
 #if (LOSCFG_BASE_CORE_SWTMR_LIMIT <= 0)
