@@ -414,6 +414,8 @@ extern UINT32 LOS_SwtmrCreate(UINT32 interval, UINT8 mode, SWTMR_PROC_FUNC handl
  */
 extern UINT32 LOS_SwtmrDelete(UINT16 swtmrID);
 
+SWTMR_PROC_FUNC GetSwtmrProcPtr(void);
+
 #ifdef __cplusplus
 #if __cplusplus
 }
