@@ -119,6 +119,11 @@ int ParseIds(const char *argv, int *arr, unsigned int *len)
             ret = -1;
             goto EXIT;
         }
+        if (index >= PERF_MAX_FILTER_TSKS) {
+            printf("Too many taskId or processId, maxNum allowed is %d\n", PERF_MAX_FILTER_TSKS);
+            ret = -1;
+            goto EXIT;
+        }
         arr[index++] = res;
         sp = strtok_r(NULL, ",", &this);
     }
@@ -167,6 +172,11 @@ int ParseEvents(const char *argv, PerfEventConfig *eventsCfg, unsigned int *len)
             eventsCfg->type = event->type;
         } else if (eventsCfg->type != event->type) {
             printf("events type must be same\n");
+            ret = -1;
+            goto EXIT;
+        }
+        if (index >= PERF_MAX_EVENT) {
+            printf("Too many events, maxNum allowed is %d\n", PERF_MAX_EVENT);
             ret = -1;
             goto EXIT;
         }
