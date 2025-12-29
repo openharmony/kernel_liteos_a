@@ -322,9 +322,15 @@ BOOL OsIsSwtmrTask(const LosTaskCB *taskCB)
 
 LITE_OS_SEC_TEXT_INIT VOID OsSwtmrRecycle(UINTPTR ownerID)
 {
+    SWTMR_PROC_FUNC SwtmrProcPtr = GetSwtmrProcPtr();
     for (UINT16 index = 0; index < LOSCFG_BASE_CORE_SWTMR_LIMIT; index++) {
         if (g_swtmrCBArray[index].uwOwnerPid == ownerID) {
+            void *arg = (void *)g_swtmrCBArray[index].uwArg;
+            UINTPTR swtmrProc = (UINTPTR)g_swtmrCBArray[index].pfnHandler;
             LOS_SwtmrDelete(index);
+            if ((swtmrProc == (UINTPTR)SwtmrProcPtr) && (arg != NULL)) {
+                free(arg);
+            }
         }
     }
 }
