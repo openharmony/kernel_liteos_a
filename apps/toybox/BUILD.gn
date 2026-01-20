@@ -66,7 +66,7 @@ build_ext_component("build_toybox") {
     extra_flags += " --sysroot=" + rebase_path(ohos_current_sysroot)
   }
 
-  command = "rm -rf .git && cp -rfp porting/liteos_a/. . && env"
+  command = "rm -rf .git && cp -rfp porting/liteos_a/. . && make clean && env"
   command += " CC=\"$ohos_current_cc_command\""
   command += " STRIP=\"$ohos_current_strip_command\""
   command += " OUTNAME=toybox"
