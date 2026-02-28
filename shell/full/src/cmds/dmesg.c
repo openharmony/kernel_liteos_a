@@ -657,7 +657,7 @@ INT32 OsDmesgWrite2File(const CHAR *fullpath, const CHAR *buf, UINT32 logSize)
     char realPath[PATH_MAX] = {'\0'};
     const CHAR *prefix = "/temp/";
     INT32 prefixLen = strlen(prefix);
-    if ((realpath(path, realPath) == NULL) || (strncmp(fullpath, prefix, prefixLen) != 0)) {
+    if ((realpath(fullpath, realPath) == NULL) || (strncmp(fullpath, prefix, prefixLen) != 0)) {
         return -1;
     }
 
