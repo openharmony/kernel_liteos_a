@@ -544,6 +544,7 @@ int ProcOpen(struct ProcFile *procFile)
     if (procFile == NULL) {
         return PROC_ERROR;
     }
+    UINT32 intSave = LOS_IntLock();
     if (procFile->sbuf != NULL) {
         return OK;
     }
@@ -553,6 +554,7 @@ int ProcOpen(struct ProcFile *procFile)
         return PROC_ERROR;
     }
     procFile->sbuf = buf;
+    LOS_IntRestore(intSave);
     return OK;
 }
 
