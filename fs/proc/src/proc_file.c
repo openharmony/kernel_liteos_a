@@ -546,11 +546,13 @@ int ProcOpen(struct ProcFile *procFile)
     }
     UINT32 intSave = LOS_IntLock();
     if (procFile->sbuf != NULL) {
+        LOS_IntRestore(intSave);
         return OK;
     }
 
     struct SeqBuf *buf = LosBufCreat();
     if (buf == NULL) {
+        LOS_IntRestore(intSave);
         return PROC_ERROR;
     }
     procFile->sbuf = buf;
