@@ -714,9 +714,10 @@ int CloseProcFile(struct ProcDirEntry *pde)
     if ((pde->procFileOps != NULL) && (pde->procFileOps->release != NULL)) {
         result = pde->procFileOps->release((struct Vnode *)pde, pde->pf);
     }
+    UINT32 intSave = LOS_IntLock();
     LosBufRelease(pde->pf->sbuf);
     pde->pf->sbuf = NULL;
-
+    LOS_IntRestore(intSave);
     if (pde->parent == NULL) {
         FreeProcEntry(pde);
     }
