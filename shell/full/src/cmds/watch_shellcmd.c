@@ -70,6 +70,7 @@ STATIC VOID OsShellCmdDoWatch(UINTPTR arg1)
 {
     WatchCB *watchItem = (WatchCB *)arg1;
     UINT32 ret;
+    UINT32 intSave = LOS_IntLock();
     g_watchCmd = watchItem;
 
     while (watchItem->count--) {
@@ -87,6 +88,7 @@ STATIC VOID OsShellCmdDoWatch(UINTPTR arg1)
     (VOID)LOS_EventDestroy(&watchItem->watchEvent);
     free(g_watchCmd);
     g_watchCmd = NULL;
+    LOS_IntRestore(intSave);
 }
 
 STATIC INLINE VOID OsWatchCmdUsage(VOID)
