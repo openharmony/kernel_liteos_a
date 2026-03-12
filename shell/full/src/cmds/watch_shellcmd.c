@@ -70,9 +70,10 @@ STATIC VOID OsShellCmdDoWatch(UINTPTR arg1)
 {
     WatchCB *watchItem = (WatchCB *)arg1;
     UINT32 ret;
-    UINT32 intSave = LOS_IntLock();
+    UINT32 intSave;
+    intSave = LOS_IntLock();
     g_watchCmd = watchItem;
-
+    LOS_IntRestore(intSave);
     while (watchItem->count--) {
         printf("\033[2J\n");
         if (watchItem->title) {
@@ -86,6 +87,7 @@ STATIC VOID OsShellCmdDoWatch(UINTPTR arg1)
     }
 
     (VOID)LOS_EventDestroy(&watchItem->watchEvent);
+    intSave = LOS_IntLock();
     free(g_watchCmd);
     g_watchCmd = NULL;
     LOS_IntRestore(intSave);
