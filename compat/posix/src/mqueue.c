@@ -749,6 +749,7 @@ STATIC INLINE BOOL MqParamCheck(mqd_t personal, const char *msg, size_t msgLen)
  */
 static void MqSendNotify(struct mqarray *mqueueCB)
 {
+    UINT32 intSave;
     struct mqnotify *mqnotify = &mqueueCB->mq_notify;
 
     if ((mqnotify->pid) && (mqueueCB->mqcb->readWriteableCnt[OS_QUEUE_READ] == 0)) {
@@ -761,7 +762,9 @@ static void MqSendNotify(struct mqarray *mqueueCB)
                 info.si_signo = mqnotify->notify.sigev_signo;
                 info.si_code = SI_MESGQ;
                 info.si_value = mqnotify->notify.sigev_value;
+                SCHEDULER_LOCK(intSave);
                 OsDispatch(mqnotify->pid, &info, OS_USER_KILL_PERMISSION);
+                SCHEDULER_UNLOCK(intSave);
                 break;
             case SIGEV_NONE:
             default:
