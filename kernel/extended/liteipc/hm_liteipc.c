@@ -907,7 +907,7 @@ LITE_OS_SEC_TEXT STATIC UINT32 CheckMsgSize(IpcMsg *msg)
 
 LITE_OS_SEC_TEXT STATIC UINT32 CopyDataFromUser(IpcListNode *node, UINT32 bufSz, const IpcMsg *msg)
 {
-    UINT32 ret;
+    UINT32 ret, intSave;
     ret = (UINT32)memcpy_s((VOID *)(&node->msg), bufSz - sizeof(LOS_DL_LIST), (const VOID *)msg, sizeof(IpcMsg));
     if (ret != LOS_OK) {
         PRINT_DEBUG("%s, %d, %u\n", __FUNCTION__, __LINE__, ret);
@@ -941,11 +941,13 @@ LITE_OS_SEC_TEXT STATIC UINT32 CopyDataFromUser(IpcListNode *node, UINT32 bufSz,
         return ret;
     }
     node->msg.taskID = LOS_CurTaskIDGet();
+    SCHEDULER_LOCK(intSave);
     node->msg.processID = OsCurrProcessGet()->processID;
 #ifdef LOSCFG_SECURITY_CAPABILITY
     node->msg.userID = OsCurrProcessGet()->user->userID;
     node->msg.gid = OsCurrProcessGet()->user->gid;
 #endif
+    SCHEDULER_UNLOCK(intSave);
     return LOS_OK;
 }
 
