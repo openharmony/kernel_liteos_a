@@ -2694,6 +2694,7 @@ int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 {
     int ret;
     int retVal;
+    long dataIntr[2];
     sigset_t_l origMask;
     sigset_t_l setl;
 
@@ -2712,7 +2713,13 @@ int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
     }
 
     if (data != NULL) {
-        retVal = LOS_ArchCopyFromUser(&(setl.sig[0]), (int *)((UINTPTR)data[0]), sizeof(sigset_t));
+        retVal = LOS_ArchCopyFromUser(dataIntr, data, sizeof(dataIntr));
+        if (retVal != 0) {
+            ret = -EFAULT;
+            FREE_DUP(timeout);
+            return ret;
+        }
+        retVal = LOS_ArchCopyFromUser(&(setl.sig[0]), (int *)((UINTPTR)dataIntr[0]), sizeof(sigset_t));
         if (retVal != 0) {
             ret = -EFAULT;
             FREE_DUP(timeout);
