@@ -737,7 +737,7 @@ BOOL OsGetUsrIpInfo(UINTPTR ip, IpInfo *info)
         PRINT_ERR("ip = 0x%x, %s\n", info->ip, name);
     }
 END:
-    info->len = strlen(name);
+    info->len = strlen(name) < (REGION_PATH_MAX - 1) ? strlen(name) : (REGION_PATH_MAX - 1);
     if (strncpy_s(info->f_path, REGION_PATH_MAX, name, REGION_PATH_MAX - 1) != EOK) {
         info->f_path[0] = '\0';
         info->len = 0;
