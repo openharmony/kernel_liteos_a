@@ -112,7 +112,7 @@ UINT32 OsPerfOutputWrite(CHAR *data, UINT32 size)
 
 VOID OsPerfOutputInfo(VOID)
 {
-    PRINT_EMG("dump perf data, addr: %p length: %#x\n", g_perfOutputCb.ringbuf.fifo, g_perfOutputCb.ringbuf.size);
+    PRINT_EMG("dump perf data, length: %#x\n", g_perfOutputCb.ringbuf.size);
 }
 
 VOID OsPerfNotifyHookReg(const PERF_BUF_NOTIFY_HOOK func)
