@@ -2695,8 +2695,8 @@ int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
     int ret;
     int retVal;
     long dataIntr[2];
-    sigset_t_l origMask;
-    sigset_t_l setl;
+    sigset_t_l origMask = {0};
+    sigset_t_l setl = {0};
 
     CHECK_ASPACE(readfds, sizeof(fd_set));
     CHECK_ASPACE(writefds, sizeof(fd_set));
@@ -2725,17 +2725,19 @@ int SysPselect6(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
             FREE_DUP(timeout);
             return ret;
         }
+        (VOID)OsSigprocMask(SIG_SETMASK, &setl, &origMask);
+    } else {
+        (VOID)OsSigprocMask(SIG_SETMASK, NULL, &origMask);
     }
 
-    OsSigprocMask(SIG_SETMASK, &setl, &origMask);
     ret = do_select(nfds, readfds, writefds, exceptfds, (struct timeval *)timeout, UserPoll);
+    (VOID)OsSigprocMask(SIG_SETMASK, &origMask, NULL);
     if (ret < 0) {
         /* do not copy parameter back to user mode if do_select failed */
         ret = -get_errno();
         FREE_DUP(timeout);
         return ret;
     }
-    OsSigprocMask(SIG_SETMASK, &origMask, NULL);
 
     CPY_TO_USER(readfds);
     CPY_TO_USER(writefds);
@@ -2832,8 +2834,8 @@ OUT:
 
 int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout, const sigset_t *mask)
 {
-    sigset_t_l origMask;
-    sigset_t_l setl;
+    sigset_t_l origMask = {0};
+    sigset_t_l setl = {0};
     int ret = 0;
 
     if ((maxevents <= 0) || (maxevents > EPOLL_DEFAULT_SIZE)) {
@@ -2848,6 +2850,9 @@ int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout,
         if (ret != 0) {
             return -EFAULT;
         }
+        (VOID)OsSigprocMask(SIG_SETMASK, &setl, &origMask);
+    } else {
+        (VOID)OsSigprocMask(SIG_SETMASK, NULL, &origMask);
     }
 
     CHECK_ASPACE(evs, sizeof(struct epoll_event) * maxevents);
@@ -2859,13 +2864,12 @@ int SysEpollPwait(int epfd, struct epoll_event *evs, int maxevents, int timeout,
         goto OUT;
     }
 
-    OsSigprocMask(SIG_SETMASK, &setl, &origMask);
     ret = epoll_wait(epfd, evs, maxevents, timeout);
     if (ret < 0) {
         ret = -get_errno();
     }
 
-    OsSigprocMask(SIG_SETMASK, &origMask, NULL);
+    (VOID)OsSigprocMask(SIG_SETMASK, &origMask, NULL);
 
     DUP_TO_USER(evs, sizeof(struct epoll_event) * ret);
     FREE_DUP(evs);
