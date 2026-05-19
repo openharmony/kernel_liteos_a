@@ -277,7 +277,7 @@ static void HiLogCoverOldLog(size_t bufLen)
 
 int HiLogWriteInternal(const char *buffer, size_t bufLen)
 {
-    struct HiLogEntry header;
+    struct HiLogEntry header = {0};
     int retval;
     LosTaskCB *runTask =  (LosTaskCB *)OsCurrTaskGet();
 
