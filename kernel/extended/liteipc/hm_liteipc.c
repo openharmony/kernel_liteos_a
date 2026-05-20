@@ -779,6 +779,9 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleSvc(UINT32 dstTid, SpecialObj *obj, BOOL is
             LosTaskCB *tcb = OS_TCB_FROM_TID(selfTid);
             if (tcb->ipcTaskInfo == NULL) {
                 tcb->ipcTaskInfo = LiteIpcTaskInit();
+                if (tcb->ipcTaskInfo == NULL) {
+                    return -ENOMEM;
+                }
             }
             uint32_t serviceHandle = 0;
             UINT32 ret = GenerateServiceHandle(selfTid, HANDLE_REGISTED, &serviceHandle);
@@ -802,6 +805,9 @@ LITE_OS_SEC_TEXT STATIC UINT32 HandleSvc(UINT32 dstTid, SpecialObj *obj, BOOL is
         LosTaskCB *taskCb = OS_TCB_FROM_TID(obj->content.svc.handle);
         if (taskCb->ipcTaskInfo == NULL) {
             taskCb->ipcTaskInfo = LiteIpcTaskInit();
+            if (taskCb->ipcTaskInfo == NULL) {
+                return -ENOMEM;
+                }
         }
         if (GetTid(obj->content.svc.handle, &taskID) == 0) {
             AddServiceAccess(dstTid, obj->content.svc.handle);
@@ -1074,6 +1080,9 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcWrite(IpcContent *content)
 
     if (tcb->ipcTaskInfo == NULL) {
         tcb->ipcTaskInfo = LiteIpcTaskInit();
+        if (tcb->ipcTaskInfo == NULL) {
+           return -ENOMEM;
+        }
     }
 
     ret = HandleSpecialObjects(dstTid, buf, FALSE);
@@ -1163,6 +1172,9 @@ LITE_OS_SEC_TEXT STATIC UINT32 LiteIpcRead(IpcContent *content)
     LosTaskCB *tcb = OS_TCB_FROM_TID(selfTid);
     if (tcb->ipcTaskInfo == NULL) {
         tcb->ipcTaskInfo = LiteIpcTaskInit();
+        if (tcb->ipcTaskInfo == NULL) {
+           return -ENOMEM;
+        }
     }
 
     listHead = &(tcb->ipcTaskInfo->msgListHead);
