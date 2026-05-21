@@ -34,14 +34,50 @@
 #include "proc_fs.h"
 #include "internal.h"
 #ifdef LOSCFG_KERNEL_PM
+#include "los_memory.h"
 #include "los_pm.h"
+#include "los_vm_map.h"
+#include "user_copy.h"
+
+static unsigned int PowerMemUserCopy(const char *src, size_t len, char **kbuf)
+{
+    if (LOS_IsUserAddressRange((VADDR_T)(UINTPTR)src, len)) {
+        char *kernelBuf = LOS_MemAlloc(m_aucSysMem1, len + 1);
+        if (kernelBuf == NULL) {
+            return ENOMEM;
+        }
+
+        if (LOS_ArchCopyFromUser(kernelBuf, src, len) != 0) {
+            (VOID)LOS_MemFree(m_aucSysMem1, kernelBuf);
+            return EFAULT;
+        }
+        kernelBuf[len] = '\0';
+        *kbuf = kernelBuf;
+    }
+
+    return 0;
+}
 
 static int PowerLockWrite(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos)
 {
+    char *kbuf = NULL;
     (void)pf;
-    (void)count;
     (void)ppos;
-    return -LOS_PmLockRequest(buf);
+
+    if ((buf == NULL) || (count == 0)) {
+        return -EINVAL;
+    }
+
+    unsigned ret = PowerMemUserCopy(buf, count, &kbuf);
+    if (ret != 0) {
+        return -(int)ret;
+    } else if (kbuf != NULL) {
+        buf = (const char *)kbuf;
+    }
+
+    ret = LOS_PmLockRequest(buf);
+    (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
+    return -(int)ret;
 }
 
 static int PowerLockRead(struct SeqBuf *m, void *v)
@@ -59,10 +95,24 @@ static const struct ProcFileOperations PowerLock = {
 
 static int PowerUnlockWrite(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos)
 {
+    char *kbuf = NULL;
     (void)pf;
-    (void)count;
     (void)ppos;
-    return -LOS_PmLockRelease(buf);
+
+    if ((buf == NULL) || (count == 0)) {
+        return -EINVAL;
+    }
+
+    unsigned ret = PowerMemUserCopy(buf, count, &kbuf);
+    if (ret != 0) {
+        return -(int)ret;
+    } else if (kbuf != NULL) {
+        buf = (const char *)kbuf;
+    }
+
+    ret = LOS_PmLockRelease(buf);
+    (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
+    return -(int)ret;
 }
 
 static const struct ProcFileOperations PowerUnlock = {
@@ -72,9 +122,20 @@ static const struct ProcFileOperations PowerUnlock = {
 
 static int PowerModeWrite(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos)
 {
+    char *kbuf = NULL;
     (void)pf;
-    (void)count;
     (void)ppos;
+    
+    if ((buf == NULL) || (count == 0)) {
+        return -EINVAL;
+    }
+
+    unsigned ret = PowerMemUserCopy(buf, count, &kbuf);
+    if (ret != 0) {
+        return -(int)ret;
+    } else if (kbuf != NULL) {
+        buf = (const char *)kbuf;
+    }
 
     LOS_SysSleepEnum mode;
 
@@ -92,10 +153,13 @@ static int PowerModeWrite(struct ProcFile *pf, const char *buf, size_t count, lo
         mode = LOS_SYS_SHUTDOWN;
     } else {
         PRINT_ERR("Unsupported hibernation mode: %s\n", buf);
+        (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
         return -EINVAL;
     }
 
-    return -LOS_PmModeSet(mode);
+    ret = LOS_PmModeSet(mode);
+    (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
+    return -(int)ret;
 }
 
 static int PowerModeRead(struct SeqBuf *m, void *v)
@@ -122,18 +186,27 @@ static int PowerCountRead(struct SeqBuf *m, void *v)
 
 static int PowerCountWrite(struct ProcFile *pf, const char *buf, size_t count, loff_t *ppos)
 {
+    char *kbuf = NULL;
     (void)pf;
-    (void)count;
     (void)ppos;
 
     int weakCount;
 
-    if (buf == NULL) {
-        return 0;
+    if ((buf == NULL) || (count == 0)) {
+        return -EINVAL;
+    }
+
+    unsigned ret = PowerMemUserCopy(buf, count, &kbuf);
+    if (ret != 0) {
+        return -(int)ret;
+    } else if (kbuf != NULL) {
+        buf = (const char *)kbuf;
     }
 
     weakCount = atoi(buf);
-    return -LOS_PmSuspend(weakCount);
+    ret = LOS_PmSuspend(weakCount);
+    (VOID)LOS_MemFree(m_aucSysMem1, kbuf);
+    return -(int)ret;
 }
 
 static const struct ProcFileOperations PowerCount = {
