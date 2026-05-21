@@ -282,7 +282,7 @@ ssize_t SysWrite(int fd, const void *buf, size_t nbytes)
     if (!LOS_IsUserAddressRange((vaddr_t)(UINTPTR)buf, nbytes)) {
         return -EFAULT;
     }
-
+    CHECK_ASPACE(buf, nbytes);
     /* Process fd convert to system global fd */
     int sysfd = GetAssociatedSystemFd(fd);
     ret = write(sysfd, buf, nbytes);
