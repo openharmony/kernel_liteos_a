@@ -460,7 +460,7 @@ static int ProcIDMapRead(struct SeqBuf *seqBuf, void *v)
                            uidGidExtent.count);
         return 0;
     }
-    SCHEDULER_LOCK(intSave);
+    SCHEDULER_UNLOCK(intSave);
     return 0;
 }
 
