@@ -55,7 +55,7 @@ static void HwiF01(void)
 static void TaskF01(void)
 {
     UINT32 ret;
-    UINT32 readbuf[50];
+    UINT8 readbuf[50];
 
     LOS_AtomicInc(&g_testCount);
 
