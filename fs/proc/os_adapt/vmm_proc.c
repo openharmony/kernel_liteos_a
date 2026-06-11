@@ -105,7 +105,7 @@ static const struct ProcFileOperations VMM_PROC_FOPS = {
 
 void ProcVmmInit(void)
 {
-    struct ProcDirEntry *pde = CreateProcEntry("vmm", 0, NULL);
+    struct ProcDirEntry *pde = CreateProcEntry("vmm", S_IRUSR, NULL);
     if (pde == NULL) {
         PRINT_ERR("create /proc/vmm error!\n");
         return;
