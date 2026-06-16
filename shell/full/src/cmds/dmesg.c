@@ -267,7 +267,7 @@ STATIC UINT32 OsDmesgChangeSize(UINT32 size)
     CHAR *newString = NULL;
     UINT32 intSave;
 
-    if (size == 0) {
+    if (size == 0 || size > (UINT32_MAX - sizeof(DmesgInfo))) {
         return LOS_NOK;
     }
 
