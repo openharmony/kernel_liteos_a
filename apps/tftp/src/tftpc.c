@@ -1646,7 +1646,7 @@ u32_t lwip_tftp_get_file_by_filename_to_rawmem(u32_t ulHostAddr,
                     goto err_handler;
                 }
                 /* copy the last packet to the memory */
-                if (memcpy_s(szDestMemAddr + ulMemOffset, TFTP_MAX_BLK_NUM * TFTP_BLKSIZE,
+                if (memcpy_s(szDestMemAddr + ulMemOffset, *ulFileLength - ulMemOffset,
                              (void *)pstRecvBuf->u.stTFTP_Data.ucDataBuf, (size_t)ulRecvSize) != EOK) {
                     ulErrCode = TFTPC_MEMCPY_FAILURE;
                     (void)lwip_close(iSockNum);
@@ -1678,7 +1678,7 @@ u32_t lwip_tftp_get_file_by_filename_to_rawmem(u32_t ulHostAddr,
             *ulFileLength = ulMemOffset;
             goto err_handler;
         }
-        if (memcpy_s(szDestMemAddr + ulMemOffset, TFTP_MAX_BLK_NUM * TFTP_BLKSIZE,
+        if (memcpy_s(szDestMemAddr + ulMemOffset, *ulFileLength - ulMemOffset,
                      (void *)pstRecvBuf->u.stTFTP_Data.ucDataBuf, (size_t)ulRecvSize) != EOK) {
             ulErrCode = TFTPC_MEMCPY_FAILURE;
             (void)lwip_close(iSockNum);
