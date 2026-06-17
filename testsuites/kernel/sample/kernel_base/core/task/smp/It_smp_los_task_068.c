@@ -55,12 +55,12 @@ static void HwiF01(void)
 static void TaskF01(void)
 {
     UINT32 ret;
-    UINT32 readbuf;
+    UINT8 readbuf[50];
 
     LOS_AtomicInc(&g_testCount);
 
     // 50, queue buffer size.
-    ret = LOS_QueueRead(g_queue, &readbuf, 50, LOS_WAIT_FOREVER);
+    ret = LOS_QueueRead(g_queue, &readbuf, sizeof(readbuf), LOS_WAIT_FOREVER);
     ICUNIT_ASSERT_EQUAL_VOID(ret, LOS_OK, ret);
 
     LOS_AtomicInc(&g_testCount);
