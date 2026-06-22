@@ -623,7 +623,7 @@ UINT32 LOS_PmTimeLockRequest(const CHAR *name, UINT64 millisecond)
 
 UINT32 LOS_PmReadLock(VOID)
 {
-    UINT32 ret = LOS_EventRead(&g_pmEvent, PM_EVENT_LOCK_MASK, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, LOS_WAIT_FOREVER);
+    UINT32 ret = LOS_EventRead(&g_pmEvent, PM_EVENT_LOCK_MASK, LOS_WAITMODE_OR | LOS_WAITMODE_CLR, 500);
     if (ret > PM_EVENT_LOCK_MASK) {
         PRINT_ERR("%s event read failed! ERROR: 0x%x\n", __FUNCTION__, ret);
     }
