@@ -1633,6 +1633,12 @@ int socks_ioctl(int sockfd, long cmd, void *argp)
     int ret;
     size_t nbytes = 0;
 
+    if (cmd == FIONREAD || cmd == FIONBIO) {
+        if (!LOS_IsUserAddress((VADDR_T)(uintptr_t)argp)) {
+            set_errno(EFAULT);
+            ret = -1;
+        }
+    }
     if (LOS_IsUserAddress((VADDR_T)(uintptr_t)argp)) {
         switch (cmd) {
             case FIONREAD:
