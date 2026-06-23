@@ -233,7 +233,7 @@ char *getcwd(char *buf, size_t n)
     }
 #ifdef VFS_USING_WORKDIR
     spin_lock_irqsave(&curr->files->workdir_lock, lock_flags);
-    len = strlen(curr->files->workdir);
+    len = strnlen(curr->files->workdir, PATH_MAX);
     if (n <= len) {
         set_errno(ERANGE);
         spin_unlock_irqrestore(&curr->files->workdir_lock, lock_flags);
