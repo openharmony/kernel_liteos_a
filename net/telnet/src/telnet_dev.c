@@ -213,6 +213,10 @@ STATIC ssize_t TelnetRead(struct file *file, CHAR *buf, size_t bufLen)
         TelnetUnlock();
         (VOID)LOS_EventRead(g_event, TELNET_EVENT_MORE_CMD, LOS_WAITMODE_OR, LOS_WAIT_FOREVER);
         TelnetLock();
+        if(telnetDev->cmdFifo == NULL){
+            TelnetUnlock();
+            return -1;
+        }
     }
 
     if (bufLen > (FIFO_MAX - telnetDev->cmdFifo->fifoNum)) {
