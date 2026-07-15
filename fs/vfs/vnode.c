@@ -661,6 +661,12 @@ static int VnodeChattr(struct Vnode *vnode, struct IATTR *attr)
     if (vnode == NULL || attr == NULL) {
         return -EINVAL;
     }
+    if (attr->attr_chg_valid & (CHG_UID | CHG_GID)) {
+        if (!isCapPermit(CAP_CHOWN) &&
+            (current->user->userID != vnode->uid)) {
+            return -EPERM;
+        }
+    }
     if (attr->attr_chg_valid & CHG_MODE) {
         tmpMode = attr->attr_chg_mode;
         tmpMode &= ~S_IFMT;
