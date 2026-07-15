@@ -662,8 +662,9 @@ static int VnodeChattr(struct Vnode *vnode, struct IATTR *attr)
         return -EINVAL;
     }
     if (attr->attr_chg_valid & (CHG_UID | CHG_GID)) {
-        if (!isCapPermit(CAP_CHOWN) &&
-            (current->user->userID != vnode->uid)) {
+        LosProcessCB *curr = OsCurrProcessGet();
+        if (!IsCapPermit(CAP_CHOWN) &&
+            (curr->user->userID != vnode->uid)) {
             return -EPERM;
         }
     }
