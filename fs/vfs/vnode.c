@@ -662,14 +662,18 @@ static int VnodeChattr(struct Vnode *vnode, struct IATTR *attr)
     if (vnode == NULL || attr == NULL) {
         return -EINVAL;
     }
+    LosProcessCB *curr = OsCurrProcessGet();
     if (attr->attr_chg_valid & (CHG_UID | CHG_GID)) {
-        LosProcessCB *curr = OsCurrProcessGet();
         if (!IsCapPermit(CAP_CHOWN) &&
             (curr->user->userID != vnode->uid)) {
             return -EPERM;
         }
     }
     if (attr->attr_chg_valid & CHG_MODE) {
+        if (!IsCapPermit(CAP_FOWNER) &&
+            (curr->user->userID != vnode->uid)) {
+            return -EPERM;
+        }
         tmpMode = attr->attr_chg_mode;
         tmpMode &= ~S_IFMT;
         vnode->mode &= S_IFMT;
