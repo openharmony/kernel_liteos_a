@@ -34,6 +34,7 @@
 #include "vnode.h"
 #include "los_process.h"
 #include "los_process_pri.h"
+#include "capability_api.h"
 
 LIST_HEAD g_vnodeFreeList;              /* free vnodes list */
 LIST_HEAD g_vnodeVirtualList;           /* dev vnodes list */
