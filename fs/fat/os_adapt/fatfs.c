@@ -617,7 +617,15 @@ int fatfs_open(struct file *filep)
         ret = EBUSY;
         goto ERROR_FREE;
     }
-
+    LosProcessCB *curr = OsCurrProcessGet();
+    if (!IsCapPermit(CAP_DAC_WRITE) &&
+            (curr->user->userID != vp->uid)) {
+        FATFS *fs = (FATFS *)vp->originMount->data;
+        if ((fs->fs_mode & S_IWUSR) == 0) {
+            ret = EACCES;
+            goto ERROR_FREE;
+        }
+    }
     fp->dir_sect = dp->sect;
     fp->dir_ptr = dp->dir;
     fp->obj.sclust = finfo->sclst;
