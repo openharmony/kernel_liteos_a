@@ -57,6 +57,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include "los_process_pri.h"
+#include "capability_api.h"
 
 
 struct VnodeOps fatfs_vops; /* forward define */
