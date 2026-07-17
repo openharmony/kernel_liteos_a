@@ -621,6 +621,7 @@ int fatfs_open(struct file *filep)
         ret = EBUSY;
         goto ERROR_FREE;
     }
+
     fp->dir_sect = dp->sect;
     fp->dir_ptr = dp->dir;
     fp->obj.sclust = finfo->sclst;
