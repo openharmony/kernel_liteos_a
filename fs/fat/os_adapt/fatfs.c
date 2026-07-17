@@ -57,8 +57,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include "los_process_pri.h"
-#include "capability_api.h"
 
 
 struct VnodeOps fatfs_vops; /* forward define */
@@ -602,6 +600,10 @@ int fatfs_create(struct Vnode *parent, const char *name, int mode, struct Vnode 
 int fatfs_open(struct file *filep)
 {
     struct Vnode *vp = filep->f_vnode;
+    if (VfsVnodePermissionCheck(vp, WRITE_OP) != 0) {
+        ret = EACCES;
+        goto ERROR_FREE;
+    }
     FATFS *fs = (FATFS *)vp->originMount->data;
     DIR_FILE *dfp = (DIR_FILE *)vp->data;
     DIR *dp = &(dfp->f_dir);
@@ -618,15 +620,6 @@ int fatfs_open(struct file *filep)
     if (ret == FALSE) {
         ret = EBUSY;
         goto ERROR_FREE;
-    }
-    LosProcessCB *curr = OsCurrProcessGet();
-    if (!IsCapPermit(CAP_DAC_WRITE) &&
-            (curr->user->userID != vp->uid)) {
-        FATFS *fs = (FATFS *)vp->originMount->data;
-        if ((fs->fs_mode & S_IWUSR) == 0) {
-            ret = EACCES;
-            goto ERROR_FREE;
-        }
     }
     fp->dir_sect = dp->sect;
     fp->dir_ptr = dp->dir;
