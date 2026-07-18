@@ -49,6 +49,7 @@
 #include "los_sched_pri.h"
 #include "user_copy.h"
 #include "fs/driver.h"
+#include "capability_api.h"
 
 #define EACH_CHAR 1
 #define UART_IOC_MAGIC   'u'
@@ -913,6 +914,11 @@ STATIC INT32 ConsoleIoctl(struct file *filep, INT32 cmd, unsigned long arg)
             ret = ConsoleGetPgrp(consoleCB, arg);
             break;
         case TIOCSPGRP:
+            LosProcessCB *curr = OsCurrProcessGet();
+            if (!IsCapPermit(CAP_SYS_ADMIN) && (curr->user->userID != 0)) {
+                ret = EPERM;
+                goto ERROUT;
+            }
             ret = ConsoleSetPgrp(consoleCB, arg);
             break;
         default:
