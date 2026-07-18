@@ -600,16 +600,17 @@ int fatfs_create(struct Vnode *parent, const char *name, int mode, struct Vnode 
 int fatfs_open(struct file *filep)
 {
     struct Vnode *vp = filep->f_vnode;
-    if (VfsVnodePermissionCheck(vp, WRITE_OP) != 0) {
-        ret = EACCES;
-        goto ERROR_FREE;
-    }
     FATFS *fs = (FATFS *)vp->originMount->data;
     DIR_FILE *dfp = (DIR_FILE *)vp->data;
     DIR *dp = &(dfp->f_dir);
     FILINFO *finfo = &(dfp->fno);
     FIL *fp;
     int ret;
+
+    if (VfsVnodePermissionCheck(vp, WRITE_OP) != 0) {
+        ret = EACCES;
+        goto ERROR_FREE;
+    }
 
     fp = (FIL *)zalloc(sizeof(FIL) + SS(fs));
     if (fp == NULL) {
