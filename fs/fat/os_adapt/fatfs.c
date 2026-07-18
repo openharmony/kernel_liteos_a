@@ -607,11 +607,6 @@ int fatfs_open(struct file *filep)
     FIL *fp;
     int ret;
 
-    if (VfsVnodePermissionCheck(vp, WRITE_OP) != 0) {
-        ret = EACCES;
-        goto ERROR_FREE;
-    }
-
     fp = (FIL *)zalloc(sizeof(FIL) + SS(fs));
     if (fp == NULL) {
         ret = ENOMEM;
@@ -620,6 +615,10 @@ int fatfs_open(struct file *filep)
     ret = lock_fs(fs);
     if (ret == FALSE) {
         ret = EBUSY;
+        goto ERROR_FREE;
+    }
+    if (VfsVnodePermissionCheck(vp, WRITE_OP) != 0) {
+        ret = EACCES;
         goto ERROR_FREE;
     }
 
