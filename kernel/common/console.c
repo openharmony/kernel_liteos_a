@@ -914,7 +914,7 @@ STATIC INT32 ConsoleIoctl(struct file *filep, INT32 cmd, unsigned long arg)
             ret = ConsoleGetPgrp(consoleCB, arg);
             break;
         case TIOCSPGRP:
-             if (!IsCapPermit(CAP_SHELL_EXEC)) {
+            if (!IsCapPermit(CAP_SHELL_EXEC)) {
                 ret = EPERM;
                 goto ERROUT;
             }
