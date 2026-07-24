@@ -34,6 +34,7 @@
 #include "vnode.h"
 #include "los_process.h"
 #include "los_process_pri.h"
+#include "capability_api.h"
 
 LIST_HEAD g_vnodeFreeList;              /* free vnodes list */
 LIST_HEAD g_vnodeVirtualList;           /* dev vnodes list */
@@ -661,7 +662,18 @@ static int VnodeChattr(struct Vnode *vnode, struct IATTR *attr)
     if (vnode == NULL || attr == NULL) {
         return -EINVAL;
     }
+    LosProcessCB *curr = OsCurrProcessGet();
+    if (attr->attr_chg_valid & (CHG_UID | CHG_GID)) {
+        if (!IsCapPermit(CAP_CHOWN) &&
+            (curr->user->userID != vnode->uid)) {
+            return -EPERM;
+        }
+    }
     if (attr->attr_chg_valid & CHG_MODE) {
+        if (!IsCapPermit(CAP_FOWNER) &&
+            (curr->user->userID != vnode->uid)) {
+            return -EPERM;
+        }
         tmpMode = attr->attr_chg_mode;
         tmpMode &= ~S_IFMT;
         vnode->mode &= S_IFMT;
