@@ -53,7 +53,7 @@ spinlock_t g_diskFatBlockSpinlock;
 UINT32 g_usbMode = 0;
 
 #define MEM_ADDR_ALIGN_BYTE  64
-#define RWE_RW_RW            0755
+#define RW_RW_NO             0660
 
 #define DISK_LOCK(mux) do {                                              \
     if (pthread_mutex_lock(mux) != 0) {                                  \
@@ -341,7 +341,7 @@ static INT32 DiskAddPart(los_disk *disk, UINT64 sectorStart, UINT64 sectorCount,
         }
 
         if (register_blockdriver(devName, ((struct drv_data *)diskDev->data)->ops,
-                                 RWE_RW_RW, ((struct drv_data *)diskDev->data)->priv)) {
+                                 RW_RW_NO, ((struct drv_data *)diskDev->data)->priv)) {
             PRINT_ERR("DiskAddPart : register %s fail!\n", devName);
             return VFS_ERROR;
         }
@@ -1456,7 +1456,7 @@ INT32 los_disk_init(const CHAR *diskName, const struct block_operations *bops,
         return VFS_ERROR;
     }
 
-    if (register_blockdriver(diskName, bops, RWE_RW_RW, priv) != 0) {
+    if (register_blockdriver(diskName, bops, RW_RW_NO, priv) != 0) {
         PRINT_ERR("disk_init : register %s fail!\n", diskName);
         return VFS_ERROR;
     }
