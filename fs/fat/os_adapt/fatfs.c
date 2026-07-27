@@ -617,6 +617,10 @@ int fatfs_open(struct file *filep)
         ret = EBUSY;
         goto ERROR_FREE;
     }
+    if (VfsVnodePermissionCheck(vp, WRITE_OP) != 0) {
+        ret = EACCES;
+        goto ERROR_FREE;
+    }
 
     fp->dir_sect = dp->sect;
     fp->dir_ptr = dp->dir;
