@@ -825,6 +825,10 @@ STATIC INT32 ConsoleGetWinSize(unsigned long arg)
         .ws_row = DEFAULT_WINDOW_SIZE_ROW
     };
 
+    if (!LOS_IsUserAddress((vaddr_t)(UINTPTR)arg)) {
+        return -EFAULT;
+    }
+
     return (LOS_CopyFromKernel((VOID *)arg, sizeof(struct winsize), &kws, sizeof(struct winsize)) != 0) ?
         -EFAULT : LOS_OK;
 }
